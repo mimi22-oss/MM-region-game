@@ -1,0 +1,92 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { canStand,move } from '../src/game/collision.ts';
+import { ward,toWorld,pitchLanes,oppositeLanes,residentialRows } from '../src/data/ward.ts';
+test('Myothar inventory and safe AH1 spawn',()=>{assert.equal(ward.houses.length,89);assert.equal(ward.roads.length,18);assert.equal(ward.fields.length,2);assert.ok(canStand(ward.spawn.x,ward.spawn.z));for(let v=-120;v<=120;v+=2){const p=toWorld(0,v);assert.ok(canStand(p.x,p.z),'AH1 is walkable')}});
+test('every rotated house and trunk blocks walking',()=>{for(const h of ward.houses)assert.equal(canStand(h.x,h.z),false);for(const t of ward.trees)assert.equal(canStand(t.x,t.z),false);assert.equal(canStand(410,0),false);assert.equal(canStand(NaN,0),false)});
+test('large movement cannot tunnel through rotated building',()=>{const h=ward.houses[0];const start=toWorld(-66,-110);assert.ok(canStand(start.x,start.z));move(start,h.x-start.x,h.z-start.z);assert.ok(canStand(start.x,start.z));assert.ok(Math.hypot(start.x-h.x,start.z-h.z)>4)});
+test('movement respects expanded ward bounds',()=>{const p={x:0,z:0};move(p,0,500);assert.ok(p.z<=409.6);assert.ok(canStand(p.x,p.z))});
+
+test('warehouses block entry and pitch stays clear',()=>{
+ assert.equal(ward.warehouses.length,8);
+ for(const w of ward.warehouses)assert.equal(canStand(w.x,w.z),false);
+ for(let u=68;u<=124;u+=4)for(let v=-46;v<=46;v+=4){const p=toWorld(u,v);assert.ok(canStand(p.x,p.z),'pitch must be walkable')}
+ for(const u of [-77,-99])for(let v=-110;v<=110;v+=2){const p=toWorld(u,v);assert.ok(canStand(p.x,p.z),'neighborhood lane must be clear')}
+});
+
+test('canal crossings and monastery footprints',()=>{
+ const water=toWorld(-54,0);assert.equal(canStand(water.x,water.z),false);
+ for(const localV of ward.canal.bridges){const v=localV+ward.canal.v;const p=toWorld(-54,v);assert.ok(canStand(p.x,p.z));const start=toWorld(-60,v),end=toWorld(-48,v);move(start,end.x-start.x,end.z-start.z);assert.ok(Math.hypot(start.x-end.x,start.z-end.z)<0.1)}
+ const m=ward.monastery,c=Math.cos(m.rotation),s=Math.sin(m.rotation);
+ for(const b of m.buildings){assert.equal(canStand(m.x+b.u*c+b.v*s,m.z-b.u*s+b.v*c),false)}
+ const yard=toWorld(205,46);assert.ok(canStand(yard.x,yard.z));
+});
+
+test('pitch and large open ground separate warehouses from monastery',()=>{
+ const localU=(p:{x:number;z:number})=>p.x*Math.cos(ward.monastery.rotation)-p.z*Math.sin(ward.monastery.rotation);
+ const warehouseBack=Math.max(...ward.warehouses.map(w=>localU(w)+w.width/2));
+ const monasteryFront=localU(ward.monastery)-ward.monastery.width/2;
+ for(const area of [ward.pitch,ward.openGround]){
+  assert.ok(localU(area)-area.width/2>warehouseBack);
+  assert.ok(localU(area)+area.width/2<monasteryFront);
+  for(let u=-area.width/2+2;u<area.width/2;u+=8)for(let v=-area.depth/2+2;v<area.depth/2;v+=8){const c=Math.cos(area.rotation),s=Math.sin(area.rotation);assert.ok(canStand(area.x+u*c+v*s,area.z-u*s+v*c))}
+ }
+});
+
+
+test('five pitch-side lanes, two rows per block, four opposite lanes',()=>{
+ assert.equal(pitchLanes.length,5);assert.equal(oppositeLanes.length,4);
+ const local=(h:{x:number;z:number})=>({u:(h.x-h.z)/Math.sqrt(2),v:(h.x+h.z)/Math.sqrt(2)});
+ for(let i=0;i<4;i++){
+  const homes=ward.houses.map(local).filter(h=>h.u>10&&h.u<145&&h.v>pitchLanes[i]+1&&h.v<pitchLanes[i+1]-1);
+  assert.equal(homes.length,12);assert.equal(new Set(homes.map(h=>Math.round(h.v))).size,2);
+ }
+ for(const r of ward.roads.filter(r=>r.id.startsWith('pitch-lane-')||r.id.startsWith('opposite-lane-')||r.id==='pitch-monastery-lane')){
+  for(let a=-r.width/2+1;a<r.width/2;a+=2)for(let b=-r.depth/2+1;b<r.depth/2;b+=2){const c=Math.cos(r.rotation),s=Math.sin(r.rotation);assert.ok(canStand(r.x+a*c+b*s,r.z-a*s+b*c),r.id+' must be walkable')}
+ }
+});
+
+test('exactly two continuous drains connect the residential lanes',()=>{
+ assert.equal(1+ward.drains.length,2);
+ for(const c of [ward.canal,...ward.drains]){assert.ok(c.v-c.depth/2<oppositeLanes[0]);assert.ok(c.v+c.depth/2>oppositeLanes.at(-1)!)}
+ for(const v of [140,170,210,270]){const p=toWorld(-34,v);assert.ok(canStand(p.x,p.z),'removed extra drain should be dry ground')}
+ for(const u of [-54,-160])for(const v of [140,170,278]){const p=toWorld(u,v);assert.equal(canStand(p.x,p.z),false)}
+ for(const v of oppositeLanes)for(const u of [-54,-160]){const p=toWorld(u,v);assert.ok(canStand(p.x,p.z))}
+ const join=toWorld(-54,123);assert.equal(canStand(join.x,join.z),false);
+ assert.equal(canStand(ward.pond.x,ward.pond.z),false);
+});
+
+
+test('front lot, canal, home, farm, pond, rear canal and home follow requested order',()=>{
+ const u=(p:{x:number;z:number})=>(p.x-p.z)/Math.sqrt(2);
+ const front=ward.houses.find(h=>h.name==='လမ်းသွယ် ၂ · စိုက်ခင်းအိမ်')!;
+ const rear=ward.houses.find(h=>h.name==='လမ်းသွယ် ၂ · မြောင်းနောက်အိမ်')!;
+ const sequence=[0,u(ward.frontLot),-54,u(front),u(ward.farm),u(ward.pond),-160,u(rear)];
+ for(let i=1;i<sequence.length;i++)assert.ok(sequence[i]<sequence[i-1]);
+ for(let x=-46;x<=-12;x+=2){const p=toWorld(x,270);assert.ok(canStand(p.x,p.z),'front lot should stay clear')}
+ for(const x of [-54,-160]){const p=toWorld(x,278);assert.equal(canStand(p.x,p.z),false)}
+});
+
+
+test('farmhouse north/south rows and ownership are separated by lanes',()=>{
+ const centerV=(p:{x:number;z:number})=>(p.x+p.z)/Math.sqrt(2);
+ const farmhouse=ward.houses.find(h=>h.name==='လမ်းသွယ် ၂ · စိုက်ခင်းအိမ်')!;
+ assert.deepEqual(Object.values(residentialRows).map(rows=>rows.length),[3,3,1,3]);
+ assert.ok(oppositeLanes[0]<residentialRows.northFar[0]);
+ assert.ok(residentialRows.northFar.at(-1)!<oppositeLanes[1]);
+ assert.ok(oppositeLanes[1]<residentialRows.northNear[0]);
+ assert.ok(residentialRows.northNear.at(-1)!<centerV(farmhouse));
+ assert.ok(centerV(farmhouse)<residentialRows.southNear[0]);
+ assert.ok(residentialRows.southNear[0]<oppositeLanes[2]);
+ assert.ok(oppositeLanes[2]<residentialRows.southFar[0]);
+ for(const [group,rows] of Object.entries(residentialRows))for(const v of rows){const homes=ward.houses.filter(h=>h.name.startsWith(group)&&Math.abs(centerV(h)-v)<0.01);assert.equal(homes.length,group==='northNear'&&v!==residentialRows.northNear[0]?1:2)}
+ const p=ward.farmNorthLand;assert.equal(p.owner,'စိုက်ခင်းအိမ်ပိုင် မြေ');assert.ok(canStand(p.x,p.z));
+});
+
+
+test('farmhouse entrance bridge connects the road through the empty lot',()=>{
+ const start=toWorld(0,270),end=toWorld(-63,270);
+ move(start,end.x-start.x,end.z-start.z);
+ assert.ok(Math.hypot(start.x-end.x,start.z-end.z)<0.1);
+ for(const v of [266,274]){const p=toWorld(-54,v);assert.equal(canStand(p.x,p.z),false)}
+});
