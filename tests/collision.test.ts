@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { canStand,move } from '../src/game/collision.ts';
-import { ward,toWorld,pitchLanes,oppositeLanes,residentialRows } from '../src/data/ward.ts';
+import { ward,toWorld,pitchLanes,oppositeLanes,residentialRows,tharSiVillage } from '../src/data/ward.ts';
 test('Myothar inventory and safe AH1 spawn',()=>{assert.equal(ward.houses.length,98);assert.equal(ward.roads.length,18);assert.equal(ward.fields.length,2);assert.ok(canStand(ward.spawn.x,ward.spawn.z));for(let v=-120;v<=120;v+=2){const p=toWorld(0,v);assert.ok(canStand(p.x,p.z),'AH1 is walkable')}});
 test('every rotated house and trunk blocks walking',()=>{for(const h of ward.houses)assert.equal(canStand(h.x,h.z),false);for(const t of ward.trees)assert.equal(canStand(t.x,t.z),false);assert.equal(canStand(ward.size/2,0),false);assert.equal(canStand(NaN,0),false)});
 test('large movement cannot tunnel through rotated building',()=>{const h=ward.houses[0];const start=toWorld(-66,-110);assert.ok(canStand(start.x,start.z));move(start,h.x-start.x,h.z-start.z);assert.ok(canStand(start.x,start.z));assert.ok(Math.hypot(start.x-h.x,start.z-h.z)>4)});
@@ -138,4 +138,63 @@ test('thirty southern paddies lead to Weipula, with an AH1 pass and connected we
  const all=[...ward.mountains,...ward.weipula.peaks.filter(m=>m.u<0)];const reached=new Set([0]);let added=true;
  while(added){added=false;for(let i=0;i<all.length;i++)if(!reached.has(i)&&[...reached].some(j=>Math.hypot(all[i].x-all[j].x,all[i].z-all[j].z)<all[i].radius+all[j].radius)){reached.add(i);added=true}}
  assert.equal(reached.size,all.length,'western range joins Weipula');
+});
+
+
+test('Thar Si village sits between Myothar Area 5 and Weipula with walkable lanes and solid homes',()=>{
+ assert.equal(tharSiVillage.name,'သာစည်ရွာ');
+ assert.equal(tharSiVillage.houses.length,54);
+ const localV=(p:{x:number;z:number})=>(p.x+p.z)/Math.sqrt(2);
+ const area5South=Math.max(...ward.houses.map(localV));
+ const weipulaNorth=Math.min(...ward.weipula.peaks.filter(m=>Math.abs(m.u)<400).map(m=>m.v-m.radius));
+ for(const h of tharSiVillage.houses){
+  assert.ok(localV(h)>area5South,'Thar Si house is south of Myothar Area 5');
+  assert.ok(localV(h)<weipulaNorth,'Thar Si house is north of Weipula');
+  assert.equal(canStand(h.x,h.z),false,'Thar Si house blocks walking');
+ }
+ for(const t of [...tharSiVillage.trees,...tharSiVillage.largeTrees,...tharSiVillage.farmTrees]){
+  assert.equal(canStand(t.x,t.z),false,'Thar Si tree trunk blocks walking');
+ }
+ for(const r of tharSiVillage.roads){
+  assert.ok(canStand(r.x,r.z),`${r.id} center is walkable`);
+ }
+ for(const f of [...tharSiVillage.fields,...tharSiVillage.bundedFields]){
+  assert.ok(canStand(f.x,f.z),'Thar Si field is walkable');
+ }
+});
+
+
+test('6 paddy fields and east-west canal separate Myothar Area 5 from Thar Si village',()=>{
+ assert.equal(tharSiVillage.separationFields.length,6);
+ const localV=(p:{x:number;z:number})=>(p.x+p.z)/Math.sqrt(2);
+ const area5South=Math.max(...ward.houses.map(localV));
+ const canalV=tharSiVillage.canal.v;
+ for(const f of tharSiVillage.separationFields){
+  assert.ok(localV(f)>area5South,'separation paddy is south of Myothar Area 5');
+  assert.ok(localV(f)+f.depth/2<canalV,'separation paddy is north of east-west canal');
+  assert.ok(canStand(f.x,f.z),'separation paddy is walkable');
+ }
+ for(const u of [-80,-30,30,80]){
+  const water=toWorld(u,canalV);
+  assert.equal(canStand(water.x,water.z),false,'east-west canal water blocks walking');
+ }
+ const bridge=toWorld(0,canalV);
+ assert.ok(canStand(bridge.x,bridge.z),'AH1 bridge over east-west canal is walkable');
+ for(const h of tharSiVillage.houses){
+  assert.ok(localV(h)>canalV,'Thar Si house is south of east-west canal');
+ }
+});
+
+
+test('winding canal connects Myothar Area 5 junction around paddies to western tip of Thar Si canal',()=>{
+ const wc=tharSiVillage.connectingCanal;
+ const ew=tharSiVillage.canal;
+ assert.deepEqual(wc.points[0],[-160,388]);
+ assert.deepEqual(wc.points.at(-1),[ew.uMin,ew.v]);
+ const westFieldEdge=Math.min(...tharSiVillage.separationFields.map(f=>f.u!-f.width/2));
+ for(const [u,v] of wc.points){
+  assert.ok(u<westFieldEdge,'winding canal stays west of separation paddies');
+  const p=toWorld(u,v);
+  assert.equal(canStand(p.x,p.z),false,'winding canal water blocks walking');
+ }
 });

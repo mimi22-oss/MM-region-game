@@ -15,6 +15,7 @@ wards/myothar/Warehouses.tsx — နယ်မြေ (၅) ဂိုဒေါင�
 wards/myothar/FootballPitch.tsx — နယ်မြေ (၅) ဘောလုံးကွင်း
 wards/myothar/index.tsx — မြို့သာရပ်ကွက် (နယ်မြေများ စုစည်းမှု) component
 wards/index.tsx — ကလေးမြို့ရှိ ရပ်ကွက်ပေါင်း ၂၀ ကျော်ကို ရပ်ကွက်အလိုက် စုစည်းသည့် component
+villages/tharsi/index.tsx — သာစည်ရွာ (Thar Si Village) 3D နှင့် 2D မြေပုံ component
 villages/index.tsx — ကလေးမြို့နယ်ရှိ ကျေးရွာများ (Villages) ကို ရွာအလိုက် စုစည်းသည့် component
 
 ## Run
