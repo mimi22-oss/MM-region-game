@@ -144,8 +144,52 @@ test('scene streaming caps detailed regions, retains nearby regions and evicts d
  assert.equal(selectOverviewRegions(regions,50,50,false).length,32);
  assert.deepEqual(selectRegions(regions,50,50,10,[],true),['0']);
  assert.equal(selectRegions(regions,150,50,10,[],false).length,2);
- assert.deepEqual(selectRegions(regions,50,50,500,['0'],true),[]);
+ assert.deepEqual(selectRegions(regions,50,50,700,['0'],true),[]);
  assert.deepEqual(selectRegions(regions,5000,50,10,['0'],true),['25']);
  assert.deepEqual(selectRegions(regions,-1000,50,10,['0'],true),[]);
  assert.deepEqual(selectRegions(regions,150,50,10,['1'],true),['1'],'hysteresis avoids switching at region boundaries');
+});
+
+
+test('camera travel never relocates or turns the robot, including world-edge pans',async()=>{
+ const {panCamera}=await import('../src/game/cameraNavigation.ts');
+ const s={x:12,z:-18,bodyYaw:.7,camX:12,camZ:-18,yaw:0};
+ panCamera(s,100,200,500);assert.equal(s.camX,112);assert.equal(s.camZ,-218);
+ s.yaw=Math.PI/2;panCamera(s,10000,10000,500);
+ assert.equal(s.camX,-500);assert.equal(s.camZ,-500);
+ assert.deepEqual({x:s.x,z:s.z,bodyYaw:s.bodyYaw},{x:12,z:-18,bodyYaw:.7});
+});
+
+
+test('teleport accepts clear ground, finds nearby space and rejects blocked or invalid views',async()=>{
+ const {findTeleportSpot}=await import('../src/game/cameraNavigation.ts');
+ assert.deepEqual(findTeleportSpot(10,20,()=>true),{x:10,z:20});
+ const spot=findTeleportSpot(10,20,(x,z)=>Math.hypot(x-10,z-20)>=4);
+ assert.ok(spot);assert.ok(Math.hypot(spot.x-10,spot.z-20)<=4.001);
+ assert.equal(findTeleportSpot(10,20,()=>false),null);
+ assert.equal(findTeleportSpot(NaN,20,()=>true),null);
+});
+
+
+test('view location follows camera focus while the robot stays in Myothar',async()=>{
+ const {detectLocation,MAP_DESTINATIONS}=await import('../src/game/locationDetect.ts');
+ const {ward}=await import('../src/data/ward.ts');
+ const {panCamera}=await import('../src/game/cameraNavigation.ts');
+ const destination=MAP_DESTINATIONS.find(d=>d.id==='htaukkyant')!;
+ const s={...ward.spawn,camX:ward.spawn.x,camZ:ward.spawn.z,yaw:0};
+ panCamera(s,destination.x-s.camX,s.camZ-destination.z,ward.size/2);
+ assert.equal(detectLocation(s.camX,s.camZ).id,'htaukkyant');
+ assert.deepEqual({x:s.x,z:s.z},ward.spawn);
+});
+
+test('region detail stays stable around zoom thresholds and waits for navigation to settle',async()=>{
+ const {selectRegions,ViewSettler}=await import('../src/game/sceneBudget.ts');
+ const regions=[{id:'a',minX:0,maxX:100,minZ:0,maxZ:100}];
+ assert.deepEqual(selectRegions(regions,50,50,490,['a'],true),['a']);
+ assert.deepEqual(selectRegions(regions,50,50,490,[],true),[]);
+ const settle=new ViewSettler();
+ for(let x=0;x<20;x++)assert.equal(settle.update(x,0,20,0.1),false);
+ for(let i=0;i<5;i++)assert.equal(settle.update(19,0,20,.1),false);
+ assert.equal(settle.update(19,0,20,.2),true);
+ assert.equal(settle.update(19,0,25,.1),false);
 });

@@ -1,3 +1,4 @@
+import { panCamera, findTeleportSpot } from '../game/cameraNavigation';
 import { avatarHeading } from '../game/avatarHeading';
 import { RobotCharacter } from './RobotCharacter';
 import { useEffect, useRef, type RefObject } from 'react';
@@ -21,6 +22,8 @@ export type TeleportTarget = {
 };
 
 export function Player({
+ navigationRequest,
+ onNavigationResult,
  mobileInput,
  mapOpen,
  topDown,
@@ -30,8 +33,11 @@ export function Player({
  onTopDown,
  onZoom,
  onLock,
+ onViewPosition,
  onPosition,
 }:{
+ navigationRequest?:{action:"locate"|"teleport";seq:number}|null;
+ onNavigationResult?:(success:boolean)=>void;
  mobileInput?:RefObject<MobileInput>;
  mapOpen:boolean;
  topDown:boolean;
@@ -41,6 +47,7 @@ export function Player({
  onTopDown:(v:boolean)=>void;
  onZoom:(v:number)=>void;
  onLock:(v:boolean)=>void;
+ onViewPosition?:(x:number,z:number)=>void;
  onPosition:(x:number,z:number)=>void;
 }){
  const {camera,gl,scene}=useThree();
@@ -75,21 +82,7 @@ export function Player({
     const panRight=-dx*panScale;
     const panForward=dy*panScale;
     const edge=ward.size/2-PLAYER_RADIUS;
-    s.camX=Math.max(-edge,Math.min(edge,s.camX+(-Math.sin(s.yaw)*panForward+Math.cos(s.yaw)*panRight)));
-    s.camZ=Math.max(-edge,Math.min(edge,s.camZ+(-Math.cos(s.yaw)*panForward-Math.sin(s.yaw)*panRight)));
-    if(canStand(s.camX,s.camZ)){
-     s.x=s.camX;
-     s.z=s.camZ;
-    }else{
-     for(const r of [2,4,7,11,16,24,36,52]){
-      let found=false;
-      for(let a=0;a<Math.PI*2;a+=Math.PI/4){
-       const nx=s.camX+Math.cos(a)*r,nz=s.camZ+Math.sin(a)*r;
-       if(canStand(nx,nz)){s.x=nx;s.z=nz;found=true;break;}
-      }
-      if(found)break;
-     }
-    }
+    panCamera(s,panRight,panForward,edge);
  };
  const applyZoom=(raw:number)=>{
   const s=state.current,previous=s.targetDistance;
@@ -104,7 +97,6 @@ export function Player({
    }else if(next<previous&&next<80){
     const streetPitch=-0.12-Math.max(0,(next-6)/74)*(Math.abs(SKY_PITCH)-0.12);
     if(s.pitch<streetPitch)s.pitch=streetPitch;
-    if(next<=15){s.camX=s.x;s.camZ=s.z;}
    }
    onZoom(next);
  };
@@ -144,6 +136,18 @@ export function Player({
   s.targetDistance=dist;
   onPosition(s.x,s.z);
  },[teleportTarget,onPosition]);
+ useEffect(()=>{
+  if(!navigationRequest)return;
+  const s=state.current;
+  if(navigationRequest.action==='teleport'){
+   const spot=findTeleportSpot(s.camX,s.camZ,canStand);
+   if(!spot){onNavigationResult?.(false);return}
+   s.x=spot.x;s.z=spot.z;
+  }
+  s.camX=s.x;s.camZ=s.z;s.panning=false;s.first=false;s.topDown=false;
+  s.pitch=-.16;s.distance=10;s.targetDistance=10;s.keys.clear();
+  onMode(false);onTopDown(false);onZoom(10);onPosition(s.x,s.z);onNavigationResult?.(true);
+ },[navigationRequest,onNavigationResult,onMode,onTopDown,onZoom,onPosition]);
  const target=useRef(new Vector3()); const desired=useRef(new Vector3()); const ray=useRef(new Raycaster());
  useEffect(()=>{
   const s=state.current;
@@ -271,9 +275,7 @@ export function Player({
    if(len>0){
     const panSpeed=Math.max(12,s.distance*0.45)*(fast?1.8:1)*dt;
     const edge=ward.size/2-PLAYER_RADIUS;
-    s.camX=Math.max(-edge,Math.min(edge,s.camX+(-Math.sin(yaw)*forward+Math.cos(yaw)*right)*panSpeed));
-    s.camZ=Math.max(-edge,Math.min(edge,s.camZ+(-Math.cos(yaw)*forward-Math.sin(yaw)*right)*panSpeed));
-    if(canStand(s.camX,s.camZ)){s.x=s.camX;s.z=s.camZ;}
+    panCamera(s,right*panSpeed,forward*panSpeed,edge);
    }
   }else{
    const speed=(fast?8:touch?.active?5.5:4)*dt;
@@ -288,6 +290,7 @@ export function Player({
   }
   if(avatar.current){avatar.current.position.set(s.x,0,s.z);avatar.current.rotation.y=s.bodyYaw;avatar.current.visible=!s.first;}
   target.current.set(aerial?s.camX:s.x,1.65,aerial?s.camZ:s.z);
+  camera.userData.viewFocus={x:target.current.x,z:target.current.z};
   const direction=new Vector3(-Math.sin(s.yaw)*Math.cos(s.pitch),Math.sin(s.pitch),-Math.cos(s.yaw)*Math.cos(s.pitch));
   if(s.first){camera.position.copy(target.current);camera.lookAt(target.current.clone().add(direction));}
   else{
@@ -302,7 +305,7 @@ export function Player({
    }
    camera.position.copy(desired.current);camera.lookAt(target.current);
   }
-  s.time+=dt;if(s.time>0.08){s.time=0;onPosition(aerial?s.camX:s.x,aerial?s.camZ:s.z);}
+  s.time+=dt;if(s.time>0.08){s.time=0;onPosition(s.x,s.z);onViewPosition?.(target.current.x,target.current.z);}
  });
  return <group ref={avatar}><RobotCharacter wheels={wheels}/></group>;
 }

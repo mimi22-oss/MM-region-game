@@ -1,9 +1,10 @@
+import { CarBots } from './CarBots';
 import { lazy, Suspense, useMemo, useRef, useState, useLayoutEffect, type LazyExoticComponent, type ComponentType } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { InstancedMesh, Matrix4, Quaternion, Vector3, Color } from 'three';
 import { ward } from '../data/ward';
 import { kalayVillages } from '../data/villages';
-import { mobileQuality, selectRegions, selectOverviewRegions } from '../game/sceneBudget';
+import { mobileQuality, selectRegions, selectOverviewRegions, ViewSettler } from '../game/sceneBudget';
 import { StaticBatch } from './StaticBatch';
 import { RobotBots } from './RobotBots';
 
@@ -38,20 +39,23 @@ function Overview({region}:{region:typeof regions[number]}){
 }
 function Detail({index}:{index:number}){const Scene=components[regions[index].id];return <StaticBatch><Scene/></StaticBatch>}
 export function StreamedWorld(){
- const [active,setActive]=useState<string[]>([]),[overview,setOverview]=useState(()=>selectOverviewRegions(bounds,ward.spawn.x,ward.spawn.z,mobileQuality)),elapsed=useRef(0),direction=useRef(new Vector3());
- useFrame(({camera},dt)=>{elapsed.current+=dt;if(elapsed.current<.5)return;elapsed.current=0;
-  camera.getWorldDirection(direction.current);const d=direction.current;
-  const t=d.y<-.03?Math.min(6000,Math.max(0,camera.position.y/-d.y)):0;
-  const next=selectRegions(bounds,camera.position.x+d.x*t,camera.position.z+d.z*t,camera.position.y,active,mobileQuality);
+ const [active,setActive]=useState<string[]>([]),[overview,setOverview]=useState(()=>selectOverviewRegions(bounds,ward.spawn.x,ward.spawn.z,mobileQuality)),elapsed=useRef(0),settler=useRef(new ViewSettler());
+ useFrame(({camera},dt)=>{
+  const focus=camera.userData.viewFocus??{x:camera.position.x,z:camera.position.z};
+  const settled=settler.current.update(focus.x,focus.z,camera.position.y,dt);
+  elapsed.current+=dt;if(elapsed.current<.25||!settled)return;elapsed.current=0;
+  const next=selectRegions(bounds,focus.x,focus.z,camera.position.y,active,mobileQuality);
   if(next.join()!==active.join())setActive(next);
-  const visible=selectOverviewRegions(bounds,camera.position.x+d.x*t,camera.position.z+d.z*t,mobileQuality);
+  const visible=selectOverviewRegions(bounds,focus.x,focus.z,mobileQuality);
   if(visible.join()!==overview.join())setOverview(visible);
  });
+
  return <>
   {regions.map((r,i)=>(active.includes(r.id)||overview.includes(r.id))&&<group key={r.id}>
    {active.includes(r.id)?<Suspense fallback={<Overview region={r}/>}><Detail index={i}/></Suspense>:<Overview region={r}/>}
   </group>)}
   <RobotBots activeRegions={active}/>
+  <CarBots/>
  </>;
 }
 

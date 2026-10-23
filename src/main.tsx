@@ -26,15 +26,24 @@ function App(){
  const [visible,setVisible]=useState(!document.hidden);
  useEffect(()=>{const changed=()=>setVisible(!document.hidden);document.addEventListener('visibilitychange',changed);return ()=>document.removeEventListener('visibilitychange',changed)},[]);
  const [first,setFirst]=useState(false);const [locked,setLocked]=useState(false);const [pos,setPos]=useState(ward.spawn);
+ const [viewPos,setViewPos]=useState(ward.spawn);
+ const viewPosition=useCallback((x:number,z:number)=>setViewPos(p=>p.x===x&&p.z===z?p:{x,z}),[]);
  const [mapOpen,setMapOpen]=useState(false);
  const [settingsOpen,setSettingsOpen]=useState(false);
  const [sceneActive,setSceneActive]=useState(false);
  const [topDown,setTopDown]=useState(false);
  const [zoom,setZoom]=useState(6);
  const [night,setNight]=useState(false);
+ const [navigationRequest,setNavigationRequest]=useState<{action:'locate'|'teleport';seq:number}|null>(null);
+ const [navigationNotice,setNavigationNotice]=useState('');
+ const navigationResult=useCallback((success:boolean)=>setNavigationNotice(success?'':'No clear ground here. Drag to a road or open area and try again.'),[]);
+ const navigate=(action:'locate'|'teleport')=>{
+  if(document.pointerLockElement)document.exitPointerLock();
+  setNavigationNotice('');setNavigationRequest(previous=>({action,seq:(previous?.seq??0)+1}));
+ };
  const [teleportTarget,setTeleportTarget]=useState<TeleportTarget|null>(null);
  const [arrivalToast,setArrivalToast]=useState<DetectedLocation|null>(null);
- const currentLoc=useMemo(()=>detectLocation(pos.x,pos.z),[pos.x,pos.z]);
+ const currentLoc=useMemo(()=>detectLocation(viewPos.x,viewPos.z),[viewPos.x,viewPos.z]);
  const prevLocKey=useRef(`${currentLoc.id}:${currentLoc.subArea??''}`);
 
  useEffect(()=>{
@@ -96,8 +105,18 @@ function App(){
  };
  const hideHud=locked||sceneActive;
  return <main className={night?"night-mode":""}>
- <div className="scene-wrap" onClick={()=>{if(!mapOpen){setSceneActive(true);setSettingsOpen(false);}}}><SceneError><Canvas frameloop={visible?'always':'never'} shadows={!mobileQuality} gl={{antialias:!mobileQuality,powerPreference:'default'}} camera={{position:[0,5,33],fov:65,near:0.1,far:9000}} dpr={mobileQuality?1:[1,1.25]}><FrameBudget/><Town night={night}/><Player mobileInput={mobileInput} mapOpen={mapOpen} topDown={topDown} zoom={zoom} teleportTarget={teleportTarget} onMode={setFirst} onTopDown={setTopDown} onZoom={setZoom} onLock={handleLock} onPosition={position}/></Canvas></SceneError></div>
- <MobileControls input={mobileInput} disabled={mapOpen||settingsOpen} onInteract={activateMobile}/>
+ <div className="scene-wrap" onClick={()=>{if(!mapOpen){setSceneActive(true);setSettingsOpen(false);}}}><SceneError><Canvas frameloop={visible?'always':'never'} shadows={!mobileQuality} gl={{logarithmicDepthBuffer:true,antialias:!mobileQuality,powerPreference:'default'}} camera={{position:[0,5,33],fov:65,near:0.1,far:9000}} dpr={mobileQuality?1:[1,1.25]}><FrameBudget/><Town night={night}/><Player navigationRequest={navigationRequest} onNavigationResult={navigationResult} mobileInput={mobileInput} mapOpen={mapOpen} topDown={topDown} zoom={zoom} teleportTarget={teleportTarget} onMode={setFirst} onTopDown={setTopDown} onZoom={setZoom} onLock={handleLock} onPosition={position} onViewPosition={viewPosition}/></Canvas></SceneError></div>
+ <MobileControls key={navigationRequest?.seq??0} input={mobileInput} disabled={mapOpen||settingsOpen} onInteract={activateMobile}/>
+ {!mapOpen&&!settingsOpen&&<div className="location-actions" onPointerDown={e=>e.stopPropagation()}>
+  <button type="button" aria-label="Return camera to my robot" title="My robot: return camera to character" onClick={()=>navigate('locate')}>
+   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4"/></svg>
+  </button>
+  <button type="button" aria-label="Teleport robot to the center of this view" title="Bring robot to the center of this view" onClick={()=>navigate('teleport')}>
+   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M6 14c-3 1-4 2-4 4 0 2 4 3 10 3s10-1 10-3c0-2-1-3-4-4"/></svg>
+  </button>
+  {navigationNotice&&<p role="status">{navigationNotice}</p>}
+ </div>}
+
  <header>
   <span className="eyebrow">EXPLORE MYANMAR · 📍 {currentLoc.subArea ?? currentLoc.label}</span>
   <h1>{currentLoc.title}</h1>

@@ -96,3 +96,12 @@ Previous verification (before this change):
 - Runtime browser inspection was attempted, but the browser tool failed to initialize its kernel assets. No real-device FPS, peak memory, or crash reproduction measurements are claimed. The cause of the reported mobile browser page failure remains unconfirmed.
 - Full collision suite was not rerun; the previously recorded lake-access road issue is unchanged.
 - Manual follow-up: load on a phone, pan through each village, switch day/night, zoom to aerial view, select a destination in Ward Plan, return to walking; monitor peak memory and GPU resource counts over repeated trips.
+
+### Camera / character separation
+13/13 input/performance tests passed, including camera travel at rotated headings and world bounds without mutating robot position or heading. TypeScript/Vite production build passed. Physical device verification not performed.
+
+### Camera navigation shortcuts
+TypeScript/Vite build and 14/14 input/performance tests passed. Teleport tests cover a clear target, nearby clearance, fully blocked ground and invalid coordinates. Real-device interaction and visual checks remain unperformed.
+
+### View location / flicker mitigation
+16/16 input/performance tests passed, including camera-focus travel to Htauk Kyant while the robot remains at spawn, region altitude hysteresis and movement/zoom settling. TypeScript/Vite build passed. Physical-device visual verification was not available, so elimination of all rendering flicker is not claimed. Existing full collision-suite caveat remains unchanged.

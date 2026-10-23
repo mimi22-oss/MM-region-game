@@ -1,9 +1,12 @@
+import { windshieldGeometry } from '../game/carWindshield';
 import { useMemo } from 'react';
 import { Shape, ExtrudeGeometry, DoubleSide } from 'three';
 import { parkedCars } from '../data/cars';
 
 /** Rounded reference-inspired compact car; front is -Z. */
 export function Car({color='#277fbd',size=1}:{color?:string;size?:number}){
+ const windshield=useMemo(()=>windshieldGeometry(),[]);
+ const windshieldFrame=useMemo(()=>windshieldGeometry(.66,.035,.335),[]);
  const body=useMemo(()=>{const s=new Shape();s.moveTo(-1.55,0.43);s.lineTo(1.64,0.43);s.quadraticCurveTo(1.78,1.15,0.76,1.28);s.bezierCurveTo(0.42,2.55,-1.25,2.55,-1.55,0.43);s.closePath();const g=new ExtrudeGeometry(s,{depth:1.42,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:0.09,bevelThickness:0.09,curveSegments:16});g.translate(0,0,-0.71);return g},[]);
  const windows=useMemo(()=>{
   const rear=new Shape();rear.moveTo(-1.08,1.3);rear.quadraticCurveTo(-1.03,1.87,-0.28,2.02);rear.quadraticCurveTo(-0.16,2.04,-0.16,1.9);rear.lineTo(-0.16,1.29);rear.quadraticCurveTo(-0.16,1.18,-0.31,1.18);rear.lineTo(-0.91,1.18);rear.quadraticCurveTo(-1.08,1.18,-1.08,1.3);
@@ -26,7 +29,9 @@ export function Car({color='#277fbd',size=1}:{color?:string;size?:number}){
    <mesh position={[side*0.52,0.95,-1.55]} scale={[0.17,0.22,0.07]}><sphereGeometry args={[1,16,12]}/><meshStandardMaterial color="#ffe34b" emissive="#ffbd24" emissiveIntensity={0.2}/></mesh>
    <mesh position={[side*0.59,0.87,1.5]} scale={[0.1,0.17,0.06]}><sphereGeometry args={[1,12,10]}/><meshStandardMaterial color="#ef4144"/></mesh>
   </group>)}
-  <mesh position={[0,1.62,-0.56]} rotation={[0.56,0,0]}><boxGeometry args={[1.14,0.72,0.035]}/><meshStandardMaterial color="#a3e0e8" metalness={0.2} roughness={0.22}/></mesh>
+  <mesh geometry={windshieldFrame}><meshStandardMaterial color="#152a35" side={DoubleSide} polygonOffset polygonOffsetFactor={-1}/></mesh>
+  <mesh geometry={windshield}><meshStandardMaterial color="#b6eff5" roughness={.12} metalness={.35} side={DoubleSide} polygonOffset polygonOffsetFactor={-2}/></mesh>
+
   {[-1,1].map(side=><mesh key={side} position={[0,0.48,side*1.68]} rotation={[0,0,Math.PI/2]}><capsuleGeometry args={[0.1,1.24,4,10]}/><meshStandardMaterial color="#d7dddc" metalness={0.45} roughness={0.35}/></mesh>)}
  </group>;
 }
