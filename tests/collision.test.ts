@@ -143,7 +143,7 @@ test('thirty southern paddies lead to Weipula, with an AH1 pass and connected we
 
 test('Thar Si village sits between Myothar Area 5 and Weipula with walkable lanes and solid homes',()=>{
  assert.equal(tharSiVillage.name,'သာစည်ရွာ');
- assert.equal(tharSiVillage.houses.length,54);
+ assert.equal(tharSiVillage.houses.length,320);
  const localV=(p:{x:number;z:number})=>(p.x+p.z)/Math.sqrt(2);
  const area5South=Math.max(...ward.houses.map(localV));
  const weipulaNorth=Math.min(...ward.weipula.peaks.filter(m=>Math.abs(m.u)<400).map(m=>m.v-m.radius));
