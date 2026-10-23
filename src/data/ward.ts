@@ -10,7 +10,16 @@ import {
  farmhouse,
  type House,
 } from './wards/index.ts';
-import { kalayVillages, tharSiVillage, tharSiLanes, tharSiCrossLanes } from './villages/index.ts';
+import {
+ kalayVillages,
+ tharSiVillage,
+ tharSiLanes,
+ tharSiCrossLanes,
+ chinSaiVillage,
+ chinSaiLanes,
+ chinSaiCrossLanes,
+ chinSaiMonasteries,
+} from './villages/index.ts';
 
 export const ward = {
  ...myotharWard,
@@ -24,6 +33,10 @@ export {
  tharSiVillage,
  tharSiLanes,
  tharSiCrossLanes,
+ chinSaiVillage,
+ chinSaiLanes,
+ chinSaiCrossLanes,
+ chinSaiMonasteries,
  myotharWard,
  area5,
  angle,

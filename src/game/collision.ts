@@ -8,7 +8,7 @@ export function canStand(x:number,z:number):boolean {
   const centerV=water.x*s+water.z*c,localV=v-centerV;
   if(Math.abs(u-water.u)<water.width/2+PLAYER_RADIUS&&Math.abs(localV)<water.depth/2+PLAYER_RADIUS&&!water.bridges.some(b=>Math.abs(localV-b)<2.5-PLAYER_RADIUS))return false;
  }
- for(const poly of [ward.crossCanal,...kalayVillages.map(vl=>vl.connectingCanal)]){
+ for(const poly of [ward.crossCanal,...kalayVillages.flatMap(vl=>vl.connectingCanal?[vl.connectingCanal]:[])]){
   const onBridge=poly.bridges.some(b=>Math.abs(u-b.u)<b.width/2-PLAYER_RADIUS&&Math.abs(v-b.v)<b.depth/2-PLAYER_RADIUS);
   if(!onBridge)for(let i=1;i<poly.points.length;i++){
    const [a,b]=poly.points[i-1],[d,e]=poly.points[i],du=d-a,dv=e-b;
@@ -18,6 +18,7 @@ export function canStand(x:number,z:number):boolean {
  }
  for(const village of kalayVillages){
   const ew=village.canal;
+  if(!ew)continue;
   if(u>=ew.uMin-PLAYER_RADIUS&&u<=ew.uMax+PLAYER_RADIUS&&Math.abs(v-ew.v)<ew.width/2+PLAYER_RADIUS){
    const onEwBridge=ew.bridges.some(b=>Math.abs(u-b.u)<b.width/2-PLAYER_RADIUS);
    if(!onEwBridge)return false;

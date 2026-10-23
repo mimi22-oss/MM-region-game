@@ -99,8 +99,8 @@ export type VillageMeta = {
  z: number;
  labelPos: { x: number; z: number };
  separationFields: FieldPlot[];
- connectingCanal: WindingCanalPlot;
- canal: EastWestCanalPlot;
+ connectingCanal?: WindingCanalPlot;
+ canal?: EastWestCanalPlot;
  houses: House[];
  roads: RoadPlot[];
  fields: FieldPlot[];

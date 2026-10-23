@@ -1,4 +1,4 @@
-import { tharSiVillage } from '../../../data/villages/tharsi';
+import { tharSiVillage, connectingCanal, tharSiCanal } from '../../../data/villages/tharsi';
 import { MainRoad } from '../../MainRoad';
 import { Lanes } from '../../Lane';
 import { Field } from '../../Field';
@@ -16,8 +16,8 @@ import { Tree } from '../../Tree';
 export function TharSiVillage(){
  return <group name="village-tharsi">
   {tharSiVillage.separationFields.map((f,i)=><Field key={f.id??`ts-sep-${i}`} f={f} bunded/>)}
-  <PolylineCanal p={tharSiVillage.connectingCanal}/>
-  <EastWestCanal c={tharSiVillage.canal}/>
+  <PolylineCanal p={connectingCanal}/>
+  <EastWestCanal c={tharSiCanal}/>
   <MainRoad roads={tharSiVillage.roads}/>
   <Lanes roads={tharSiVillage.roads}/>
   {tharSiVillage.fields.map((f,i)=><Field key={f.id??`ts-f-${i}`} f={f}/>)}
@@ -31,8 +31,8 @@ export function TharSiVillage(){
 
 /** သာစည်ရွာ (Thar Si Village) — 2D Map Plan SVG Component */
 export function TharSiVillagePlan({labels}:{labels:boolean}){
- const wc=tharSiVillage.connectingCanal;
- const c=tharSiVillage.canal;
+ const wc=connectingCanal;
+ const c=tharSiCanal;
  return <g id="village-tharsi-plan">
   {tharSiVillage.separationFields.map(f=><rect key={f.id} x={f.x-f.width/2} y={f.z-f.depth/2} width={f.width} height={f.depth} fill={f.color} stroke="#c1b57f" strokeWidth="0.9" transform={`rotate(${-f.rotation*180/Math.PI} ${f.x} ${f.z})`}/>)}
   <g transform={`rotate(${-wc.rotation*180/Math.PI})`}>
