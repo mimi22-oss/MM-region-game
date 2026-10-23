@@ -30,8 +30,8 @@ export function ChinSaiVillage(){
 }
 
 /** ချင်းဆိုင်ရွာ (Chin Sai Village) — 2D Map Plan SVG Component */
-export function ChinSaiVillagePlan({labels}:{labels:boolean}){
- return <g id="village-chinsai-plan">
+export function ChinSaiVillagePlan({labels,onSelectLocation}:{labels:boolean;onSelectLocation?:(id:string)=>void}){
+ return <g id="village-chinsai-plan" className={labels?"map-region-clickable":undefined} onClick={labels&&onSelectLocation?e=>{e.stopPropagation();onSelectLocation('chinsai');}:undefined}>
   {chinSaiVillage.separationFields.map(f=><rect key={f.id} x={f.x-f.width/2} y={f.z-f.depth/2} width={f.width} height={f.depth} fill={f.color} stroke="#c1b57f" strokeWidth="0.9" transform={`rotate(${-f.rotation*180/Math.PI} ${f.x} ${f.z})`}/>)}
   {chinSaiMonasteries.map(m=><rect key={m.id} x={m.x-m.width/2} y={m.z-m.depth/2} width={m.width} height={m.depth} fill="#b9b08a" stroke="#8a7f5d" strokeWidth="0.8" transform={`rotate(${-m.rotation*180/Math.PI} ${m.x} ${m.z})`}/>)}
   {chinSaiVillage.bundedFields.map(f=><rect key={f.id} x={f.x-f.width/2} y={f.z-f.depth/2} width={f.width} height={f.depth} fill={f.color} stroke="#c1b57f" strokeWidth="0.9" transform={`rotate(${-f.rotation*180/Math.PI} ${f.x} ${f.z})`}/>)}
@@ -54,7 +54,7 @@ export function ChinSaiVillagePlan({labels}:{labels:boolean}){
   {chinSaiVillage.trees.map(t=><circle key={t.id} cx={t.x} cy={t.z} r="5.8" fill="#365a42"/>)}
   {chinSaiVillage.largeTrees.map(t=><circle key={t.id} cx={t.x} cy={t.z} r="6.5" fill="#486e40" stroke="#739451" strokeWidth="0.6"/>)}
   {labels&&<>
-   <text x={chinSaiVillage.labelPos.x} y={chinSaiVillage.labelPos.z} textAnchor="middle" fontSize="14" fill="#fff9dc" stroke="#173d35" strokeWidth="0.45">{chinSaiVillage.name}</text>
+   <text x={chinSaiVillage.labelPos.x} y={chinSaiVillage.labelPos.z} textAnchor="middle" fontSize="14" fill="#fff9dc" stroke="#173d35" strokeWidth="0.45">{chinSaiVillage.name} ↗</text>
    {chinSaiMonasteries.map(m=><text key={m.id} x={m.x} y={m.z-10} textAnchor="middle" fontSize="9.5" fill="#fff6d6" stroke="#2d3b36" strokeWidth="0.35">{m.name}</text>)}
   </>}
  </g>;

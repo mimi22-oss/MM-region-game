@@ -13,9 +13,9 @@ export function MyotharWard(){
 }
 
 /** မြို့သာရပ်ကွက် 2D Map Plan Component */
-export function MyotharWardPlan({labels}:{labels:boolean}){
+export function MyotharWardPlan({labels,onSelectLocation}:{labels:boolean;onSelectLocation?:(id:string)=>void}){
  return <g id="ward-myothar-plan">
-  <Area5Plan labels={labels}/>
+  <Area5Plan labels={labels} onSelectLocation={onSelectLocation}/>
  </g>;
 }
 

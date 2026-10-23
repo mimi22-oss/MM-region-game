@@ -1,4 +1,4 @@
-import { area5, farmhouse } from '../../../data/wards/myothar/area5';
+import { area5, farmhouse, toWorld } from '../../../data/wards/myothar/area5';
 import { House, FARMHOUSE_NAME, houseFenceBounds, houseVisualRotation } from '../../House';
 import { Farmhouse } from '../../Farmhouse';
 import { MainRoad } from '../../MainRoad';
@@ -34,9 +34,11 @@ export function Area5(){
 }
 
 /** မြို့သာရပ်ကွက် · နယ်မြေ (၅) — 2D Map Plan SVG Component */
-export function Area5Plan({labels}:{labels:boolean}){
+export function Area5Plan({labels,onSelectLocation}:{labels:boolean;onSelectLocation?:(id:string)=>void}){
+ const areaLabelPos=toWorld(-45,195);
  return <g id="myothar-area-5-plan">
   <WesternLandscapePlan/>
+  <g className={labels?"map-region-clickable":undefined} onClick={labels&&onSelectLocation?e=>{e.stopPropagation();onSelectLocation('myothar-area-5');}:undefined}>
   {area5.fields.map((f,i)=><rect key={`f${i}`} x={f.x-f.width/2} y={f.z-f.depth/2} width={f.width} height={f.depth} fill={f.color} transform={`rotate(${-f.rotation*180/Math.PI} ${f.x} ${f.z})`}/>)}
   {area5.roads.map(r=><rect key={r.id} x={r.x-r.width/2} y={r.z-r.depth/2} width={r.width} height={r.depth} fill={r.main?'#657371':'#d4bd98'} transform={`rotate(${-r.rotation*180/Math.PI} ${r.x} ${r.z})`}/>)}
   <g transform={`translate(${area5.openGround.x} ${area5.openGround.z}) rotate(${-area5.openGround.rotation*180/Math.PI})`}>
@@ -104,5 +106,7 @@ export function Area5Plan({labels}:{labels:boolean}){
   {area5.trees.map(t=><circle key={t.id} cx={t.x} cy={t.z} r="5.8" fill="#365a42"/>)}
   {area5.largeTrees.map(t=><circle key={t.id} cx={t.x} cy={t.z} r="6.5" fill="#486e40" stroke="#739451" strokeWidth="0.6"/>)}
   <text x="55" y="-90" fontSize="15" fill="#fff">AH1</text>
+  {labels&&<text x={areaLabelPos.x} y={areaLabelPos.z} textAnchor="middle" fontSize="14" fill="#fff9dc" stroke="#173d35" strokeWidth="0.45">မြို့သာ · {area5.name} ↗</text>}
+  </g>
  </g>;
 }

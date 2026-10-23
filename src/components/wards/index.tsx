@@ -12,9 +12,9 @@ export function KalayWards(){
 }
 
 /** ကလေးမြို့ရှိ ရပ်ကွက်များ၏ 2D Map Plan Component */
-export function KalayWardsPlan({labels}:{labels:boolean}){
+export function KalayWardsPlan({labels,onSelectLocation}:{labels:boolean;onSelectLocation?:(id:string)=>void}){
  return <g id="kalay-wards-plan">
-  <MyotharWardPlan labels={labels}/>
+  <MyotharWardPlan labels={labels} onSelectLocation={onSelectLocation}/>
  </g>;
 }
 

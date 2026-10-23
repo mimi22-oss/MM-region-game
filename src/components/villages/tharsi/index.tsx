@@ -30,10 +30,10 @@ export function TharSiVillage(){
 }
 
 /** သာစည်ရွာ (Thar Si Village) — 2D Map Plan SVG Component */
-export function TharSiVillagePlan({labels}:{labels:boolean}){
+export function TharSiVillagePlan({labels,onSelectLocation}:{labels:boolean;onSelectLocation?:(id:string)=>void}){
  const wc=connectingCanal;
  const c=tharSiCanal;
- return <g id="village-tharsi-plan">
+ return <g id="village-tharsi-plan" className={labels?"map-region-clickable":undefined} onClick={labels&&onSelectLocation?e=>{e.stopPropagation();onSelectLocation('tharsi');}:undefined}>
   {tharSiVillage.separationFields.map(f=><rect key={f.id} x={f.x-f.width/2} y={f.z-f.depth/2} width={f.width} height={f.depth} fill={f.color} stroke="#c1b57f" strokeWidth="0.9" transform={`rotate(${-f.rotation*180/Math.PI} ${f.x} ${f.z})`}/>)}
   <g transform={`rotate(${-wc.rotation*180/Math.PI})`}>
    <polyline points={wc.points.map(p=>p.join(',')).join(' ')} fill="none" stroke="#4d9395" strokeWidth={wc.depth} strokeLinejoin="round" strokeLinecap="round"/>
@@ -62,6 +62,6 @@ export function TharSiVillagePlan({labels}:{labels:boolean}){
   {tharSiVillage.farmTrees.map(t=><circle key={t.id} cx={t.x} cy={t.z} r="2.4" fill="#547b48"/>)}
   {tharSiVillage.trees.map(t=><circle key={t.id} cx={t.x} cy={t.z} r="5.8" fill="#365a42"/>)}
   {tharSiVillage.largeTrees.map(t=><circle key={t.id} cx={t.x} cy={t.z} r="6.5" fill="#486e40" stroke="#739451" strokeWidth="0.6"/>)}
-  {labels&&<text x={tharSiVillage.labelPos.x} y={tharSiVillage.labelPos.z} textAnchor="middle" fontSize="14" fill="#fff9dc" stroke="#173d35" strokeWidth="0.45">{tharSiVillage.name}</text>}
+  {labels&&<text x={tharSiVillage.labelPos.x} y={tharSiVillage.labelPos.z} textAnchor="middle" fontSize="14" fill="#fff9dc" stroke="#173d35" strokeWidth="0.45">{tharSiVillage.name} ↗</text>}
  </g>;
 }

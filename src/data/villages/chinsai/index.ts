@@ -66,6 +66,25 @@ for (let rowBlock = 0; rowBlock < chinSaiLanes.length - 1; rowBlock++) {
  }
 }
 
+// AH1 အရှေ့ဘက်ခြမ်း — မိန်းလမ်းမကြီး (u = 0) နှင့် အရှေ့ဘက် လယ်ကွင်းများကြားရှိ အိမ်ခြေ ၁ တန်း (u = 24)
+for (let rowBlock = 0; rowBlock < chinSaiLanes.length - 1; rowBlock++) {
+ const baseV = chinSaiLanes[rowBlock];
+ for (const offsetV of [10, 22]) {
+  const v = baseV + offsetV;
+  const i = houses.length;
+  houses.push({
+   id: `chinsai-h${i + 1}`,
+   name: `ချင်းဆိုင် အရှေ့ဘက်အိမ်တန်း · အိမ် ${i + 1}`,
+   ...toWorld(24, v),
+   width: 7.5,
+   depth: 6.5,
+   color: ['#d8c7a3', '#bfa58a', '#a9b9b0', '#c7b299'][i % 4],
+   rotation: angle - Math.PI / 2,
+   roof: ['#849699', '#8b5545', '#a39a85', '#7d6655'][i % 4],
+  });
+ }
+}
+
 // Google Maps ပုံပါ ချင်းဆိုင်ရွာရှိ ဘုန်းကြီးကျောင်းတိုက် ၂ ခု (မင်းကျောင်းကျောင်းတိုက် နှင့် ကမ္ဘာရန်ကင်းကျောင်းတိုက်)
 export const chinSaiMonasteries = [
  {
@@ -237,12 +256,31 @@ const roads: RoadPlot[] = [
   rotation: angle,
   main: false,
  },
+ // AH1 အရှေ့ဘက် အိမ်ခြေ ၁ တန်းအတွက် အရှေ့-အနောက် လမ်းသွယ်များနှင့် အိမ်တန်း-လယ်ကွင်းကြား လမ်းသွယ်
+ ...chinSaiLanes.map((v, i) => ({
+  id: `chinsai-east-ew-lane-${i + 1}`,
+  name: `ချင်းဆိုင် အရှေ့လမ်းသွယ် ${i + 1}`,
+  ...toWorld(22, v),
+  width: 32,
+  depth: 4,
+  rotation: angle,
+  main: false,
+ })),
+ {
+  id: 'chinsai-east-ns-lane',
+  name: 'ချင်းဆိုင် အရှေ့အိမ်တန်းလမ်း',
+  ...toWorld(38, 1134),
+  width: 4,
+  depth: 136,
+  rotation: angle,
+  main: false,
+ },
  // Google Maps ပုံအတိုင်း AH1 အရှေ့ဘက် လယ်ကွင်းများထဲသို့ ခွဲထွက်သွားသော လယ်ကွင်းလမ်း ၂ လမ်း
  {
   id: 'chinsai-east-field-track-1',
   name: 'ချင်းဆိုင် အရှေ့လယ်ကွင်းလမ်း (၁)',
-  ...toWorld(56, 1086),
-  width: 100,
+  ...toWorld(78, 1068),
+  width: 84,
   depth: 3.5,
   rotation: angle,
   main: false,
@@ -275,15 +313,15 @@ const bundedFields: FieldPlot[] = [
  ),
 ];
 
-// Google Maps ပုံအတိုင်း AH1 အရှေ့ဘက်ခြမ်းတစ်လျှောက်ရှိ လယ်ကွင်းများ
-const fields: FieldPlot[] = [955, 995, 1035, 1115, 1155, 1195].flatMap((v, row) =>
- [42, 90, 138, 186].map((u, col) => ({
+// AH1 အရှေ့ဘက် အိမ်ခြေ ၁ တန်း (u = 24) ၏ နောက်ရှိ လယ်ကွင်းများ
+const fields: FieldPlot[] = [955, 995, 1035, 1085, 1120, 1155, 1190].flatMap((v, row) =>
+ [68, 116, 164, 212].map((u, col) => ({
   id: `chinsai-east-field-${row}-${col}`,
   u,
   v,
   ...toWorld(u, v),
   width: 42,
-  depth: 30,
+  depth: 28,
   rotation: angle,
   color: (row + col) % 2 ? '#8ca65c' : '#a6af68',
  }))
