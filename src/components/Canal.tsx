@@ -16,7 +16,7 @@ function Channel({c}:{c:typeof ward.canal}){return <group position={[c.x,0,c.z]}
  })}
  {c.bridges.map(v=><group key={v}><Block z={v} y={0.16} w={c.width+2} h={0.3} d={5} color="#b7ad95"/>{[-1,1].map(s=><Block key={s} z={v+s*2.5} y={0.65} w={c.width+2} h={0.15} d={0.12} color="#d6cfb9"/>)}</group>)}
  </group>}
-function Flow({depth}:{depth:number}){const ref=useRef<Group>(null);useFrame(({clock})=>{if(ref.current)ref.current.position.z=(clock.elapsedTime*1.5)%8});return <group ref={ref}>{Array.from({length:Math.max(1,Math.floor(depth/8)-1)},(_,i)=><mesh key={i} position={[Math.sin(i*2)*0.6,0.17,-depth/2+4+i*8]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[0.7,0.1]}/><meshBasicMaterial color="#a3d2c7" transparent opacity={0.5}/></mesh>)}</group>}
+function Flow({depth}:{depth:number}){const ref=useRef<Group>(null);useFrame(({clock})=>{if(ref.current)ref.current.position.z=(clock.elapsedTime*1.5)%8});return <group ref={ref} userData={{dynamic:true}}>{Array.from({length:Math.max(1,Math.floor(depth/8)-1)},(_,i)=><mesh key={i} position={[Math.sin(i*2)*0.6,0.17,-depth/2+4+i*8]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[0.7,0.1]}/><meshBasicMaterial color="#a3d2c7" transparent opacity={0.5}/></mesh>)}</group>}
 export function EastWestCanal({c}:{c:EastWestCanalPlot}){
  const bridgeZ=-c.u;
  const halfGap=7;
@@ -51,7 +51,7 @@ export function PolylineCanal({p}:{p:{depth:number;rotation:number;points:number
   <mesh position={[0,0.121,0]} rotation={[-Math.PI/2,0,0]}><circleGeometry args={[(p.depth+1)/2,24]}/><meshStandardMaterial color="#796e52"/></mesh>
   <mesh position={[0,0.151,0]} rotation={[-Math.PI/2,0,0]}><circleGeometry args={[p.depth/2,24]}/><meshStandardMaterial color="#4d9395" metalness={0.25} roughness={0.35}/></mesh>
  </group>)}
- <group ref={flow}>{Array.from({length:Math.floor(total/8)},(_,i)=><mesh key={i} rotation={[-Math.PI/2,0,0]}><circleGeometry args={[0.16,8]}/><meshBasicMaterial color="#a3d2c7" transparent opacity={0.65}/></mesh>)}</group>
+ <group ref={flow} userData={{dynamic:true}}>{Array.from({length:Math.floor(total/8)},(_,i)=><mesh key={i} rotation={[-Math.PI/2,0,0]}><circleGeometry args={[0.16,8]}/><meshBasicMaterial color="#a3d2c7" transparent opacity={0.65}/></mesh>)}</group>
  {p.bridges.map((b,i)=><Block key={i} x={b.u} z={b.v} y={0.32} w={b.width} h={0.3} d={b.depth} color={i===0?'#697574':'#b7ad95'}/>)}
  </group>;
 }

@@ -169,3 +169,12 @@ Examples: `<House h={houseData}/>`; `<Lane r={roadData}/>`; `<Tree t={treeData} 
 ## Western fields and mountain range
 
 Five bunded paddy plots extend west behind the rear home beyond the farmhouse. Five northern and five southern plots flank them (15 new plots). `ward.westernFields` defines placement; `Field.tsx` renders them. `Mountains.tsx` adds two overlapping western ridges, with peaks approximately 145-246 m tall, and the matching plan symbols. The ground and walkable world expand to 1600 m square; WARD PLAN uses the same bounds. Mountain footprints block walking. Existing homes and canal routes retain their positions.
+
+
+## Village rendering performance
+
+- `StaticBatch.tsx` / `game/staticBatch.ts` combine opaque static primitives into instanced batches within 128 m tiles. Box dimensions become instance transforms, preserving existing models and colors. Transparent meshes and animated canal flow stay separate. Cleanup restores source meshes for React remounts.
+- Small static details are hidden beyond 180 m from their tile bounds; nearby house details and the main building shapes remain visible. Village data and locations are unchanged.
+- `game/spatialIndex.ts` indexes buildings and tree trunks in 64 m cells. Walking checks only nearby candidates instead of rebuilding all village arrays on every substep.
+- The static town and plan layers are memoized. Stationary player updates do not redraw the UI. Pixel ratio is capped at 1.25 and the shadow map uses 1024 pixels.
+- Validation: TypeScript passes, 25 existing collision/layout tests and 2 batching/spatial tests pass. Browser FPS has not been measured. Production build passed on 2026-10-23, and dist/ plus the distribution archive were refreshed.

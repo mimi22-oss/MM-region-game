@@ -30,6 +30,7 @@ export type TreePlot = {
 
 export type FieldPlot = {
  id?: string;
+ name?: string;
  row?: number;
  u?: number;
  v?: number;

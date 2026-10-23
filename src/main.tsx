@@ -1,13 +1,15 @@
-import React, { Component, useEffect, useCallback, useState, type ReactNode } from 'react';
+import React, { Component, memo, useEffect, useCallback, useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Canvas } from '@react-three/fiber';
 import { Town } from './components/Town';
-import { KalayWardsPlan } from './components/wards';
-import { KalayVillagesPlan } from './components/villages';
+import { KalayWardsPlan as WardsPlan } from './components/wards';
+import { KalayVillagesPlan as VillagesPlan } from './components/villages';
 import { Player, MIN_ZOOM, MAX_ZOOM, type TeleportTarget } from './components/Player';
 import { ward, toWorld } from './data/ward';
 import './style.css';
 
+const KalayWardsPlan=memo(WardsPlan);
+const KalayVillagesPlan=memo(VillagesPlan);
 const MAP_DESTINATIONS = [
  { id: 'myothar-area-5', label: 'မြို့သာရပ်ကွက် · နယ်မြေ (၅)', title: ward.name, subtitle: `AH1 · Myothar · ${ward.currentArea} · Kalay`, ...ward.spawn, yaw: 0, pitch: -0.14, distance: 8 },
  { id: 'tharsi', label: 'သာစည်ရွာ', title: 'သာစည်ရွာ · ကလေးမြို့နယ်', subtitle: 'AH1 · Thar Si Village · Kalay', ...toWorld(0, 796), yaw: Math.PI / 4, pitch: -0.18, distance: 12 },
@@ -16,6 +18,8 @@ const MAP_DESTINATIONS = [
  { id: 'htomar', label: 'ထိုမာကျေးရွာ', title: 'ထိုမာကျေးရွာ · ကလေးမြို့နယ်', subtitle: 'East of AH1 · Htomar Village · Kalay', ...toWorld(256, 1927), yaw: -Math.PI * 3 / 4, pitch: -0.18, distance: 14 },
  { id: 'tharyargone', label: 'သာယာကုန်းကျေးရွာ', title: 'သာယာကုန်းကျေးရွာ · ကလေးမြို့နယ်', subtitle: 'AH1 · Thar Yar Gone Village · St. Assumption Church · Kalay', ...toWorld(0, 2700), yaw: Math.PI / 4, pitch: -0.18, distance: 12 },
  { id: 'htaukkyant', label: 'ထောက်ကြန့်ကျေးရွာ', title: 'ထောက်ကြန့်ကျေးရွာ · ကလေးမြို့နယ်', subtitle: 'AH1 · Htauk Kyant Village · Pagoda · Playground · High School · Kalay', ...toWorld(0, 3300), yaw: Math.PI / 4, pitch: -0.18, distance: 14 },
+ { id: 'kyarinn', label: 'ကြာအင်းရွာ', title: 'ကြာအင်းရွာ · ကလေးမြို့နယ်', subtitle: 'AH1 · Kyar Inn Village · Middle School · Churches · Kalay', ...toWorld(0, 3850), yaw: Math.PI / 4, pitch: -0.18, distance: 14 },
+ { id: 'kyarinn-lake', label: 'ကြာအင်းရေကန်', title: 'ကြာအင်းရေကန် · ကလေးမြို့နယ်', subtitle: 'Kyar Inn Lake · Northwest of Kyar Inn · Ponds & Water Pavilion', ...toWorld(-340, 3690), yaw: Math.PI / 4, pitch: -0.22, distance: 16 },
 ];
 class SceneError extends Component<{children:ReactNode},{failed:boolean}>{
  state={failed:false};static getDerivedStateFromError(){return {failed:true}}
@@ -54,7 +58,7 @@ function App(){
   document.addEventListener("keydown",close);
   return ()=>document.removeEventListener("keydown",close);
  },[]);
- const position=useCallback((x:number,z:number)=>setPos({x,z}),[]);
+ const position=useCallback((x:number,z:number)=>setPos(previous=>previous.x===x&&previous.z===z?previous:{x,z}),[]);
  const handleLock=useCallback((isLocked:boolean)=>{
   setLocked(isLocked);
   setSceneActive(isLocked);
@@ -78,7 +82,7 @@ function App(){
  };
  const hideHud=locked||sceneActive;
  return <main>
- <div className="scene-wrap" onClick={()=>{if(!mapOpen){setSceneActive(true);setSettingsOpen(false);}}}><SceneError><Canvas shadows camera={{position:[0,5,33],fov:65,near:0.1,far:9000}} dpr={[1,1.75]}><Town/><Player mapOpen={mapOpen} topDown={topDown} zoom={zoom} teleportTarget={teleportTarget} onMode={setFirst} onTopDown={setTopDown} onZoom={setZoom} onLock={handleLock} onPosition={position}/></Canvas></SceneError></div>
+ <div className="scene-wrap" onClick={()=>{if(!mapOpen){setSceneActive(true);setSettingsOpen(false);}}}><SceneError><Canvas shadows camera={{position:[0,5,33],fov:65,near:0.1,far:9000}} dpr={[1,1.25]}><Town/><Player mapOpen={mapOpen} topDown={topDown} zoom={zoom} teleportTarget={teleportTarget} onMode={setFirst} onTopDown={setTopDown} onZoom={setZoom} onLock={handleLock} onPosition={position}/></Canvas></SceneError></div>
  <header><span className="eyebrow">EXPLORE MYANMAR / 01</span><h1>{activeDest.title}</h1><p>{activeDest.subtitle}</p></header>
  <div className="settings-wrap">
   <button type="button" className={settingsOpen?"settings-btn settings-btn-active":"settings-btn"} aria-label="အသုံးပြုနည်း လမ်းညွှန်နှင့် ဆက်တင်" aria-expanded={settingsOpen} title="အသုံးပြုနည်း လမ်းညွှန် (Settings & Guide)" onClick={()=>{if(document.pointerLockElement)document.exitPointerLock();setSettingsOpen(v=>!v);}}>⚙</button>

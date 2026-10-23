@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { canStand,move } from '../src/game/collision.ts';
-import { ward,toWorld,pitchLanes,oppositeLanes,residentialRows,tharSiVillage,chinSaiVillage,zingalinVillage,htomarVillage,htomarFiveColumnFields,htomarRoadsideShops,tharYarGoneVillage,htaukKyantVillage,allHtaukKyantPonds,htaukKyantLandmarks } from '../src/data/ward.ts';
+import { ward,toWorld,pitchLanes,oppositeLanes,residentialRows,tharSiVillage,chinSaiVillage,zingalinVillage,htomarVillage,htomarFiveColumnFields,htomarRoadsideShops,tharYarGoneVillage,htaukKyantVillage,allHtaukKyantPonds,htaukKyantLandmarks,kyarInnVillage,kyarInnTaphiChaung,kyarInnLandmarks,kyarInnLandmarkBuildings,kyarInnLakePonds,kyarInnLakeIsland,kyarInnLakeStructures } from '../src/data/ward.ts';
 test('Myothar inventory and safe AH1 spawn',()=>{assert.equal(ward.houses.length,98);assert.equal(ward.roads.length,18);assert.equal(ward.fields.length,2);assert.ok(canStand(ward.spawn.x,ward.spawn.z));for(let v=-120;v<=120;v+=2){const p=toWorld(0,v);assert.ok(canStand(p.x,p.z),'AH1 is walkable')}});
 test('every rotated house and trunk blocks walking',()=>{for(const h of ward.houses)assert.equal(canStand(h.x,h.z),false);for(const t of ward.trees)assert.equal(canStand(t.x,t.z),false);assert.equal(canStand(ward.size/2,0),false);assert.equal(canStand(NaN,0),false)});
 test('large movement cannot tunnel through rotated building',()=>{const h=ward.houses[0];const start=toWorld(-66,-110);assert.ok(canStand(start.x,start.z));move(start,h.x-start.x,h.z-start.z);assert.ok(canStand(start.x,start.z));assert.ok(Math.hypot(start.x-h.x,start.z-h.z)>4)});
@@ -341,13 +341,18 @@ test('Htauk Kyant village sits between Thar Yar Gone and Weipula with Pagoda & F
     assert.equal(canStand(h.x, h.z), false, 'Htauk Kyant house blocks walking');
   }
 
-  // 3. Football playground sits between the main road (AH1) and the Pagoda
+  // 3. Football playground, small paddy field, and Pagoda arrangement
   const pagoda = htaukKyantVillage.houses.find(h => h.id === 'hk-landmark-pagoda-base')!;
+  const pagodaSw = htaukKyantVillage.houses.find(h => h.id === 'hk-landmark-pagoda-sw')!;
   const playground = htaukKyantLandmarks.find(m => m.id === 'hk-football-playground')!;
-  assert.ok(pagoda, 'Htauk Kyant Pagoda exists');
+  const smallField = htaukKyantVillage.fields.find(f => f.id === 'htaukkyant-field-between-pitch-and-pagoda')!;
+  assert.ok(pagoda && pagodaSw, 'Htauk Kyant Pagodas exist (East & Northeast of building)');
   assert.ok(playground, 'Football playground exists');
+  assert.ok(smallField, 'Small paddy field exists between playground and Pagoda');
   assert.ok(localU(playground) > 0, 'Football playground is east of main road');
-  assert.ok(localU(pagoda) > localU(playground), 'Football playground sits between main road and Pagoda');
+  assert.ok(localU(smallField) > localU(playground), 'Small field sits east of football playground');
+  assert.ok(localU(pagoda) > localU(smallField), 'Pagoda sits east of small field');
+  assert.ok(canStand(smallField.x, smallField.z), 'small paddy field is walkable');
 
   const eastHouses = htaukKyantVillage.houses.filter(h => localU(h) > 0);
   assert.ok(eastHouses.length > 50, 'residential and landmark buildings east of AH1');
@@ -359,10 +364,10 @@ test('Htauk Kyant village sits between Thar Yar Gone and Weipula with Pagoda & F
   assert.ok(localU(schoolMain) < 0, 'High school is west of main road');
   assert.ok(Math.abs(localV(schoolMain) - localV(pagoda)) < 80, 'High school is opposite Pagoda across the road');
 
-  // 5. Lake and 5 ponds on northwest edge
+  // 5. Lake and 5 ponds on northeast paddy border
   assert.equal(allHtaukKyantPonds.length, 6, 'large lake and 5 rectangular ponds');
   for (const p of allHtaukKyantPonds) {
-    assert.ok(p.u < -150, 'lake/pond is on the western margin');
+    assert.ok(p.u > 180, 'lake/pond is on the northeastern paddy field margin');
     assert.equal(canStand(p.x, p.z), false, 'pond water blocks walking');
   }
 
@@ -373,4 +378,99 @@ test('Htauk Kyant village sits between Thar Yar Gone and Weipula with Pagoda & F
   for (const r of htaukKyantVillage.roads) {
     assert.ok(canStand(r.x, r.z), `${r.id} center is walkable`);
   }
+});
+
+test('Kyar Inn village sits between Htauk Kyant and Weipula with Taphi Chaung bridge, Kyarinn middle school on east, and 4 churches', () => {
+  assert.equal(kyarInnVillage.name, 'ကြာအင်းရွာ');
+  assert.equal(kyarInnVillage.separationFields.length, 20);
+  const localV = (p: { x: number; z: number }) => (p.x + p.z) / Math.sqrt(2);
+  const localU = (p: { x: number; z: number }) => (p.x - p.z) / Math.sqrt(2);
+
+  const htaukKyantSouth = Math.max(...htaukKyantVillage.houses.map(localV));
+  const villageNorth = Math.min(...kyarInnVillage.houses.map(localV));
+  const villageSouth = Math.max(...kyarInnVillage.houses.map(localV));
+  const weipulaNorth = Math.min(...ward.weipula.peaks.filter(m => Math.abs(m.u) < 400).map(m => m.v - m.radius));
+
+  // 1. Separation fields between Htauk Kyant and Kyar Inn
+  for (const f of kyarInnVillage.separationFields) {
+    assert.ok(localV(f) - f.depth / 2 > htaukKyantSouth, 'separation paddy is south of Htauk Kyant');
+    assert.ok(localV(f) + f.depth / 2 < villageNorth, 'separation paddy is north of Kyar Inn');
+    assert.ok(canStand(f.x, f.z), 'separation paddy is walkable');
+  }
+
+  // 2. Taphi Chaung stream and bridge
+  const taphiWater = toWorld(-120, kyarInnTaphiChaung.v);
+  assert.equal(canStand(taphiWater.x, taphiWater.z), false, 'Taphi Chaung stream water blocks walking');
+  const taphiBridge = toWorld(0, kyarInnTaphiChaung.v);
+  assert.ok(canStand(taphiBridge.x, taphiBridge.z), 'AH1 bridge over Taphi Chaung is walkable');
+
+  // 3. Geographic positioning between Htauk Kyant and Weipula
+  assert.ok(villageNorth > htaukKyantSouth, 'Kyar Inn is south of Htauk Kyant');
+  assert.ok(villageSouth < weipulaNorth, 'Kyar Inn is north of Weipula mountain');
+  for (const h of kyarInnVillage.houses) {
+    assert.equal(canStand(h.x, h.z), false, 'Kyar Inn house blocks walking');
+  }
+
+  // 4. Kyarinn Middle School on East side (u > 0)
+  const schoolHall1 = kyarInnVillage.houses.find(h => h.id === 'ki-school-north-hall-1')!;
+  const schoolHall2 = kyarInnVillage.houses.find(h => h.id === 'ki-school-north-hall-2')!;
+  const schoolOffice = kyarInnVillage.houses.find(h => h.id === 'ki-school-office')!;
+  const schoolEastHall = kyarInnVillage.houses.find(h => h.id === 'ki-school-east-hall')!;
+  const schoolEastWing = kyarInnVillage.houses.find(h => h.id === 'ki-school-east-wing')!;
+  const schoolField = kyarInnLandmarks.find(m => m.id === 'ki-school-field')!;
+
+  assert.ok(schoolHall1 && schoolHall2 && schoolOffice && schoolEastHall && schoolEastWing, 'Middle school buildings exist');
+  assert.ok(schoolField, 'Middle school sports ground exists');
+  assert.ok(localU(schoolHall1) > 0, 'School North Hall 1 is east of AH1');
+  assert.ok(localU(schoolHall2) > 0, 'School North Hall 2 is east of AH1');
+  assert.ok(localU(schoolEastHall) > 0, 'School East Hall is east of AH1');
+  assert.ok(localU(schoolField) > 0, 'School ground is east of AH1');
+  assert.ok(canStand(schoolField.x, schoolField.z), 'school sports ground is walkable');
+
+  // 5. Churches (Baptist, IBC, CJC on West side; St. Peter on East side)
+  const churchBaptist = kyarInnVillage.houses.find(h => h.id === 'ki-church-baptist')!;
+  const churchIbc = kyarInnVillage.houses.find(h => h.id === 'ki-church-ibc')!;
+  const churchCjc = kyarInnVillage.houses.find(h => h.id === 'ki-church-cjc')!;
+  const churchStPeter = kyarInnVillage.houses.find(h => h.id === 'ki-church-st-peter')!;
+
+  assert.ok(churchBaptist, 'Kyarinn Baptist Church exists');
+  assert.ok(churchIbc, 'IBC Kyarinn Church exists');
+  assert.ok(churchCjc, 'CJC Church Kyar Inn exists');
+  assert.ok(churchStPeter, 'St. Peter Catholic Church exists');
+
+  assert.ok(localU(churchBaptist) < 0, 'Baptist church is west of AH1');
+  assert.ok(localU(churchIbc) < 0, 'IBC church is west of AH1');
+  assert.ok(localU(churchCjc) < 0, 'CJC church is west of AH1');
+  assert.ok(localU(churchStPeter) > 0, 'St. Peter Catholic church is east of AH1');
+
+  // Relative north-south placement of churches
+  assert.ok(localV(churchBaptist) < localV(churchIbc), 'Baptist church is north of IBC');
+  assert.ok(localV(churchStPeter) > localV(schoolHall1), 'St. Peter church is south of middle school halls');
+
+  // 6. Trees and roads
+  for (const t of [...kyarInnVillage.trees, ...kyarInnVillage.largeTrees, ...kyarInnVillage.farmTrees]) {
+    assert.equal(canStand(t.x, t.z), false, 'Kyar Inn tree blocks walking');
+  }
+  for (const r of kyarInnVillage.roads) {
+    assert.ok(canStand(r.x, r.z), `${r.id} center is walkable`);
+  }
+
+  // 7. Kyar Inn Lake (ကြာအင်းရေကန်) at northwest of Kyar Inn village
+  assert.equal(kyarInnVillage.ponds?.length, 17, '17 ponds in Kyar Inn Lake complex');
+  for (const p of kyarInnVillage.ponds!) {
+    assert.ok(localU(p) < -200, 'pond is to the west of village residential blocks');
+    assert.ok(localV(p) <= 3800, 'pond is in the northern/northwest half of the village zone');
+    assert.equal(canStand(p.x, p.z), false, 'pond water blocks walking');
+  }
+
+  // Main Kyar Inn Lake, Island, and Water Pavilion
+  const mainLake = kyarInnVillage.ponds!.find(p => p.id === 'ki-pond-main-lake')!;
+  const islandLake = kyarInnVillage.ponds!.find(p => p.id === 'ki-pond-island-lake')!;
+  const pavilion = kyarInnVillage.houses.find(h => h.id === 'ki-lake-pavilion')!;
+
+  assert.ok(mainLake, 'Main Kyar Inn Lake exists');
+  assert.ok(islandLake, 'Island Lake exists');
+  assert.ok(kyarInnLakeIsland, 'Kyar Inn Lake Island exists');
+  assert.ok(pavilion, 'Water pavilion on stilts exists');
+  assert.equal(canStand(pavilion.x, pavilion.z), false, 'water pavilion blocks collision');
 });

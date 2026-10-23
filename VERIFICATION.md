@@ -1,3 +1,17 @@
+# Latest performance change verification
+
+- TypeScript (`npx.cmd tsc -b`): PASS.
+- Existing collision and layout tests: PASS, 25 tests.
+- New performance tests: PASS, 2 tests. They check batching transforms, ray hits, animated/transparent exclusions, cleanup/remounts, and spatial-index boundary candidates.
+- All 1,293 houses and 464 trees remain in the data.
+- Browser appearance and FPS measurements: not performed.
+- Production build rechecked on 2026-10-23: PASS (TypeScript + Vite).
+- dist/ and Myanmar-Town-Prototype.zip refreshed with the performance update.
+- Vite reports a non-blocking bundle-size warning (approximately 1.25 MB JavaScript, 341 kB gzip).
+
+---
+Previous verification (before this change):
+
 # Verification
 
 - Component extraction: House, Farmhouse, MainRoad, Lane, Tree, Canal and Field are wired into the scene; shared primitives extracted.
