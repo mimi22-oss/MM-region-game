@@ -1,4 +1,4 @@
-﻿# မြို့သာရပ်ကွက် · ကလေးမြို့ — 3D Prototype
+# မြို့သာရပ်ကွက် · ကလေးမြို့ — 3D Prototype
 
 ပေးထားသော Google Maps screenshots ကို မျက်မြင်မှီငြမ်းထားသည့် React + TypeScript + React Three Fiber prototype ဖြစ်ပါတယ်။ AH1 လမ်းမကြီး၊ လမ်းသွယ်များ၊ အိမ် ၂၁ လုံး၊ လမ်းမဘေး သစ်ပင် ၆၄ ပင်၊ ဂိုဒေါင် ၈ လုံး၊ ဘောလုံးကွင်းနှင့် လယ်ကွင်း ၂ ကွက် ပါဝင်ပါတယ်။ မြေပြင်သည် 700 × 700 m၊ မြောက်ဘက်သည် -Z ဖြစ်ပါတယ်။ အိမ်နေရာ၊ အရွယ်၊ အမြင့်နှင့် လမ်းအကွာအဝေးများကို ခန့်မှန်းထားပြီး မြေတိုင်းမြေပုံ သို့မဟုတ် တိကျသော GIS reconstruction မဟုတ်ပါ။ External map API သို့မဟုတ် API key မလိုပါ။
 
@@ -10,6 +10,12 @@ MainRoad.tsx — မိန်းလမ်းမကြီး
 Tree.tsx — သစ်ပင်များ
 Canal.tsx — ရေမြောင်း၊ တံတားနဲ့ရေစီးလှုပ်ရှားမှု
 Field.tsx — လယ်ကွင်းများ
+wards/myothar/Area5.tsx — မြို့သာရပ်ကွက် · နယ်မြေ (၅) 3D နှင့် 2D မြေပုံ component
+wards/myothar/Warehouses.tsx — နယ်မြေ (၅) ဂိုဒေါင် ၈ လုံး
+wards/myothar/FootballPitch.tsx — နယ်မြေ (၅) ဘောလုံးကွင်း
+wards/myothar/index.tsx — မြို့သာရပ်ကွက် (နယ်မြေများ စုစည်းမှု) component
+wards/index.tsx — ကလေးမြို့ရှိ ရပ်ကွက်ပေါင်း ၂၀ ကျော်ကို ရပ်ကွက်အလိုက် စုစည်းသည့် component
+villages/index.tsx — ကလေးမြို့နယ်ရှိ ကျေးရွာများ (Villages) ကို ရွာအလိုက် စုစည်းသည့် component
 
 ## Run
 
