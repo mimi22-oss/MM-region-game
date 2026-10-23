@@ -1,3 +1,4 @@
+import { mobileQuality } from '../game/sceneBudget';
 import { angle, ward, type House as HouseData } from '../data/ward';
 import { Box } from './Primitives';
 export const FARMHOUSE_NAME='á€œá€™á€ºá€¸á€žá€½á€šá€º á‚ Â· á€…á€­á€¯á€€á€ºá€á€„á€ºá€¸á€¡á€­á€™á€º';
@@ -12,6 +13,7 @@ export function houseFenceBounds(h:HouseData){
  return {sideHalf,backHalf,frontHalf};
 }
 function WireMeshSegment({length}:{length:number}){
+ if(mobileQuality)return <group><Box position={[0,1.45,0]} size={[length,.06,.06]} color="#68767a"/>{[-1,1].map(side=><Box key={side} position={[side*length/2,.78,0]} size={[.1,1.56,.1]} color="#566366"/>)}</group>;
  const meshCount=Math.max(6,Math.round(length/1.2));
  return <group>
   <Box position={[0,1.45,0]} size={[length,0.05,0.05]} color="#68767a"/>
@@ -32,6 +34,7 @@ function BlueSheetSection({startX,endX}:{startX:number;endX:number}){
  const length=endX-startX;
  if(length<=0.2)return null;
  const centerX=(startX+endX)/2;
+ if(mobileQuality)return <Box position={[centerX,.915,0]} size={[length,1.83,.06]} color="#2563a6"/>;
  const ribCount=Math.max(2,Math.round(length/0.85));
  return <group>
   <mesh position={[centerX,0.915,0]} castShadow receiveShadow>

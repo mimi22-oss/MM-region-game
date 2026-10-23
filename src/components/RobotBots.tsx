@@ -1,3 +1,4 @@
+import { mobileQuality } from '../game/sceneBudget';
 import { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group } from 'three';
@@ -33,12 +34,17 @@ function Bot({graph,start,index}:{graph:RouteNode[];start:number;index:number}){
  </group>;
 }
 type BotDefinition={graph:RouteNode[];start:number;index:number;key:string};
-let cachedPatrols:BotDefinition[]|undefined;
-function patrols(){
- // The static road network is computed once, including React StrictMode remounts.
- return cachedPatrols??=regions.flatMap((region,r)=>{const graph=buildRoadGraph(region.roads,clear);const starts=graph.map((n,i)=>n.links.length&&n.lane?i:-1).filter(i=>i>=0);const count=Math.min(8,starts.length);return Array.from({length:count},(_,i)=>({graph,start:starts[Math.floor(i*starts.length/count)],index:r*8+i,key:`${region.id}-${i}`}))});
+const cachedPatrols=new Map<string,BotDefinition[]>();
+function patrols(id:string){
+ const existing=cachedPatrols.get(id);if(existing)return existing;
+ const r=regions.findIndex(r=>r.id===id);if(r<0)return [];
+ const region=regions[r],graph=buildRoadGraph(region.roads,clear),starts=graph.map((n,i)=>n.links.length&&n.lane?i:-1).filter(i=>i>=0);
+ const count=Math.min(mobileQuality?3:8,starts.length);
+ const bots=Array.from({length:count},(_,i)=>({graph,start:starts[Math.floor(i*starts.length/count)],index:r*8+i,key:`${region.id}-${i}`}));
+ if(cachedPatrols.size>=2)cachedPatrols.delete(cachedPatrols.keys().next().value!);
+ cachedPatrols.set(id,bots);return bots;
 }
-export function RobotBots(){
- const bots=patrols();
+export function RobotBots({activeRegions=[]}:{activeRegions?:string[]}){
+ const bots=useMemo(()=>activeRegions.flatMap(patrols),[activeRegions]);
  return <group name="autonomous-village-robots">{bots.map(b=><Bot key={b.key} graph={b.graph} start={b.start} index={b.index}/>)}</group>;
 }

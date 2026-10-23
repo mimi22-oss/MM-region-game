@@ -26,7 +26,6 @@ export function Area5(){
   <Monastery/>
   <RiceMill/>
   <Fields/>
-  <Mountains/>
   <MainRoad/>
   <Lanes/>
   {area5.houses.filter(h=>h.id!==farmhouse.id).map(h=><House key={h.id} h={h}/>)}

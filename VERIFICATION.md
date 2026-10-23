@@ -89,3 +89,10 @@ Previous verification (before this change):
 - Input/performance suite: 11/11 passed. Added parallel two-finger drag tests on either half and across halves, unchanged zoom under parallel drag, combined pinch/pan, and release/reset suppression.
 - TypeScript/Vite production build passed; existing bundle size warning remains.
 - Desktop and touch panning share the same bounds and collision-aware placement implementation. Physical mobile gesture testing has not been performed.
+
+### Mobile memory / scene loading update
+- Input/performance regression suite: 12/12 passed. A synthetic 1,000-region selection test verifies one/two detailed-region caps, 16/32 overview caps, aerial unloading, distant eviction and boundary hysteresis.
+- TypeScript + Vite production build passed with separately emitted region/plan chunks. The main vendor/data bundle still exceeds Vite's 500 KB advisory threshold.
+- Runtime browser inspection was attempted, but the browser tool failed to initialize its kernel assets. No real-device FPS, peak memory, or crash reproduction measurements are claimed. The cause of the reported mobile browser page failure remains unconfirmed.
+- Full collision suite was not rerun; the previously recorded lake-access road issue is unchanged.
+- Manual follow-up: load on a phone, pan through each village, switch day/night, zoom to aerial view, select a destination in Ward Plan, return to walking; monitor peak memory and GPU resource counts over repeated trips.

@@ -1,10 +1,9 @@
-import { RobotBots } from './RobotBots';
+import { StreamedWorld } from './StreamedWorld';
+import { Mountains } from './Mountains';
 import { memo } from 'react';
 import { StaticBatch } from './StaticBatch';
 import { ward } from '../data/ward';
 import { Box } from './Primitives';
-import { KalayWards } from './wards';
-import { KalayVillages } from './villages';
 import { NightEnvironment } from './NightEnvironment';
 
 export const Town = memo(function Town({ night = false }: { night?: boolean }) {
@@ -34,7 +33,7 @@ export const Town = memo(function Town({ night = false }: { night?: boolean }) {
 					{/* ညဘက် မြေပြင်အောက်ခံအရောင် (Dark Night Ground) */}
 					<Box position={[0, -0.3, 0]} size={[ward.size, 0.6, ward.size]} color="#1a271f" />
 					{/* ညဘက် ကြယ်တာရာများ၊ လမင်းကြီးနှင့် မီးရောင်စုံများ */}
-					<NightEnvironment />
+					<StaticBatch><NightEnvironment /></StaticBatch>
 				</>
 			) : (
 				<>
@@ -58,11 +57,8 @@ export const Town = memo(function Town({ night = false }: { night?: boolean }) {
 				</>
 			)}
 
-			<StaticBatch>
-				<KalayWards />
-				<KalayVillages />
-			</StaticBatch>
-			<RobotBots />
+			<StreamedWorld />
+            <Mountains />
 
 			{/* A low visual border; collision follows the ward boundary. */}
 			{[-1, 1].map(s => (

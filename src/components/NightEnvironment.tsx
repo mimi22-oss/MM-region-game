@@ -1,3 +1,4 @@
+import { mobileQuality } from '../game/sceneBudget';
 import { useMemo } from 'react';
 import { ward, toWorld, kalayVillages } from '../data/ward';
 
@@ -9,7 +10,7 @@ function NightStars() {
 	const stars = useMemo(() => {
 		const arr: { x: number; y: number; z: number; size: number; color: string }[] = [];
 		const colors = ['#ffffff', '#e3f0ff', '#ffeec7', '#d0e8ff', '#fffde8'];
-		for (let i = 0; i < 350; i++) {
+		for (let i = 0; i < (mobileQuality?80:350); i++) {
 			const angle = (i * 2.399963) % (Math.PI * 2);
 			const dist = 600 + ((i * 37) % 3600);
 			const x = Math.cos(angle) * dist;
@@ -160,6 +161,7 @@ export function NightEnvironment() {
 		// နမူနာ အိမ်အချို့တွင် မီးလင်းနေစေခြင်း
 		return allHomes
 			.filter((_, idx) => idx % 3 === 0)
+			.slice(0,mobileQuality?80:10000)
 			.map(h => {
 				const cos = Math.cos(h.rotation);
 				const sin = Math.sin(h.rotation);
@@ -193,7 +195,7 @@ export function NightEnvironment() {
 			{/* ၁။ မဟာဝေပုလ္လတောင်တော် ရွှေရောင်ညမီးရောင် (Golden Mountaintop Beacon) */}
 			{mahaWeipulaPeak && (
 				<group position={[mahaWeipulaPeak.x, 905, mahaWeipulaPeak.z]}>
-					<pointLight color="#ffd055" intensity={3.5} distance={180} decay={1.8} />
+					{!mobileQuality&&<pointLight color="#ffd055" intensity={3.5} distance={180} decay={1.8} />}
 					<mesh position={[0, 4, 0]}>
 						<sphereGeometry args={[5, 8, 8]} />
 						<meshBasicMaterial color="#ffe880" />
@@ -204,7 +206,7 @@ export function NightEnvironment() {
 			{/* ၂။ ထောက်ကြန့် စေတီတော်မြတ်ကြီးများ ရွှေရောင်မီးရောင် (Golden Pagoda Illumination) */}
 			{hkPagoda && (
 				<group position={[hkPagoda.x, 14, hkPagoda.z]}>
-					<pointLight color="#ffba3b" intensity={3} distance={85} decay={2} />
+					{!mobileQuality&&<pointLight color="#ffba3b" intensity={3} distance={85} decay={2} />}
 					<mesh position={[0, 10, 0]}>
 						<sphereGeometry args={[2.5, 8, 8]} />
 						<meshBasicMaterial color="#ffe168" />
@@ -213,14 +215,14 @@ export function NightEnvironment() {
 			)}
 			{hkPagodaSw && (
 				<group position={[hkPagodaSw.x, 8, hkPagodaSw.z]}>
-					<pointLight color="#ffba3b" intensity={2} distance={55} decay={2} />
+					{!mobileQuality&&<pointLight color="#ffba3b" intensity={2} distance={55} decay={2} />}
 				</group>
 			)}
 
 			{/* ၃။ မြို့သာ ကျောင်းတိုက် စေတီတော်များနှင့် ဓမ္မာရုံမီး */}
 			{monastery && (
 				<group position={[monastery.x, 6, monastery.z]}>
-					<pointLight color="#ffc85b" intensity={2.5} distance={75} decay={2} />
+					{!mobileQuality&&<pointLight color="#ffc85b" intensity={2.5} distance={75} decay={2} />}
 					{/* စေတီငယ် ညမီးများ */}
 					{monastery.stupas.map((s, idx) => {
 						const cos = Math.cos(monastery.rotation);
@@ -240,7 +242,7 @@ export function NightEnvironment() {
 			{/* ၄။ ခရစ်ယာန် ဘုရားကျောင်းများ ထိပ်ဖျား လက်ဝါးကပ်တိုင် မီးရောင်များ */}
 			{kiBaptist && (
 				<group position={[kiBaptist.x, 22, kiBaptist.z]}>
-					<pointLight color="#b6d8ff" intensity={2.2} distance={60} decay={2} />
+					{!mobileQuality&&<pointLight color="#b6d8ff" intensity={2.2} distance={60} decay={2} />}
 					<mesh position={[0, 0.5, 0]}>
 						<boxGeometry args={[0.5, 2.8, 0.5]} />
 						<meshBasicMaterial color="#ffffff" />
@@ -253,7 +255,7 @@ export function NightEnvironment() {
 			)}
 			{kiIbc && (
 				<group position={[kiIbc.x, 20, kiIbc.z]}>
-					<pointLight color="#ffd88a" intensity={1.8} distance={50} decay={2} />
+					{!mobileQuality&&<pointLight color="#ffd88a" intensity={1.8} distance={50} decay={2} />}
 					<mesh position={[0, 0.5, 0]}>
 						<boxGeometry args={[0.5, 2.5, 0.5]} />
 						<meshBasicMaterial color="#fff3cc" />
@@ -262,7 +264,7 @@ export function NightEnvironment() {
 			)}
 			{kiStPeter && (
 				<group position={[kiStPeter.x, 25, kiStPeter.z]}>
-					<pointLight color="#ffe8aa" intensity={2.5} distance={65} decay={2} />
+					{!mobileQuality&&<pointLight color="#ffe8aa" intensity={2.5} distance={65} decay={2} />}
 					<mesh position={[0, 0.8, 0]}>
 						<boxGeometry args={[0.6, 3.2, 0.6]} />
 						<meshBasicMaterial color="#ffffff" />
@@ -275,7 +277,7 @@ export function NightEnvironment() {
 			)}
 			{tygChurch && (
 				<group position={[tygChurch.x, 22, tygChurch.z]}>
-					<pointLight color="#e2eeff" intensity={2.2} distance={60} decay={2} />
+					{!mobileQuality&&<pointLight color="#e2eeff" intensity={2.2} distance={60} decay={2} />}
 					<mesh position={[0, 0.6, 0]}>
 						<boxGeometry args={[0.5, 2.8, 0.5]} />
 						<meshBasicMaterial color="#ffffff" />
@@ -286,7 +288,7 @@ export function NightEnvironment() {
 			{/* ၅။ ကြာအင်းရေကန် ရေပေါ်နားနေဆောင် ညဘက် နွေးထွေးသော မီးရောင် (Water Pavilion Glow) */}
 			{kiPavilion && (
 				<group position={[kiPavilion.x, 3.5, kiPavilion.z]}>
-					<pointLight color="#ffa834" intensity={3} distance={50} decay={2} />
+					{!mobileQuality&&<pointLight color="#ffa834" intensity={3} distance={50} decay={2} />}
 					{/* နားနေဆောင် အတွင်း မီးလုံး */}
 					<mesh position={[0, 0, 0]}>
 						<sphereGeometry args={[1.2, 8, 8]} />

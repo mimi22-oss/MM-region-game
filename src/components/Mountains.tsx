@@ -1,3 +1,4 @@
+import { mobileQuality } from '../game/sceneBudget';
 import { useMemo } from 'react';
 import { ward, toWorld, angle } from '../data/ward';
 import { buildMountainTiles, mountainHeight, type TerrainPeak } from '../game/mountainTerrain';
@@ -62,8 +63,8 @@ export function Mountains(){
  const summit=ward.weipula.peaks[2];
  const summitHeight=mountainHeight(summit.u,summit.v,foreground);
  return <group name="forested-ridge-terrain">
-  <RidgeSurface peaks={foreground}/>
-  <RidgeSurface peaks={distantMountainTiers} step={20} haze={0.5}/>
+  <RidgeSurface peaks={foreground} step={mobileQuality?28:10}/>
+  <RidgeSurface peaks={distantMountainTiers} step={mobileQuality?50:20} haze={0.5}/>
   <group position={[summit.x,summitHeight,summit.z]}>
    <mesh position={[0,2,0]}><boxGeometry args={[14,4,14]}/><meshStandardMaterial color="#eae4d2"/></mesh>
    <mesh position={[0,9,0]}><cylinderGeometry args={[3,5.5,10,12]}/><meshStandardMaterial color="#f2ca4b" metalness={0.4} roughness={0.4}/></mesh>

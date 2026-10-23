@@ -135,3 +135,17 @@ test('two-finger travel pans on either half or across halves and preserves pinch
   g.clear();assert.deepEqual({...input,session:0},createMobileInput());
  }
 });
+
+
+test('scene streaming caps detailed regions, retains nearby regions and evicts distant ones',async()=>{
+ const {selectRegions,selectOverviewRegions}=await import('../src/game/sceneBudget.ts');
+ const regions=Array.from({length:1000},(_,i)=>({id:String(i),minX:i*200,maxX:i*200+100,minZ:0,maxZ:100}));
+ assert.equal(selectOverviewRegions(regions,50,50,true).length,16);
+ assert.equal(selectOverviewRegions(regions,50,50,false).length,32);
+ assert.deepEqual(selectRegions(regions,50,50,10,[],true),['0']);
+ assert.equal(selectRegions(regions,150,50,10,[],false).length,2);
+ assert.deepEqual(selectRegions(regions,50,50,500,['0'],true),[]);
+ assert.deepEqual(selectRegions(regions,5000,50,10,['0'],true),['25']);
+ assert.deepEqual(selectRegions(regions,-1000,50,10,['0'],true),[]);
+ assert.deepEqual(selectRegions(regions,150,50,10,['1'],true),['1'],'hysteresis avoids switching at region boundaries');
+});
