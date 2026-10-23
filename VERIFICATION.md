@@ -1,3 +1,15 @@
+# Latest mountain appearance verification
+
+- TypeScript + Vite production build: PASS.
+- Tests: 28 passed / 29 total. All 3 performance/terrain tests pass, including shared-edge normals, finite heights and the road gap.
+- Existing Kyar Inn layout test fails: `ki-lake-access-road-1` at local (-258, 3675) overlaps pond `ki-pond-east-green-1`. The mountain change does not modify either layout or collision logic.
+- Foreground terrain: 58 meshes, 28,504 triangles; local geometry generation approximately 129 ms.
+- Browser visual matching and FPS not measured.
+- dist/ and ZIP refreshed. Non-blocking Vite bundle-size warning remains.
+
+---
+Previous checks:
+
 # Latest performance change verification
 
 - TypeScript (`npx.cmd tsc -b`): PASS.

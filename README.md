@@ -178,3 +178,10 @@ Five bunded paddy plots extend west behind the rear home beyond the farmhouse. F
 - `game/spatialIndex.ts` indexes buildings and tree trunks in 64 m cells. Walking checks only nearby candidates instead of rebuilding all village arrays on every substep.
 - The static town and plan layers are memoized. Stationary player updates do not redraw the UI. Pixel ratio is capped at 1.25 and the shadow map uses 1024 pixels.
 - Validation: TypeScript passes, 25 existing collision/layout tests and 2 batching/spatial tests pass. Browser FPS has not been measured. Production build passed on 2026-10-23, and dist/ plus the distribution archive were refreshed.
+
+
+## Reference-based forested mountains
+
+The supplied `mountain near yar inn.png` guides the visual treatment: continuous irregular ridges, eroded gullies, forest-green slopes, exposed soil patches and blue atmospheric background ranges. `game/mountainTerrain.ts` generates tiled heightfields with smooth shared-edge normals and deterministic vertex colors; `Mountains.tsx` renders them and keeps the summit pagoda and existing plan labels. This is an artistic interpretation, not surveyed terrain reconstruction. Existing mountain locations, the AH1 pass and collision footprints remain unchanged.
+
+The foreground terrain uses 58 meshes / 28,504 triangles and generated in approximately 129 ms in a local Node check. These are geometry-generation measurements, not browser FPS. Forest appearance uses surface colors instead of additional tree objects.

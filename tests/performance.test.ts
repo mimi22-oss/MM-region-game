@@ -25,3 +25,19 @@ test('spatial cells retain boundary-overlapping and negative-coordinate obstacle
  const query=spatialIndex(items,item=>item);
  for(let x=-1024;x<1024;x+=17)for(let z=-420;z<420;z+=31){const candidates=query(x,z);for(const item of items)if(Math.hypot(x-item.x,z-item.z)<=item.radius)assert.ok(candidates.includes(item));assert.ok(candidates.length<30)}
 });
+
+
+test('mountain terrain joins tiles smoothly and leaves footprints and the road pass clear',async()=>{
+ const {buildMountainTiles,mountainHeight}=await import('../src/game/mountainTerrain.ts');
+ const peaks=[{u:-105,v:100,radius:90,height:500},{u:105,v:100,radius:90,height:550},{u:250,v:100,radius:100,height:600}];
+ assert.equal(mountainHeight(0,100,peaks),0);assert.equal(mountainHeight(600,100,peaks),0);
+ assert.ok(mountainHeight(105,100,peaks)>=549);assert.ok(mountainHeight(185,100,peaks)>0);
+ const tiles=buildMountainTiles(peaks,10),edges=new Map<string,number[]>();let triangles=0;
+ for(const tile of tiles){const p=tile.geometry.getAttribute('position'),normal=tile.geometry.getAttribute('normal'),color=tile.geometry.getAttribute('color');triangles+=tile.geometry.index!.count/3;
+  for(let i=0;i<p.count;i++){assert.ok(Number.isFinite(p.getY(i)));assert.ok(Math.abs(Math.hypot(normal.getX(i),normal.getY(i),normal.getZ(i))-1)<0.001);assert.ok(color.getX(i)>=0&&color.getX(i)<=1);
+   const key=`${tile.u+p.getX(i)},${tile.v+p.getZ(i)}`,values=[p.getY(i),normal.getX(i),normal.getY(i),normal.getZ(i)];
+   if(edges.has(key))values.forEach((v,j)=>assert.ok(Math.abs(v-edges.get(key)![j])<0.0001));else edges.set(key,values);
+  }tile.geometry.dispose();
+ }
+ assert.ok(triangles>0&&triangles<12000);
+});
