@@ -15,6 +15,7 @@ const MAP_DESTINATIONS = [
  { id: 'zingalin', label: 'ဇင်းကလင်းကျေးရွာ', title: 'ဇင်းကလင်းကျေးရွာ · ကလေးမြို့နယ်', subtitle: 'AH1 · Zingalin Village · Kalay', ...toWorld(0, 1510), yaw: Math.PI / 4, pitch: -0.18, distance: 12 },
  { id: 'htomar', label: 'ထိုမာကျေးရွာ', title: 'ထိုမာကျေးရွာ · ကလေးမြို့နယ်', subtitle: 'East of AH1 · Htomar Village · Kalay', ...toWorld(256, 1927), yaw: -Math.PI * 3 / 4, pitch: -0.18, distance: 14 },
  { id: 'tharyargone', label: 'သာယာကုန်းကျေးရွာ', title: 'သာယာကုန်းကျေးရွာ · ကလေးမြို့နယ်', subtitle: 'AH1 · Thar Yar Gone Village · St. Assumption Church · Kalay', ...toWorld(0, 2700), yaw: Math.PI / 4, pitch: -0.18, distance: 12 },
+ { id: 'htaukkyant', label: 'ထောက်ကြန့်ကျေးရွာ', title: 'ထောက်ကြန့်ကျေးရွာ · ကလေးမြို့နယ်', subtitle: 'AH1 · Htauk Kyant Village · Pagoda · Playground · High School · Kalay', ...toWorld(0, 3300), yaw: Math.PI / 4, pitch: -0.18, distance: 14 },
 ];
 class SceneError extends Component<{children:ReactNode},{failed:boolean}>{
  state={failed:false};static getDerivedStateFromError(){return {failed:true}}
@@ -121,7 +122,7 @@ function App(){
    <KalayVillagesPlan labels={mapOpen} onSelectLocation={handleSelectLocation}/>
    <circle cx={pos.x} cy={pos.z} r="4" fill="#fff4b3" stroke="#173d35" strokeWidth="2"/>
   </svg>
-  <small>{ward.currentArea} · သာစည် · ချင်းဆိုင် · ဇင်းကလင်း · ထိုမာ · သာယာကုန်း</small>
+  <small>{ward.currentArea} · သာစည် · ချင်းဆိုင် · ဇင်းကလင်း · ထိုမာ · သာယာကုန်း · ထောက်ကြန့်</small>
   {mapOpen&&<p className="map-help">မြေပုံပေါ်ရှိ သက်ဆိုင်ရာ ရပ်ကွက် / ရွာကို တိုက်ရိုက်နှိပ်၍ 3D မြင်ကွင်းသို့ သွားနိုင်ပါသည် · Esc ပိတ်ရန်</p>}
  </aside>
  <footer className={hideHud?"footer-clean":""}>{!hideHud&&<div><kbd>W A S D / ↑ ↓ ← →</kbd> လမ်းလျှောက် <kbd>Shift + Drag</kbd> မြေပုံဆွဲရွှေ့ <kbd>Shift</kbd> ပြေး <kbd>Scroll</kbd> Zoom <kbd>T</kbd> ကောင်းကင်တည့်တည့် <kbd>V</kbd> မြင်ကွင်း <kbd>R</kbd> အစသို့ <kbd>Esc</kbd> လွှတ်ရန်</div>}<span>{topDown?'TOP-DOWN SKY':first?'FIRST PERSON':'THIRD PERSON'} · ZOOM {Math.round(zoom)}m · {pos.x.toFixed(1)}, {pos.z.toFixed(1)} m</span></footer>

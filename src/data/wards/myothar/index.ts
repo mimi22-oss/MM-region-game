@@ -10,7 +10,7 @@ export const myotharWard = {
  shortName: 'မြို့သာရပ်ကွက်',
  currentArea: area5.name,
  areas: [area5],
- size: 6400,
+ size: 7600,
  spawn: toWorld(0, 105),
  description: 'ပေးထားသော မြေပုံကို မှီငြမ်းထားသော ခန့်မှန်း 3D ပုံစံ',
 };

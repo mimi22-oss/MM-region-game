@@ -93,34 +93,14 @@ for (let rowBlock = 0; rowBlock < tharYarGoneLanes.length - 1; rowBlock++) {
  }
 }
 
-// AH1 အရှေ့ဘက်ခြမ်း — မိန်းလမ်းမကြီးဘေး အိမ်ခြေ ၂ တန်း (Google Maps ပုံပါ AH1 အရှေ့ဘက် အိမ်စုငယ်)
-for (let rowBlock = 1; rowBlock <= 6; rowBlock++) {
- const baseV = tharYarGoneLanes[rowBlock];
- for (const offsetV of [10, 22]) {
-  const v = baseV + offsetV;
-  for (const u of [24, 40]) {
-   const i = houses.length;
-   houses.push({
-    id: `tharyargone-h${i + 1}`,
-    name: `သာယာကုန်း အရှေ့ပိုင်းအိမ် ${i + 1}`,
-    ...toWorld(u, v),
-    width: 7.5,
-    depth: 6.5,
-    color: ['#d8c7a3', '#bfa58a', '#a9b9b0', '#c7b299'][i % 4],
-    rotation: angle - Math.PI / 2,
-    roof: ['#849699', '#8b5545', '#a39a85', '#7d6655'][i % 4],
-   });
-  }
- }
-}
+// AH1 အရှေ့ဘက်ခြမ်း — အိမ်ခြေ၊ ဆိုင်များ မရှိဘဲ လယ်ကွင်းများနှင့် Thida Tun Rice Mill-2 သာ ထားရှိသည် (အောက်ပါ fields နှင့် tharYarGoneLandmarkBuildings ကို ကြည့်ပါ)
 
 /**
  * သာယာကုန်းကျေးရွာ၏ အထင်ကရ အဆောက်အအုံများ (tyg-landmark-* ဖြင့်စသော id များကို အထူးပုံစံဖြင့် 3D ဆွဲပေးသည်)
  * - St. Assumption Church (ရွာအလည်တည့်တည့်)
  * - Kingdom Hall of Jehovah's Witnesses
  * - Siangbawi Hlawnching တည်းခိုခန်း
- * - Sui Lian Thang လက်ဖက်ရည်ဆိုင် နှင့် AH1 ဘေး စားသောက်ဆိုင်
- * - Thida Tun Rice Mill-2 (ဆန်စက်)
+ * - Thida Tun Rice Mill-2 (AH1 အရှေ့ဘက်ခြမ်းရှိ ဆန်စက်)
  */
 export type TharYarGoneLandmarkBuilding = House & {
  kind: 'church' | 'tower' | 'hall' | 'guesthouse' | 'shop' | 'mill';
@@ -175,30 +155,6 @@ export const tharYarGoneLandmarkBuildings: TharYarGoneLandmarkBuilding[] = [
   color: '#e8d9bf',
   rotation: angle,
   roof: '#b9604a',
- },
- {
-  id: 'tyg-landmark-sui-lian-thang',
-  name: 'Sui Lian Thang · လက်ဖက်ရည်ဆိုင်',
-  kind: 'shop',
-  height: 4,
-  ...toWorld(24, 2844),
-  width: 8,
-  depth: 7,
-  color: '#dce8df',
-  rotation: angle - Math.PI / 2,
-  roof: '#497a6b',
- },
- {
-  id: 'tyg-landmark-restaurant',
-  name: 'AH1 ဘေး စားသောက်ဆိုင်',
-  kind: 'shop',
-  height: 4,
-  ...toWorld(24, 2812),
-  width: 9,
-  depth: 7.5,
-  color: '#efe0c4',
-  rotation: angle - Math.PI / 2,
-  roof: '#b54d3a',
  },
  {
   id: 'tyg-landmark-rice-mill',
@@ -275,22 +231,13 @@ const roads: RoadPlot[] = [
   rotation: angle,
   main: false,
  })),
- // AH1 အရှေ့ဘက် အိမ် ၂ တန်း အရှေ့-အနောက်လမ်းသွယ်များ
- ...[2572, 2604, 2636, 2668, 2700, 2732, 2764].map((v, i) => ({
-  id: `tharyargone-east-ew-lane-${i + 1}`,
-  name: `သာယာကုန်း အရှေ့လမ်းသွယ် ${i + 1}`,
-  ...toWorld(32, v),
-  width: 40,
-  depth: 4,
-  rotation: angle,
-  main: false,
- })),
+ // AH1 အရှေ့ဘက်ခြမ်း သီတာထွန်း ဆန်စက် ဝင်လမ်း
  {
-  id: 'tharyargone-east-ns-lane',
-  name: 'သာယာကုန်း အရှေ့အိမ်တန်းလမ်း',
-  ...toWorld(52, 2668),
-  width: 4,
-  depth: 200,
+  id: 'tharyargone-rice-mill-access',
+  name: 'သီတာထွန်း ဆန်စက် ဝင်လမ်း',
+  ...toWorld(26, 2905),
+  width: 52,
+  depth: 5,
   rotation: angle,
   main: false,
  },
@@ -311,9 +258,9 @@ const bundedFields: FieldPlot[] = [2560, 2610, 2660, 2710, 2760, 2810, 2860].fla
  }))
 );
 
-// AH1 အရှေ့ဘက် အိမ် ၂ တန်း၏ နောက်ရှိ လယ်ကွင်းများ
-const fields: FieldPlot[] = [2560, 2610, 2660, 2710, 2760, 2810, 2860].flatMap((v, row) =>
- [90, 135, 180, 225].map((u, col) => ({
+// AH1 အရှေ့ဘက်ခြမ်း လယ်ကွင်းများ (မိန်းလမ်းမကြီးဘေးမှ စတင်၍ လယ်ကွင်းများနှင့် သီတာထွန်း ဆန်စက်သာ ရှိသည်)
+const fields: FieldPlot[] = [2540, 2588, 2636, 2684, 2732, 2780, 2828, 2876].flatMap((v, row) =>
+ [40, 84, 128, 172, 216].map((u, col) => ({
   id: `tharyargone-east-field-${row}-${col}`,
   u,
   v,

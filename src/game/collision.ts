@@ -18,10 +18,16 @@ export function canStand(x:number,z:number):boolean {
  }
  for(const village of kalayVillages){
   const ew=village.canal;
-  if(!ew)continue;
-  if(u>=ew.uMin-PLAYER_RADIUS&&u<=ew.uMax+PLAYER_RADIUS&&Math.abs(v-ew.v)<ew.width/2+PLAYER_RADIUS){
+  if(ew&&u>=ew.uMin-PLAYER_RADIUS&&u<=ew.uMax+PLAYER_RADIUS&&Math.abs(v-ew.v)<ew.width/2+PLAYER_RADIUS){
    const onEwBridge=ew.bridges.some(b=>Math.abs(u-b.u)<b.width/2-PLAYER_RADIUS);
    if(!onEwBridge)return false;
+  }
+  if(village.ponds){
+   for(const p of village.ponds){
+    const dx=x-p.x,dz=z-p.z;
+    const lx=dx*c-dz*s,lz=dx*s+dz*c;
+    if(Math.abs(lx)<p.width/2+PLAYER_RADIUS&&Math.abs(lz)<p.depth/2+PLAYER_RADIUS)return false;
+   }
   }
  }
  const pond=ward.pond,px=x-pond.x,pz=z-pond.z;

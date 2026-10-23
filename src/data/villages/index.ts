@@ -4,8 +4,28 @@ import { chinSaiVillage, chinSaiLanes, chinSaiCrossLanes, chinSaiMonasteries } f
 import { zingalinVillage, zingalinLanes, zingalinCrossLanes, zingalinMonasteries, zeeChaungStream } from './zingalin/index.ts';
 import { htomarVillage, htomarLanes, htomarCrossLanes, htomarLandmarks, htomarFiveColumnFields, htomarRoadsideShops } from './htomar/index.ts';
 import { tharYarGoneVillage, tharYarGoneLanes, tharYarGoneCrossLanes, tharYarGoneLandmarkBuildings } from './tharyargone/index.ts';
+import {
+ htaukKyantVillage,
+ htaukKyantLanes,
+ htaukKyantCrossLanes,
+ htaukKyantCanal,
+ htaukKyantLake,
+ htaukKyantPonds,
+ allHtaukKyantPonds,
+ htaukKyantLandmarks,
+ htaukKyantLandmarkBuildings,
+} from './htaukkyant/index.ts';
 
 export {
+ htaukKyantVillage,
+ htaukKyantLanes,
+ htaukKyantCrossLanes,
+ htaukKyantCanal,
+ htaukKyantLake,
+ htaukKyantPonds,
+ allHtaukKyantPonds,
+ htaukKyantLandmarks,
+ htaukKyantLandmarkBuildings,
  tharYarGoneVillage,
  tharYarGoneLanes,
  tharYarGoneCrossLanes,
@@ -33,4 +53,11 @@ export {
 /**
  * ကလေးမြို့နယ်အတွင်းရှိ ကျေးရွာများ (Villages) စုစည်းမှု။
  */
-export const kalayVillages: VillageMeta[] = [tharSiVillage, chinSaiVillage, zingalinVillage, htomarVillage, tharYarGoneVillage];
+export const kalayVillages: VillageMeta[] = [
+ tharSiVillage,
+ chinSaiVillage,
+ zingalinVillage,
+ htomarVillage,
+ tharYarGoneVillage,
+ htaukKyantVillage,
+];

@@ -41,6 +41,19 @@ export type FieldPlot = {
  color: string;
 };
 
+export type PondPlot = {
+ id: string;
+ name: string;
+ u: number;
+ v: number;
+ x: number;
+ z: number;
+ width: number;
+ depth: number;
+ rotation: number;
+ color?: string;
+};
+
 export type WindingCanalPlot = {
  id: string;
  name: string;
@@ -105,6 +118,7 @@ export type VillageMeta = {
  roads: RoadPlot[];
  fields: FieldPlot[];
  bundedFields: FieldPlot[];
+ ponds?: PondPlot[];
  trees: TreePlot[];
  largeTrees: TreePlot[];
  farmTrees: TreePlot[];

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { canStand,move } from '../src/game/collision.ts';
-import { ward,toWorld,pitchLanes,oppositeLanes,residentialRows,tharSiVillage,chinSaiVillage,zingalinVillage,htomarVillage,htomarFiveColumnFields,htomarRoadsideShops,tharYarGoneVillage } from '../src/data/ward.ts';
+import { ward,toWorld,pitchLanes,oppositeLanes,residentialRows,tharSiVillage,chinSaiVillage,zingalinVillage,htomarVillage,htomarFiveColumnFields,htomarRoadsideShops,tharYarGoneVillage,htaukKyantVillage,allHtaukKyantPonds,htaukKyantLandmarks } from '../src/data/ward.ts';
 test('Myothar inventory and safe AH1 spawn',()=>{assert.equal(ward.houses.length,98);assert.equal(ward.roads.length,18);assert.equal(ward.fields.length,2);assert.ok(canStand(ward.spawn.x,ward.spawn.z));for(let v=-120;v<=120;v+=2){const p=toWorld(0,v);assert.ok(canStand(p.x,p.z),'AH1 is walkable')}});
 test('every rotated house and trunk blocks walking',()=>{for(const h of ward.houses)assert.equal(canStand(h.x,h.z),false);for(const t of ward.trees)assert.equal(canStand(t.x,t.z),false);assert.equal(canStand(ward.size/2,0),false);assert.equal(canStand(NaN,0),false)});
 test('large movement cannot tunnel through rotated building',()=>{const h=ward.houses[0];const start=toWorld(-66,-110);assert.ok(canStand(start.x,start.z));move(start,h.x-start.x,h.z-start.z);assert.ok(canStand(start.x,start.z));assert.ok(Math.hypot(start.x-h.x,start.z-h.z)>4)});
@@ -298,6 +298,9 @@ test('Thar Yar Gone village sits between Htomar and Weipula behind 50 paddy fiel
  }
  const church=tharYarGoneVillage.houses.find(h=>h.id==='tyg-landmark-church')!;
  assert.ok(church,'St. Assumption Church exists');
+ const eastHouses=tharYarGoneVillage.houses.filter(h=>localU(h)>0);
+ assert.equal(eastHouses.length,1,'only Thida Tun Rice Mill-2 is on the east side of AH1');
+ assert.equal(eastHouses[0].id,'tyg-landmark-rice-mill');
  const west=tharYarGoneVillage.houses.filter(h=>localU(h)<0&&!h.id.startsWith('tyg-landmark-'));
  const minU=Math.min(...west.map(localU)),maxU=Math.max(...west.map(localU));
  assert.ok(Math.abs(localU(church)-(minU+maxU)/2)<30,'church is near the east-west center of the village');
@@ -309,4 +312,65 @@ test('Thar Yar Gone village sits between Htomar and Weipula behind 50 paddy fiel
  for(const r of tharYarGoneVillage.roads){
   assert.ok(canStand(r.x,r.z),`${r.id} center is walkable`);
  }
+});
+
+test('Htauk Kyant village sits between Thar Yar Gone and Weipula with Pagoda & Football field on the east, High School on the west, and Lake & ponds on the northwest', () => {
+  assert.equal(htaukKyantVillage.name, 'ထောက်ကြန့်ကျေးရွာ');
+  assert.equal(htaukKyantVillage.separationFields.length, 20);
+  const localV = (p: { x: number; z: number }) => (p.x + p.z) / Math.sqrt(2);
+  const localU = (p: { x: number; z: number }) => (p.x - p.z) / Math.sqrt(2);
+  const tharYarGoneSouth = Math.max(...tharYarGoneVillage.houses.map(localV));
+  const villageNorth = Math.min(...htaukKyantVillage.houses.map(localV));
+  const weipulaNorth = Math.min(...ward.weipula.peaks.filter(m => Math.abs(m.u) < 400).map(m => m.v - m.radius));
+
+  // 1. Separation canal & paddies between Thar Yar Gone and Htauk Kyant
+  const canalV = htaukKyantVillage.canal!.v;
+  for (const f of htaukKyantVillage.separationFields) {
+    assert.ok(localV(f) - f.depth / 2 > tharYarGoneSouth, 'separation paddy sits south of Thar Yar Gone');
+    assert.ok(localV(f) + f.depth / 2 < villageNorth, 'separation paddy sits north of Htauk Kyant');
+    assert.ok(canStand(f.x, f.z), 'separation paddy is walkable');
+  }
+  const canalWater = toWorld(-120, canalV);
+  assert.equal(canStand(canalWater.x, canalWater.z), false, 'canal water blocks walking');
+  const bridge = toWorld(0, canalV);
+  assert.ok(canStand(bridge.x, bridge.z), 'AH1 bridge over canal is walkable');
+
+  // 2. Houses solid and north of Weipula
+  for (const h of htaukKyantVillage.houses) {
+    assert.ok(localV(h) < weipulaNorth, 'Htauk Kyant house is north of Weipula');
+    assert.equal(canStand(h.x, h.z), false, 'Htauk Kyant house blocks walking');
+  }
+
+  // 3. Football playground sits between the main road (AH1) and the Pagoda
+  const pagoda = htaukKyantVillage.houses.find(h => h.id === 'hk-landmark-pagoda-base')!;
+  const playground = htaukKyantLandmarks.find(m => m.id === 'hk-football-playground')!;
+  assert.ok(pagoda, 'Htauk Kyant Pagoda exists');
+  assert.ok(playground, 'Football playground exists');
+  assert.ok(localU(playground) > 0, 'Football playground is east of main road');
+  assert.ok(localU(pagoda) > localU(playground), 'Football playground sits between main road and Pagoda');
+
+  const eastHouses = htaukKyantVillage.houses.filter(h => localU(h) > 0);
+  assert.ok(eastHouses.length > 50, 'residential and landmark buildings east of AH1');
+
+  // 4. Basic Education High School (BEHS) on west side of AH1 (localU < 0) opposite Pagoda & Playground
+  const schoolMain = htaukKyantVillage.houses.find(h => h.id === 'hk-landmark-school-main')!;
+  const schoolWing = htaukKyantVillage.houses.find(h => h.id === 'hk-landmark-school-wing')!;
+  assert.ok(schoolMain && schoolWing, 'BEHS High School buildings exist');
+  assert.ok(localU(schoolMain) < 0, 'High school is west of main road');
+  assert.ok(Math.abs(localV(schoolMain) - localV(pagoda)) < 80, 'High school is opposite Pagoda across the road');
+
+  // 5. Lake and 5 ponds on northwest edge
+  assert.equal(allHtaukKyantPonds.length, 6, 'large lake and 5 rectangular ponds');
+  for (const p of allHtaukKyantPonds) {
+    assert.ok(p.u < -150, 'lake/pond is on the western margin');
+    assert.equal(canStand(p.x, p.z), false, 'pond water blocks walking');
+  }
+
+  // 6. Trees and roads
+  for (const t of [...htaukKyantVillage.trees, ...htaukKyantVillage.largeTrees, ...htaukKyantVillage.farmTrees]) {
+    assert.equal(canStand(t.x, t.z), false, 'Htauk Kyant tree blocks walking');
+  }
+  for (const r of htaukKyantVillage.roads) {
+    assert.ok(canStand(r.x, r.z), `${r.id} center is walkable`);
+  }
 });
