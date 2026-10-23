@@ -54,7 +54,6 @@ export function Player({
   yaw:0,
   bodyYaw:0,
   mobileSession:-1,
-  mobileHeading:0,
   pitch:-0.12,
   distance:6,
   targetDistance:6,
@@ -68,6 +67,23 @@ export function Player({
   locked:false,
   time:0,
  });
+ const applyZoom=(raw:number)=>{
+  const s=state.current,previous=s.targetDistance;
+  const next=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,raw));
+  if(s.first){s.first=false;onMode(false)}
+   s.targetDistance=next;
+   if(s.topDown){
+    s.pitch=SKY_PITCH;
+   }else if(next>previous&&next>8){
+    const aerialPitch=-0.12-Math.min(1,(next-8)/200)*(Math.abs(SKY_PITCH)-0.12);
+    if(s.pitch>aerialPitch)s.pitch=aerialPitch;
+   }else if(next<previous&&next<80){
+    const streetPitch=-0.12-Math.max(0,(next-6)/74)*(Math.abs(SKY_PITCH)-0.12);
+    if(s.pitch<streetPitch)s.pitch=streetPitch;
+    if(next<=15){s.camX=s.x;s.camZ=s.z;}
+   }
+   onZoom(next);
+ };
  useEffect(()=>{state.current.keys.clear()},[mapOpen]);
  useEffect(()=>{
   const s=state.current;
@@ -221,18 +237,7 @@ export function Player({
    const factor=Math.exp(Math.max(-160,Math.min(160,e.deltaY))*0.0022);
    const raw=e.deltaY>0?Math.max(s.targetDistance+0.8,s.targetDistance*factor):Math.min(s.targetDistance-0.5,s.targetDistance*factor);
    const next=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,raw));
-   s.targetDistance=next;
-   if(s.topDown){
-    s.pitch=SKY_PITCH;
-   }else if(e.deltaY>0&&next>8){
-    const aerialPitch=-0.12-Math.min(1,(next-8)/200)*(Math.abs(SKY_PITCH)-0.12);
-    if(s.pitch>aerialPitch)s.pitch=aerialPitch;
-   }else if(e.deltaY<0&&next<80){
-    const streetPitch=-0.12-Math.max(0,(next-6)/74)*(Math.abs(SKY_PITCH)-0.12);
-    if(s.pitch<streetPitch)s.pitch=streetPitch;
-    if(next<=15){s.camX=s.x;s.camZ=s.z;}
-   }
-   onZoom(next);
+   applyZoom(next);
   };
   document.addEventListener('pointerlockchange',lock);document.addEventListener('keydown',key);document.addEventListener('keyup',key);document.addEventListener('mousemove',mouse);document.addEventListener('mouseup',up);window.addEventListener('blur',clear);window.addEventListener('wheel',wheel,{passive:false});gl.domElement.addEventListener('mousedown',down);gl.domElement.addEventListener('click',click);
   return ()=>{document.removeEventListener('pointerlockchange',lock);document.removeEventListener('keydown',key);document.removeEventListener('keyup',key);document.removeEventListener('mousemove',mouse);document.removeEventListener('mouseup',up);window.removeEventListener('blur',clear);window.removeEventListener('wheel',wheel);gl.domElement.removeEventListener('mousedown',down);gl.domElement.removeEventListener('click',click);if(document.pointerLockElement===gl.domElement)document.exitPointerLock()};
@@ -242,8 +247,9 @@ export function Player({
   const oldX=s.x,oldZ=s.z;
   const touch=mobileInput?.current;
   if(touch){
+   if(touch.zoomFactor!==1){applyZoom(s.targetDistance*touch.zoomFactor);touch.zoomFactor=1;}
    if(touch.lookX||touch.lookY){s.yaw-=touch.lookX*0.004;s.pitch=Math.max(-1.35,Math.min(0.6,s.pitch-touch.lookY*0.004));if(s.topDown){s.topDown=false;onTopDown(false)}touch.lookX=0;touch.lookY=0;}
-   if(touch.active&&s.mobileSession!==touch.session){s.mobileSession=touch.session;s.mobileHeading=s.bodyYaw;s.first=false;s.topDown=false;s.panning=false;s.distance=6;s.targetDistance=6;s.pitch=Math.max(-0.6,s.pitch);onMode(false);onTopDown(false);onZoom(6)}
+   if(touch.active&&s.mobileSession!==touch.session){s.mobileSession=touch.session;s.first=false;s.panning=false;s.camX=s.x;s.camZ=s.z;onMode(false)}
   }
   s.distance+=(s.targetDistance-s.distance)*Math.min(1,dt*12);
   let forward=Number(s.keys.has('KeyW')||s.keys.has('ArrowUp'))-Number(s.keys.has('KeyS')||s.keys.has('ArrowDown'));
@@ -251,9 +257,9 @@ export function Player({
   if(touch?.active){forward=touch.forward;right=touch.right;}
   const len=Math.hypot(forward,right);if(len){forward/=len;right/=len;}
   const fast=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight')||!!touch?.sprint;
-  const yaw=touch?.active?s.mobileHeading:mapOpen?0:s.yaw;
+  const yaw=mapOpen?0:s.yaw;
   if(len>0&&s.distance<=20&&!s.topDown)s.panning=false;
-  const aerial=!s.first&&(s.distance>20||s.topDown||s.panning);
+  const aerial=!touch?.active&&!s.first&&(s.distance>20||s.topDown||s.panning);
   if(aerial&&!mapOpen){
    if(len>0){
     const panSpeed=Math.max(12,s.distance*0.45)*(fast?1.8:1)*dt;

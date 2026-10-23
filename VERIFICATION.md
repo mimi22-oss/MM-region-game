@@ -79,3 +79,8 @@ Previous verification (before this change):
 - 98 homes, 8 original warehouses, plus rice mill and paddy storage.
 - Browser visual and pointer-lock checks were not performed in this session.
 - Vite reports a non-blocking large Three.js bundle warning.
+
+### Mobile pinch / free steering update
+- Performance and input regression suite: 10/10 passed, including diagonal steering, sprint versus pinch, both same-half pinch cases, zoom direction, reset and remaining-finger suppression.
+- TypeScript and Vite production build passed. Existing large-bundle warning remains.
+- Real-device multitouch and visual browser verification not performed. Full collision suite not rerun; previously recorded lake-access road overlap remains outside this change.

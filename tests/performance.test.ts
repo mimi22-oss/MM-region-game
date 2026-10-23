@@ -94,3 +94,25 @@ test('touch directions and lifecycle reset cannot leave movement or sprint stuck
  assert.equal(a.session,3);assert.deepEqual({...a,session:0},b);
  Object.assign(a,touchDirection('right'),{active:true,session:a.session+1});assert.equal(a.session,4);assert.equal(a.sprint,false);assert.equal(b.active,false);
 });
+
+
+test('mobile joystick steers diagonally and pinch suppresses movement until release',async()=>{
+ const {createMobileInput,MobileGesture,joystickDirection}=await import('../src/game/mobileInput.ts');
+ const d=joystickDirection(30,-40);assert.equal(d.right,.6);assert.equal(d.forward,.8);
+ assert.deepEqual(joystickDirection(2,2),{forward:0,right:0});
+ const input=createMobileInput(),g=new MobileGesture(input);
+ g.down(1,'left',100,200);g.hold();g.move(1,130,160);
+ assert.equal(input.active,true);assert.equal(input.forward,.8);assert.equal(input.right,.6);
+ g.down(2,'right',300,200);assert.equal(input.sprint,true);
+ g.move(1,120,160);assert.equal(g.pinching,false,'one moving thumb and stationary sprint thumb are not a pinch');
+ g.move(2,340,200);assert.equal(g.pinching,true);assert.ok(input.zoomFactor<1,'spread zooms in');
+ assert.equal(input.active,false);assert.equal(input.sprint,false);assert.equal(input.lookX,0);
+ input.zoomFactor=1;g.move(2,310,200);assert.ok(input.zoomFactor>1,'contract zooms out');
+ g.up(2);g.move(1,180,220);assert.equal(input.active,false,'remaining finger cannot restart movement');
+ g.up(1);g.down(3,'left',100,200);g.hold();assert.equal(input.active,true);
+ g.clear();assert.deepEqual(input,{...createMobileInput(),session:input.session});
+ for(const side of ['left','right'] as const){
+  g.down(1,side,100,200);g.down(2,side,150,200);g.move(2,180,200);
+  assert.equal(g.pinching,true);assert.ok(input.zoomFactor<1);g.clear();
+ }
+});
