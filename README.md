@@ -216,3 +216,6 @@ Mobile hides the location-toast body and collapsed WARD PLAN; open WARD PLAN fro
 
 ### Mobile pinch and free steering
 Drag on the left half in any direction to steer relative to the camera, including diagonals. Hold right with a stationary finger to sprint; drag right to orbit. Spread two fingers to zoom in; bring them together to zoom out (also supported within either half). For a cross-screen pinch, move both fingers; a stationary sprint thumb does not trigger zoom. Once pinch starts, movement and sprint stop. Lift both fingers before resuming movement. Movement preserves the selected zoom distance.
+
+### Travel between villages on mobile
+Move two fingers together to pan the scene, equivalent to desktop Shift + mouse drag. Zoom out first for faster travel over longer distances. Pinch and pan can be combined. Both fingers must move to distinguish travel from holding one stationary sprint thumb. Lift both fingers before resuming robot controls. The same world boundaries and safe player placement used by desktop panning apply.

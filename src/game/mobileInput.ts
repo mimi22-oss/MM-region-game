@@ -1,6 +1,6 @@
-export type MobileInput={active:boolean;forward:number;right:number;sprint:boolean;lookX:number;lookY:number;zoomFactor:number;session:number};
-export const createMobileInput=():MobileInput=>({active:false,forward:0,right:0,sprint:false,lookX:0,lookY:0,zoomFactor:1,session:0});
-export function resetMobileInput(input:MobileInput){Object.assign(input,{active:false,forward:0,right:0,sprint:false,lookX:0,lookY:0,zoomFactor:1})}
+export type MobileInput={active:boolean;forward:number;right:number;sprint:boolean;lookX:number;lookY:number;panX:number;panY:number;zoomFactor:number;session:number};
+export const createMobileInput=():MobileInput=>({active:false,forward:0,right:0,sprint:false,lookX:0,lookY:0,panX:0,panY:0,zoomFactor:1,session:0});
+export function resetMobileInput(input:MobileInput){Object.assign(input,{active:false,forward:0,right:0,sprint:false,lookX:0,lookY:0,panX:0,panY:0,zoomFactor:1})}
 export function touchDirection(direction:string){return direction==='down'?{forward:-1,right:0}:direction==='left'?{forward:0,right:-1}:direction==='right'?{forward:0,right:1}:{forward:1,right:0}}
 
 export function joystickDirection(dx:number,dy:number){
@@ -11,7 +11,7 @@ export function joystickDirection(dx:number,dy:number){
 type Finger={id:number;side:'left'|'right';x:number;y:number;startX:number;startY:number;direction:string};
 export class MobileGesture {
  fingers=new Map<number,Finger>();
- pinching=false; blocked=false; baseline=0; previous=0;
+ pinching=false; blocked=false; baseline=0; previous=0; centerX=0; centerY=0; originX=0; originY=0;
  input:MobileInput;
  constructor(input:MobileInput){this.input=input}
  clear(){this.fingers.clear();this.pinching=false;this.blocked=false;resetMobileInput(this.input)}
@@ -20,6 +20,7 @@ export class MobileGesture {
   this.fingers.set(id,{id,side,x,y,startX:x,startY:y,direction});
   if(this.fingers.size===2){
    const [a,b]=[...this.fingers.values()];this.baseline=this.previous=Math.hypot(a.x-b.x,a.y-b.y);
+   this.originX=this.centerX=(a.x+b.x)/2;this.originY=this.centerY=(a.y+b.y)/2;
    a.startX=a.x;a.startY=a.y;b.startX=b.x;b.startY=b.y;
    if(a.side===b.side){resetMobileInput(this.input);this.blocked=true}
   }
@@ -35,11 +36,14 @@ export class MobileGesture {
   const dx=x-f.x,dy=y-f.y;f.x=x;f.y=y;
   if(this.fingers.size===2){
    const [a,b]=[...this.fingers.values()],distance=Math.max(20,Math.hypot(a.x-b.x,a.y-b.y));
+   const cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;
    const bothMoved=[a,b].every(p=>Math.hypot(p.x-p.startX,p.y-p.startY)>5);
-   if(!this.pinching&&Math.abs(distance-this.baseline)>10&&(a.side===b.side||bothMoved)){
+   const zoomIntent=Math.abs(distance-this.baseline)>10&&(a.side===b.side||bothMoved);
+   const panIntent=bothMoved&&Math.hypot(cx-this.originX,cy-this.originY)>10;
+   if(!this.pinching&&(zoomIntent||panIntent)){
     resetMobileInput(this.input);this.pinching=true;this.blocked=true;
    }
-   if(this.pinching){this.input.zoomFactor*=Math.max(20,this.previous)/distance;this.previous=distance;return}
+   if(this.pinching){this.input.zoomFactor*=Math.max(20,this.previous)/distance;this.previous=distance;this.input.panX+=cx-this.centerX;this.input.panY+=cy-this.centerY;this.centerX=cx;this.centerY=cy;return}
   }
   if(this.blocked)return;
   if(f.side==='right'){this.input.lookX+=dx;this.input.lookY+=dy;return}

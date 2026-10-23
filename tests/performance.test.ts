@@ -116,3 +116,22 @@ test('mobile joystick steers diagonally and pinch suppresses movement until rele
   assert.equal(g.pinching,true);assert.ok(input.zoomFactor<1);g.clear();
  }
 });
+
+
+test('two-finger travel pans on either half or across halves and preserves pinch zoom',async()=>{
+ const {createMobileInput,MobileGesture}=await import('../src/game/mobileInput.ts');
+ for(const sides of [['left','left'],['right','right'],['left','right']] as const){
+  const input=createMobileInput(),g=new MobileGesture(input);
+  g.down(1,sides[0],100,100);g.down(2,sides[1],200,100);
+  g.move(1,100,130);g.move(2,200,130);
+  assert.equal(g.pinching,true);assert.equal(input.panX,0);assert.equal(input.panY,30);
+  assert.equal(input.zoomFactor,1,'parallel drag preserves zoom');
+  assert.equal(input.active,false);assert.equal(input.sprint,false);assert.equal(input.lookY,0);
+  input.panX=0;input.panY=0;
+  g.move(1,80,130);g.move(2,220,130);
+  assert.ok(Math.abs(input.zoomFactor-100/140)<1e-10);assert.equal(input.panX,0);
+  g.up(1);g.move(2,250,150);g.hold();
+  assert.equal(input.active,false);assert.equal(input.panX,0);assert.equal(input.panY,0);
+  g.clear();assert.deepEqual({...input,session:0},createMobileInput());
+ }
+});

@@ -67,6 +67,30 @@ export function Player({
   locked:false,
   time:0,
  });
+ const panView=(dx:number,dy:number)=>{
+  const s=state.current;
+  s.panning=true;
+  if(s.first){s.first=false;onMode(false)}
+    const panScale=Math.max(0.55,s.distance*0.0022);
+    const panRight=-dx*panScale;
+    const panForward=dy*panScale;
+    const edge=ward.size/2-PLAYER_RADIUS;
+    s.camX=Math.max(-edge,Math.min(edge,s.camX+(-Math.sin(s.yaw)*panForward+Math.cos(s.yaw)*panRight)));
+    s.camZ=Math.max(-edge,Math.min(edge,s.camZ+(-Math.cos(s.yaw)*panForward-Math.sin(s.yaw)*panRight)));
+    if(canStand(s.camX,s.camZ)){
+     s.x=s.camX;
+     s.z=s.camZ;
+    }else{
+     for(const r of [2,4,7,11,16,24,36,52]){
+      let found=false;
+      for(let a=0;a<Math.PI*2;a+=Math.PI/4){
+       const nx=s.camX+Math.cos(a)*r,nz=s.camZ+Math.sin(a)*r;
+       if(canStand(nx,nz)){s.x=nx;s.z=nz;found=true;break;}
+      }
+      if(found)break;
+     }
+    }
+ };
  const applyZoom=(raw:number)=>{
   const s=state.current,previous=s.targetDistance;
   const next=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,raw));
@@ -180,25 +204,7 @@ export function Player({
     s.shiftDrag=true;
     s.panning=true;
     gl.domElement.style.cursor='grabbing';
-    const panScale=Math.max(0.55,s.distance*0.0022);
-    const panRight=-e.movementX*panScale;
-    const panForward=e.movementY*panScale;
-    const edge=ward.size/2-PLAYER_RADIUS;
-    s.camX=Math.max(-edge,Math.min(edge,s.camX+(-Math.sin(s.yaw)*panForward+Math.cos(s.yaw)*panRight)));
-    s.camZ=Math.max(-edge,Math.min(edge,s.camZ+(-Math.cos(s.yaw)*panForward-Math.sin(s.yaw)*panRight)));
-    if(canStand(s.camX,s.camZ)){
-     s.x=s.camX;
-     s.z=s.camZ;
-    }else{
-     for(const r of [2,4,7,11,16,24,36,52]){
-      let found=false;
-      for(let a=0;a<Math.PI*2;a+=Math.PI/4){
-       const nx=s.camX+Math.cos(a)*r,nz=s.camZ+Math.sin(a)*r;
-       if(canStand(nx,nz)){s.x=nx;s.z=nz;found=true;break;}
-      }
-      if(found)break;
-     }
-    }
+    panView(e.movementX,e.movementY);
     return;
    }
    s.yaw-=e.movementX*0.002;
@@ -247,6 +253,7 @@ export function Player({
   const oldX=s.x,oldZ=s.z;
   const touch=mobileInput?.current;
   if(touch){
+   if(touch.panX||touch.panY){panView(touch.panX,touch.panY);touch.panX=0;touch.panY=0;}
    if(touch.zoomFactor!==1){applyZoom(s.targetDistance*touch.zoomFactor);touch.zoomFactor=1;}
    if(touch.lookX||touch.lookY){s.yaw-=touch.lookX*0.004;s.pitch=Math.max(-1.35,Math.min(0.6,s.pitch-touch.lookY*0.004));if(s.topDown){s.topDown=false;onTopDown(false)}touch.lookX=0;touch.lookY=0;}
    if(touch.active&&s.mobileSession!==touch.session){s.mobileSession=touch.session;s.first=false;s.panning=false;s.camX=s.x;s.camZ=s.z;onMode(false)}

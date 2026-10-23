@@ -84,3 +84,8 @@ Previous verification (before this change):
 - Performance and input regression suite: 10/10 passed, including diagonal steering, sprint versus pinch, both same-half pinch cases, zoom direction, reset and remaining-finger suppression.
 - TypeScript and Vite production build passed. Existing large-bundle warning remains.
 - Real-device multitouch and visual browser verification not performed. Full collision suite not rerun; previously recorded lake-access road overlap remains outside this change.
+
+### Mobile village travel
+- Input/performance suite: 11/11 passed. Added parallel two-finger drag tests on either half and across halves, unchanged zoom under parallel drag, combined pinch/pan, and release/reset suppression.
+- TypeScript/Vite production build passed; existing bundle size warning remains.
+- Desktop and touch panning share the same bounds and collision-aware placement implementation. Physical mobile gesture testing has not been performed.

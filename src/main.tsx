@@ -159,7 +159,7 @@ function App(){
      <li><kbd>R</kbd><span>မူလနေရာ (အစသို့)</span></li>
      <li><kbd>Esc</kbd><span>Mouse လွှတ်ရန် / ပိတ်ရန်</span></li>
     </ul>
-    <p className="mobile-guide">Drag left to steer 360° · Hold right to run · Drag right to look · Pinch to zoom</p>
+    <p className="mobile-guide">Drag left to steer 360° · Hold right to run · Drag right to look · Pinch to zoom · Two-finger drag to travel</p>
    </div>
   </section>}
  </div>
