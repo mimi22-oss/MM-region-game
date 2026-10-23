@@ -5,7 +5,7 @@ import { ward } from '../data/ward';
 import { canStand, move, PLAYER_RADIUS } from '../game/collision';
 
 export const MIN_ZOOM = 2;
-export const MAX_ZOOM = 760;
+export const MAX_ZOOM = 2400;
 export const SKY_PITCH = -Math.PI / 2 + 0.001;
 
 export function Player({

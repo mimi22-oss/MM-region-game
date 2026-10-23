@@ -20,6 +20,7 @@ export function canStand(x:number,z:number):boolean {
  const mu=dx*c-dz*s,mv=dx*s+dz*c;
  for(const b of m.buildings)if(Math.abs(mu-b.u)<b.width/2+PLAYER_RADIUS&&Math.abs(mv-b.v)<b.depth/2+PLAYER_RADIUS)return false;
  for(const p of m.stupas)if(Math.hypot(mu-p.u,mv-p.v)<p.radius+PLAYER_RADIUS)return false;
+ if([...ward.mountains,...ward.weipula.peaks].some(m=>Math.hypot(x-m.x,z-m.z)<m.radius+PLAYER_RADIUS))return false;
  const edge=ward.size/2-PLAYER_RADIUS;
  if(!Number.isFinite(x)||!Number.isFinite(z)||Math.abs(x)>edge||Math.abs(z)>edge)return false;
  for(const h of [...ward.houses,...ward.warehouses,...ward.riceMill.buildings]){

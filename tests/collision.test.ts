@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { canStand,move } from '../src/game/collision.ts';
 import { ward,toWorld,pitchLanes,oppositeLanes,residentialRows } from '../src/data/ward.ts';
 test('Myothar inventory and safe AH1 spawn',()=>{assert.equal(ward.houses.length,98);assert.equal(ward.roads.length,18);assert.equal(ward.fields.length,2);assert.ok(canStand(ward.spawn.x,ward.spawn.z));for(let v=-120;v<=120;v+=2){const p=toWorld(0,v);assert.ok(canStand(p.x,p.z),'AH1 is walkable')}});
-test('every rotated house and trunk blocks walking',()=>{for(const h of ward.houses)assert.equal(canStand(h.x,h.z),false);for(const t of ward.trees)assert.equal(canStand(t.x,t.z),false);assert.equal(canStand(410,0),false);assert.equal(canStand(NaN,0),false)});
+test('every rotated house and trunk blocks walking',()=>{for(const h of ward.houses)assert.equal(canStand(h.x,h.z),false);for(const t of ward.trees)assert.equal(canStand(t.x,t.z),false);assert.equal(canStand(ward.size/2,0),false);assert.equal(canStand(NaN,0),false)});
 test('large movement cannot tunnel through rotated building',()=>{const h=ward.houses[0];const start=toWorld(-66,-110);assert.ok(canStand(start.x,start.z));move(start,h.x-start.x,h.z-start.z);assert.ok(canStand(start.x,start.z));assert.ok(Math.hypot(start.x-h.x,start.z-h.z)>4)});
-test('movement respects expanded ward bounds',()=>{const p={x:0,z:0};move(p,0,500);assert.ok(p.z<=409.6);assert.ok(canStand(p.x,p.z))});
+test('movement respects expanded ward bounds',()=>{const p={x:0,z:0};move(p,0,ward.size);assert.ok(p.z<=ward.size/2-0.4);assert.ok(canStand(p.x,p.z))});
 
 test('warehouses block entry and pitch stays clear',()=>{
  assert.equal(ward.warehouses.length,8);
@@ -120,4 +120,22 @@ test('rice mill compound has clear road frontage, two paddy rows and solid build
  assert.equal(rows.length,2);
  for(const f of m.fields){assert.ok(local(f).v-f.depth/2>rows[0].v+7);assert.ok(local(f).v+f.depth/2<rows[1].v-7)}
  for(const b of m.buildings)for(const u of [-b.width/2,b.width/2])for(const v of [-b.depth/2,b.depth/2]){const c=Math.cos(b.rotation),s=Math.sin(b.rotation);assert.ok(Math.abs(b.x+u*c+v*s)<ward.size/2&&Math.abs(b.z-u*s+v*c)<ward.size/2)}
+});
+
+test('five western plots extend behind the rear home with northern and southern fields',()=>{
+ const center=ward.westernFields.filter(f=>f.row===0);assert.equal(center.length,5);
+ for(const row of [0,1,2])assert.equal(ward.westernFields.filter(f=>f.row===row).length,5);
+ for(const f of ward.westernFields){assert.ok(f.u+f.width/2<-190);assert.ok(canStand(f.x,f.z));for(const u of [-f.width/2,f.width/2])for(const v of [-f.depth/2,f.depth/2]){const p=toWorld(f.u+u,f.v+v);assert.ok(Math.abs(p.x)<ward.size/2&&Math.abs(p.z)<ward.size/2)}}
+ for(const m of ward.mountains){assert.ok(m.u+m.radius<Math.min(...center.map(f=>f.u-f.width/2)));assert.ok(m.height>100);assert.equal(canStand(m.x,m.z),false);assert.ok(Math.abs(m.x)+m.radius<ward.size/2&&Math.abs(m.z)+m.radius<ward.size/2)}
+});
+
+test('thirty southern paddies lead to Weipula, with an AH1 pass and connected western ridge',()=>{
+ assert.equal(ward.southernFields.length,30);
+ for(const f of ward.southernFields){assert.ok(f.v-f.depth/2>401);assert.ok(canStand(f.x,f.z));for(const u of [-f.width/2,f.width/2])for(const v of [-f.depth/2,f.depth/2]){const p=toWorld(f.u+u,f.v+v);assert.ok(canStand(p.x,p.z))}}
+ assert.ok(Math.max(...ward.weipula.peaks.map(m=>m.height))>4*Math.max(...ward.mountains.map(m=>m.height)));
+ for(const m of ward.weipula.peaks){assert.equal(canStand(m.x,m.z),false);assert.ok(Math.abs(m.x)+m.radius<ward.size/2);assert.ok(Math.abs(m.z)+m.radius<ward.size/2)}
+ for(let v=400;v<=1290;v+=2)for(const u of [-5,0,5]){const p=toWorld(u,v);assert.ok(canStand(p.x,p.z),'AH1 pass stays open')}
+ const all=[...ward.mountains,...ward.weipula.peaks.filter(m=>m.u<0)];const reached=new Set([0]);let added=true;
+ while(added){added=false;for(let i=0;i<all.length;i++)if(!reached.has(i)&&[...reached].some(j=>Math.hypot(all[i].x-all[j].x,all[i].z-all[j].z)<all[i].radius+all[j].radius)){reached.add(i);added=true}}
+ assert.equal(reached.size,all.length,'western range joins Weipula');
 });

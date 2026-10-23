@@ -29,7 +29,7 @@ oppositeHome(194,326,'ဆန်စက်ဝင်း · သိုလှောင
 oppositeHome(24,334,'ဆန်စက်ဘေး · ပထမအိမ်တန်း');
 oppositeHome(24,394,'ဆန်စက်ဘေး · နောက်ဆုံးအိမ်တန်း');
 for(const h of houses)if(h.x*Math.cos(angle)-h.z*Math.sin(angle)>0)h.rotation=angle-Math.PI/2;export const ward={
- name:'မြို့သာရပ်ကွက် · ကလေးမြို့',size:820,spawn:toWorld(0,105),
+ name:'မြို့သာရပ်ကွက် · ကလေးမြို့',size:2800,spawn:toWorld(0,105),
  description:'ပေးထားသော မြေပုံကို မှီငြမ်းထားသော ခန့်မှန်း 3D ပုံစံ',houses,
  warehouses:[-1,1].flatMap(side=>[-75,-25,25,75].map((v,i)=>({id:`warehouse${side}-${i}`,...toWorld(side*34,v),width:21,depth:35,rotation:angle,color:side<0?'#c0b7a3':'#b6beb7',roof:i%2?'#83564b':'#879598'}))),
  pitch:{...toWorld(112,64),width:60,depth:96,rotation:angle},
@@ -41,6 +41,12 @@ for(const h of houses)if(h.x*Math.cos(angle)-h.z*Math.sin(angle)>0)h.rotation=an
   paths:[{...toWorld(106,302),width:196,depth:3,rotation:angle},{...toWorld(126,326),width:10,depth:46,rotation:angle}],
   fields:[351,372].map((v,i)=>({...toWorld(44,v),width:60,depth:16,rotation:angle,color:i?'#879963':'#6f9257'}))
  },
+ southernFields:Array.from({length:6},(_,row)=>Array.from({length:5},(_,col)=>({id:`southern-field-${row}-${col}`,u:30+col*42,v:430+row*40,...toWorld(30+col*42,430+row*40),width:36,depth:34,rotation:angle,color:['#7e9c55','#a6af68','#8ca65c'][(row+col)%3]}))).flat(),
+ weipula:{name:'ဝေပုလ္လတောင်ကြီး',label:toWorld(280,840),
+  peaks:[...[-720,-550,-380,-220,-105,105,220,380,550,720].map((u,i)=>({u,v:840,radius:[170,165,155,120,90,90,120,155,165,170][i],height:[850,1040,940,720,480,510,780,1100,980,870][i]})),
+   ...[470,590,710].map((v,i)=>({u:-630,v,radius:100+i*10,height:350+i*180}))].map((m,i)=>({...m,id:`weipula-${i}`,...toWorld(m.u,m.v),color:i<10?'#526e71':'#60796a'}))},
+ westernFields:[270,210,330].flatMap((v,row)=>Array.from({length:5},(_,i)=>({id:`western-field-${row}-${i}`,row,u:-216-i*42,v,...toWorld(-216-i*42,v),width:38,depth:54,rotation:angle,color:['#8ba65d','#a6ad63','#719650'][(i+row)%3]}))),
+ mountains:[...Array.from({length:5},(_,i)=>({u:-520-(i%2)*20,v:60+i*85,radius:72,height:145+(i%3)*28})),...Array.from({length:3},(_,i)=>({u:-630,v:100+i*120,radius:65,height:210+i*18}))].map((m,i)=>({...m,id:`western-mountain-${i}`,...toWorld(m.u,m.v),color:i<5?'#607b62':'#718487'})),
  crossCanal:{v:282,junctionV:376,depth:3,rotation:angle,
   points:[[125,282],[0,282],[-5,284],[-9,290],[-9,334],[-9,362],[-12,372],[-24,376],[-170,376]],
   bridges:[{u:0,v:282,width:12,depth:7},{u:-9,v:310,width:7,depth:4}]},
@@ -62,7 +68,7 @@ for(const h of houses)if(h.x*Math.cos(angle)-h.z*Math.sin(angle)>0)h.rotation=an
    {id:'quarters',name:'ဘုန်းကြီးကျောင်းဆောင်',u:0,v:23,width:27,depth:14,color:'#bda382',roof:'#80564d'}],
   stupas:[{u:31,v:9,radius:5},{u:34,v:-10,radius:2.7},{u:23,v:-14,radius:2}],
  },
- roads:[{id:'farmhouse-access',name:'စိုက်ခင်းအိမ်ဝင်လမ်း',...toWorld(-31.5,270),width:63,depth:3,rotation:angle,main:false},{id:'ah1',name:'AH1',...toWorld(0,0),width:12,depth:790,rotation:angle,main:true},
+ roads:[{id:'farmhouse-access',name:'စိုက်ခင်းအိမ်ဝင်လမ်း',...toWorld(-31.5,270),width:63,depth:3,rotation:angle,main:false},{id:'ah1',name:'AH1',...toWorld(0,450),width:12,depth:1700,rotation:angle,main:true},
  ...[-77,-99].map((u,i)=>({id:`lane${i}`,name:'ရပ်ကွက်လမ်း',...toWorld(u,0),width:5,depth:226,rotation:angle,main:false})),
  ...[-112,-47,40,112].map((v,i)=>({id:`cross${i}`,name:'လမ်းသွယ်',...toWorld(-57,v),width:114,depth:5,rotation:angle,main:false})),
  {id:'pitch-monastery-lane',name:'ကွင်းနှင့်ကျောင်းကြားလမ်း',...toWorld(150,68),width:5,depth:124,rotation:angle,main:false},

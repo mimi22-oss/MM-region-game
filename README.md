@@ -2,6 +2,15 @@
 
 ပေးထားသော Google Maps screenshots ကို မျက်မြင်မှီငြမ်းထားသည့် React + TypeScript + React Three Fiber prototype ဖြစ်ပါတယ်။ AH1 လမ်းမကြီး၊ လမ်းသွယ်များ၊ အိမ် ၂၁ လုံး၊ လမ်းမဘေး သစ်ပင် ၆၄ ပင်၊ ဂိုဒေါင် ၈ လုံး၊ ဘောလုံးကွင်းနှင့် လယ်ကွင်း ၂ ကွက် ပါဝင်ပါတယ်။ မြေပြင်သည် 700 × 700 m၊ မြောက်ဘက်သည် -Z ဖြစ်ပါတယ်။ အိမ်နေရာ၊ အရွယ်၊ အမြင့်နှင့် လမ်းအကွာအဝေးများကို ခန့်မှန်းထားပြီး မြေတိုင်းမြေပုံ သို့မဟုတ် တိကျသော GIS reconstruction မဟုတ်ပါ။ External map API သို့မဟုတ် API key မလိုပါ။
 
+
+House.tsx — ရိုးရိုးအိမ်များ
+Farmhouse.tsx — စိုက်ခင်းအိမ်၊ စိုက်ခင်းနဲ့ကန်
+Lane.tsx — လမ်းသွယ်
+MainRoad.tsx — မိန်းလမ်းမကြီး
+Tree.tsx — သစ်ပင်များ
+Canal.tsx — ရေမြောင်း၊ တံတားနဲ့ရေစီးလှုပ်ရှားမှု
+Field.tsx — လယ်ကွင်းများ
+
 ## Run
 
 Node.js 22.18+ နှင့် npm လိုပါတယ်။ ဒီ folder ထဲ terminal ဖွင့်ပြီး:
@@ -148,3 +157,8 @@ All files below are in `src/components/`. Placement data remains in `src/data/wa
 | `Town.tsx` | Scene composition, lighting, ground and remaining landmarks |
 
 Examples: `<House h={houseData}/>`; `<Lane r={roadData}/>`; `<Tree t={treeData} variant="large"/>`; `<Field f={fieldData} bunded/>`. The existing geometry, coordinates, controls, and map data are retained.
+
+
+## Western fields and mountain range
+
+Five bunded paddy plots extend west behind the rear home beyond the farmhouse. Five northern and five southern plots flank them (15 new plots). `ward.westernFields` defines placement; `Field.tsx` renders them. `Mountains.tsx` adds two overlapping western ridges, with peaks approximately 145-246 m tall, and the matching plan symbols. The ground and walkable world expand to 1600 m square; WARD PLAN uses the same bounds. Mountain footprints block walking. Existing homes and canal routes retain their positions.

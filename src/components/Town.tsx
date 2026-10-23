@@ -8,6 +8,7 @@ import { Lanes } from './Lane';
 import { Trees } from './Tree';
 import { Canal } from './Canal';
 import { Fields } from './Field';
+import { Mountains } from './Mountains';
 function Warehouses(){return <>{ward.warehouses.map(w=><group key={w.id} position={[w.x,0,w.z]} rotation={[0,w.rotation,0]}>
  <Box position={[0,0.15,0]} size={[w.width+3,0.3,w.depth+3]} color="#baa98d"/>
  <Box position={[0,3.5,0]} size={[w.width,7,w.depth]} color={w.color}/>
@@ -28,12 +29,12 @@ function FootballPitch(){const p=ward.pitch;return <group position={[p.x,0,p.z]}
  <Box position={[0,0.13,0]} size={[60,0.04,0.15]} color="#eee9d2"/>
  <mesh position={[0,0.155,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[9,9.15,64]}/><meshBasicMaterial color="#eee9d2"/></mesh>
  </group>}export function Town(){return <>
- <color attach="background" args={['#c6ded8']}/><fog attach="fog" args={['#c6ded8',950,2200]}/>
+ <color attach="background" args={['#c6ded8']}/><fog attach="fog" args={['#c6ded8',1800,5500]}/>
  <hemisphereLight args={['#e5f2ee','#697445',2]}/>
  <directionalLight position={[-80,180,60]} intensity={2.5} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-320} shadow-camera-right={320} shadow-camera-top={320} shadow-camera-bottom={-320} shadow-camera-far={650} shadow-normalBias={0.04}/>
  <Box position={[0,-0.3,0]} size={[ward.size,0.6,ward.size]} color="#92a36b"/>
  <Warehouses/><FootballPitch/><Canal/><Farmhouse/><OpenGround/><Monastery/><RiceMill/>
- <Fields/>
+ <Fields/><Mountains/>
  <MainRoad/><Lanes/> {ward.houses.filter(h=>h.id!==farmhouse.id).map(h=><House key={h.id} h={h}/>)}
  <Trees/>
  {/* A low visual border; collision follows the ward boundary. */}
