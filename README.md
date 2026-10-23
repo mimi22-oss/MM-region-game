@@ -1,4 +1,4 @@
-# မြို့သာရပ်ကွက် · ကလေးမြို့ — 3D Prototype
+﻿# မြို့သာရပ်ကွက် · ကလေးမြို့ — 3D Prototype
 
 ပေးထားသော Google Maps screenshots ကို မျက်မြင်မှီငြမ်းထားသည့် React + TypeScript + React Three Fiber prototype ဖြစ်ပါတယ်။ AH1 လမ်းမကြီး၊ လမ်းသွယ်များ၊ အိမ် ၂၁ လုံး၊ လမ်းမဘေး သစ်ပင် ၆၄ ပင်၊ ဂိုဒေါင် ၈ လုံး၊ ဘောလုံးကွင်းနှင့် လယ်ကွင်း ၂ ကွက် ပါဝင်ပါတယ်။ မြေပြင်သည် 700 × 700 m၊ မြောက်ဘက်သည် -Z ဖြစ်ပါတယ်။ အိမ်နေရာ၊ အရွယ်၊ အမြင့်နှင့် လမ်းအကွာအဝေးများကို ခန့်မှန်းထားပြီး မြေတိုင်းမြေပုံ သို့မဟုတ် တိကျသော GIS reconstruction မဟုတ်ပါ။ External map API သို့မဟုတ် API key မလိုပါ။
 
@@ -105,4 +105,46 @@ AH1 မှ ဂိုဒေါင်နောက်ဘက်သို့ ဝင�
 
 ## သစ်ပင်ကြီးများ
 
-လမ်းမနှင့် စိုက်ခင်းအိမ်ရှေ့ မြေကွက်လပ်အနားတွင် သစ်ပင်ကြီးတစ်ပင် ထည့်ထားပါတယ်။ ကွင်းဘေးလမ်းသွယ်၊ လမ်းမတစ်ဖက်လမ်းသွယ်၊ မူလရပ်ကွက်လမ်းနှင့် ကျောင်းဝင်းဘေးလမ်းတို့တွင်လည်း သစ်ပင်ကြီးများ ထည့်ထားပါတယ်။ သစ်ပင်ကြီးအသစ် စုစုပေါင်း ၂၇ ပင်၊ အမြင့် ၁၆ m ခန့်ဖြစ်ပြီး ပင်စည် collision နှင့် WARD PLAN သစ်ပင်အုပ်ပုံများ ပါဝင်ပါတယ်။
+လမ်းမနှင့် စိုက်ခင်းအိမ်ရှေ့ မြေကွက်လပ်အနားတွင် သစ်ပင်ကြီးတစ်ပင် ထည့်ထားပါတယ်။ ကွင်းဘေးလမ်းသွယ်၊ လမ်းမတစ်ဖက်လမ်းသွယ်၊ မူလရပ်ကွက်လမ်းနှင့် ကျောင်းဝင်းဘေးလမ်းတို့တွင်လည်း သစ်ပင်ကြီးများ ထည့်ထားပါတယ်။ သစ်ပင်ကြီးအသစ် စုစုပေါင်း ၂၇ ပင်၊ အမြင့် ၁၈ m ခန့်ဖြစ်ပြီး ပင်စည် collision နှင့် WARD PLAN သစ်ပင်အုပ်ပုံများ ပါဝင်ပါတယ်။
+
+
+## Tree height update
+
+All tree groups (road canopy, lane shade trees and farm trees) now reach approximately 17.6 m, about twice the two-storey house roof height. Trunk positions and ground collision radii are unchanged.
+
+## အရှေ့ဘက်အိမ်တန်းနှင့် ဖြတ်မြောင်း
+
+AH1 အရှေ့ဘက် လူနေအိမ်များ၏ အရှေ့/အနောက်မျက်နှာမူမှုကို လမ်းမဘက် (အနောက်ဘက်) သို့ ပြောင်းထားပြီး လမ်းမမျက်နှာစာတွင် အပြာရောင်သွပ်ခြံစည်းရိုးနှင့် ဂိတ်ပေါက် ပါပါတယ်။ စိုက်ခင်းအိမ်နှင့် မျက်နှာချင်းဆိုင်ဘက်တွင် ပထမတန်း အိမ် ၄ လုံး၊ ဒုတိယတန်း အိမ် ၁ လုံး ထပ်ထည့်ထားပါတယ်။ နှစ်တန်းကြား အရှေ့–အနောက်မြောင်းက AH1 ကို ဖြတ်ပြီး အနောက်ဘက် တောင်–မြောက်မြောင်း ၂ ကြောင်းလုံးနှင့် ဆက်ပါတယ်။ လမ်းမပေါ်တွင် ရေဖြတ်ပေါက်ပါ တံတားပိုင်းရှိပြီး ဖြတ်လျှောက်နိုင်ပါတယ်။ ပထမတန်းနှင့် မြောင်းကြား သစ်ပင်ကြီးတစ်ပင် ပါပါတယ်။
+
+
+## Southern cross-drain route
+
+The east-west branch crosses AH1 between the eastern home rows, bends south along the road edge, then turns west beyond the southernmost house row to join both north-south canals. It no longer cuts through the farmhouse land. Flow animation, WARD PLAN and walking collision share this route. Culvert decks preserve AH1 and the southern residential lane crossing.
+
+
+## Rice mill compound
+
+Added the rice mill beside the single-home eastern row, with an open field between AH1 and the mill. A separate paddy warehouse and two compound homes follow the reference image. On the road-side southern edge, a house row, two bunded paddy plots, and a final house row follow in order. The 3D scene and WARD PLAN share placement data; buildings block walking while yards and fields remain accessible. Layout dimensions are approximate.
+
+
+Two additional large shade trees stand between AH1 and the first canal-side eastern home, and at the road-facing front of the rice mill frontage yard. They use the existing approximately 17.6 m tree model and appear in WARD PLAN with trunk collision.
+
+
+## Scene components
+
+All files below are in `src/components/`. Placement data remains in `src/data/ward.ts`; collision remains in `src/game/collision.ts`.
+
+| File | Responsibility |
+| --- | --- |
+| `House.tsx` | Reusable two-storey `House` with fences; shared plan orientation helpers |
+| `Farmhouse.tsx` | Dedicated farmhouse, garden, pond, land and entrance fence; rendered once outside the ordinary house list |
+| `MainRoad.tsx` | AH1 main road |
+| `Lane.tsx` | Individual `Lane` and collection `Lanes` |
+| `Road.tsx` | Shared road surface and markings |
+| `Tree.tsx` | Individual `Tree` with large, canopy and farm variants; `Trees` and `FarmTrees` collections |
+| `Canal.tsx` | Two north-south canals, curved connecting branch, bridges and animated flow |
+| `Field.tsx` | Individual `Field`, optional bunded paddy style, and `Fields` collection |
+| `Primitives.tsx` | Shared `Box` and `Block` geometry |
+| `Town.tsx` | Scene composition, lighting, ground and remaining landmarks |
+
+Examples: `<House h={houseData}/>`; `<Lane r={roadData}/>`; `<Tree t={treeData} variant="large"/>`; `<Field f={fieldData} bunded/>`. The existing geometry, coordinates, controls, and map data are retained.

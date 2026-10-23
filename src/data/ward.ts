@@ -20,12 +20,31 @@ for(const [group,rows] of Object.entries(residentialRows))for(const v of rows)fo
  oppositeHome(u,v,`${group} · အိမ်တန်း ${v}`);
 }
 oppositeHome(-72,270,'လမ်းသွယ် ၂ · စိုက်ခင်းအိမ်');houses[houses.length-1].rotation=angle+Math.PI/2;
-oppositeHome(-182,270,'လမ်းသွယ် ၂ · မြောင်းနောက်အိမ်');houses[houses.length-1].rotation=angle+Math.PI/2;export const ward={
+export const farmhouse=houses[houses.length-1];
+oppositeHome(-182,270,'လမ်းသွယ် ၂ · မြောင်းနောက်အိမ်');houses[houses.length-1].rotation=angle+Math.PI/2;// New rows east of AH1: four homes in the first row, one in the second.
+for(const u of [24,46,68,90])oppositeHome(u,270,'အရှေ့တန်း ၁ · အိမ်');
+oppositeHome(24,294,'အရှေ့တန်း ၂ · အိမ်');
+oppositeHome(152,290,'ဆန်စက်ဝင်း · ရှေ့အိမ်');
+oppositeHome(194,326,'ဆန်စက်ဝင်း · သိုလှောင်ရုံဘေးအိမ်');
+oppositeHome(24,334,'ဆန်စက်ဘေး · ပထမအိမ်တန်း');
+oppositeHome(24,394,'ဆန်စက်ဘေး · နောက်ဆုံးအိမ်တန်း');
+for(const h of houses)if(h.x*Math.cos(angle)-h.z*Math.sin(angle)>0)h.rotation=angle-Math.PI/2;export const ward={
  name:'မြို့သာရပ်ကွက် · ကလေးမြို့',size:820,spawn:toWorld(0,105),
  description:'ပေးထားသော မြေပုံကို မှီငြမ်းထားသော ခန့်မှန်း 3D ပုံစံ',houses,
  warehouses:[-1,1].flatMap(side=>[-75,-25,25,75].map((v,i)=>({id:`warehouse${side}-${i}`,...toWorld(side*34,v),width:21,depth:35,rotation:angle,color:side<0?'#c0b7a3':'#b6beb7',roof:i%2?'#83564b':'#879598'}))),
  pitch:{...toWorld(112,64),width:60,depth:96,rotation:angle},
- // Exactly two continuous waterways, shared by every residential lane.
+ riceMill:{
+  buildings:[
+   {id:'rice-mill',name:'ဆန်စက်ရုံ',...toWorld(98,326),width:40,depth:42,rotation:angle,color:'#cbbd98',roof:'#c4af7d'},
+   {id:'paddy-store',name:'စပါးသိုလှောင်ရုံ',...toWorld(154,326),width:38,depth:40,rotation:angle,color:'#c1ae88',roof:'#a7866b'}],
+  yard:{...toWorld(44,316),width:60,depth:20,rotation:angle},
+  paths:[{...toWorld(106,302),width:196,depth:3,rotation:angle},{...toWorld(126,326),width:10,depth:46,rotation:angle}],
+  fields:[351,372].map((v,i)=>({...toWorld(44,v),width:60,depth:16,rotation:angle,color:i?'#879963':'#6f9257'}))
+ },
+ crossCanal:{v:282,junctionV:376,depth:3,rotation:angle,
+  points:[[125,282],[0,282],[-5,284],[-9,290],[-9,334],[-9,362],[-12,372],[-24,376],[-170,376]],
+  bridges:[{u:0,v:282,width:12,depth:7},{u:-9,v:310,width:7,depth:4}]},
+ // Two north-south waterways, now joined by an east-west branch., shared by every residential lane.
  canal:{u:-54,v:132.5,width:4,depth:511,...toWorld(-54,132.5),rotation:angle,
   bridges:[-112,-47,40,112,...oppositeLanes,270].map(v=>v-132.5)},
  drains:[{u:-160,v:132.5,...toWorld(-160,132.5),width:4,depth:511,rotation:angle,
@@ -52,6 +71,9 @@ oppositeHome(-182,270,'လမ်းသွယ် ၂ · မြောင်းန�
  fields:[[-84,-180],[220,-80]].map(([u,v],i)=>({...toWorld(u,v),width:44,depth:28,rotation:angle,color:['#a3aa65','#b5a571'][i]})),
  largeTrees:[
   {id:'front-lot-tree',u:-10,v:258},
+  {id:'east-row-canal-tree',u:56,v:277},
+  {id:'east-first-row-road-tree',u:12,v:270},
+  {id:'rice-mill-yard-front-tree',u:12,v:316},
   ...pitchLanes.flatMap((v,i)=>[12,145].map((u,j)=>({id:`pitch-shade-${i}-${j}`,u,v:v+5}))),
   ...oppositeLanes.flatMap((v,i)=>[-12,-144].map((u,j)=>({id:`opposite-shade-${i}-${j}`,u,v:v+5}))),
   ...[-112,-47,40,112].map((v,i)=>({id:`old-cross-shade-${i}`,u:-124,v:v+6})),
@@ -60,6 +82,7 @@ oppositeHome(-182,270,'လမ်းသွယ် ၂ · မြောင်းန�
  ].map(({id,u,v})=>({id,...toWorld(u,v),radius:1.1})),
  trees:[-1,1].flatMap(side=>Array.from({length:32},(_,i)=>({id:`t${side}-${i}`,...toWorld(side*14,-120+i*7.7),radius:0.55}))),
 };
+
 
 
 

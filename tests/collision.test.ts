@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { canStand,move } from '../src/game/collision.ts';
 import { ward,toWorld,pitchLanes,oppositeLanes,residentialRows } from '../src/data/ward.ts';
-test('Myothar inventory and safe AH1 spawn',()=>{assert.equal(ward.houses.length,89);assert.equal(ward.roads.length,18);assert.equal(ward.fields.length,2);assert.ok(canStand(ward.spawn.x,ward.spawn.z));for(let v=-120;v<=120;v+=2){const p=toWorld(0,v);assert.ok(canStand(p.x,p.z),'AH1 is walkable')}});
+test('Myothar inventory and safe AH1 spawn',()=>{assert.equal(ward.houses.length,98);assert.equal(ward.roads.length,18);assert.equal(ward.fields.length,2);assert.ok(canStand(ward.spawn.x,ward.spawn.z));for(let v=-120;v<=120;v+=2){const p=toWorld(0,v);assert.ok(canStand(p.x,p.z),'AH1 is walkable')}});
 test('every rotated house and trunk blocks walking',()=>{for(const h of ward.houses)assert.equal(canStand(h.x,h.z),false);for(const t of ward.trees)assert.equal(canStand(t.x,t.z),false);assert.equal(canStand(410,0),false);assert.equal(canStand(NaN,0),false)});
 test('large movement cannot tunnel through rotated building',()=>{const h=ward.houses[0];const start=toWorld(-66,-110);assert.ok(canStand(start.x,start.z));move(start,h.x-start.x,h.z-start.z);assert.ok(canStand(start.x,start.z));assert.ok(Math.hypot(start.x-h.x,start.z-h.z)>4)});
 test('movement respects expanded ward bounds',()=>{const p={x:0,z:0};move(p,0,500);assert.ok(p.z<=409.6);assert.ok(canStand(p.x,p.z))});
@@ -89,4 +89,35 @@ test('farmhouse entrance bridge connects the road through the empty lot',()=>{
  move(start,end.x-start.x,end.z-start.z);
  assert.ok(Math.hypot(start.x-end.x,start.z-end.z)<0.1);
  for(const v of [266,274]){const p=toWorld(-54,v);assert.equal(canStand(p.x,p.z),false)}
+});
+
+test('eastern rows face AH1 and cross-drain joins both north-south canals',()=>{
+ assert.equal(ward.houses.filter(h=>h.name.startsWith('အရှေ့တန်း ၁')).length,4);
+ assert.equal(ward.houses.filter(h=>h.name.startsWith('အရှေ့တန်း ၂')).length,1);
+ for(const h of ward.houses.filter(h=>(h.x-h.z)/Math.sqrt(2)>0))assert.ok(Math.abs(h.rotation-(ward.crossCanal.rotation-Math.PI/2))<0.001);
+ for(const u of [-160,-54,20,80]){const p=toWorld(u,u<0?ward.crossCanal.junctionV:ward.crossCanal.v);assert.equal(canStand(p.x,p.z),false)}
+ const start=toWorld(0,260),end=toWorld(0,304);move(start,end.x-start.x,end.z-start.z);assert.ok(Math.hypot(start.x-end.x,start.z-end.z)<0.1);
+ const tree=ward.largeTrees.find(t=>t.id==='east-row-canal-tree')!;assert.equal(canStand(tree.x,tree.z),false);
+});
+
+test('cross-drain bends south, clears farmland and preserves the southern lane',()=>{
+ for(const u of [-102,-120,-140]){const p=toWorld(u,282);assert.ok(canStand(p.x,p.z),'old farm crossing is dry')}
+ assert.ok(ward.crossCanal.junctionV>Math.max(...residentialRows.southFar));
+ for(const [u,v] of [[-9,300],[-9,340],[-12,372],[-100,376]]){const p=toWorld(u,v);assert.equal(canStand(p.x,p.z),false)}
+ const start=toWorld(-18,310),end=toWorld(0,310);move(start,end.x-start.x,end.z-start.z);assert.ok(Math.hypot(start.x-end.x,start.z-end.z)<0.1);
+});
+
+test('rice mill compound has clear road frontage, two paddy rows and solid buildings',()=>{
+ const m=ward.riceMill;
+ assert.equal(m.buildings.length,2);assert.equal(m.fields.length,2);
+ for(const b of m.buildings)assert.equal(canStand(b.x,b.z),false);
+ for(const p of [m.yard,...m.paths,...m.fields]){
+  for(let u=-p.width/2+2;u<p.width/2;u+=3)for(let v=-p.depth/2+2;v<p.depth/2;v+=3){const c=Math.cos(p.rotation),s=Math.sin(p.rotation);assert.ok(canStand(p.x+u*c+v*s,p.z-u*s+v*c),'compound open space stays walkable')}
+ }
+ const local=(p:{x:number;z:number})=>({u:(p.x-p.z)/Math.sqrt(2),v:(p.x+p.z)/Math.sqrt(2)});
+ assert.ok(local(m.yard).u+m.yard.width/2<local(m.buildings[0]).u-m.buildings[0].width/2);
+ const rows=ward.houses.filter(h=>h.name.startsWith('ဆန်စက်ဘေး')).map(local).sort((a,b)=>a.v-b.v);
+ assert.equal(rows.length,2);
+ for(const f of m.fields){assert.ok(local(f).v-f.depth/2>rows[0].v+7);assert.ok(local(f).v+f.depth/2<rows[1].v-7)}
+ for(const b of m.buildings)for(const u of [-b.width/2,b.width/2])for(const v of [-b.depth/2,b.depth/2]){const c=Math.cos(b.rotation),s=Math.sin(b.rotation);assert.ok(Math.abs(b.x+u*c+v*s)<ward.size/2&&Math.abs(b.z-u*s+v*c)<ward.size/2)}
 });
