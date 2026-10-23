@@ -41,3 +41,56 @@ test('mountain terrain joins tiles smoothly and leaves footprints and the road p
  }
  assert.ok(triangles>0&&triangles<12000);
 });
+
+
+test('robot facing stays fixed while orbiting and turns toward actual movement',async()=>{
+ const {avatarHeading}=await import('../src/game/avatarHeading.ts');
+ let facing=0.7;
+ for(let cameraYaw=-Math.PI;cameraYaw<=Math.PI;cameraYaw+=0.1){facing=avatarHeading(facing,0,0);assert.equal(facing,0.7)}
+ for(const [dx,dz] of [[0,-1],[1,0],[0,1],[-1,0],[1,-1]]){const heading=avatarHeading(facing,dx,dz),length=Math.hypot(dx,dz);assert.ok(Math.abs(-Math.sin(heading)-dx/length)<1e-10);assert.ok(Math.abs(-Math.cos(heading)-dz/length)<1e-10)}
+ assert.equal(avatarHeading(1.2,1e-9,-1e-9),1.2);
+});
+
+
+test('bot appearances are unique and exclude the player mint palette',async()=>{
+ const {botAppearance,playerPalette}=await import('../src/game/robotAppearance.ts');const variants=Array.from({length:64},(_,i)=>botAppearance(i));
+ assert.equal(new Set(variants.map(v=>v.palette.shell)).size,64);assert.equal(new Set(variants.map(v=>v.size)).size,64);
+ for(const v of variants){assert.notEqual(v.palette.shell,playerPalette.shell);assert.ok(v.size>=0.66&&v.size<=1.11);const hue=Number(v.palette.shell.match(/hsl\(([0-9.]+)/)![1]);assert.ok(hue<105||hue>=200)}
+});
+
+test('bot routes join lanes to highways, reject blocked crossings and reverse at ends',async()=>{
+ const {buildRoadGraph,nextRoadNode}=await import('../src/game/robotRoutes.ts');
+ const roads=[{id:'main',name:'main',x:0,z:0,width:4,depth:40,rotation:0,main:true},{id:'lane',name:'lane',x:0,z:0,width:40,depth:4,rotation:0,main:false}];
+ const graph=buildRoadGraph(roads,()=>true),center=graph.findIndex(n=>Math.hypot(n.x,n.z)<0.01);assert.equal(graph[center].links.length,4);
+ const end=graph.findIndex(n=>n.links.length===1);assert.equal(nextRoadNode(graph,end,graph[end].links[0],0.5),graph[end].links[0]);
+ const blocked=buildRoadGraph(roads,(x,z)=>Math.hypot(x,z)>2);for(const n of blocked)for(const j of n.links){const b=blocked[j];assert.ok(Math.hypot((n.x+b.x)/2,(n.z+b.z)/2)>2)}
+});
+
+test('all villages have safe bot patrols with access to a main road',async()=>{
+ const {ward}=await import('../src/data/ward.ts');const {kalayVillages}=await import('../src/data/villages/index.ts');const {canStand}=await import('../src/game/collision.ts');const {buildRoadGraph}=await import('../src/game/robotRoutes.ts');
+ for(const region of [{id:'myothar',roads:ward.roads},...kalayVillages]){
+  const clear=(x:number,z:number)=>[[0,0],[0.08,0],[-0.08,0],[0,0.08],[0,-0.08]].every(([dx,dz])=>canStand(x+dx,z+dz));
+  const graph=buildRoadGraph(region.roads,clear),lanes=graph.map((n,i)=>n.lane&&n.links.length?i:-1).filter(i=>i>=0);assert.ok(lanes.length>=8,region.id);
+  const seen=new Set(lanes),queue=[...lanes];for(let i=0;i<queue.length;i++)for(const j of graph[queue[i]].links)if(!seen.has(j)){seen.add(j);queue.push(j)}assert.ok([...seen].some(i=>!graph[i].lane),region.id+' connects to highway');
+  for(const n of graph)for(const j of n.links){const b=graph[j];for(let t=0;t<=1;t+=0.25)assert.ok(clear(n.x+(b.x-n.x)*t,n.z+(b.z-n.z)*t),region.id+' patrol edge is clear')}
+ }
+});
+
+
+test('parked reference car blocks entry without obstructing AH1 or the player spawn',async()=>{
+ const {parkedCars}=await import('../src/data/cars.ts');const {ward,toWorld}=await import('../src/data/ward.ts');const {canStand}=await import('../src/game/collision.ts');
+ for(const car of parkedCars)assert.equal(canStand(car.x,car.z),false);
+ assert.ok(canStand(ward.spawn.x,ward.spawn.z));
+ for(let v=98;v<=109;v++)for(const u of [-5,0,5]){const p=toWorld(u,v);assert.ok(canStand(p.x,p.z))}
+});
+
+
+test('touch directions and lifecycle reset cannot leave movement or sprint stuck',async()=>{
+ const {createMobileInput,resetMobileInput,touchDirection}=await import('../src/game/mobileInput.ts');
+ const a=createMobileInput(),b=createMobileInput();
+ for(const [direction,forward,right] of [['up',1,0],['down',-1,0],['left',0,-1],['right',0,1]] as const)assert.deepEqual(touchDirection(direction),{forward,right});
+ a.sprint=true;assert.equal(a.active,false);assert.equal(a.forward,0);assert.equal(a.right,0);
+ Object.assign(a,touchDirection('up'),{active:true,session:3,lookX:50,lookY:-10});resetMobileInput(a);
+ assert.equal(a.session,3);assert.deepEqual({...a,session:0},b);
+ Object.assign(a,touchDirection('right'),{active:true,session:a.session+1});assert.equal(a.session,4);assert.equal(a.sprint,false);assert.equal(b.active,false);
+});

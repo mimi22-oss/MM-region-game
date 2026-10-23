@@ -1,3 +1,4 @@
+import { parkedCars } from '../data/cars.ts';
 import { spatialIndex } from './spatialIndex.ts';
 import { ward } from '../data/ward.ts';
 import { kalayVillages } from '../data/villages/index.ts';
@@ -44,6 +45,7 @@ export function canStand(x:number,z:number):boolean {
  for(const b of m.buildings)if(Math.abs(mu-b.u)<b.width/2+PLAYER_RADIUS&&Math.abs(mv-b.v)<b.depth/2+PLAYER_RADIUS)return false;
  for(const p of m.stupas)if(Math.hypot(mu-p.u,mv-p.v)<p.radius+PLAYER_RADIUS)return false;
  if(mountainObstacles.some(m=>Math.hypot(x-m.x,z-m.z)<m.radius+PLAYER_RADIUS))return false;
+ for(const car of parkedCars){const dx=x-car.x,dz=z-car.z,c=Math.cos(car.rotation),s=Math.sin(car.rotation);if(Math.abs(dx*c-dz*s)<car.width*car.size/2+PLAYER_RADIUS&&Math.abs(dx*s+dz*c)<car.depth*car.size/2+PLAYER_RADIUS)return false}
  const edge=ward.size/2-PLAYER_RADIUS;
  if(!Number.isFinite(x)||!Number.isFinite(z)||Math.abs(x)>edge||Math.abs(z)>edge)return false;
  for(const h of nearbyBuildings(x,z)){

@@ -1,3 +1,48 @@
+# Latest car and mobile controls verification
+
+- TypeScript + Vite production build: PASS.
+- Targeted suite: 9 tests PASS, including car collision/road clearance and touch directions/reset state.
+- Reviewed independent left/right pointer capture, long-press timer cleanup, pointer cancellation, blur/visibility cleanup and menu/map disabling.
+- Desktop pitch is unchanged when touch input is idle.
+- Real phone multi-touch and browser visual checks not performed.
+- dist/ and ZIP refreshed. Previous unrelated lake-road issue remains documented below.
+
+---
+# Latest autonomous robot verification
+
+- TypeScript + production build: PASS.
+- Targeted performance/robot suite: 7 tests PASS. Coverage includes 64 unique palettes/sizes, road junctions, blocked edges, dead-end reversal and safe patrol routes from lanes to highways in all eight regions.
+- Static world layout, player movement and player mint palette retained.
+- Browser visual verification / FPS measurement not performed.
+- dist/ and ZIP refreshed. Existing unrelated Kyar Inn lake-access overlap remains documented below.
+
+---
+# Latest robot eye update
+
+- Added dark pupils and small white highlights to both eyes.
+- TypeScript + Vite build: PASS.
+- Browser visual verification not performed.
+- dist/ and ZIP refreshed.
+
+---
+# Latest camera / robot heading fix
+
+- Camera yaw and robot heading separated.
+- Targeted suite: 4 tests PASS, including stationary orbit, cardinal/diagonal movement, and negligible movement.
+- TypeScript + Vite build: PASS. dist/ and ZIP refreshed.
+- Browser mouse-orbit appearance has not been visually verified.
+
+---
+# Latest robot character verification
+
+- TypeScript and Vite production build: PASS.
+- Robot is rendered under the existing player root, preserving camera self-exclusion and first-person hiding.
+- Wheel rotation uses the actual movement delta, excluding aerial camera movement.
+- Browser appearance and wheel animation have not been visually verified.
+- Existing lake-access overlap noted below is unrelated and not changed in this update.
+- dist/ and ZIP refreshed with the robot character.
+
+---
 # Latest mountain appearance verification
 
 - TypeScript + Vite production build: PASS.

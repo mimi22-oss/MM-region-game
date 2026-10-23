@@ -455,11 +455,11 @@ test('Kyar Inn village sits between Htauk Kyant and Weipula with Taphi Chaung br
     assert.ok(canStand(r.x, r.z), `${r.id} center is walkable`);
   }
 
-  // 7. Kyar Inn Lake (ကြာအင်းရေကန်) at northwest of Kyar Inn village
+  // 7. Kyar Inn Lake (ကြာအင်းရေကန်) at southwest of Kyar Inn village
   assert.equal(kyarInnVillage.ponds?.length, 17, '17 ponds in Kyar Inn Lake complex');
   for (const p of kyarInnVillage.ponds!) {
     assert.ok(localU(p) < -200, 'pond is to the west of village residential blocks');
-    assert.ok(localV(p) <= 3800, 'pond is in the northern/northwest half of the village zone');
+    assert.ok(localV(p) >= 3850 && localV(p) <= 4120, 'pond is in the southern/southwest half of the village zone');
     assert.equal(canStand(p.x, p.z), false, 'pond water blocks walking');
   }
 
@@ -473,4 +473,30 @@ test('Kyar Inn village sits between Htauk Kyant and Weipula with Taphi Chaung br
   assert.ok(kyarInnLakeIsland, 'Kyar Inn Lake Island exists');
   assert.ok(pavilion, 'Water pavilion on stilts exists');
   assert.equal(canStand(pavilion.x, pavilion.z), false, 'water pavilion blocks collision');
+});
+
+
+test('detectLocation identifies every ward, village, sub-ward, and landmark during robot movement or Shift+Drag', async () => {
+  const { detectLocation, MAP_DESTINATIONS } = await import('../src/game/locationDetect.ts');
+
+  for (const dest of MAP_DESTINATIONS) {
+    const loc = detectLocation(dest.x, dest.z);
+    assert.equal(loc.id, dest.id, `Destination ${dest.id} resolves to its own id`);
+  }
+
+  // Thar Si sub-wards 1 to 6
+  const tsW1 = toWorld(-50, 720);
+  assert.equal(detectLocation(tsW1.x, tsW1.z).subArea, 'သာစည်ရွာ · ရပ်ကွက် (၁)');
+  const tsW2 = toWorld(-50, 860);
+  assert.equal(detectLocation(tsW2.x, tsW2.z).subArea, 'သာစည်ရွာ · ရပ်ကွက် (၂)');
+  const tsW3 = toWorld(-160, 720);
+  assert.equal(detectLocation(tsW3.x, tsW3.z).subArea, 'သာစည်ရွာ · ရပ်ကွက် (၃)');
+  const tsW6 = toWorld(-270, 860);
+  assert.equal(detectLocation(tsW6.x, tsW6.z).subArea, 'သာစည်ရွာ · ရပ်ကွက် (၆)');
+
+  // Kyar Inn vs Kyar Inn Lake
+  const kiCenter = toWorld(0, 3850);
+  assert.equal(detectLocation(kiCenter.x, kiCenter.z).id, 'kyarinn');
+  const kiLake = toWorld(-340, 3990);
+  assert.equal(detectLocation(kiLake.x, kiLake.z).id, 'kyarinn-lake');
 });

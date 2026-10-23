@@ -230,10 +230,10 @@ export const kyarInnLandmarks = [
 
 /**
  * ကြာအင်းရေကန် (Kyar Inn Lake) နှင့် ငါးကန်/ကြာကန်များ
- * (ရွာ၏ အနောက်မြောက်ဘက်ခြမ်း: u = -226 မှ -438, v = 3560 မှ 3800)
+ * (ရွာ၏ အနောက်တောင်ဘက်ခြမ်း: u = -226 မှ -438, v = 3860 မှ 4100)
  * Google Maps ဂြိုဟ်တုဓာတ်ပုံအတိုင်း တည်ဆောက်ထားသော ကန် ၁၇ ကန်:
  * - ပင်မ ကြာအင်းရေကန် (Kyar Inn Lake Pin နေရာ၊ ရေပေါ်နားနေဆောင်နှင့် ကူးတံတားပါဝင်)
- * - အနောက်မြောက် ရေကန်ကြီးနှင့် ကန်သွယ်
+ * - အနောက်ဘက် ရေကန်ကြီးနှင့် ကန်သွယ်
  * - ကုန်းမြေပါ ရေကန် (အလယ်တွင် ကျွန်းကုန်းမြေ ပါဝင်သော ကန်)
  * - အလယ် ရေကန်စုံ
  * - တောင်ဘက် ရေကန်ကြီးနှင့် တောင်ဘက်စွန်း ငါးမွေးမြူရေးကန်များ
@@ -245,32 +245,32 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-main-lake',
 		name: 'ကြာအင်းရေကန် ပင်မကန် (Kyar Inn Lake)',
 		u: -340,
-		v: 3690,
-		...toWorld(-340, 3690),
+		v: 3990,
+		...toWorld(-340, 3990),
 		width: 64,
 		depth: 36,
 		rotation: angle,
 		color: '#387570',
 	},
-	// ၂။ အနောက်မြောက် ရေကန်ကြီး (အနောက်ဘက်စွန်း ရေကန်ကျယ်)
+	// ၂။ အနောက်ဘက် ရေကန်ကြီး (အနောက်ဘက်စွန်း ရေကန်ကျယ်)
 	{
 		id: 'ki-pond-northwest-large',
-		name: 'အနောက်မြောက် ရေကန်ကြီး',
+		name: 'အနောက်ဘက် ရေကန်ကြီး',
 		u: -400,
-		v: 3630,
-		...toWorld(-400, 3630),
+		v: 3930,
+		...toWorld(-400, 3930),
 		width: 76,
 		depth: 72,
 		rotation: angle,
 		color: '#2e616f',
 	},
-	// ၃။ အနောက်မြောက် ကန်သွယ် (ရေကန်ကြီး မြောက်ဘက် ကန်သွယ်ရှည်)
+	// ၃။ အနောက်ဘက် ကန်သွယ် (ရေကန်ကြီး မြောက်ဘက် ကန်သွယ်ရှည်)
 	{
 		id: 'ki-pond-north-narrow',
-		name: 'အနောက်မြောက် ကန်သွယ်',
+		name: 'အနောက်ဘက် ကန်သွယ်',
 		u: -400,
-		v: 3575,
-		...toWorld(-400, 3575),
+		v: 3875,
+		...toWorld(-400, 3875),
 		width: 26,
 		depth: 32,
 		rotation: angle,
@@ -281,8 +281,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-island-lake',
 		name: 'ကုန်းမြေပါ ရေကန် (Island Lake)',
 		u: -340,
-		v: 3600,
-		...toWorld(-340, 3600),
+		v: 3900,
+		...toWorld(-340, 3900),
 		width: 56,
 		depth: 34,
 		rotation: angle,
@@ -293,8 +293,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-north-top',
 		name: 'အထက် ကန်ငယ်',
 		u: -340,
-		v: 3568,
-		...toWorld(-340, 3568),
+		v: 3868,
+		...toWorld(-340, 3868),
 		width: 46,
 		depth: 20,
 		rotation: angle,
@@ -305,8 +305,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-mid-upper',
 		name: 'အလယ် အထက်ကန်',
 		u: -340,
-		v: 3632,
-		...toWorld(-340, 3632),
+		v: 3932,
+		...toWorld(-340, 3932),
 		width: 54,
 		depth: 16,
 		rotation: angle,
@@ -317,8 +317,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-mid-lower',
 		name: 'အလယ် အောက်ကန်',
 		u: -340,
-		v: 3654,
-		...toWorld(-340, 3654),
+		v: 3954,
+		...toWorld(-340, 3954),
 		width: 54,
 		depth: 16,
 		rotation: angle,
@@ -329,8 +329,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-south-large',
 		name: 'တောင်ဘက် ရေကန်ကြီး',
 		u: -340,
-		v: 3738,
-		...toWorld(-340, 3738),
+		v: 4038,
+		...toWorld(-340, 4038),
 		width: 68,
 		depth: 38,
 		rotation: angle,
@@ -341,8 +341,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-south-sw',
 		name: 'တောင်ဘက်စွန်း အနောက်ကန်',
 		u: -368,
-		v: 3782,
-		...toWorld(-368, 3782),
+		v: 4082,
+		...toWorld(-368, 4082),
 		width: 26,
 		depth: 24,
 		rotation: angle,
@@ -353,8 +353,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-south-se',
 		name: 'တောင်ဘက်စွန်း အရှေ့ကန်',
 		u: -324,
-		v: 3782,
-		...toWorld(-324, 3782),
+		v: 4082,
+		...toWorld(-324, 4082),
 		width: 48,
 		depth: 24,
 		rotation: angle,
@@ -365,8 +365,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-east-ne-1',
 		name: 'အရှေ့မြောက် ကန်ငယ် ၁',
 		u: -288,
-		v: 3590,
-		...toWorld(-288, 3590),
+		v: 3890,
+		...toWorld(-288, 3890),
 		width: 24,
 		depth: 13,
 		rotation: angle,
@@ -377,8 +377,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-east-ne-2',
 		name: 'အရှေ့မြောက် ကန်ငယ် ၂',
 		u: -288,
-		v: 3608,
-		...toWorld(-288, 3608),
+		v: 3908,
+		...toWorld(-288, 3908),
 		width: 24,
 		depth: 13,
 		rotation: angle,
@@ -389,8 +389,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-east-mid',
 		name: 'အရှေ့ အလယ်ကန်',
 		u: -288,
-		v: 3644,
-		...toWorld(-288, 3644),
+		v: 3944,
+		...toWorld(-288, 3944),
 		width: 26,
 		depth: 32,
 		rotation: angle,
@@ -401,8 +401,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-east-green-1',
 		name: 'အရှေ့ဘက် စိမ်းလန်းသောကန် ၁',
 		u: -258,
-		v: 3666,
-		...toWorld(-258, 3666),
+		v: 3966,
+		...toWorld(-258, 3966),
 		width: 28,
 		depth: 18,
 		rotation: angle,
@@ -413,8 +413,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-east-green-2',
 		name: 'အရှေ့ဘက် စိမ်းလန်းသောကန် ၂',
 		u: -226,
-		v: 3666,
-		...toWorld(-226, 3666),
+		v: 3966,
+		...toWorld(-226, 3966),
 		width: 28,
 		depth: 18,
 		rotation: angle,
@@ -425,8 +425,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-far-ne-channel',
 		name: 'အရှေ့မြောက် ရေမြောင်းကန်',
 		u: -246,
-		v: 3585,
-		...toWorld(-246, 3585),
+		v: 3885,
+		...toWorld(-246, 3885),
 		width: 56,
 		depth: 22,
 		rotation: angle,
@@ -437,8 +437,8 @@ export const kyarInnLakePonds: PondPlot[] = [
 		id: 'ki-pond-east-se',
 		name: 'အရှေ့တောင် ကန်ငယ်',
 		u: -285,
-		v: 3714,
-		...toWorld(-285, 3714),
+		v: 4014,
+		...toWorld(-285, 4014),
 		width: 22,
 		depth: 28,
 		rotation: angle,
@@ -451,8 +451,8 @@ export const kyarInnLakeIsland = {
 	id: 'ki-lake-island',
 	name: 'ကြာအင်းရေကန် ကုန်းမြေ (Island)',
 	u: -340,
-	v: 3600,
-	...toWorld(-340, 3600),
+	v: 3900,
+	...toWorld(-340, 3900),
 	width: 32,
 	depth: 14,
 	rotation: angle,
@@ -465,7 +465,7 @@ export const kyarInnLakeStructures: House[] = [
 	{
 		id: 'ki-lake-pavilion',
 		name: 'ကြာအင်းရေကန် ရေပေါ်နားနေဆောင်',
-		...toWorld(-336, 3704),
+		...toWorld(-336, 4004),
 		width: 7.5,
 		depth: 6,
 		color: '#d6cbb5',
@@ -476,7 +476,7 @@ export const kyarInnLakeStructures: House[] = [
 	{
 		id: 'ki-lake-footbridge',
 		name: 'ရေပေါ်ဆောင် ကူးတံတား',
-		...toWorld(-336, 3712),
+		...toWorld(-336, 4012),
 		width: 2.2,
 		depth: 10,
 		color: '#9c7b5b',
@@ -487,7 +487,7 @@ export const kyarInnLakeStructures: House[] = [
 	{
 		id: 'ki-lake-fishery-shed',
 		name: 'ငါးမွေးမြူရေး သိုလှောင်ရုံ',
-		...toWorld(-298, 3782),
+		...toWorld(-298, 4082),
 		width: 12,
 		depth: 6,
 		color: '#c2b8a3',
@@ -498,7 +498,7 @@ export const kyarInnLakeStructures: House[] = [
 	{
 		id: 'ki-lake-hut-south',
 		name: 'ကန်ဘောင် နားနေတဲ',
-		...toWorld(-322, 3714),
+		...toWorld(-322, 4014),
 		width: 5.5,
 		depth: 4.5,
 		color: '#cebe9e',
@@ -509,7 +509,7 @@ export const kyarInnLakeStructures: House[] = [
 	{
 		id: 'ki-lake-shelter-nw',
 		name: 'အနောက်မြောက်ကန် စောင့်တဲ',
-		...toWorld(-368, 3662),
+		...toWorld(-368, 3962),
 		width: 6,
 		depth: 4.5,
 		color: '#d2c9b6',
@@ -524,7 +524,7 @@ export const kyarInnLakeRoads: RoadPlot[] = [
 	{
 		id: 'ki-lake-spine-road',
 		name: 'ကြာအင်းရေကန် ပင်မဘောင်လမ်း',
-		...toWorld(-306, 3680),
+		...toWorld(-306, 3980),
 		width: 4.5,
 		depth: 250,
 		rotation: angle,
@@ -534,7 +534,7 @@ export const kyarInnLakeRoads: RoadPlot[] = [
 	{
 		id: 'ki-lake-access-road-1',
 		name: 'ကြာအင်းရေကန် ဝင်လမ်း ၁',
-		...toWorld(-258, 3675),
+		...toWorld(-258, 3955),
 		width: 4.5,
 		depth: 100,
 		rotation: angle,
@@ -544,7 +544,7 @@ export const kyarInnLakeRoads: RoadPlot[] = [
 	{
 		id: 'ki-lake-access-road-2',
 		name: 'ကြာအင်းရေကန် ဝင်လမ်း ၂',
-		...toWorld(-270, 3745),
+		...toWorld(-270, 4025),
 		width: 4.5,
 		depth: 120,
 		rotation: angle,
@@ -554,20 +554,20 @@ export const kyarInnLakeRoads: RoadPlot[] = [
 
 /** ကြာအင်းရေကန် ကန်ဘောင် သစ်ပင်ရိပ်များ */
 export const kyarInnLakeTrees: TreePlot[] = [
-	[-306, 3570],
-	[-306, 3620],
-	[-306, 3660],
-	[-306, 3700],
-	[-306, 3740],
-	[-306, 3780],
-	[-372, 3600],
-	[-372, 3665],
-	[-372, 3720],
-	[-372, 3760],
-	[-440, 3610],
-	[-440, 3655],
-	[-340, 3712],
-	[-322, 3720],
+	[-306, 3870],
+	[-306, 3920],
+	[-306, 3960],
+	[-306, 4000],
+	[-306, 4040],
+	[-306, 4080],
+	[-372, 3900],
+	[-372, 3965],
+	[-372, 4020],
+	[-372, 4060],
+	[-440, 3910],
+	[-440, 3955],
+	[-340, 4012],
+	[-322, 4020],
 ].map(([u, v], i) => ({
 	id: `ki-lake-tree-${i}`,
 	...toWorld(u, v),
@@ -669,11 +669,11 @@ const roads: RoadPlot[] = [
 	})),
 ];
 
-// ရွာအနောက်ဘက် လယ်ကွင်းများ (အနောက်မြောက်ဘက် ကြာအင်းရေကန်နေရာမှအပ ကျန်နေရာများ)
+// ရွာအနောက်ဘက် လယ်ကွင်းများ (အနောက်တောင်ဘက် ကြာအင်းရေကန်နေရာမှအပ ကျန်နေရာများ)
 const bundedFields: FieldPlot[] = [
-	// ရေကန်များ အနောက်ဘက်စွန်း လယ်ကွင်းများ (v = 3680, 3740, 3800)
+	// ရွာအနောက်မြောက်ဘက် လယ်ကွင်းများ (v = 3680, 3740, 3800)
 	...[3680, 3740, 3800].flatMap((v, row) =>
-		[-475, -520].map((u, col) => ({
+		[-250, -295, -340, -385, -430].map((u, col) => ({
 			id: `kyarinn-west-paddy-${row}-${col}`,
 			row,
 			u,
@@ -685,9 +685,9 @@ const bundedFields: FieldPlot[] = [
 			color: ['#7d9c54', '#98a85e', '#6f9252', '#a3ad64'][(row + col) % 4],
 		}))
 	),
-	// ရေကန်များ တောင်ဘက် လယ်ကွင်းများ (v = 3860, 3920, 3980)
+	// ရွာအနောက်တောင်ဘက် ရေကန်များ အနောက်ဘက်စွန်း လယ်ကွင်းများ (v = 3860, 3920, 3980)
 	...[3860, 3920, 3980].flatMap((v, row) =>
-		[-250, -295, -340, -385, -430].map((u, col) => ({
+		[-475, -520].map((u, col) => ({
 			id: `kyarinn-west-paddy-${row + 3}-${col}`,
 			row: row + 3,
 			u,
@@ -773,7 +773,7 @@ export const kyarInnVillage: VillageMeta = {
 	englishName: 'Kyar Inn Village',
 	villageTract: 'ကြာအင်းကျေးရွာအုပ်စု · ကလေးမြို့နယ်',
 	description:
-		'ထောက်ကြန့်ကျေးရွာနှင့် ဝေပုလ္လတောင်ကြား၊ အလက ကြာအင်းကျောင်း၊ Kyarinn Baptist Church၊ IBC Kyarinn၊ St. Peter Catholic Church၊ CJC Church၊ သပြေချောင်း နှင့် အနောက်မြောက်ဘက် ကြာအင်းရေကန် (Kyar Inn Lake) တို့ ပါဝင်သော ကြာအင်းကျေးရွာ',
+		'ထောက်ကြန့်ကျေးရွာနှင့် ဝေပုလ္လတောင်ကြား၊ အလက ကြာအင်းကျောင်း၊ Kyarinn Baptist Church၊ IBC Kyarinn၊ St. Peter Catholic Church၊ CJC Church၊ သပြေချောင်း နှင့် အနောက်တောင်ဘက် ကြာအင်းရေကန် (Kyar Inn Lake) တို့ ပါဝင်သော ကြာအင်းကျေးရွာ',
 	coordinates: { lat: 23.068, lng: 94.02 },
 	...toWorld(0, 3850),
 	labelPos: toWorld(0, 3825),

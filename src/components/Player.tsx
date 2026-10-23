@@ -1,4 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { avatarHeading } from '../game/avatarHeading';
+import { RobotCharacter } from './RobotCharacter';
+import { useEffect, useRef, type RefObject } from 'react';
+import type { MobileInput } from '../game/mobileInput';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Group, Vector3, Raycaster, Object3D } from 'three';
 import { ward } from '../data/ward';
@@ -18,6 +21,7 @@ export type TeleportTarget = {
 };
 
 export function Player({
+ mobileInput,
  mapOpen,
  topDown,
  zoom,
@@ -28,6 +32,7 @@ export function Player({
  onLock,
  onPosition,
 }:{
+ mobileInput?:RefObject<MobileInput>;
  mapOpen:boolean;
  topDown:boolean;
  zoom:number;
@@ -40,12 +45,16 @@ export function Player({
 }){
  const {camera,gl,scene}=useThree();
  const avatar=useRef<Group>(null);
+ const wheels=useRef<Group>(null);
  const state=useRef({
   x:ward.spawn.x,
   z:ward.spawn.z,
   camX:ward.spawn.x,
   camZ:ward.spawn.z,
   yaw:0,
+  bodyYaw:0,
+  mobileSession:-1,
+  mobileHeading:0,
   pitch:-0.12,
   distance:6,
   targetDistance:6,
@@ -85,6 +94,7 @@ export function Player({
   s.camX=teleportTarget.x;
   s.camZ=teleportTarget.z;
   if(teleportTarget.yaw!==undefined)s.yaw=teleportTarget.yaw;
+  s.bodyYaw=s.yaw;
   s.pitch=teleportTarget.pitch??-0.16;
   s.first=false;
   s.topDown=false;
@@ -141,8 +151,8 @@ export function Player({
     }
     if(e.code==='KeyR'){
      s.x=ward.spawn.x;s.z=ward.spawn.z;s.camX=ward.spawn.x;s.camZ=ward.spawn.z;
-     s.yaw=0;s.pitch=-0.12;s.topDown=false;s.panning=false;s.targetDistance=6;
-     onTopDown(false);onZoom(6);
+     s.yaw=0;s.bodyYaw=0;s.pitch=-0.12;s.topDown=false;s.panning=false;s.targetDistance=6;
+     onTopDown(false);onZoom(6);onPosition(s.x,s.z);
     }
    }
   };
@@ -164,7 +174,7 @@ export function Player({
      s.x=s.camX;
      s.z=s.camZ;
     }else{
-     for(const r of [2,4,7,11,16]){
+     for(const r of [2,4,7,11,16,24,36,52]){
       let found=false;
       for(let a=0;a<Math.PI*2;a+=Math.PI/4){
        const nx=s.camX+Math.cos(a)*r,nz=s.camZ+Math.sin(a)*r;
@@ -229,12 +239,19 @@ export function Player({
  },[gl,onLock,onMode,onTopDown,onZoom,mapOpen]);
  useFrame((_,delta)=>{
   const s=state.current;const dt=Math.min(delta,0.05);
+  const oldX=s.x,oldZ=s.z;
+  const touch=mobileInput?.current;
+  if(touch){
+   if(touch.lookX||touch.lookY){s.yaw-=touch.lookX*0.004;s.pitch=Math.max(-1.35,Math.min(0.6,s.pitch-touch.lookY*0.004));if(s.topDown){s.topDown=false;onTopDown(false)}touch.lookX=0;touch.lookY=0;}
+   if(touch.active&&s.mobileSession!==touch.session){s.mobileSession=touch.session;s.mobileHeading=s.bodyYaw;s.first=false;s.topDown=false;s.panning=false;s.distance=6;s.targetDistance=6;s.pitch=Math.max(-0.6,s.pitch);onMode(false);onTopDown(false);onZoom(6)}
+  }
   s.distance+=(s.targetDistance-s.distance)*Math.min(1,dt*12);
   let forward=Number(s.keys.has('KeyW')||s.keys.has('ArrowUp'))-Number(s.keys.has('KeyS')||s.keys.has('ArrowDown'));
   let right=Number(s.keys.has('KeyD')||s.keys.has('ArrowRight'))-Number(s.keys.has('KeyA')||s.keys.has('ArrowLeft'));
+  if(touch?.active){forward=touch.forward;right=touch.right;}
   const len=Math.hypot(forward,right);if(len){forward/=len;right/=len;}
-  const fast=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight');
-  const yaw=mapOpen?0:s.yaw;
+  const fast=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight')||!!touch?.sprint;
+  const yaw=touch?.active?s.mobileHeading:mapOpen?0:s.yaw;
   if(len>0&&s.distance<=20&&!s.topDown)s.panning=false;
   const aerial=!s.first&&(s.distance>20||s.topDown||s.panning);
   if(aerial&&!mapOpen){
@@ -246,11 +263,17 @@ export function Player({
     if(canStand(s.camX,s.camZ)){s.x=s.camX;s.z=s.camZ;}
    }
   }else{
-   const speed=(fast?8:4)*dt;
+   const speed=(fast?8:touch?.active?5.5:4)*dt;
    move(s,(-Math.sin(yaw)*forward+Math.cos(yaw)*right)*speed,(-Math.cos(yaw)*forward-Math.sin(yaw)*right)*speed);
    s.camX=s.x;s.camZ=s.z;
   }
-  if(avatar.current){avatar.current.position.set(s.x,0,s.z);avatar.current.rotation.y=s.yaw;avatar.current.visible=!s.first;}
+  const dx=s.x-oldX,dz=s.z-oldZ;
+  if(!aerial||mapOpen)s.bodyYaw=avatarHeading(s.bodyYaw,dx,dz);
+  if(wheels.current&&(!aerial||mapOpen)){
+   const travel=-Math.sin(s.bodyYaw)*dx-Math.cos(s.bodyYaw)*dz;
+   wheels.current.rotation.x-=Math.hypot(dx,dz)*(travel<0?-1:1)/(0.24*0.95);
+  }
+  if(avatar.current){avatar.current.position.set(s.x,0,s.z);avatar.current.rotation.y=s.bodyYaw;avatar.current.visible=!s.first;}
   target.current.set(aerial?s.camX:s.x,1.65,aerial?s.camZ:s.z);
   const direction=new Vector3(-Math.sin(s.yaw)*Math.cos(s.pitch),Math.sin(s.pitch),-Math.cos(s.yaw)*Math.cos(s.pitch));
   if(s.first){camera.position.copy(target.current);camera.lookAt(target.current.clone().add(direction));}
@@ -266,11 +289,7 @@ export function Player({
    }
    camera.position.copy(desired.current);camera.lookAt(target.current);
   }
-  s.time+=dt;if(s.time>0.15){s.time=0;onPosition(s.x,s.z);}
+  s.time+=dt;if(s.time>0.08){s.time=0;onPosition(aerial?s.camX:s.x,aerial?s.camZ:s.z);}
  });
- return <group ref={avatar}>
-  <mesh position={[0,1,0]} castShadow><capsuleGeometry args={[0.3,0.7,4,8]}/><meshStandardMaterial color="#f3c469"/></mesh>
-  <mesh position={[0,1.85,0]} castShadow><sphereGeometry args={[0.25,12,10]}/><meshStandardMaterial color="#bc8c67"/></mesh>
-  <mesh position={[0,0.35,0]} castShadow><cylinderGeometry args={[0.28,0.34,0.7,10]}/><meshStandardMaterial color="#285e59"/></mesh>
- </group>;
+ return <group ref={avatar}><RobotCharacter wheels={wheels}/></group>;
 }

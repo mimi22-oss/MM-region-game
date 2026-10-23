@@ -1,3 +1,4 @@
+import { ParkedCars, ParkedCarsPlan } from '../../Car';
 import { area5, farmhouse, toWorld } from '../../../data/wards/myothar/area5';
 import { House, FARMHOUSE_NAME, houseFenceBounds, houseVisualRotation } from '../../House';
 import { Farmhouse } from '../../Farmhouse';
@@ -30,13 +31,14 @@ export function Area5(){
   <Lanes/>
   {area5.houses.filter(h=>h.id!==farmhouse.id).map(h=><House key={h.id} h={h}/>)}
   <Trees/>
+  <ParkedCars/>
  </group>;
 }
 
 /** မြို့သာရပ်ကွက် · နယ်မြေ (၅) — 2D Map Plan SVG Component */
 export function Area5Plan({labels,onSelectLocation}:{labels:boolean;onSelectLocation?:(id:string)=>void}){
  const areaLabelPos=toWorld(-45,195);
- return <g id="myothar-area-5-plan">
+ return <g id="myothar-area-5-plan"><ParkedCarsPlan/>
   <WesternLandscapePlan/>
   <g className={labels?"map-region-clickable":undefined} onClick={labels&&onSelectLocation?e=>{e.stopPropagation();onSelectLocation('myothar-area-5');}:undefined}>
   {area5.fields.map((f,i)=><rect key={`f${i}`} x={f.x-f.width/2} y={f.z-f.depth/2} width={f.width} height={f.depth} fill={f.color} transform={`rotate(${-f.rotation*180/Math.PI} ${f.x} ${f.z})`}/>)}

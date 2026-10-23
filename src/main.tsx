@@ -1,45 +1,52 @@
-import React, { Component, memo, useEffect, useCallback, useState, type ReactNode } from 'react';
+import { MobileControls } from './components/MobileControls';
+import { createMobileInput } from './game/mobileInput';
+import React, { Component, memo, useEffect, useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Canvas } from '@react-three/fiber';
 import { Town } from './components/Town';
 import { KalayWardsPlan as WardsPlan } from './components/wards';
 import { KalayVillagesPlan as VillagesPlan } from './components/villages';
 import { Player, MIN_ZOOM, MAX_ZOOM, type TeleportTarget } from './components/Player';
-import { ward, toWorld } from './data/ward';
+import { ward } from './data/ward';
+import { MAP_DESTINATIONS, detectLocation, type DetectedLocation } from './game/locationDetect';
 import './style.css';
 
 const KalayWardsPlan=memo(WardsPlan);
 const KalayVillagesPlan=memo(VillagesPlan);
-const MAP_DESTINATIONS = [
- { id: 'myothar-area-5', label: 'မြို့သာရပ်ကွက် · နယ်မြေ (၅)', title: ward.name, subtitle: `AH1 · Myothar · ${ward.currentArea} · Kalay`, ...ward.spawn, yaw: 0, pitch: -0.14, distance: 8 },
- { id: 'tharsi', label: 'သာစည်ရွာ', title: 'သာစည်ရွာ · ကလေးမြို့နယ်', subtitle: 'AH1 · Thar Si Village · Kalay', ...toWorld(0, 796), yaw: Math.PI / 4, pitch: -0.18, distance: 12 },
- { id: 'chinsai', label: 'ချင်းဆိုင်ရွာ', title: 'ချင်းဆိုင်ရွာ · ကလေးမြို့နယ်', subtitle: 'AH1 · Chin Sai Village · Kalay', ...toWorld(0, 1150), yaw: Math.PI / 4, pitch: -0.18, distance: 12 },
- { id: 'zingalin', label: 'ဇင်းကလင်းကျေးရွာ', title: 'ဇင်းကလင်းကျေးရွာ · ကလေးမြို့နယ်', subtitle: 'AH1 · Zingalin Village · Kalay', ...toWorld(0, 1510), yaw: Math.PI / 4, pitch: -0.18, distance: 12 },
- { id: 'htomar', label: 'ထိုမာကျေးရွာ', title: 'ထိုမာကျေးရွာ · ကလေးမြို့နယ်', subtitle: 'East of AH1 · Htomar Village · Kalay', ...toWorld(256, 1927), yaw: -Math.PI * 3 / 4, pitch: -0.18, distance: 14 },
- { id: 'tharyargone', label: 'သာယာကုန်းကျေးရွာ', title: 'သာယာကုန်းကျေးရွာ · ကလေးမြို့နယ်', subtitle: 'AH1 · Thar Yar Gone Village · St. Assumption Church · Kalay', ...toWorld(0, 2700), yaw: Math.PI / 4, pitch: -0.18, distance: 12 },
- { id: 'htaukkyant', label: 'ထောက်ကြန့်ကျေးရွာ', title: 'ထောက်ကြန့်ကျေးရွာ · ကလေးမြို့နယ်', subtitle: 'AH1 · Htauk Kyant Village · Pagoda · Playground · High School · Kalay', ...toWorld(0, 3300), yaw: Math.PI / 4, pitch: -0.18, distance: 14 },
- { id: 'kyarinn', label: 'ကြာအင်းရွာ', title: 'ကြာအင်းရွာ · ကလေးမြို့နယ်', subtitle: 'AH1 · Kyar Inn Village · Middle School · Churches · Kalay', ...toWorld(0, 3850), yaw: Math.PI / 4, pitch: -0.18, distance: 14 },
- { id: 'kyarinn-lake', label: 'ကြာအင်းရေကန်', title: 'ကြာအင်းရေကန် · ကလေးမြို့နယ်', subtitle: 'Kyar Inn Lake · Northwest of Kyar Inn · Ponds & Water Pavilion', ...toWorld(-340, 3690), yaw: Math.PI / 4, pitch: -0.22, distance: 16 },
-];
+
 class SceneError extends Component<{children:ReactNode},{failed:boolean}>{
  state={failed:false};static getDerivedStateFromError(){return {failed:true}}
  render(){return this.state.failed?<div className="error">3D scene မဖွင့်နိုင်ပါ။ WebGL / hardware acceleration ဖွင့်ထားသော desktop browser ဖြင့် ပြန်စမ်းပါ။</div>:this.props.children}
 }
 function App(){
+ const mobileInput=useRef(createMobileInput());
+ const activateMobile=useCallback(()=>setSceneActive(true),[]);
  const [first,setFirst]=useState(false);const [locked,setLocked]=useState(false);const [pos,setPos]=useState(ward.spawn);
  const [mapOpen,setMapOpen]=useState(false);
  const [settingsOpen,setSettingsOpen]=useState(false);
  const [sceneActive,setSceneActive]=useState(false);
  const [topDown,setTopDown]=useState(false);
  const [zoom,setZoom]=useState(6);
- const [activeLocId,setActiveLocId]=useState('myothar-area-5');
+ const [night,setNight]=useState(false);
  const [teleportTarget,setTeleportTarget]=useState<TeleportTarget|null>(null);
- const activeDest=MAP_DESTINATIONS.find(d=>d.id===activeLocId)??MAP_DESTINATIONS[0];
+ const [arrivalToast,setArrivalToast]=useState<DetectedLocation|null>(null);
+ const currentLoc=useMemo(()=>detectLocation(pos.x,pos.z),[pos.x,pos.z]);
+ const prevLocKey=useRef(`${currentLoc.id}:${currentLoc.subArea??''}`);
+
+ useEffect(()=>{
+  const key=`${currentLoc.id}:${currentLoc.subArea??''}`;
+  if(prevLocKey.current===key)return;
+  prevLocKey.current=key;
+  setArrivalToast(currentLoc);
+  const timer=window.setTimeout(()=>setArrivalToast(null),3200);
+  return ()=>window.clearTimeout(timer);
+ },[currentLoc]);
+
  const handleSelectLocation=useCallback((id:string)=>{
   const dest=MAP_DESTINATIONS.find(d=>d.id===id);
   if(!dest)return;
   if(document.pointerLockElement)document.exitPointerLock();
-  setActiveLocId(id);
+  setPos({x:dest.x,z:dest.z});
   setMapOpen(false);
   setSettingsOpen(false);
   setFirst(false);
@@ -53,6 +60,9 @@ function App(){
     setMapOpen(false);
     setSettingsOpen(false);
     setSceneActive(false);
+   }
+   if(e.code==="KeyN"&&!e.repeat){
+    setNight(v=>!v);
    }
   };
   document.addEventListener("keydown",close);
@@ -81,25 +91,65 @@ function App(){
   });
  };
  const hideHud=locked||sceneActive;
- return <main>
- <div className="scene-wrap" onClick={()=>{if(!mapOpen){setSceneActive(true);setSettingsOpen(false);}}}><SceneError><Canvas shadows camera={{position:[0,5,33],fov:65,near:0.1,far:9000}} dpr={[1,1.25]}><Town/><Player mapOpen={mapOpen} topDown={topDown} zoom={zoom} teleportTarget={teleportTarget} onMode={setFirst} onTopDown={setTopDown} onZoom={setZoom} onLock={handleLock} onPosition={position}/></Canvas></SceneError></div>
- <header><span className="eyebrow">EXPLORE MYANMAR / 01</span><h1>{activeDest.title}</h1><p>{activeDest.subtitle}</p></header>
+ return <main className={night?"night-mode":""}>
+ <div className="scene-wrap" onClick={()=>{if(!mapOpen){setSceneActive(true);setSettingsOpen(false);}}}><SceneError><Canvas shadows camera={{position:[0,5,33],fov:65,near:0.1,far:9000}} dpr={[1,1.25]}><Town night={night}/><Player mobileInput={mobileInput} mapOpen={mapOpen} topDown={topDown} zoom={zoom} teleportTarget={teleportTarget} onMode={setFirst} onTopDown={setTopDown} onZoom={setZoom} onLock={handleLock} onPosition={position}/></Canvas></SceneError></div>
+ <MobileControls input={mobileInput} disabled={mapOpen||settingsOpen} onInteract={activateMobile}/>
+ <header>
+  <span className="eyebrow">EXPLORE MYANMAR · 📍 {currentLoc.subArea ?? currentLoc.label}</span>
+  <h1>{currentLoc.title}</h1>
+  <p>{currentLoc.subtitle}</p>
+ </header>
+ {arrivalToast&&!mapOpen&&<div className="location-toast" role="status" aria-live="polite">
+  <span className="location-toast-icon">📍</span>
+  <div className="location-toast-body">
+   <strong>{arrivalToast.title}</strong>
+   <span>{arrivalToast.subArea && arrivalToast.subArea !== arrivalToast.title ? arrivalToast.subArea : arrivalToast.subtitle}</span>
+  </div>
+ </div>}
  <div className="settings-wrap">
   <button type="button" className={settingsOpen?"settings-btn settings-btn-active":"settings-btn"} aria-label="အသုံးပြုနည်း လမ်းညွှန်နှင့် ဆက်တင်" aria-expanded={settingsOpen} title="အသုံးပြုနည်း လမ်းညွှန် (Settings & Guide)" onClick={()=>{if(document.pointerLockElement)document.exitPointerLock();setSettingsOpen(v=>!v);}}>⚙</button>
   {settingsOpen&&<section className="settings-menu" aria-label="အသုံးပြုနည်း လမ်းညွှန်">
    <div className="guide-item">
     <div className="guide-header">
      <strong>အသုံးပြုနည်း လမ်းညွှန် · GUIDE</strong>
-     <div className="badge"><span/> MAP STUDY · {ward.currentArea} <b>{ward.size} × {ward.size} m</b></div>
+     <div className="badge"><span/> MAP STUDY · {currentLoc.label} <b>{ward.size} × {ward.size} m</b></div>
+    </div>
+    <div className="time-controls" aria-label="Day and Night lighting controls">
+     <div className="time-header">
+      <span className="time-title">အချိန်ကာလ ရွေးချယ်မှု · LIGHTING</span>
+      <span className="time-status-pill">{night ? "🌙 ညချမ်း · Night" : "☀️ နေ့ခင်း · Day"}</span>
+     </div>
+     <div className="time-btn-row">
+      <button
+       type="button"
+       className={!night ? "time-btn time-btn-active" : "time-btn"}
+       onClick={() => setNight(false)}
+       title="နေ့ခင်း အလင်းရောင် (Daylight)"
+      >
+       <span className="time-icon">☀️</span>
+       <span>နေ့ခင်း · Day</span>
+      </button>
+      <button
+       type="button"
+       className={night ? "time-btn time-btn-active" : "time-btn"}
+       onClick={() => setNight(true)}
+       title="ညချမ်း လရောင်နှင့် မီးရောင်များ (Night mode)"
+      >
+       <span className="time-icon">🌙</span>
+       <span>ညချမ်း · Night</span>
+      </button>
+     </div>
     </div>
     <div className="cam-controls" aria-label="3D camera controls">
+     <button type="button" className="cam-btn" onClick={()=>{if(document.pointerLockElement)document.exitPointerLock();setSettingsOpen(false);setMapOpen(true);}}>WARD PLAN ↗</button>
      <button type="button" className={topDown?"cam-btn cam-btn-active":"cam-btn"} aria-pressed={topDown} onClick={toggleTopDown}>{topDown?"✓ ကောင်းကင်တည့်တည့် · TOP-DOWN":"ကောင်းကင်တည့်တည့် · TOP-DOWN (T)"}</button>
      <div className="cam-zoom-row">
       <button type="button" className="cam-btn" onClick={()=>stepZoom(-1)} title="Zoom in">＋ Zoom In</button>
       <button type="button" className="cam-btn" onClick={()=>stepZoom(1)} title="Zoom out">－ Zoom Out</button>
      </div>
     </div>
-    <ul className="guide-list">
+    <ul className="guide-list desktop-guide">
+     <li><kbd>N</kbd><span>နေ့ခင်း / ညချမ်း အလင်းရောင် (Day / Night)</span></li>
      <li><kbd>W A S D / ↑ ↓ ← →</kbd><span>လမ်းလျှောက် / မြေပုံရွှေ့ရန်</span></li>
      <li><kbd>Shift + Drag</kbd><span>မြေပုံကို ဆွဲရွှေ့ရန် (Pan)</span></li>
      <li><kbd>Shift</kbd><span>အမြန်ပြေးရန်</span></li>
@@ -109,16 +159,17 @@ function App(){
      <li><kbd>R</kbd><span>မူလနေရာ (အစသို့)</span></li>
      <li><kbd>Esc</kbd><span>Mouse လွှတ်ရန် / ပိတ်ရန်</span></li>
     </ul>
+    <p className="mobile-guide">Hold left to move · Hold right to run faster · Drag right to look</p>
    </div>
   </section>}
  </div>
  {!hideHud&&!mapOpen&&!topDown&&zoom<=10&&<section className="welcome"><span className="eyebrow">မင်္ဂလာပါ</span><h2>ရပ်ကွက်ထဲ လမ်းလျှောက်ကြမယ်</h2><p>စတင်ရန် မြင်ကွင်းကို နှိပ်ပါ။<br/>Mouse ဖြင့် ပတ်ဝန်းကျင်ကို ကြည့်နိုင်ပြီး Scroll ဖြင့် 3D မြေပုံလို Zoom အဝင်အထွက် လုပ်နိုင်ပါတယ်။</p><strong>Click the scene to explore →</strong><small>Desktop keyboard & mouse · Scroll to zoom · T for sky view</small></section>}
  {locked&&<div className="crosshair">+</div>}
  <aside className={mapOpen?"map map-expanded":"map"} aria-label="Ward plan" onClick={()=>{if(!mapOpen){if(document.pointerLockElement)document.exitPointerLock();setSettingsOpen(false);setMapOpen(true);}}}>
-  <button type="button" className="map-toggle" aria-expanded={mapOpen} onClick={e=>{e.stopPropagation();if(document.pointerLockElement)document.exitPointerLock();setSettingsOpen(false);setMapOpen(v=>!v);}}>{mapOpen?`✕ ပိတ်ရန် · WARD PLAN (${activeDest.label})`:"WARD PLAN ↗"}<b>မြောက် ↖</b></button>
+  <button type="button" className="map-toggle" aria-expanded={mapOpen} onClick={e=>{e.stopPropagation();if(document.pointerLockElement)document.exitPointerLock();setSettingsOpen(false);setMapOpen(v=>!v);}}>{mapOpen?`✕ ပိတ်ရန် · WARD PLAN (${currentLoc.label})`:`📍 ${currentLoc.label} ↗`}<b>မြောက် ↖</b></button>
   {mapOpen&&<div className="map-jump-bar" aria-label="နယ်မြေနှင့် ရွာများသို့ တိုက်ရိုက်သွားရန်">
    <span>နယ်မြေ / ရွာ ရွေး၍ 3D Scene သို့ သွားရန် —</span>
-   {MAP_DESTINATIONS.map(d=><button key={d.id} type="button" className={activeLocId===d.id?"map-jump-btn map-jump-btn-active":"map-jump-btn"} onClick={e=>{e.stopPropagation();handleSelectLocation(d.id);}}>📍 {d.label} ↗</button>)}
+   {MAP_DESTINATIONS.map(d=><button key={d.id} type="button" className={currentLoc.id===d.id?"map-jump-btn map-jump-btn-active":"map-jump-btn"} onClick={e=>{e.stopPropagation();handleSelectLocation(d.id);}}>📍 {d.label} ↗</button>)}
   </div>}
   <svg viewBox={`${-ward.size/2-5} ${-ward.size/2-5} ${ward.size+10} ${ward.size+10}`} aria-label="မြို့သာရပ်ကွက် မြေပုံ">
    <rect x={-ward.size/2} y={-ward.size/2} width={ward.size} height={ward.size} fill="#92a36b"/>
@@ -126,10 +177,10 @@ function App(){
    <KalayVillagesPlan labels={mapOpen} onSelectLocation={handleSelectLocation}/>
    <circle cx={pos.x} cy={pos.z} r="4" fill="#fff4b3" stroke="#173d35" strokeWidth="2"/>
   </svg>
-  <small>{ward.currentArea} · သာစည် · ချင်းဆိုင် · ဇင်းကလင်း · ထိုမာ · သာယာကုန်း · ထောက်ကြန့်</small>
+  <small>{ward.currentArea} · သာစည် · ချင်းဆိုင် · ဇင်းကလင်း · ထိုမာ · သာယာကုန်း · ထောက်ကြန့် · ကြာအင်း</small>
   {mapOpen&&<p className="map-help">မြေပုံပေါ်ရှိ သက်ဆိုင်ရာ ရပ်ကွက် / ရွာကို တိုက်ရိုက်နှိပ်၍ 3D မြင်ကွင်းသို့ သွားနိုင်ပါသည် · Esc ပိတ်ရန်</p>}
  </aside>
- <footer className={hideHud?"footer-clean":""}>{!hideHud&&<div><kbd>W A S D / ↑ ↓ ← →</kbd> လမ်းလျှောက် <kbd>Shift + Drag</kbd> မြေပုံဆွဲရွှေ့ <kbd>Shift</kbd> ပြေး <kbd>Scroll</kbd> Zoom <kbd>T</kbd> ကောင်းကင်တည့်တည့် <kbd>V</kbd> မြင်ကွင်း <kbd>R</kbd> အစသို့ <kbd>Esc</kbd> လွှတ်ရန်</div>}<span>{topDown?'TOP-DOWN SKY':first?'FIRST PERSON':'THIRD PERSON'} · ZOOM {Math.round(zoom)}m · {pos.x.toFixed(1)}, {pos.z.toFixed(1)} m</span></footer>
+ <footer className={hideHud?"footer-clean":""}>{!hideHud&&<div><kbd>N</kbd> နေ့/ည <kbd>W A S D / ↑ ↓ ← →</kbd> လမ်းလျှောက် <kbd>Shift + Drag</kbd> မြေပုံဆွဲရွှေ့ <kbd>Shift</kbd> ပြေး <kbd>Scroll</kbd> Zoom <kbd>T</kbd> ကောင်းကင်တည့်တည့် <kbd>V</kbd> မြင်ကွင်း <kbd>R</kbd> အစသို့ <kbd>Esc</kbd> လွှတ်ရန်</div>}<span><span className="footer-location">📍 {currentLoc.subArea ?? currentLoc.label} · </span>{topDown?'TOP-DOWN SKY':first?'FIRST PERSON':'THIRD PERSON'} · ZOOM {Math.round(zoom)}m · {pos.x.toFixed(1)}, {pos.z.toFixed(1)} m</span></footer>
  </main>
 }
 createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);

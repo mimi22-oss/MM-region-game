@@ -185,3 +185,31 @@ Five bunded paddy plots extend west behind the rear home beyond the farmhouse. F
 The supplied `mountain near yar inn.png` guides the visual treatment: continuous irregular ridges, eroded gullies, forest-green slopes, exposed soil patches and blue atmospheric background ranges. `game/mountainTerrain.ts` generates tiled heightfields with smooth shared-edge normals and deterministic vertex colors; `Mountains.tsx` renders them and keeps the summit pagoda and existing plan labels. This is an artistic interpretation, not surveyed terrain reconstruction. Existing mountain locations, the AH1 pass and collision footprints remain unchanged.
 
 The foreground terrain uses 58 meshes / 28,504 triangles and generated in approximately 129 ms in a local Node check. These are geometry-generation measurements, not browser FPS. Forest appearance uses surface colors instead of additional tree objects.
+
+
+## Robot player character
+
+`RobotCharacter.tsx` replaces the previous human placeholder with a native 3D model inspired by `robot cartoon.png`: mint shell, dark face panel, white eyes and smile, orange ear discs and antenna, chest controls, articulated-looking arms and two rubber wheels. The model faces -Z to match player heading. Wheels rotate from actual movement distance and remain still when blocked or moving the aerial camera. First-person visibility and existing controls remain managed by `Player.tsx`.
+
+
+Robot body heading is independent of camera yaw: mouse orbit while stationary reveals the front and sides. The robot faces actual ground movement, including sideways/backward input; reset and teleport initialize both headings.
+
+
+## Autonomous village robots
+
+`RobotCharacter` is shared by the player and bots. Its `palette` prop accepts `shell`, `accent`, `panel`, `rubber`, and `trim`; `size` scales the complete model. The player uses the default mint palette. `botAppearance(index)` creates 64 distinct body colors and sizes, excluding mint/cyan body hues.
+
+`RobotBots.tsx` adds eight bots per village and eight in Myothar (64 total). `robotRoutes.ts` splits road centerlines at intersections and validates patrol edges against buildings, trees and water, with extra clearance for larger bots. Bots choose junction turns and reverse at dead ends; facing and wheels follow actual travel. Road graphs are cached across StrictMode remounts. Nearby bots use the detailed shared character; distant bots use a five-mesh proxy and are hidden beyond 1,000 m. Moving bots are kept outside static scene batching.
+
+Example: `<RobotCharacter wheels={wheelRef} palette={customPalette} size={0.8}/>`.
+
+
+## Reference car
+
+`Car.tsx` provides `<Car color="#277fbd" size={1}/>`: a rounded blue body, light-blue windows, orange wheel hubs, lights and bumpers inspired by `car.png`. A parked example is placed near the Myothar spawn at local (8.5, 103), with a plan symbol and collision footprint. It is a display vehicle, not a driving controller.
+
+## Mobile controls
+
+On narrow screens or coarse-pointer devices, hold the left half for 220 ms to move in the robot's facing direction. Faint arrow buttons select a direction; dragging the held left finger changes direction. Icons fade out while moving and return on release. Hold the right half simultaneously for sprint speed; no Shift button is shown. Dragging on the right orbits the camera. Each touch has its own captured pointer ID, and cancellation, focus loss, hidden tabs, menus and map opening reset movement.
+
+Mobile hides the location-toast body and collapsed WARD PLAN; open WARD PLAN from Settings. Desktop keeps keyboard/mouse controls, toast details and the collapsed plan. Phone menus scroll in short landscape viewports. Browser/device touch gestures have not yet been manually verified.
