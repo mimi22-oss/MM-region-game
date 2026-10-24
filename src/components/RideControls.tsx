@@ -49,7 +49,7 @@ export function RideControls({
 
 	return (
 		<>
-			{/* Mobile Screen: Orbit Icons around mobile-joystick circle */}
+			{/* Mobile Screen: Speedometer below top-right buttons + Action buttons on bottom-right */}
 			<section
 				className="ride-mobile-orbit"
 				aria-label="ဆိုင်ကယ် ထိန်းချုပ်ခလုတ်များ"
@@ -61,7 +61,7 @@ export function RideControls({
 					</div>
 				) : (
 					<>
-						{/* Mini Floating Speedometer HUD above the joystick */}
+						{/* Mini Floating Speedometer HUD below location-actions & settings icon */}
 						<div className="ride-orbit-speedo" aria-live="polite">
 							<span className="ride-orbit-speedo-icon">🏍️</span>
 							<strong className="ride-orbit-speedo-val">
@@ -82,95 +82,98 @@ export function RideControls({
 							</button>
 						</div>
 
-						{/* 1. Leave Icon (ဆိုင်ကယ်မှဆင်းရန် - Upper-Left of joystick) */}
-						<button
-							type="button"
-							className="ride-orbit-btn ride-orbit-btn-leave"
-							onClick={onDismount}
-							aria-label="ဆိုင်ကယ်မှ ဆင်းရန် (Leave motorcycle)"
-							title="ဆိုင်ကယ်မှ ဆင်းရန် (Leave)"
-						>
-							<svg
-								viewBox="0 0 24 24"
-								width="20"
-								height="20"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2.3"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								aria-hidden="true"
+						{/* Right Hand Control Buttons Cluster at Bottom-Right */}
+						<div className="ride-mobile-actions" aria-label="ညာဘက်လက် ထိန်းချုပ်ခလုတ်များ">
+							{/* 1. Leave Icon (ဆိုင်ကယ်မှဆင်းရန် - Inner-Left) */}
+							<button
+								type="button"
+								className="ride-orbit-btn ride-orbit-btn-leave"
+								onClick={onDismount}
+								aria-label="ဆိုင်ကယ်မှ ဆင်းရန် (Leave motorcycle)"
+								title="ဆိုင်ကယ်မှ ဆင်းရန် (Leave)"
 							>
-								<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-								<polyline points="16 17 21 12 16 7" />
-								<line x1="21" y1="12" x2="9" y2="12" />
-							</svg>
-							<span className="ride-orbit-tag">ဆင်းရန်</span>
-						</button>
+								<svg
+									viewBox="0 0 24 24"
+									width="20"
+									height="20"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="2.3"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									aria-hidden="true"
+								>
+									<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+									<polyline points="16 17 21 12 16 7" />
+									<line x1="21" y1="12" x2="9" y2="12" />
+								</svg>
+								<span className="ride-orbit-tag">ဆင်းရန်</span>
+							</button>
 
-						{/* 2. Break Icon (ဘရိတ် - Top-Center of joystick) */}
-						<button
-							type="button"
-							className={`ride-orbit-btn ride-orbit-btn-brake${brakeActive ? ' ride-orbit-active' : ''}`}
-							onPointerDown={startBrake}
-							onPointerUp={stopBrake}
-							onPointerCancel={stopBrake}
-							onLostPointerCapture={stopBrake}
-							onKeyDown={(e) => {
-								if (e.code === 'Space' || e.code === 'Enter') {
-									setBrakeActive(true);
-									onBrake(true);
-								}
-							}}
-							onKeyUp={stopBrake}
-							onBlur={stopBrake}
-							aria-label="ဘရိတ်အုပ်ရန် (Brake)"
-							title="ဘရိတ်အုပ်ရန် ဖိထားပါ (Brake)"
-						>
-							<svg
-								viewBox="0 0 24 24"
-								width="22"
-								height="22"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2.5"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								aria-hidden="true"
+							{/* 2. Break Icon (ဘရိတ် - Upper-Middle) */}
+							<button
+								type="button"
+								className={`ride-orbit-btn ride-orbit-btn-brake${brakeActive ? ' ride-orbit-active' : ''}`}
+								onPointerDown={startBrake}
+								onPointerUp={stopBrake}
+								onPointerCancel={stopBrake}
+								onLostPointerCapture={stopBrake}
+								onKeyDown={(e) => {
+									if (e.code === 'Space' || e.code === 'Enter') {
+										setBrakeActive(true);
+										onBrake(true);
+									}
+								}}
+								onKeyUp={stopBrake}
+								onBlur={stopBrake}
+								aria-label="ဘရိတ်အုပ်ရန် (Brake)"
+								title="ဘရိတ်အုပ်ရန် ဖိထားပါ (Brake)"
 							>
-								<circle cx="12" cy="12" r="9" />
-								<path d="M12 7v6M12 17h.01" />
-							</svg>
-							<span className="ride-orbit-tag">ဘရိတ်</span>
-						</button>
+								<svg
+									viewBox="0 0 24 24"
+									width="22"
+									height="22"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="2.5"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									aria-hidden="true"
+								>
+									<circle cx="12" cy="12" r="9" />
+									<path d="M12 7v6M12 17h.01" />
+								</svg>
+								<span className="ride-orbit-tag">ဘရိတ်</span>
+							</button>
 
-						{/* 3. Accelerate Icon (အရှိန်မြှင့်ရန် - Upper-Right of joystick) */}
-						<button
-							type="button"
-							className={`ride-orbit-btn ride-orbit-btn-accel${accelActive ? ' ride-orbit-active' : ''}`}
-							onPointerDown={startAccel}
-							onPointerUp={stopAccel}
-							onPointerCancel={stopAccel}
-							onLostPointerCapture={stopAccel}
-							aria-label="အရှိန်မြှင့် မောင်းနှင်ရန် (Accelerate)"
-							title="အရှိန်မြှင့်ရန် ဖိထားပါ (Accelerate)"
-						>
-							<svg
-								viewBox="0 0 24 24"
-								width="22"
-								height="22"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2.5"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								aria-hidden="true"
+							{/* 3. Accelerate Icon (အရှိန်မြှင့်ရန် - Bottom-Right) */}
+							<button
+								type="button"
+								className={`ride-orbit-btn ride-orbit-btn-accel${accelActive ? ' ride-orbit-active' : ''}`}
+								onPointerDown={startAccel}
+								onPointerUp={stopAccel}
+								onPointerCancel={stopAccel}
+								onLostPointerCapture={stopAccel}
+								aria-label="အရှိန်မြှင့် မောင်းနှင်ရန် (Accelerate)"
+								title="အရှိန်မြှင့်ရန် ဖိထားပါ (Accelerate)"
 							>
-								<polyline points="7 14 12 9 17 14" />
-								<polyline points="7 19 12 14 17 19" />
-							</svg>
-							<span className="ride-orbit-tag">အရှိန်</span>
-						</button>
+								<svg
+									viewBox="0 0 24 24"
+									width="22"
+									height="22"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="2.5"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									aria-hidden="true"
+								>
+									<polyline points="7 14 12 9 17 14" />
+									<polyline points="7 19 12 14 17 19" />
+								</svg>
+								<span className="ride-orbit-tag">အရှိန်</span>
+							</button>
+						</div>
 
 						{status.notice && (
 							<div className="ride-orbit-notice" role="status">

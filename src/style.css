@@ -1027,7 +1027,7 @@ main.night-mode .home-guidance-pill {
     height: 64px;
     transform: translate(-50%, -50%);
     border-radius: 50%;
-    border: 1px dashed rgba(255, 255, 255, 0.25);
+    border: 1px dashed rgba(255, 255, 255, 0.092);
     pointer-events: none;
   }
 
@@ -1090,11 +1090,11 @@ main.night-mode .home-guidance-pill {
     border-radius: 50%;
     background: radial-gradient(
       circle at 35% 32%,
-      #74d7b4 0%,
-      #1e6b52 65%,
-      #134e3b 100%
+      #74d7b47a 0%,
+      #1e6b5324 65%,
+      #134e3b68 100%
     );
-    border: 2.5px solid rgba(255, 255, 255, 0.88);
+    border: 2.5px solid rgba(255, 255, 255, 0.241);
     box-shadow:
       0 4px 14px rgba(0, 0, 0, 0.5),
       inset 0 2px 4px rgba(255, 255, 255, 0.7),
@@ -1473,10 +1473,7 @@ main.night-mode .home-guidance-pill {
   .ride-mobile-orbit {
     display: block !important;
     position: absolute;
-    left: max(20px, env(safe-area-inset-left));
-    bottom: max(28px, calc(env(safe-area-inset-bottom) + 16px));
-    width: 128px;
-    height: 128px;
+    inset: 0;
     pointer-events: none;
     z-index: 22;
   }
@@ -1484,43 +1481,45 @@ main.night-mode .home-guidance-pill {
   /* Near motorcycle prompt on mobile */
   .ride-near-prompt {
     position: absolute;
-    bottom: 142px;
-    left: 0;
+    bottom: max(32px, calc(env(safe-area-inset-bottom) + 16px));
+    left: 50%;
+    transform: translateX(-50%);
     width: max-content;
     max-width: calc(100vw - 40px);
-    padding: 7px 14px;
+    padding: 7px 16px;
     background: rgba(18, 58, 72, 0.94);
     border: 1px solid rgba(168, 212, 220, 0.55);
     border-radius: 999px;
     color: #f3fbfd;
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 500;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
     pointer-events: none;
     animation: toastIn 0.2s ease-out;
   }
 
-  /* Floating Mini Speedometer HUD above the joystick */
+  /* Floating Mini Speedometer HUD below location-actions & settings icon at top-right */
   .ride-orbit-speedo {
     position: absolute;
-    top: -114px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: max(56px, calc(env(safe-area-inset-top) + 48px));
+    right: max(14px, env(safe-area-inset-right));
+    left: auto;
+    transform: none;
     display: flex;
     align-items: center;
     gap: 4px;
     padding: 4px 11px;
     background: linear-gradient(
       135deg,
-      rgba(14, 42, 53, 0.307),
-      rgba(18, 58, 72, 0.147)
+      rgba(14, 42, 53, 0.105),
+      rgba(18, 58, 72, 0.088)
     );
-    border: 1.5px solid rgba(97, 220, 243, 0.55);
+    border: 1.5px solid rgba(97, 221, 243, 0.041);
     border-radius: 999px;
     color: #e6f9fd;
     box-shadow:
-      0 4px 16px rgba(0, 0, 0, 0.45),
-      0 0 12px rgba(97, 220, 243, 0.25);
+      0 4px 16px rgba(0, 0, 0, 0.4),
+      0 0 12px rgba(97, 220, 243, 0.2);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     pointer-events: auto;
@@ -1565,13 +1564,18 @@ main.night-mode .home-guidance-pill {
     background: rgba(97, 220, 243, 0.4);
   }
 
-  /* 360° Circular Orbit Action Buttons Base */
+  /* Right-Hand Action Buttons Cluster at Bottom-Right */
+  .ride-mobile-actions {
+    position: absolute;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(24px, calc(env(safe-area-inset-bottom) + 16px));
+    width: 140px;
+    height: 140px;
+    pointer-events: none;
+  }
+
   .ride-orbit-btn {
     position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 48px;
-    height: 48px;
     border-radius: 50%;
     display: flex;
     flex-direction: column;
@@ -1584,11 +1588,12 @@ main.night-mode .home-guidance-pill {
     user-select: none;
     -webkit-user-select: none;
     pointer-events: auto;
-    color: #ffffff;
+    color: #ffffffa2;
     will-change: transform;
     transition:
       transform 0.12s ease,
-      box-shadow 0.12s ease;
+      box-shadow 0.12s ease,
+      background 0.12s ease;
   }
   .ride-orbit-btn svg {
     flex-shrink: 0;
@@ -1601,84 +1606,86 @@ main.night-mode .home-guidance-pill {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
   }
 
-  /* 1. Leave Icon: Upper-Left along joystick perimeter (angle ~ -122deg, radius 98px) */
+  /* 1. Leave Icon: Inner-Left of the right cluster */
   .ride-orbit-btn-leave {
-    transform: translate(calc(-50% - 52px), calc(-50% - 83px));
+    left: 4px;
+    bottom: 22px;
+    width: 46px;
+    height: 46px;
     background: radial-gradient(
       circle at 35% 35%,
-      #64748b47 0%,
-      #33415544 60%,
-      #1e293b46 100%
+      rgba(100, 116, 139, 0.14) 0%,
+      rgba(51, 65, 85, 0.275) 60%,
+      rgba(30, 41, 59, 0.181) 100%
     );
-    border: 2px solid rgba(226, 232, 240, 0.9);
+    border: 2px solid rgba(226, 232, 240, 0.85);
     box-shadow:
       0 4px 14px rgba(0, 0, 0, 0.5),
       inset 0 2px 4px rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
   .ride-orbit-btn-leave:active {
-    transform: translate(calc(-50% - 52px), calc(-50% - 83px)) scale(0.92);
+    transform: scale(0.92);
     background: radial-gradient(circle at 35% 35%, #475569 0%, #1e293b 100%);
   }
 
-  /* 2. Break Icon: Top-Center along joystick perimeter (angle ~ -75deg, radius 98px) */
+  /* 2. Break Icon: Upper-Middle of the right cluster */
   .ride-orbit-btn-brake {
-    transform: translate(calc(-50% + 25px), calc(-50% - 95px));
+    right: 46px;
+    top: 8px;
+    width: 50px;
+    height: 50px;
     background: radial-gradient(
       circle at 35% 35%,
-      #fb923c1d 0%,
-      #ea5a0c53 60%,
-      #9a34126d 100%
+      rgba(251, 146, 60, 0.118) 0%,
+      rgba(234, 90, 12, 0.1) 60%,
+      rgba(154, 52, 18, 0.06) 100%
     );
     border: 2px solid rgba(254, 215, 170, 0.95);
     box-shadow:
       0 4px 14px rgba(154, 52, 18, 0.55),
       inset 0 2px 4px rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
   .ride-orbit-btn-brake.ride-orbit-active,
   .ride-orbit-btn-brake:active {
-    transform: translate(calc(-50% + 25px), calc(-50% - 95px)) scale(0.92);
-    background: radial-gradient(
-      circle at 35% 35%,
-      #ef4444 0%,
-      #b91c1c 100%
-    ) !important;
-    box-shadow:
-      0 0 22px #ef4444,
-      inset 0 2px 4px #ffffff !important;
+    transform: scale(0.92);
+    background: radial-gradient(circle at 35% 35%, #ef4444 0%, #b91c1c 100%) !important;
+    box-shadow: 0 0 22px #ef4444, inset 0 2px 4px #ffffff !important;
   }
 
-  /* 3. Accelerate Icon: Upper-Right along joystick perimeter (angle ~ -20deg, radius 98px) */
+  /* 3. Accelerate Icon: Bottom-Right of the right cluster */
   .ride-orbit-btn-accel {
-    transform: translate(calc(-50% + 92px), calc(-50% - 34px));
+    right: 4px;
+    bottom: 4px;
+    width: 54px;
+    height: 54px;
     background: radial-gradient(
       circle at 35% 35%,
-      #34d39955 0%,
-      #05966839 60%,
-      #064e3b3c 100%
+      rgba(52, 211, 153, 0.258) 0%,
+      rgba(5, 150, 104, 0.212) 60%,
+      rgba(6, 78, 59, 0.184) 100%
     );
-    border: 2px solid rgba(167, 243, 208, 0.95);
+    border: 2.5px solid rgba(167, 243, 208, 0.95);
     box-shadow:
-      0 4px 14px rgba(6, 78, 59, 0.55),
-      inset 0 2px 4px rgba(255, 255, 255, 0.5);
+      0 4px 16px rgba(6, 78, 59, 0.6),
+      inset 0 2px 4px rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
   .ride-orbit-btn-accel.ride-orbit-active,
   .ride-orbit-btn-accel:active {
-    transform: translate(calc(-50% + 92px), calc(-50% - 34px)) scale(0.92);
-    background: radial-gradient(
-      circle at 35% 35%,
-      #10b981 0%,
-      #047857 100%
-    ) !important;
-    box-shadow:
-      0 0 22px rgba(52, 211, 153, 0.95),
-      inset 0 2px 4px #ffffff !important;
+    transform: scale(0.92);
+    background: radial-gradient(circle at 35% 35%, #10b981 0%, #047857 100%) !important;
+    box-shadow: 0 0 24px rgba(52, 211, 153, 0.95), inset 0 2px 4px #ffffff !important;
   }
 
   .ride-orbit-notice {
     position: absolute;
-    top: -136px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: max(100px, calc(env(safe-area-inset-top) + 90px));
+    right: max(14px, env(safe-area-inset-right));
     width: max-content;
     max-width: calc(100vw - 40px);
     padding: 5px 12px;
@@ -1691,3 +1698,5 @@ main.night-mode .home-guidance-pill {
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
   }
 }
+
+.life-hud{position:fixed;top:76px;left:16px;z-index:25;pointer-events:none;display:flex;flex-direction:column;gap:4px;padding:8px 12px;border-radius:14px;background:#13232cbb;color:#ff6175;box-shadow:0 3px 14px #0003;font-size:25px;letter-spacing:5px}.life-hud small{color:white;font-size:12px;letter-spacing:0}

@@ -71,9 +71,9 @@ class SceneError extends Component<
   }
 }
 function App() {
-  const [rideStatus,setRideStatus]=useState<RideStatus>({riding:false,near:false,kmh:0,notice:''});
+  const [rideStatus,setRideStatus]=useState<RideStatus>({riding:false,near:false,kmh:0,notice:'',lives:3,crashed:false});
   const [rideLimit,setRideLimit]=useState(20),[braking,setBraking]=useState(false),[dismountRequest,setDismountRequest]=useState(0);
-  const rideUpdate=useCallback((next:RideStatus)=>setRideStatus(old=>old.riding===next.riding&&old.near===next.near&&old.kmh===next.kmh&&old.notice===next.notice?old:next),[]);
+  const rideUpdate=useCallback((next:RideStatus)=>setRideStatus(old=>old.riding===next.riding&&old.near===next.near&&old.kmh===next.kmh&&old.notice===next.notice&&old.lives===next.lives&&old.crashed===next.crashed?old:next),[]);
 
   const [character, setCharacter] = useState<CharacterKind>(savedCharacter);
   const chooseCharacter = (kind: CharacterKind) => {
@@ -259,6 +259,7 @@ function App() {
           </Canvas>
         </SceneError>
       </div>
+      <div className="life-hud" role="status" aria-live="polite"><span aria-label={`${rideStatus.lives} lives remaining`}>{[0,1,2].map(i=><span key={i} style={{opacity:i<rideStatus.lives?1:.22}}>?</span>)}</span>{rideStatus.crashed&&<small>{rideStatus.lives===0?"Restarting?":"Crash ? ?1 life"}</small>}</div>
       {!mapOpen&&!settingsOpen&&<RideControls status={rideStatus} limit={rideLimit} onLimit={setRideLimit} onBrake={setBraking} onDismount={()=>{setBraking(false);setDismountRequest(n=>n+1)}}/>}
       <MobileControls
         key={navigationRequest?.seq ?? 0}

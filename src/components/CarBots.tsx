@@ -1,3 +1,4 @@
+import {useTrafficCollider} from './useTrafficCollider';
 import {sceneGround,carGroundPose} from '../game/groundSurface';
 import { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
@@ -11,6 +12,7 @@ import { Car } from './Car';
 const routes=buildTrafficRoutes([...ward.roads,...kalayVillages.flatMap(v=>v.roads)]);
 function TrafficCar({route,index,offset}:{route:TrafficRoute;index:number;offset:number}){
  const root=useRef<Group>(null),travel=useRef(offset),appearance=useMemo(()=>carAppearance(index),[index]);
+ useTrafficCollider(root,1.9*appearance.size,3.7*appearance.size);
  useFrame(({scene,clock},dt)=>{travel.current+=Math.min(dt,.05)*8;const p=trafficPose(route,travel.current);if(root.current){const ground=sceneGround(scene,clock.elapsedTime),g=carGroundPose(p.x,p.z,p.yaw,appearance.size,(x,z)=>ground.height(x,z));root.current.position.set(p.x,g.y,p.z);root.current.rotation.set(g.pitch,p.yaw,g.roll,'YXZ')}});
  const p=trafficPose(route,offset);
  return <group ref={root} position={[p.x,.12,p.z]} rotation={[0,p.yaw,0]} userData={{dynamic:true}}><Car {...appearance}/></group>;

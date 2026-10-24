@@ -1,3 +1,4 @@
+import {useTrafficCollider} from './useTrafficCollider';
 import {sceneGround} from '../game/groundSurface';
 import { mobileQuality } from '../game/sceneBudget';
 import { useMemo, useRef, useState } from 'react';
@@ -15,6 +16,7 @@ const clear=(x:number,z:number)=>[[0,0],[0.08,0],[-0.08,0],[0,0.08],[0,-0.08]].e
 function Bot({graph,start,index}:{graph:RouteNode[];start:number;index:number}){
  const root=useRef<Group>(null),wheels=useRef<Group>(null),[detail,setDetail]=useState(false);
  const appearance=useMemo(()=>botAppearance(index),[index]);
+ useTrafficCollider(root,.85*appearance.size,.65*appearance.size);
  const state=useRef({x:graph[start].x,z:graph[start].z,from:start,to:graph[start].links[index%graph[start].links.length],seed:index+1,elapsed:index*0.01,travel:0});
  useFrame(({camera,scene,clock},delta)=>{
   const s=state.current,dt=Math.min(delta,0.05),target=graph[s.to];

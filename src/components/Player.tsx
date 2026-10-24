@@ -1,3 +1,7 @@
+import {rideLife,hitRide,tickRideLife} from '../game/rideLife';
+import {hitsTraffic} from '../game/trafficColliders';
+import {motorcycleData} from '../data/motorcycle';
+import {resetMobileInput} from '../game/mobileInput';
 import { sceneGround,motorcycleGroundPose } from '../game/groundSurface';
 import { motorcycleRide,tryMount,parkMotorcycle,dismountSpot,stepMotorcycle,type RideStatus } from '../game/motorcycleRide';
 import { MotorcycleModel,ParkedMotorcycle } from './Motorcycle';
@@ -117,7 +121,7 @@ export function Player({
  useEffect(()=>{state.current.keys.clear();motorcycleRide.speed=0},[mapOpen,controlsBlocked]);
  useEffect(()=>{motorcycleRide.maxKmh=speedLimit},[speedLimit]);
  useEffect(()=>{
-  if(!dismountRequest||!motorcycleRide.riding)return;
+  if(!dismountRequest||!motorcycleRide.riding||rideLife.crashTime>0)return;
   const spot=dismountSpot(canStand);
   if(!spot){rideNotice.current='No clear space to get off. Move to an open area.';return;}
   parkMotorcycle();setRiding(false);rideNotice.current='';
@@ -141,7 +145,7 @@ export function Player({
   }
  },[topDown]);
  useEffect(()=>{
-  if(!teleportTarget)return;
+  if(!teleportTarget||rideLife.crashTime>0)return;
   if(motorcycleRide.riding){parkMotorcycle();setRiding(false);}
   const s=state.current;
   s.x=teleportTarget.x;
@@ -160,7 +164,7 @@ export function Player({
   onPosition(s.x,s.z,s.bodyYaw);
  },[teleportTarget,onPosition]);
  useEffect(()=>{
-  if(!navigationRequest)return;
+  if(!navigationRequest||rideLife.crashTime>0)return;
   const s=state.current;
   if(navigationRequest.action==='teleport'){
    const spot=findTeleportSpot(s.camX,s.camZ,canStand);
@@ -217,7 +221,7 @@ export function Player({
      }
      onTopDown(nextTop);
     }
-    if(e.code==='KeyR'){
+    if(e.code==='KeyR'&&rideLife.crashTime<=0){
      if(motorcycleRide.riding){parkMotorcycle();setRiding(false);}
      s.x=ward.spawn.x;s.z=ward.spawn.z;s.camX=ward.spawn.x;s.camZ=ward.spawn.z;
      s.yaw=ward.spawnYaw;s.bodyYaw=ward.spawnYaw;s.pitch=-0.12;s.topDown=false;s.panning=false;s.targetDistance=ward.spawnZoom;
@@ -282,6 +286,13 @@ export function Player({
   const ground=sceneGround(scene,clock.elapsedTime);
   const height=(x:number,z:number)=>ground.height(x,z);
   const clear=(x:number,z:number)=>canStand(x,z)&&height(x,z)-height(motorcycleRide.riding?motorcycleRide.x:s.x,motorcycleRide.riding?motorcycleRide.z:s.z)<.5;
+  if(tickRideLife(dt)){
+   parkMotorcycle();setRiding(false);
+   Object.assign(motorcycleRide,{x:motorcycleData.x,z:motorcycleData.z,yaw:motorcycleData.rotation,mustLeave:false,distance:0});
+   Object.assign(s,{x:ward.spawn.x,z:ward.spawn.z,camX:ward.spawn.x,camZ:ward.spawn.z,yaw:ward.spawnYaw,bodyYaw:ward.spawnYaw,panning:false,first:false,topDown:false,pitch:-.12,distance:ward.spawnZoom,targetDistance:ward.spawnZoom});
+   s.keys.clear();if(mobileInput?.current)resetMobileInput(mobileInput.current);
+   onMode(false);onTopDown(false);onZoom(ward.spawnZoom);rideNotice.current='';
+  }
   updateHomeAccess(s.x,s.z,dt);
   let oldX=s.x,oldZ=s.z;
   const touch=mobileInput?.current;
@@ -295,7 +306,7 @@ export function Player({
   let forward=Number(s.keys.has('KeyW')||s.keys.has('ArrowUp'))-Number(s.keys.has('KeyS')||s.keys.has('ArrowDown'));
   let right=Number(s.keys.has('KeyD')||s.keys.has('ArrowRight'))-Number(s.keys.has('KeyA')||s.keys.has('ArrowLeft'));
   if(touch?.active){forward=touch.forward;right=touch.right;}
-  if(controlsBlocked||mapOpen){forward=0;right=0;}
+  if(controlsBlocked||mapOpen||rideLife.crashTime>0){forward=0;right=0;}
   const len=Math.hypot(forward,right);if(len){forward/=len;right/=len;}
   const fast=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight')||!!touch?.sprint;
   const yaw=mapOpen?0:s.yaw;
@@ -320,7 +331,15 @@ export function Player({
     if(forward<-.35){steer=right;throttle=-1;}else{steer=-Math.max(-1,Math.min(1,error*2));throttle=len>0?1:0;}
    }
    const paused=aerial||mapOpen||controlsBlocked;
-   stepMotorcycle(dt,throttle,steer,braking,paused,clear);
+   const crash=()=>{if(hitRide()){ride.speed=0;s.keys.clear();if(touch)resetMobileInput(touch);}};
+   const touching=hitsTraffic(ride.x,ride.z,ride.yaw,height(ride.x,ride.z));
+   if(!touching)rideLife.contact=false;
+   if(!paused&&touching)crash();
+   const trafficClear=(x:number,z:number)=>{
+    if(!paused&&hitsTraffic(x,z,ride.yaw,height(x,z),true))crash();
+    return rideLife.crashTime<=0&&clear(x,z);
+   };
+   stepMotorcycle(dt,throttle,steer,braking,paused||rideLife.crashTime>0,trafficClear);
    s.x=ride.x;s.z=ride.z;s.bodyYaw=ride.yaw;
    if(!paused){s.camX=s.x;s.camZ=s.z;}
   }else   if(aerial&&!mapOpen){
@@ -351,7 +370,8 @@ export function Player({
   characterMotion.current.leftFoot=left-groundY+.012;
   characterMotion.current.rightFoot=rightHeight-groundY+.012;
   characterMotion.current.stepLift=Math.min(.32,Math.abs(height(s.x-sn*.4,s.z-c*.4)-center)+.04);
-  if(avatar.current){avatar.current.position.set(s.x,groundY,s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:0,s.bodyYaw,0,'YXZ');avatar.current.visible=!s.first;}
+  const fall=ride.riding&&rideLife.crashTime>0?Math.min(1,(2-rideLife.crashTime)/.35,rideLife.lives>0?rideLife.crashTime/.4:1):0;
+  if(avatar.current){avatar.current.position.set(s.x,groundY+fall*.33,s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:0,s.bodyYaw,fall*1.42,'YXZ');avatar.current.visible=!s.first;}
   target.current.set(aerial?s.camX:s.x,(aerial?height(s.camX,s.camZ):groundY)+1.65,aerial?s.camZ:s.z);
   camera.userData.viewFocus={x:target.current.x,z:target.current.z};
   const direction=new Vector3(-Math.sin(s.yaw)*Math.cos(s.pitch),Math.sin(s.pitch),-Math.cos(s.yaw)*Math.cos(s.pitch));
@@ -369,8 +389,8 @@ export function Player({
    }
    camera.position.copy(desired.current);camera.lookAt(target.current);
   }
-  s.time+=dt;if(s.time>0.08){s.time=0;onRideStatus?.({riding:ride.riding,near:near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current});onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
+  s.time+=dt;if(s.time>0.08){s.time=0;onRideStatus?.({riding:ride.riding,near:near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0});onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
  });
- return <><ParkedMotorcycle/><group ref={avatar} name="player-avatar">{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel/></group><group position={[0,.10,.26]}><CartoonCharacter motion={characterMotion} riding/></group></>:character==='cartoon'?<CartoonCharacter motion={characterMotion}/>:<RobotCharacter wheels={wheels}/>}</group></>;
+ return <><ParkedMotorcycle/><group ref={avatar} name="player-avatar">{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter motion={characterMotion} riding/></group></>:character==='cartoon'?<CartoonCharacter motion={characterMotion}/>:<RobotCharacter wheels={wheels}/>}</group></>;
 
 }

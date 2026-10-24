@@ -1,6 +1,6 @@
 import { motorcycleData } from '../data/motorcycle.ts';
 export const motorcycleRide={x:motorcycleData.x,z:motorcycleData.z,yaw:motorcycleData.rotation,groundY:0,pitch:0,riding:false,mustLeave:false,speed:0,distance:0,cooldown:0,nearTime:0,reverseWait:0,maxKmh:20};
-export type RideStatus={riding:boolean;near:boolean;kmh:number;notice:string};
+export type RideStatus={riding:boolean;near:boolean;kmh:number;notice:string;lives:number;crashed:boolean};
 export function parkMotorcycle(){motorcycleRide.riding=false;motorcycleRide.mustLeave=true;motorcycleRide.speed=0;motorcycleRide.cooldown=2;motorcycleRide.nearTime=0;motorcycleRide.reverseWait=0;}
 export function rideFootprintClear(x:number,z:number,yaw:number,clear:(x:number,z:number)=>boolean){
  const dx=-Math.sin(yaw)*.56,dz=-Math.cos(yaw)*.56;

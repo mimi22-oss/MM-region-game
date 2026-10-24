@@ -59,7 +59,7 @@ function Ball({p,s,m}:{p:P;s:P;m:MeshStandardMaterial}){return <mesh geometry={s
 function Box({p,s,m}:{p:P;s:P;m:MeshStandardMaterial}){return <mesh geometry={box} material={m} position={p} scale={s} castShadow/>;}
 function Wheel({z}:{z:number}){const spin=useRef<Group>(null);useFrame(()=>{if(spin.current)spin.current.rotation.x=motorcycleRide.distance/radius});return <group ref={spin} position={[0,radius,z]} name="spoked-wheel"><Part g={wheelTire} m={rubber}/>{[-.027,.027].map(x=><mesh key={x} position={[x,0,0]} geometry={wheelRim} material={silver}/>)}<Part g={spokes} m={silver}/><Part g={hub} m={silver}/><Part g={axle} m={trim}/></group>}
 /** Reusable rounded step-through motorcycle; local forward is +Z. */
-export function MotorcycleModel({scale=1}:{scale?:number}){
+export function MotorcycleModel({scale=1,riding=false}:{scale?:number;riding?:boolean}){
  return <group scale={scale} name="classic-motorcycle-model" dispose={null}>
   <Wheel z={front}/><Wheel z={rear}/>
   <Part g={frame} m={trim}/><Part g={swingarm} m={silver}/>
@@ -76,7 +76,7 @@ export function MotorcycleModel({scale=1}:{scale?:number}){
   <Part g={mirrorStem} m={trim}/><Ball p={[.27,1.145,.226]} s={[.047,.055,.014]} m={trim}/><Ball p={[.27,1.145,.213]} s={[.038,.045,.005]} m={mirror}/>
   <Box p={[0,.55,-.90]} s={[.07,.10,.08]} m={trim}/><Box p={[0,.598,-.94]} s={[.105,.095,.042]} m={trim}/><Box p={[0,.60,-.965]} s={[.084,.072,.014]} m={red}/><Box p={[0,.50,-.95]} s={[.12,.072,.009]} m={ivory}/>
   <Part g={exhaustPipe} m={silver}/><Part g={muffler} m={silver}/><Ball p={[.18,.20,-.863]} s={[.021,.021,.003]} m={trim}/>
-  <Part g={footrests} m={rubber}/><Part g={stand} m={trim}/>
+  <Part g={footrests} m={rubber}/><group position={[-.05,.25,-.16]} rotation={[riding?1.48:0,0,0]} name="motorcycle-kickstand"><group position={[.05,-.25,.16]}><Part g={stand} m={trim}/></group></group>
  </group>;
 }
 export function ParkedMotorcycle(){const root=useRef<Group>(null);useFrame(()=>{if(root.current){root.current.visible=!motorcycleRide.riding;root.current.position.set(motorcycleRide.x,motorcycleRide.groundY,motorcycleRide.z);root.current.rotation.set(-motorcycleRide.pitch,motorcycleRide.yaw+Math.PI,0,'YXZ')}});return <group ref={root} position={[motorcycleData.x,.015,motorcycleData.z]} rotation={[0,motorcycleData.rotation+Math.PI,-.045]} userData={{dynamic:true}} name="parked-motorcycle-area5-west"><MotorcycleModel/></group>}

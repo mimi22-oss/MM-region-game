@@ -1,3 +1,4 @@
+import {useTrafficCollider} from './useTrafficCollider';
 import { windshieldGeometry, roofBoxRibbonGeometry } from '../game/carWindshield';
 import { useMemo,useRef } from 'react';
 import {useFrame} from '@react-three/fiber';
@@ -388,6 +389,7 @@ export function Car({ color = '#277fbd', size = 1 }: { color?: string; size?: nu
 
 function GroundedCar({car}:{car:typeof parkedCars[number]}){
  const root=useRef<Group>(null);
+ useTrafficCollider(root,car.width,car.depth);
  useFrame(({scene,clock})=>{if(!root.current)return;const ground=sceneGround(scene,clock.elapsedTime),p=carGroundPose(car.x,car.z,car.rotation,car.size,(x,z)=>ground.height(x,z));root.current.position.set(car.x,p.y,car.z);root.current.rotation.set(p.pitch,car.rotation,p.roll,'YXZ');});
  return <group ref={root} userData={{dynamic:true}} position={[car.x,0,car.z]}><Car color={car.color} size={car.size}/></group>;
 }
