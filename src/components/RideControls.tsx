@@ -26,6 +26,28 @@ export function RideControls({
 		};
 	}, []);
 
+	useEffect(() => {
+		if (!accelActive && !brakeActive) return;
+		const globalUp = () => {
+			if (accelActive) {
+				setAccelActive(false);
+				setRideAccelerate(false);
+				onAccelerate?.(false);
+			}
+			if (brakeActive) {
+				setBrakeActive(false);
+				setRideBrake(false);
+				onBrake(false);
+			}
+		};
+		window.addEventListener('pointerup', globalUp);
+		window.addEventListener('pointercancel', globalUp);
+		return () => {
+			window.removeEventListener('pointerup', globalUp);
+			window.removeEventListener('pointercancel', globalUp);
+		};
+	}, [accelActive, brakeActive, onAccelerate, onBrake]);
+
 	if (!status.riding && !status.near) return null;
 
 	const startAccel = (e: PointerEvent<HTMLButtonElement>) => {
@@ -94,7 +116,7 @@ export function RideControls({
 							<button
 								type="button"
 								className="ride-orbit-speedo-limit"
-								onClick={() => onLimit(limit >= 40 ? 10 : limit + 10)}
+								onClick={() => onLimit(limit >= 60 ? 30 : limit + 15)}
 								title={`အမြင့်ဆုံးအရှိန်: ${limit} km/h (နှိပ်၍ ပြောင်းပါ)`}
 								aria-label={`အမြင့်ဆုံးအရှိန်: ${limit} km/h`}
 							>

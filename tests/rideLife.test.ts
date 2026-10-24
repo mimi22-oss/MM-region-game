@@ -54,3 +54,31 @@ test('orbit accel button accelerates motorcycle, releasing decelerates, brake st
  assert.equal(motorcycleRide.accelerating,false);
  assert.equal(motorcycleRide.braking,false);
 });
+
+test('driving alone caps at 20km/h cruise, holding accel boosts to 60km/h, releasing winds down',()=>{
+ Object.assign(motorcycleRide,{x:0,z:0,yaw:0,riding:true,speed:0,maxKmh:60,accelerating:false,braking:false});
+ // Drive alone with throttle = 1 (Up key or joystick circle)
+ for(let i=0;i<60;i++)stepMotorcycle(.05,1,0,false,false,()=>true);
+ // Cruising caps at 20 km/h
+ assert.ok(Math.abs(motorcycleRide.speed - 20/3.6) < 0.2);
+
+ // Now hold accel button / Shift together with drive
+ setRideAccelerate(true);
+ for(let i=0;i<60;i++)stepMotorcycle(.05,1,0,false,false,()=>true);
+ // Speeds up well past 20 km/h towards 60 km/h
+ assert.ok(motorcycleRide.speed > 45/3.6);
+ assert.ok(motorcycleRide.speed <= 60/3.6);
+ const highSpeed = motorcycleRide.speed;
+
+ // Release accel button while still holding drive
+ setRideAccelerate(false);
+ for(let i=0;i<20;i++)stepMotorcycle(.05,1,0,false,false,()=>true);
+ // Winds down from high speed back towards 20 km/h
+ assert.ok(motorcycleRide.speed < highSpeed);
+ for(let i=0;i<80;i++)stepMotorcycle(.05,1,0,false,false,()=>true);
+ assert.ok(Math.abs(motorcycleRide.speed - 20/3.6) < 0.2);
+
+ // Release drive completely -> coasts down to 0 km/h
+ for(let i=0;i<50;i++)stepMotorcycle(.05,0,0,false,false,()=>true);
+ assert.equal(motorcycleRide.speed, 0);
+});

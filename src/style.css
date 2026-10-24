@@ -833,6 +833,7 @@ main.night-mode .home-guidance-pill {
     left: 60% !important;
     transform: translateX(-30%) !important;
   }
+
   .location-toast {
     display: flex !important;
     top: max(4px, calc(env(safe-area-inset-top) + 10px)) !important;
@@ -1637,7 +1638,7 @@ main.night-mode .home-guidance-pill {
 /* Motorcycle Crash Alert Banner */
 .ride-crash-banner {
   position: fixed;
-  top: max(72px, calc(env(safe-area-inset-top) + 64px));
+  top: max(85px, calc(env(safe-area-inset-top) + 64px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 35;

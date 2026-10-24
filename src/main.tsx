@@ -72,7 +72,7 @@ class SceneError extends Component<
 }
 function App() {
   const [rideStatus,setRideStatus]=useState<RideStatus>({riding:false,near:false,kmh:0,notice:'',lives:3,crashed:false});
-  const [rideLimit,setRideLimit]=useState(20),[braking,setBraking]=useState(false),[accelerating,setAccelerating]=useState(false),[dismountRequest,setDismountRequest]=useState(0);
+  const [rideLimit,setRideLimit]=useState(60),[braking,setBraking]=useState(false),[accelerating,setAccelerating]=useState(false),[dismountRequest,setDismountRequest]=useState(0);
   const rideUpdate=useCallback((next:RideStatus)=>setRideStatus(old=>old.riding===next.riding&&old.near===next.near&&old.kmh===next.kmh&&old.notice===next.notice&&old.lives===next.lives&&old.crashed===next.crashed?old:next),[]);
 
   const [character, setCharacter] = useState<CharacterKind>(savedCharacter);
@@ -511,7 +511,7 @@ function App() {
           </section>
         )}
       </div>
-      {!hideHud && !mapOpen && !topDown && zoom <= 10 && (
+      {!hideHud && !mapOpen && !topDown && zoom <= 10 && !rideStatus.riding && (
         <section className="welcome">
           <span className="eyebrow">မင်္ဂလာပါ</span>
           <h2>ရပ်ကွက်ထဲ လမ်းလျှောက်ကြမယ်</h2>

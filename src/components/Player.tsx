@@ -198,11 +198,13 @@ export function Player({
    }else{
     s.keys.add(e.code);
     if(e.code==='ShiftLeft'||e.code==='ShiftRight'){
-     const walkKeyHeld=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'].some(k=>s.keys.has(k));
-     if(!walkKeyHeld&&document.pointerLockElement===gl.domElement){
-      document.exitPointerLock();
+     if(!motorcycleRide.riding){
+      const walkKeyHeld=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'].some(k=>s.keys.has(k));
+      if(!walkKeyHeld&&document.pointerLockElement===gl.domElement){
+       document.exitPointerLock();
+      }
+      gl.domElement.style.cursor=s.dragging?'grabbing':'grab';
      }
-     gl.domElement.style.cursor=s.dragging?'grabbing':'grab';
     }
     if(!e.repeat&&e.code==='KeyV'){
      s.first=!s.first;
@@ -324,16 +326,30 @@ export function Player({
    }
   }else if(!ride.riding)ride.nearTime=0;
   if(ride.riding){
-   const isAcc=accelerating||ride.accelerating||s.keys.has('KeyW')||s.keys.has('ArrowUp');
+   const isShift=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight')||!!touch?.sprint;
+   const isBtnAcc=accelerating||ride.accelerating;
+   const isBoosting=isShift||isBtnAcc;
    const isBrk=braking||ride.braking||s.keys.has('Space');
    let steer=right,throttle=forward;
    if(touch?.active){
     const tx=-Math.sin(yaw)*forward+Math.cos(yaw)*right,tz=-Math.cos(yaw)*forward-Math.sin(yaw)*right;
     const targetYaw=Math.atan2(-tx,-tz),error=Math.atan2(Math.sin(targetYaw-ride.yaw),Math.cos(targetYaw-ride.yaw));
-    if(forward<-.35&&!isAcc){steer=right;throttle=-1;}
-    else{steer=-Math.max(-1,Math.min(1,error*2));throttle=isAcc?1:(len>.15?1:0);}
+    steer=-Math.max(-1,Math.min(1,error*2));
+    if(forward<-.35&&!isBoosting){
+     throttle=-1;
+    }else if(isBoosting||len>.15||forward>.1){
+     throttle=1;
+    }else{
+     throttle=0;
+    }
    }else{
-    if(isAcc)throttle=1;
+    if(isBoosting||forward>.1){
+     throttle=1;
+    }else if(forward<-.35){
+     throttle=-1;
+    }else{
+     throttle=0;
+    }
    }
    const paused=aerial||mapOpen||controlsBlocked;
    const crash=()=>{if(hitRide()){ride.speed=0;ride.accelerating=false;ride.braking=false;s.keys.clear();if(touch)resetMobileInput(touch);}};
@@ -344,7 +360,7 @@ export function Player({
     if(!paused&&hitsTraffic(x,z,ride.yaw,height(x,z),true))crash();
     return rideLife.crashTime<=0&&clear(x,z);
    };
-   stepMotorcycle(dt,throttle,steer,isBrk,paused||rideLife.crashTime>0,trafficClear);
+   stepMotorcycle(dt,throttle,steer,isBrk,paused||rideLife.crashTime>0,trafficClear,isBoosting);
    s.x=ride.x;s.z=ride.z;s.bodyYaw=ride.yaw;
    if(!paused){s.camX=s.x;s.camZ=s.z;}
   }else   if(aerial&&!mapOpen){
