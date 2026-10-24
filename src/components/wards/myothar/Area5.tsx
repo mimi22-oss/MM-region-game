@@ -1,4 +1,6 @@
 import { ParkedCars, ParkedCarsPlan } from '../../Car';
+import { ParkedMotorcycle } from '../../Motorcycle';
+import { MOTORCYCLE_X, MOTORCYCLE_Z, MOTORCYCLE_YAW } from '../../../data/motorcycle';
 import { area5, farmhouse, toWorld } from '../../../data/wards/myothar/area5';
 import { House, FARMHOUSE_NAME, houseFenceBounds, houseVisualRotation } from '../../House';
 import { Farmhouse } from '../../Farmhouse';
@@ -45,6 +47,7 @@ export function Area5(){
   {area5.houses.filter(h=>h.id!==farmhouse.id&&h.id!==U_SHWE_HOUSE_ID&&h.id!==KALAY_SIGN_HOUSE_ID).map(h=><House key={h.id} h={h}/>)}
   <Trees/>
   <ParkedCars/>
+  <ParkedMotorcycle/>
  </group>;
 }
 
@@ -114,6 +117,13 @@ export function Area5Plan({labels,onSelectLocation}:{labels:boolean;onSelectLoca
     <rect x="-1.28" y="-0.52" width="1.04" height="1.04" fill="#a8a194" stroke="#6b655a" strokeWidth="0.2"/>
     <rect x="0.24" y="-0.52" width="1.04" height="1.04" fill="#a8a194" stroke="#6b655a" strokeWidth="0.2"/>
     {labels&&<text y="0.5" textAnchor="middle" fontSize="1.8" fill="#1c382f">အိမ်သာ</text>}
+   </g>
+   <g transform={'translate(' + MOTORCYCLE_X + ' ' + MOTORCYCLE_Z + ') rotate(' + (-(MOTORCYCLE_YAW)*180/Math.PI) + ')'}>
+    <rect x="-0.22" y="-0.75" width="0.44" height="1.5" rx="0.2" fill="#2196d2" stroke="#1773a5" strokeWidth="0.12"/>
+    <circle cx="0" cy="-0.55" r="0.22" fill="#1e2024"/>
+    <circle cx="0" cy="0.55" r="0.22" fill="#1e2024"/>
+    <rect x="-0.15" y="-0.15" width="0.3" height="0.5" rx="0.08" fill="#1f2228"/>
+    {labels&&<text y="-0.9" textAnchor="middle" fontSize="1.8" fill="#1773a5" fontWeight="bold">ဆိုင်ကယ်</text>}
    </g>
   <g transform={`translate(${area5.monastery.x} ${area5.monastery.z}) rotate(${-area5.monastery.rotation*180/Math.PI})`}>
    <rect x="-48" y="-33" width="96" height="66" fill="#b9b08a" stroke="#eee2b8"/>

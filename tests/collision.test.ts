@@ -6,6 +6,7 @@ import { mangoTrees, MANGO_START_GEO, MANGO_END_GEO, orchardMangoTrees, standalo
 import { tamarindTrees } from '../src/data/tamarindTrees.ts';
 import { uShweHouse, KALAY_SIGN_HOUSE_ID, kalaySignHouse } from '../src/data/ward.ts';
 import { KALAY_SIGN_ROTATION, KALAY_SIGN_BEARING } from '../src/data/kalaySignboard.ts';
+import { MOTORCYCLE_X, MOTORCYCLE_Z, MOTORCYCLE_YAW } from '../src/data/motorcycle.ts';
 import { robotLocation } from '../src/game/robotLocation.ts';
 import { ward,angle,toWorld,pitchLanes,oppositeLanes,residentialRows,tharSiVillage,chinSaiVillage,zingalinVillage,htomarVillage,htomarFiveColumnFields,htomarRoadsideShops,tharYarGoneVillage,htaukKyantVillage,allHtaukKyantPonds,htaukKyantLandmarks,kyarInnVillage,kyarInnTaphiChaung,kyarInnLandmarks,kyarInnLandmarkBuildings,kyarInnLakePonds,kyarInnLakeIsland,kyarInnLakeStructures } from '../src/data/ward.ts';
 test('Myothar inventory and safe AH1 spawn',()=>{assert.equal(ward.houses.length,98);assert.equal(ward.roads.length,18);assert.equal(ward.fields.length,2);assert.ok(canStand(ward.spawn.x,ward.spawn.z));for(let v=-120;v<=120;v+=2){const p=toWorld(0,v);assert.ok(canStand(p.x,p.z),'AH1 is walkable')}});
@@ -326,6 +327,16 @@ test('water pump station sits at requested location and pump blocks while splash
  assert.ok(canStand(viewPos.x,viewPos.z),'space watching auto-flowing water is walkable');
  const walkAround={x:pumpPos.x-1.3,z:pumpPos.z};
  assert.ok(canStand(walkAround.x,walkAround.z),'path beside pump platform is walkable');
+});
+
+test('classic blue motorcycle sits at requested location and blocks while perimeter is walkable',()=>{
+ assert.equal(canStand(MOTORCYCLE_X, MOTORCYCLE_Z), false, 'motorcycle blocks walking');
+ const loc = robotLocation(MOTORCYCLE_X, MOTORCYCLE_Z, MOTORCYCLE_YAW);
+ assert.ok(Math.abs(loc.latitude - 23.1612262) < 0.0001, 'latitude matches request');
+ assert.ok(Math.abs(loc.longitude - 94.0462532) < 0.0001, 'longitude matches request');
+ assert.equal(loc.direction, 'East', 'facing matches East (79.1 deg)');
+ assert.ok(canStand(MOTORCYCLE_X + 1.2, MOTORCYCLE_Z), 'walking beside motorcycle is clear');
+ assert.ok(canStand(MOTORCYCLE_X, MOTORCYCLE_Z - 1.2), 'walking around motorcycle is clear');
 });
 
 test('eastern rows face AH1 and cross-drain joins both north-south canals',()=>{

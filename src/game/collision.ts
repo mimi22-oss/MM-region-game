@@ -7,6 +7,7 @@ import { ward } from '../data/ward.ts';
 import { kalayVillages } from '../data/villages/index.ts';
 import { mangoTrees } from '../data/mangoTrees.ts';
 import { tamarindTrees } from '../data/tamarindTrees.ts';
+import { MOTORCYCLE_X, MOTORCYCLE_Z, MOTORCYCLE_RADIUS } from '../data/motorcycle.ts';
 export const PLAYER_RADIUS = 0.4;
 const nearbyAreca=spatialIndex(estatePalms,p=>({x:p.x,z:p.z,radius:.62}));
 const villageHouses=kalayVillages.flatMap(v=>v.houses);
@@ -176,6 +177,7 @@ export function canStand(x:number,z:number):boolean {
  if(!canStandUShweHouse(x,z))return false;
  if(Math.hypot(x-295.571,z-261.630)<2.4+PLAYER_RADIUS)return false;
  if(Math.hypot(x-109.721,z-284.313)<0.42+PLAYER_RADIUS)return false;
+ if(Math.hypot(x-MOTORCYCLE_X,z-MOTORCYCLE_Z)<MOTORCYCLE_RADIUS+PLAYER_RADIUS)return false;
  for(const h of nearbyBuildings(x,z)){
   const dx=x-h.x,dz=z-h.z,c=Math.cos(h.rotation),s=Math.sin(h.rotation);
   const lx=dx*c-dz*s,lz=dx*s+dz*c;
