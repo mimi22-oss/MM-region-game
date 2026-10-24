@@ -836,8 +836,8 @@ main.night-mode .home-guidance-pill {
   .location-toast {
     display: flex !important;
     top: max(4px, calc(env(safe-area-inset-top) + 10px)) !important;
-    left: 40% !important;
-    transform: translateX(-50%) !important;
+    left:5% !important;
+    transform: translateX(-5%) !important;
     width: auto;
     max-width: calc(100vw - 28px);
     padding: 6px 14px 6px 12px;
