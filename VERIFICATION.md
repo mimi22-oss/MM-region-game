@@ -105,3 +105,12 @@ TypeScript/Vite build and 14/14 input/performance tests passed. Teleport tests c
 
 ### View location / flicker mitigation
 16/16 input/performance tests passed, including camera-focus travel to Htauk Kyant while the robot remains at spawn, region altitude hysteresis and movement/zoom settling. TypeScript/Vite build passed. Physical-device visual verification was not available, so elimination of all rendering flicker is not claimed. Existing full collision-suite caveat remains unchanged.
+
+### Home ownership and car traffic
+Full `npm test`: 47/47 passed. Includes owner/non-owner gate behavior, closed/open collision and delayed closing; timed walking from the main road through the property gate; farmhouse entry and interior furniture/wall collision; main-road merging, two-way paths and continuous turns; appearance variation; windshield outward offset. Previous collision-suite caveats are superseded by this full passing run against the current workspace. TypeScript/Vite production build passed. No physical-mobile or visual browser verification performed.
+
+### Estate perimeter and areca palms
+48/48 tests passed, including owned parcel corner containment, neighbor exclusion, entrance clearance, raised canal panels and palm placement. TypeScript/Vite production build passed after running outside the restricted filesystem sandbox. No physical-device or visual browser verification performed.
+
+### Three-second entry and farmhouse spawn
+49/49 tests passed, including no unlock before three seconds, movement resetting the wait, owner access, timed entry from the road, and safe interior spawn coordinates. TypeScript/Vite production build passed. Physical-device visual verification not performed.

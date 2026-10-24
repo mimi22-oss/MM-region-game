@@ -1,3 +1,4 @@
+import { updateHomeAccess } from '../src/game/homeAccess.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { canStand,move } from '../src/game/collision.ts';
@@ -86,9 +87,61 @@ test('farmhouse north/south rows and ownership are separated by lanes',()=>{
 
 test('farmhouse entrance bridge connects the road through the empty lot',()=>{
  const start=toWorld(0,270),end=toWorld(-63,270);
- move(start,end.x-start.x,end.z-start.z);
+ for(let i=0;i<1400;i++){updateHomeAccess(start.x,start.z,1/60);const dx=end.x-start.x,dz=end.z-start.z,d=Math.hypot(dx,dz);if(d<.05)break;move(start,dx/d*Math.min(.2,d),dz/d*Math.min(.2,d));}
  assert.ok(Math.hypot(start.x-end.x,start.z-end.z)<0.1);
  for(const v of [266,274]){const p=toWorld(-54,v);assert.equal(canStand(p.x,p.z),false)}
+});
+
+test('character can enter walk-in farmhouse through front door and explore interior rooms and left kitchen annex',()=>{
+ const fh=ward.houses.find(h=>h.name==='လမ်းသွယ် ၂ · စိုက်ခင်းအိမ်')!;
+ const c=Math.cos(fh.rotation),s=Math.sin(fh.rotation);
+ const toFh=(lx:number,lz:number)=>({x:fh.x+lx*c+lz*s,z:fh.z-lx*s+lz*c});
+
+ // Porch and front door entry facing main road approach
+ const porch=toFh(0,6.2);
+ assert.ok(canStand(porch.x,porch.z),'front porch is walkable');
+ const door=toFh(0,5.0);
+ updateHomeAccess(1e5,1e5,10);
+ assert.equal(canStand(door.x,door.z),false,'door is initially closed');
+ updateHomeAccess(porch.x,porch.z,.01);
+ updateHomeAccess(porch.x,porch.z,3);
+ updateHomeAccess(porch.x,porch.z,1);
+ assert.ok(canStand(door.x,door.z),'front doorway is walkable');
+ const livingRoom=toFh(0,3.8);
+ assert.ok(canStand(livingRoom.x,livingRoom.z),'living room entrance is walkable');
+
+ // Walk through door from porch to living room
+ const pos={...porch};
+ move(pos,livingRoom.x-porch.x,livingRoom.z-porch.z);
+ assert.ok(Math.hypot(pos.x-livingRoom.x,pos.z-livingRoom.z)<0.15,'can walk straight through front door');
+
+ // Interior rooms and house-sized kitchen annex are walkable
+ const kitchen=toFh(10.0,1.5);
+ assert.ok(canStand(kitchen.x,kitchen.z),'house-sized left kitchen annex is walkable');
+ const yard=toFh(16.5,0);
+ assert.ok(canStand(yard.x,yard.z),'yard between kitchen and wire fence is walkable');
+ const bedroom=toFh(-2.0,-2.5);
+ assert.ok(canStand(bedroom.x,bedroom.z),'bedroom floor is walkable');
+ const deskChair=toFh(-2.5,2.2);
+ assert.ok(canStand(deskChair.x,deskChair.z),'computer desk chair space is walkable');
+
+ // Furniture, outer walls, and compound wire mesh fences block walking
+ const centerTable=toFh(0,0);
+ assert.equal(canStand(centerTable.x,centerTable.z),false,'center dining table blocks walking');
+ const bed=toFh(-4.5,-2.5);
+ assert.equal(canStand(bed.x,bed.z),false,'bed blocks walking');
+ const backWall=toFh(0,-5.0);
+ assert.equal(canStand(backWall.x,backWall.z),false,'back wall blocks walking');
+ const rightWall=toFh(-6.0,0);
+ assert.equal(canStand(rightWall.x,rightWall.z),false,'right wall blocks walking');
+ const kitchenLeftWall=toFh(15.0,0);
+ assert.equal(canStand(kitchenLeftWall.x,kitchenLeftWall.z),false,'kitchen left wall blocks walking');
+ const leftWireFence=toFh(18.0,0);
+ assert.equal(canStand(leftWireFence.x,leftWireFence.z),false,'left wire mesh fence blocks walking');
+ const rightWireFence=toFh(-9.0,0);
+ assert.equal(canStand(rightWireFence.x,rightWireFence.z),false,'right wire mesh fence blocks walking');
+ const backWireFence=toFh(0,-7.5);
+ assert.equal(canStand(backWireFence.x,backWireFence.z),false,'back wire mesh fence blocks walking');
 });
 
 test('eastern rows face AH1 and cross-drain joins both north-south canals',()=>{

@@ -1,3 +1,4 @@
+import { homeGuidance } from './game/homeAccess';
 import { FrameBudget } from './components/FrameBudget';
 import { mobileQuality } from './game/sceneBudget';
 import { MobileControls } from './components/MobileControls';
@@ -32,7 +33,7 @@ function App(){
  const [settingsOpen,setSettingsOpen]=useState(false);
  const [sceneActive,setSceneActive]=useState(false);
  const [topDown,setTopDown]=useState(false);
- const [zoom,setZoom]=useState(6);
+ const [zoom,setZoom]=useState(ward.spawnZoom);
  const [night,setNight]=useState(false);
  const [navigationRequest,setNavigationRequest]=useState<{action:'locate'|'teleport';seq:number}|null>(null);
  const [navigationNotice,setNavigationNotice]=useState('');
@@ -117,6 +118,7 @@ function App(){
   {navigationNotice&&<p role="status">{navigationNotice}</p>}
  </div>}
 
+ {!mapOpen&&homeGuidance(pos.x,pos.z)&&<div className="home-guidance" role="status">? {homeGuidance(pos.x,pos.z)}</div>}
  <header>
   <span className="eyebrow">EXPLORE MYANMAR · 📍 {currentLoc.subArea ?? currentLoc.label}</span>
   <h1>{currentLoc.title}</h1>

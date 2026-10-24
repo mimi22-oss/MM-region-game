@@ -1,3 +1,4 @@
+import { updateHomeAccess } from '../game/homeAccess';
 import { panCamera, findTeleportSpot } from '../game/cameraNavigation';
 import { avatarHeading } from '../game/avatarHeading';
 import { RobotCharacter } from './RobotCharacter';
@@ -58,12 +59,12 @@ export function Player({
   z:ward.spawn.z,
   camX:ward.spawn.x,
   camZ:ward.spawn.z,
-  yaw:0,
-  bodyYaw:0,
+  yaw:ward.spawnYaw,
+  bodyYaw:ward.spawnYaw,
   mobileSession:-1,
   pitch:-0.12,
-  distance:6,
-  targetDistance:6,
+  distance:ward.spawnZoom,
+  targetDistance:ward.spawnZoom,
   first:false,
   topDown:false,
   dragging:false,
@@ -195,8 +196,8 @@ export function Player({
     }
     if(e.code==='KeyR'){
      s.x=ward.spawn.x;s.z=ward.spawn.z;s.camX=ward.spawn.x;s.camZ=ward.spawn.z;
-     s.yaw=0;s.bodyYaw=0;s.pitch=-0.12;s.topDown=false;s.panning=false;s.targetDistance=6;
-     onTopDown(false);onZoom(6);onPosition(s.x,s.z);
+     s.yaw=ward.spawnYaw;s.bodyYaw=ward.spawnYaw;s.pitch=-0.12;s.topDown=false;s.panning=false;s.targetDistance=ward.spawnZoom;
+     onTopDown(false);onZoom(ward.spawnZoom);onPosition(s.x,s.z);
     }
    }
   };
@@ -254,6 +255,7 @@ export function Player({
  },[gl,onLock,onMode,onTopDown,onZoom,mapOpen]);
  useFrame((_,delta)=>{
   const s=state.current;const dt=Math.min(delta,0.05);
+  updateHomeAccess(s.x,s.z,dt);
   const oldX=s.x,oldZ=s.z;
   const touch=mobileInput?.current;
   if(touch){

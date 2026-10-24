@@ -235,3 +235,14 @@ The floating My robot target icon returns the camera to the character without mo
 
 ### View location and stable navigation
 The location heading follows the current camera focus while browsing, independently of the robot/map-marker position. Streaming uses that same focus rather than projecting an unstable camera-ground ray. Detailed region replacements wait until navigation has settled for 0.6 seconds. Separate entry/exit altitude thresholds prevent repeated switches near a zoom boundary; nearby batched details no longer disappear at a 180-metre cutoff. Logarithmic depth and distinct main-road/lane surface heights reduce depth shimmer. Region overview/detail changes can still occur once navigation stops; memory budgets remain bounded.
+
+### Owner-only home access and highway traffic
+Farmhouse ownership is keyed by house ID in `src/game/homeAccess.ts`. The player's actual position drives the street gate, compound gate and front doors; camera navigation cannot unlock them. Gates open smoothly near the owner, wait two seconds after departure, and close. Closed gates block movement until sufficiently open. Other residential compounds and their blue gates remain private/closed. The farmhouse entrance has a real open frame, ground chevrons and a contextual welcome/direction hint. Ownership is local prototype gameplay state.
+
+Reusable car appearance and main-road-only route generation live in `src/game/carTraffic.ts`. Adjacent collinear highway segments merge; cars use separate outbound/return tracks and curved end turns. Traffic mounts at most four cars on mobile/eight on desktop near the camera, and is removed in high aerial views. This is ambient traffic animation, not a vehicle physics or traffic-sign simulation. The curved windshield matches the cabin surface; current cabin geometry preserves the existing transparent glass/interior improvements.
+
+### Whole farmhouse estate
+The chain-link perimeter in `src/data/farmEstate.ts` encloses the front empty lot, side lots, northern owned land, cultivation, pond banks and palms while excluding neighboring homes and the northern public lane. Fence panels are raised above the existing canal crossings. The original blue owner-operated street gate remains at the entrance. Low-poly areca palms line the inside boundary with spatially indexed trunk collision. Internal house-compound fencing remains as a separate enclosure.
+
+### Home startup and entry delay
+Reload/reset now starts the robot at a checked clear interior position in the farmhouse, with a short indoor chase-camera distance. Every owner-operated gate/door requires three continuous seconds standing still nearby before opening. Moving away or walking resets the wait. Once opened, the gate remains open while crossing, then retains the existing two-second departure hold before closing.

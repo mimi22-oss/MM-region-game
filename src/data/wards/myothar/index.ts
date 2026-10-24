@@ -11,6 +11,8 @@ export const myotharWard = {
  currentArea: area5.name,
  areas: [area5],
  size: 8600,
- spawn: toWorld(0, 105),
+ spawn: {x:farmhouse.x+2*Math.cos(farmhouse.rotation)+1.8*Math.sin(farmhouse.rotation),z:farmhouse.z-2*Math.sin(farmhouse.rotation)+1.8*Math.cos(farmhouse.rotation)},
+ spawnYaw: farmhouse.rotation,
+ spawnZoom: 3,
  description: 'ပေးထားသော မြေပုံကို မှီငြမ်းထားသော ခန့်မှန်း 3D ပုံစံ',
 };

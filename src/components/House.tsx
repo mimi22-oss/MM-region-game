@@ -1,18 +1,19 @@
+import { HomeGate } from './HomeGate';
 import { mobileQuality } from '../game/sceneBudget';
 import { angle, ward, type House as HouseData } from '../data/ward';
 import { Box } from './Primitives';
-export const FARMHOUSE_NAME='á€œá€™á€ºá€¸á€žá€½á€šá€º á‚ Â· á€…á€­á€¯á€€á€ºá€á€„á€ºá€¸á€¡á€­á€™á€º';
+export const FARMHOUSE_NAME='လမ်းသွယ် ၂ · စိုက်ခင်းအိမ်';
 export function houseVisualRotation(h:HouseData){
  return angle+(h.x*Math.cos(angle)-h.z*Math.sin(angle)>0?-Math.PI/2:Math.PI/2);
 }
 export function houseFenceBounds(h:HouseData){
- const sideMargin=h.name.startsWith('á€€á€½á€„á€ºá€¸á€˜á€±á€¸á€¡á€­á€™á€º')?1.0:1.6;
+ const sideMargin=h.name.startsWith('ကွင်းဘေးအိမ်')?1.0:1.6;
  const sideHalf=h.width/2+sideMargin;
  const backHalf=h.depth/2+1.5;
  const frontHalf=h.depth/2+2.6;
  return {sideHalf,backHalf,frontHalf};
 }
-function WireMeshSegment({length}:{length:number}){
+export function WireMeshSegment({length}:{length:number}){
  if(mobileQuality)return <group><Box position={[0,1.45,0]} size={[length,.06,.06]} color="#68767a"/>{[-1,1].map(side=><Box key={side} position={[side*length/2,.78,0]} size={[.1,1.56,.1]} color="#566366"/>)}</group>;
  const meshCount=Math.max(6,Math.round(length/1.2));
  return <group>
@@ -50,24 +51,24 @@ function BlueSheetSection({startX,endX}:{startX:number;endX:number}){
   })}
  </group>;
 }
-function BlueSheetFrontFence({z,width,gateWidth=2.6}:{z:number;width:number;gateWidth?:number}){
+function BlueSheetFrontFence({z,width,gateWidth=2.6,owned=false}:{z:number;width:number;gateWidth?:number;owned?:boolean}){
  const halfWidth=width/2;
  const halfGate=gateWidth/2;
- const leafLen=Math.min(1.1,gateWidth*0.38);
+ const leafLen=halfGate;
  return <group position={[0,0,z]}>
   <BlueSheetSection startX={-halfWidth} endX={-halfGate}/>
   <BlueSheetSection startX={halfGate} endX={halfWidth}/>
-  {/* Gate posts and open gate leaves on both sides of the front doorway */}
+  {owned&&<HomeGate id="street" width={gateWidth}/>}
   {[-1,1].map(s=><group key={s} position={[s*halfGate,0,0]}>
    <Box position={[0,0.98,0]} size={[0.16,1.96,0.16]} color="#485457"/>
    <Box position={[0,1.98,0]} size={[0.22,0.06,0.22]} color="#1d4e89"/>
-   <group rotation={[0,-s*1.15,0]}>
+   {!owned&&<group rotation={[0,0,0]}>
     <mesh position={[-s*leafLen/2,0.88,0]} castShadow receiveShadow>
      <boxGeometry args={[leafLen,1.72,0.05]}/>
      <meshStandardMaterial color="#2b6cb0" metalness={0.35} roughness={0.45}/>
     </mesh>
     <Box position={[-s*leafLen/2,1.75,0]} size={[leafLen,0.05,0.08]} color="#1d4e89"/>
-   </group>
+   </group>}
   </group>)}
  </group>;
 }
@@ -75,7 +76,7 @@ export function FrontLotFence(){
  const l=ward.frontLot;
  // Facing the main road (AH1): +Z in l.rotation + Math.PI/2 is the East / main-road side of frontLot.
  return <group position={[l.x,0,l.z]} rotation={[0,l.rotation+Math.PI/2,0]}>
-  <BlueSheetFrontFence z={l.width/2} width={l.depth} gateWidth={3.4}/>
+  <BlueSheetFrontFence z={l.width/2} width={l.depth} gateWidth={3.4} owned/>
  </group>;
 }
 function HouseFence({h}:{h:HouseData}){

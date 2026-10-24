@@ -193,3 +193,60 @@ test('region detail stays stable around zoom thresholds and waits for navigation
  assert.equal(settle.update(19,0,20,.2),true);
  assert.equal(settle.update(19,0,25,.1),false);
 });
+
+
+test('main-road car traffic merges adjacent roads, separates directions and varies appearances',async()=>{
+ const {buildTrafficRoutes,trafficPose,carAppearance}=await import('../src/game/carTraffic.ts');
+ const routes=buildTrafficRoutes([{id:'a',x:0,z:50,width:12,depth:100,rotation:0,main:true},{id:'b',x:0,z:150,width:12,depth:100,rotation:0,main:true},{id:'lane',x:30,z:50,width:6,depth:50,rotation:0,main:false}]);
+ assert.equal(routes.length,1);const r=routes[0],period=2*r.length+2*Math.PI*r.lane;
+ const a=trafficPose(r,20),b=trafficPose(r,r.length+Math.PI*r.lane+20);assert.ok(a.x*b.x<0);
+ for(let t=0;t<period;t+=.2){const p=trafficPose(r,t);assert.ok(Math.abs(p.x)<6);assert.ok(p.z>=0&&p.z<=200);const q=trafficPose(r,t+.01);assert.ok(Math.hypot(p.x-q.x,p.z-q.z)<.011)}
+ assert.equal(new Set(Array.from({length:32},(_,i)=>carAppearance(i).color)).size,32);
+ assert.ok(new Set(Array.from({length:12},(_,i)=>carAppearance(i).size)).size>1);
+});
+
+test('windshield follows the outside of the curved car body',async()=>{
+ const {windshieldGeometry,cabinCurvePoint}=await import('../src/game/carWindshield.ts');const g=windshieldGeometry(),p=g.getAttribute('position');
+ for(let i=0;i<=16;i++){
+  const base=cabinCurvePoint(.015+(.27-.015)*i/16);
+  for(let j=0;j<9;j++){const k=i*9+j,outward=(p.getY(k)-base.y)*base.ny+(p.getZ(k)-base.z)*base.nz;assert.ok(outward>.05);assert.ok(p.getZ(k)<0)}
+ }
+ g.dispose();
+});
+
+test('only the owner opens home gates, with delayed closing and matching collision',async()=>{
+ const {homeAccess,homeGates,updateHomeAccess,homeGateBlocks,ownsHome}=await import('../src/game/homeAccess.ts');
+ const {farmhouse}=await import('../src/data/ward.ts');
+ assert.ok(ownsHome(farmhouse.id));assert.equal(ownsHome(farmhouse.id,'npc'),false);assert.equal(ownsHome('another-house'),false);
+ const g=homeGates.yard;updateHomeAccess(1e5,1e5,10);assert.ok(homeGateBlocks(g.x,g.z));
+ updateHomeAccess(g.x,g.z,1,'npc');assert.equal(homeAccess.open.yard,0);
+ updateHomeAccess(g.x,g.z,2.9);assert.equal(homeAccess.open.yard,0);
+ updateHomeAccess(g.x+.2,g.z,.1);assert.equal(homeAccess.wait.yard,0);
+ updateHomeAccess(g.x+.2,g.z,2.9);assert.equal(homeAccess.open.yard,0);
+ updateHomeAccess(g.x+.2,g.z,.11);
+ updateHomeAccess(g.x+.2,g.z,1);assert.equal(homeAccess.open.yard,1);assert.equal(homeGateBlocks(g.x,g.z),false);
+ updateHomeAccess(1e5,1e5,1);assert.equal(homeAccess.open.yard,1);
+ updateHomeAccess(1e5,1e5,2);assert.equal(homeAccess.open.yard,0);assert.ok(homeGateBlocks(g.x,g.z));
+});
+
+
+test('farm estate surrounds owned plots, excludes neighbors and keeps gate/canal access',async()=>{
+ const {insideEstate,estateFenceBlocks,estatePalms,estatePanels}=await import('../src/data/farmEstate.ts');
+ const {ward,toWorld,angle}=await import('../src/data/ward.ts');
+ for(const plot of [ward.frontLot,ward.farm,ward.pond,ward.farmNorthLand,...ward.sideLots]){
+  const u=plot.x*Math.cos(angle)-plot.z*Math.sin(angle),v=plot.x*Math.sin(angle)+plot.z*Math.cos(angle);
+  for(const du of [-1,1])for(const dv of [-1,1])assert.ok(insideEstate(u+du*plot.width/2,v+dv*plot.depth/2));
+ }
+ for(const [u,v] of [[-74,204],[-24,240],[-74,296],[-182,270]])assert.equal(insideEstate(u,v),false);
+ const gate=toWorld(-10,270);assert.equal(estateFenceBlocks(gate.x,gate.z),false);
+ const fence=toWorld(-154,270);assert.ok(estateFenceBlocks(fence.x,fence.z));
+ assert.ok(estatePanels.filter(p=>p.raised).length>=2);
+ assert.ok(estatePalms.length>12);for(const palm of estatePalms){assert.ok(insideEstate(palm.u,palm.v));assert.ok(Math.abs(palm.u+54)>5)}
+});
+
+
+test('reload spawn is clear ground inside the owned farmhouse',async()=>{
+ const {ward,farmhouse}=await import('../src/data/ward.ts');const {localPoint}=await import('../src/game/homeAccess.ts');const {canStand}=await import('../src/game/collision.ts');
+ const p=localPoint(ward.spawn.x,ward.spawn.z,farmhouse.x,farmhouse.z,farmhouse.rotation);
+ assert.ok(Math.abs(p.x)<5.5&&Math.abs(p.z)<4.5);assert.ok(canStand(ward.spawn.x,ward.spawn.z));assert.equal(ward.spawnZoom,3);
+});
