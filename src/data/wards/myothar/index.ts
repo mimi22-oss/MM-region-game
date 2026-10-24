@@ -1,6 +1,6 @@
-import { area5, angle, toWorld, pitchLanes, oppositeLanes, residentialRows, farmhouse, type House } from './area5.ts';
+import { area5, angle, toWorld, pitchLanes, oppositeLanes, residentialRows, farmhouse, uShweHouse, type House } from './area5.ts';
 
-export { area5, angle, toWorld, pitchLanes, oppositeLanes, residentialRows, farmhouse, type House };
+export { area5, angle, toWorld, pitchLanes, oppositeLanes, residentialRows, farmhouse, uShweHouse, type House };
 
 /** မြို့သာရပ်ကွက် (နယ်မြေများ စုစည်းမှု) */
 export const myotharWard = {

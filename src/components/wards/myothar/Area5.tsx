@@ -2,9 +2,12 @@ import { ParkedCars, ParkedCarsPlan } from '../../Car';
 import { area5, farmhouse, toWorld } from '../../../data/wards/myothar/area5';
 import { House, FARMHOUSE_NAME, houseFenceBounds, houseVisualRotation } from '../../House';
 import { Farmhouse } from '../../Farmhouse';
+import { UShweHouse, U_SHWE_HOUSE_ID } from '../../ushwehouse';
 import { ToiletBlock, TOIL_X, TOIL_Z, TOIL_ROT } from '../../ToiletBlock';
 import { WaterPump, PUMP_X, PUMP_Z, PUMP_ROT } from '../../WaterPump';
 import { MangoTrees } from '../../MangoTrees';
+import { TamarindTrees } from '../../TamarindTrees';
+import { tamarindTrees } from '../../../data/tamarindTrees';
 import { mangoTrees } from '../../../data/mangoTrees';
 import { MainRoad } from '../../MainRoad';
 import { Lanes } from '../../Lane';
@@ -26,8 +29,10 @@ export function Area5(){
   <FootballPitch/>
   <Canal/>
   <Farmhouse/>
+  <UShweHouse/>
   <ToiletBlock/>
   <MangoTrees/>
+  <TamarindTrees/>
   <WaterPump/>
   <OpenGround/>
   <Monastery/>
@@ -35,7 +40,7 @@ export function Area5(){
   <Fields/>
   <MainRoad/>
   <Lanes/>
-  {area5.houses.filter(h=>h.id!==farmhouse.id).map(h=><House key={h.id} h={h}/>)}
+  {area5.houses.filter(h=>h.id!==farmhouse.id&&h.id!==U_SHWE_HOUSE_ID).map(h=><House key={h.id} h={h}/>)}
   <Trees/>
   <ParkedCars/>
  </group>;
@@ -82,11 +87,18 @@ export function Area5Plan({labels,onSelectLocation}:{labels:boolean;onSelectLoca
   {[...area5.yards,area5.farm].map((p,i)=><rect key={`plot${i}`} x={p.x-p.width/2} y={p.z-p.depth/2} width={p.width} height={p.depth} fill={i<area5.yards.length?'#b7ad83':'#a6a66e'} stroke="#8b9367" transform={`rotate(${-p.rotation*180/Math.PI} ${p.x} ${p.z})`}/>)}
   <rect x={area5.pond.x-area5.pond.width/2} y={area5.pond.z-area5.pond.depth/2} width={area5.pond.width} height={area5.pond.depth} fill="#548f94" stroke="#97825c" strokeWidth="2" transform={`rotate(${-area5.pond.rotation*180/Math.PI} ${area5.pond.x} ${area5.pond.z})`}/>
   {area5.farmTrees.map(t=><circle key={t.id} cx={t.x} cy={t.z} r="2.4" fill="#547b48"/>)}
-   {mangoTrees.map(t=><g key={t.id}>
-    <circle cx={t.x} cy={t.z} r="2.8" fill="#356530" stroke="#234720" strokeWidth="0.3"/>
-    <circle cx={t.x+0.7} cy={t.z-0.6} r="0.75" fill="#f59e0b"/>
-    <circle cx={t.x-0.6} cy={t.z+0.7} r="0.75" fill="#f97316"/>
-   </g>)}
+       {mangoTrees.map(t=><g key={t.id}>
+     <circle cx={t.x} cy={t.z} r="2.8" fill="#356530" stroke="#234720" strokeWidth="0.3"/>
+     <circle cx={t.x+0.7} cy={t.z-0.6} r="0.75" fill="#f59e0b"/>
+     <circle cx={t.x-0.6} cy={t.z+0.7} r="0.75" fill="#f97316"/>
+    </g>)}
+    {tamarindTrees.map(t=><g key={t.id}>
+     <circle cx={t.x} cy={t.z} r="3.2" fill="#386630" stroke="#22451e" strokeWidth="0.35"/>
+     <circle cx={t.x+0.8} cy={t.z-0.7} r="0.7" fill="#8b572a"/>
+     <circle cx={t.x-0.7} cy={t.z+0.8} r="0.7" fill="#9c6331"/>
+     <circle cx={t.x} cy={t.z+0.9} r="0.6" fill="#7a4b22"/>
+    </g>)}
+    {labels&&<text x="61.7" y="214.0" textAnchor="middle" fontSize="3.0" fill="#fff" stroke="#1c3d1f" strokeWidth="0.45">မန်ကျည်းပင်တန်း</text>}
    {labels&&<text x="85.7" y="298.5" textAnchor="middle" fontSize="3.2" fill="#fff" stroke="#1c3d1f" strokeWidth="0.45">သရက်ခြံ</text>}
    <g transform={'translate(' + PUMP_X + ' ' + PUMP_Z + ') rotate(' + (-(PUMP_ROT)*180/Math.PI) + ')'}>
     <rect x="-1.1" y="-1.0" width="2.2" height="2.0" fill="#a8a194" stroke="#716b60" strokeWidth="0.25"/>
@@ -120,7 +132,14 @@ export function Area5Plan({labels,onSelectLocation}:{labels:boolean;onSelectLoca
    const rot=houseVisualRotation(h);
    return <g key={h.id}>
     <g transform={`translate(${h.x} ${h.z}) rotate(${-rot*180/Math.PI})`}>
-     {h.name!==FARMHOUSE_NAME&&<>
+     {h.id===U_SHWE_HOUSE_ID?<>
+      <line x1={-sideHalf} y1={-backHalf} x2={-sideHalf} y2={frontHalf} stroke="#68767a" strokeWidth="0.6" strokeDasharray="1.2 0.8"/>
+      <line x1={sideHalf} y1={-backHalf} x2={sideHalf} y2={frontHalf} stroke="#68767a" strokeWidth="0.6" strokeDasharray="1.2 0.8"/>
+      <rect x="-4.6" y="4.5" width="9.2" height="2.7" fill="#849699" stroke="#6b4c30" strokeWidth="0.2"/>
+      <rect x="-3.8" y="5.4" width="2.8" height="0.7" fill="#6b4423"/>
+      <circle cx="2.2" cy="5.85" r="0.6" fill="#8c6744"/>
+      {labels&&<text y="6.1" textAnchor="middle" fontSize="1.8" fill="#fff" stroke="#1c3d1f" strokeWidth="0.3">ဦးရွှေ မုန့်ဆိုင်</text>}
+     </>:h.name!==FARMHOUSE_NAME&&<>
       <line x1={-sideHalf} y1={-backHalf} x2={-sideHalf} y2={frontHalf} stroke="#68767a" strokeWidth="0.6" strokeDasharray="1.2 0.8"/>
       <line x1={sideHalf} y1={-backHalf} x2={sideHalf} y2={frontHalf} stroke="#68767a" strokeWidth="0.6" strokeDasharray="1.2 0.8"/>
       <line x1={-sideHalf} y1={frontHalf} x2={-1.3} y2={frontHalf} stroke="#2563a6" strokeWidth="1.1"/>

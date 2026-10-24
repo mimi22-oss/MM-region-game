@@ -34,5 +34,5 @@ export const estatePalms:{id:string;u:number;v:number;x:number;z:number}[]=[];
 for(let u=-150;u<=-14;u+=8)for(let v=200;v<=290;v+=8){
  if(!insideEstate(u,v)||Math.abs(u+54)<5||Math.hypot(u+10,v-270)<7)continue;
  const nearEdge=estatePanels.some(p=>Math.hypot(p.alongU?Math.max(0,Math.abs(u-p.u)-p.length/2):u-p.u,p.alongU?v-p.v:Math.max(0,Math.abs(v-p.v)-p.length/2))<4.5);
- if(nearEdge&&!(u>-83&&u<-61&&v>249&&v<282)&&!(u<=-148&&v>=252&&v<=292))estatePalms.push({id:`areca-${u}-${v}`,u,v,...toWorld(u,v)});
+ if(nearEdge&&!(u>-83&&u<-61&&v>249&&v<282)&&!(u<=-148&&v>=252&&v<=292)&&!(u>=-126&&u<=-100&&v>=198&&v<=202))estatePalms.push({id:`areca-${u}-${v}`,u,v,...toWorld(u,v)});
 }

@@ -8,6 +8,7 @@ import {
  oppositeLanes,
  residentialRows,
  farmhouse,
+ uShweHouse,
  type House,
 } from './wards/index.ts';
 import {
@@ -115,5 +116,6 @@ export {
  oppositeLanes,
  residentialRows,
  farmhouse,
+ uShweHouse,
  type House,
 };

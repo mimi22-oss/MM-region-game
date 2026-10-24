@@ -1,19 +1,20 @@
 import { estateFenceBlocks,estatePalms } from '../data/farmEstate.ts';
 import { homeGateBlocks } from './homeAccess.ts';
-import { farmhouse, angle } from '../data/ward.ts';
+import { farmhouse, uShweHouse, angle } from '../data/ward.ts';
 import { parkedCars } from '../data/cars.ts';
 import { spatialIndex } from './spatialIndex.ts';
 import { ward } from '../data/ward.ts';
 import { kalayVillages } from '../data/villages/index.ts';
 import { mangoTrees } from '../data/mangoTrees.ts';
+import { tamarindTrees } from '../data/tamarindTrees.ts';
 export const PLAYER_RADIUS = 0.4;
 const nearbyAreca=spatialIndex(estatePalms,p=>({x:p.x,z:p.z,radius:.62}));
 const villageHouses=kalayVillages.flatMap(v=>v.houses);
 const villageTrees=kalayVillages.flatMap(v=>[...v.trees,...v.largeTrees,...v.farmTrees]);
-const solidWardHouses=ward.houses.filter(h=>h.id!==farmhouse.id);
+const solidWardHouses=ward.houses.filter(h=>h.id!==farmhouse.id&&h.id!==uShweHouse.id);
 const privateHomeIds=new Set([...solidWardHouses,...villageHouses].map(h=>h.id));
 const nearbyBuildings=spatialIndex([...solidWardHouses,...ward.warehouses,...ward.riceMill.buildings,...villageHouses],h=>({x:h.x,z:h.z,radius:Math.hypot(h.width/2+1.6,h.depth/2+2.6)+PLAYER_RADIUS}));
-const nearbyTrees=spatialIndex([...ward.trees,...ward.farmTrees,...ward.largeTrees,...villageTrees,...mangoTrees],t=>({x:t.x,z:t.z,radius:t.radius+PLAYER_RADIUS}));
+const nearbyTrees=spatialIndex([...ward.trees,...ward.farmTrees,...ward.largeTrees,...villageTrees,...mangoTrees,...tamarindTrees],t=>({x:t.x,z:t.z,radius:t.radius+PLAYER_RADIUS}));
 const mountainObstacles=[...ward.mountains,...ward.weipula.peaks];
 const polylineCanals=[ward.crossCanal,...kalayVillages.flatMap(vl=>vl.connectingCanal?[vl.connectingCanal]:[])];
 
@@ -100,6 +101,36 @@ function canStandFarmhouse(x: number, z: number): boolean {
   return true;
 }
 
+
+// U Shwe House & Snack Shop collision setup
+const uShweData = uShweHouse;
+const usC = Math.cos(uShweData.rotation);
+const usS = Math.sin(uShweData.rotation);
+
+export function canStandUShweHouse(x: number, z: number): boolean {
+  const dx = x - uShweData.x, dz = z - uShweData.z;
+  const lx = dx * usC - dz * usS, lz = dx * usS + dz * usC;
+  if (Math.abs(lx) > 8 || Math.abs(lz) > 8) return true;
+
+  // 1. Main 2-storey house building (width 10m: lx=-5..5, depth 9m: lz=-4.5..4.5)
+  if (Math.abs(lx) < 5.0 + PLAYER_RADIUS && lz > -4.5 - PLAYER_RADIUS && lz < 4.5 + PLAYER_RADIUS) return false;
+
+  // 2. Snack serving counter (lx=-3.8..-1.0, lz=5.4..6.1)
+  if (lx > -3.8 - PLAYER_RADIUS && lx < -1.0 + PLAYER_RADIUS && lz > 5.4 - PLAYER_RADIUS && lz < 6.1 + PLAYER_RADIUS) return false;
+
+  // 3. Cooking corner / Mohinga cauldron (lx=-4.5..-3.5, lz=4.5..5.6)
+  if (lx > -4.5 - PLAYER_RADIUS && lx < -3.5 + PLAYER_RADIUS && lz > 4.5 && lz < 5.6 + PLAYER_RADIUS) return false;
+
+  // 4. Customer dining table (center at lx=2.2, lz=5.85, radius=0.6)
+  if (Math.hypot(lx - 2.2, lz - 5.85) < 0.6 + PLAYER_RADIUS) return false;
+
+  // 5. Annex side fence borders (lx=-4.7 and lx=4.7, lz=4.5..7.2)
+  if (Math.abs(lx + 4.7) < 0.15 + PLAYER_RADIUS && lz > 4.5 && lz < 7.2) return false;
+  if (Math.abs(lx - 4.7) < 0.15 + PLAYER_RADIUS && lz > 4.5 && lz < 7.2) return false;
+
+  return true;
+}
+
 export function canStand(x:number,z:number):boolean {
  if(homeGateBlocks(x,z)||estateFenceBlocks(x,z)||nearbyAreca(x,z).some(p=>Math.hypot(x-p.x,z-p.z)<.62))return false;
  const c=Math.cos(ward.canal.rotation),s=Math.sin(ward.canal.rotation);
@@ -142,6 +173,7 @@ export function canStand(x:number,z:number):boolean {
  if(!Number.isFinite(x)||!Number.isFinite(z)||Math.abs(x)>edge||Math.abs(z)>edge)return false;
  if(!canStandFarmhouse(x,z))return false;
  if(!canStandToilet(x,z))return false;
+ if(!canStandUShweHouse(x,z))return false;
  if(Math.hypot(x-109.721,z-284.313)<0.42+PLAYER_RADIUS)return false;
  for(const h of nearbyBuildings(x,z)){
   const dx=x-h.x,dz=z-h.z,c=Math.cos(h.rotation),s=Math.sin(h.rotation);

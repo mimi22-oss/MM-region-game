@@ -23,7 +23,7 @@ const p1 = { u: -153.111748, v: 292.254736 };
 const p2 = { u: -150.501786, v: 253.81594 };
 const TREE_COUNT = 7;
 
-export const mangoTrees: MangoTreePlot[] = Array.from(
+export const orchardMangoTrees: MangoTreePlot[] = Array.from(
 	{ length: TREE_COUNT },
 	(_, i) => {
 		const t = (i + 0.5) / TREE_COUNT;
@@ -41,3 +41,20 @@ export const mangoTrees: MangoTreePlot[] = Array.from(
 		};
 	}
 );
+
+/**
+ * စိုက်ခင်းအနီး သီးခြားစိုက်ပျိုးထားသော သရက်ပင် (Standalone Farmstead Mango Tree):
+ * - တည်နေရာ (Location): Lat 23.1609864, Lng 94.0460003
+ * - Scene X=145.761, Z=267.264 (Local U=-85.916, V=292.052)
+ */
+export const standaloneMangoTree: MangoTreePlot = {
+	id: 'mango-tree-standalone-1',
+	u: -85.916,
+	v: 292.052,
+	x: 145.761,
+	z: 267.264,
+	radius: 0.45,
+	seed: 48,
+};
+
+export const mangoTrees: MangoTreePlot[] = [...orchardMangoTrees, standaloneMangoTree];

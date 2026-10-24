@@ -22,6 +22,8 @@ for(const [group,rows] of Object.entries(residentialRows))for(const v of rows)fo
 }
 oppositeHome(-72,270,'လမ်းသွယ် ၂ · စိုက်ခင်းအိမ်');houses[houses.length-1].rotation=angle+Math.PI/2;
 export const farmhouse=houses[houses.length-1];
+export const uShweHouse=houses.find(h=>h.id==='h79')!;
+uShweHouse.name='northNear · အိမ်တန်း 240 · ဦးရွှေအိမ်';
 oppositeHome(-182,270,'လမ်းသွယ် ၂ · မြောင်းနောက်အိမ်');houses[houses.length-1].rotation=angle+Math.PI/2;// New rows east of AH1: four homes in the first row, one in the second.
 for(const u of [24,46,68,90])oppositeHome(u,270,'အရှေ့တန်း ၁ · အိမ်');
 oppositeHome(24,294,'အရှေ့တန်း ၂ · အိမ်');
@@ -90,11 +92,12 @@ export const area5={
   {id:'east-row-canal-tree',u:56,v:277},
   {id:'east-first-row-road-tree',u:12,v:270},
   {id:'rice-mill-yard-front-tree',u:12,v:316},
+   {id:'cross-canal-verge-tree',u:-7.969,v:282.549,radius:0.65},
   ...pitchLanes.flatMap((v,i)=>[12,145].map((u,j)=>({id:`pitch-shade-${i}-${j}`,u,v:v+5}))),
   ...oppositeLanes.flatMap((v,i)=>[-12,-144].map((u,j)=>({id:`opposite-shade-${i}-${j}`,u,v:v+5}))),
   ...[-112,-47,40,112].map((v,i)=>({id:`old-cross-shade-${i}`,u:-124,v:v+6})),
   {id:'old-lane-shade-1',u:-82,v:-105},{id:'old-lane-shade-2',u:-104,v:-105},
   {id:'monastery-lane-shade-1',u:156,v:20},{id:'monastery-lane-shade-2',u:156,v:114},
- ].map(({id,u,v})=>({id,...toWorld(u,v),radius:1.1})),
+ ].map(({id,u,v,radius}: {id:string;u:number;v:number;radius?:number})=>({id,...toWorld(u,v),radius:radius??1.1})),
  trees:[-1,1].flatMap(side=>Array.from({length:32},(_,i)=>({id:`t${side}-${i}`,...toWorld(side*14,-120+i*7.7),radius:0.55}))),
 };

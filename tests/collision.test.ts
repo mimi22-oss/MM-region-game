@@ -2,7 +2,9 @@ import { updateHomeAccess } from '../src/game/homeAccess.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { canStand,move } from '../src/game/collision.ts';
-import { mangoTrees, MANGO_START_GEO, MANGO_END_GEO } from '../src/data/mangoTrees.ts';
+import { mangoTrees, MANGO_START_GEO, MANGO_END_GEO, orchardMangoTrees, standaloneMangoTree } from '../src/data/mangoTrees.ts';
+import { tamarindTrees } from '../src/data/tamarindTrees.ts';
+import { uShweHouse } from '../src/data/ward.ts';
 import { robotLocation } from '../src/game/robotLocation.ts';
 import { ward,angle,toWorld,pitchLanes,oppositeLanes,residentialRows,tharSiVillage,chinSaiVillage,zingalinVillage,htomarVillage,htomarFiveColumnFields,htomarRoadsideShops,tharYarGoneVillage,htaukKyantVillage,allHtaukKyantPonds,htaukKyantLandmarks,kyarInnVillage,kyarInnTaphiChaung,kyarInnLandmarks,kyarInnLandmarkBuildings,kyarInnLakePonds,kyarInnLakeIsland,kyarInnLakeStructures } from '../src/data/ward.ts';
 test('Myothar inventory and safe AH1 spawn',()=>{assert.equal(ward.houses.length,98);assert.equal(ward.roads.length,18);assert.equal(ward.fields.length,2);assert.ok(canStand(ward.spawn.x,ward.spawn.z));for(let v=-120;v<=120;v+=2){const p=toWorld(0,v);assert.ok(canStand(p.x,p.z),'AH1 is walkable')}});
@@ -201,13 +203,74 @@ test('mango orchard trees sit between specified coordinates and their trunks blo
  const minLng = Math.min(MANGO_START_GEO.lng, MANGO_END_GEO.lng);
  const maxLng = Math.max(MANGO_START_GEO.lng, MANGO_END_GEO.lng);
 
- for (const t of mangoTrees) {
+ for (const t of orchardMangoTrees) {
   const loc = robotLocation(t.x, t.z, 0);
   assert.ok(loc.latitude >= minLat - 0.0001 && loc.latitude <= maxLat + 0.0001, 'tree latitude is within requested range');
   assert.ok(loc.longitude >= minLng - 0.0001 && loc.longitude <= maxLng + 0.0001, 'tree longitude is within requested range');
   assert.equal(canStand(t.x, t.z), false, 'mango tree trunk blocks walking');
   assert.ok(canStand(t.x + 1.2, t.z) || canStand(t.x, t.z + 1.2), 'space around mango tree is walkable');
  }
+});
+
+test('standalone mango tree sits at requested location (145.761, 267.264) and its trunk blocks walking',()=>{
+ const t = standaloneMangoTree;
+ assert.equal(canStand(t.x, t.z), false, 'standalone mango tree trunk blocks walking');
+ assert.ok(canStand(t.x + 1.2, t.z) || canStand(t.x, t.z + 1.2), 'space around standalone mango tree is walkable');
+ const loc = robotLocation(t.x, t.z, -1.097435);
+ assert.ok(Math.abs(loc.latitude - 23.1609864) < 0.0001, 'tree latitude matches request');
+ assert.ok(Math.abs(loc.longitude - 94.0460003) < 0.0001, 'tree longitude matches request');
+});
+
+test('tamarind trees sit at requested coordinates and their trunks block walking',()=>{
+ assert.equal(tamarindTrees.length, 3, 'three tamarind trees planted in row');
+ for (const t of tamarindTrees) {
+  assert.equal(canStand(t.x, t.z), false, 'tamarind tree trunk blocks walking');
+  assert.ok(canStand(t.x + 1.2, t.z) || canStand(t.x, t.z + 1.2), 'space around tamarind tree is walkable');
+  const loc = robotLocation(t.x, t.z, 0);
+  assert.ok(Math.abs(loc.latitude - t.lat) < 0.0001, 'tree latitude matches request');
+  assert.ok(Math.abs(loc.longitude - t.lng) < 0.0001, 'tree longitude matches request');
+ }
+});
+
+test('regular tree sits at requested location (194.157, 205.428) and its trunk blocks walking',()=>{
+ const t = ward.largeTrees.find(t => t.id === 'cross-canal-verge-tree')!;
+ assert.ok(t, 'tree exists in ward.largeTrees');
+ assert.equal(canStand(t.x, t.z), false, 'regular tree trunk blocks walking');
+ assert.ok(canStand(t.x, t.z - 1.2), 'space around tree is walkable');
+ const loc = robotLocation(t.x, t.z, -1.442213);
+ assert.ok(Math.abs(loc.latitude - 23.1610718) < 0.0001, 'tree latitude matches request');
+ assert.ok(Math.abs(loc.longitude - 94.0467619) < 0.0001, 'tree longitude matches request');
+});
+
+test('U Shwe house and snack shop blocks building and counter while customer shop area is walkable',()=>{
+ assert.ok(uShweHouse, 'U Shwe house exists');
+ assert.ok(uShweHouse.name.includes('ဦးရွှေအိမ်'), 'house named U Shwe house');
+
+ // 1. Inside main building is blocked
+ assert.equal(canStand(uShweHouse.x, uShweHouse.z), false, 'main house building blocks walking');
+
+ // 2. Snack counter blocks walking
+ const rot = uShweHouse.rotation;
+ const c = Math.cos(rot), s = Math.sin(rot);
+ const counterWorld = {
+  x: uShweHouse.x + (-2.4) * c + 5.75 * s,
+  z: uShweHouse.z - (-2.4) * s + 5.75 * c
+ };
+ assert.equal(canStand(counterWorld.x, counterWorld.z), false, 'snack counter blocks walking');
+
+ // 3. Customer ordering space in front of counter is walkable
+ const customerWorld = {
+  x: uShweHouse.x + (-2.4) * c + 6.6 * s,
+  z: uShweHouse.z - (-2.4) * s + 6.6 * c
+ };
+ assert.ok(canStand(customerWorld.x, customerWorld.z), 'space in front of snack counter is walkable');
+
+ // 4. Road space where robot stands facing the shop is walkable
+ const robotPos = { x: 157.153, z: 181.188 };
+ assert.ok(canStand(robotPos.x, robotPos.z), 'robot standing position in front of shop is walkable');
+ const loc = robotLocation(robotPos.x, robotPos.z, 2.137380);
+ assert.ok(Math.abs(loc.latitude - 23.1614608) < 0.0001, 'latitude matches request');
+ assert.ok(Math.abs(loc.longitude - 94.0466737) < 0.0001, 'longitude matches request');
 });
 
 test('water pump station sits at requested location and pump blocks while splash observation space is walkable',()=>{
