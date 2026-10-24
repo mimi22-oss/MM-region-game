@@ -1,3 +1,5 @@
+import { RideControls } from './components/RideControls';
+import type { RideStatus } from './game/motorcycleRide';
 import { RobotLocationPanel } from "./components/RobotLocationPanel";
 import {
   CharacterPicker,
@@ -69,8 +71,13 @@ class SceneError extends Component<
   }
 }
 function App() {
+  const [rideStatus,setRideStatus]=useState<RideStatus>({riding:false,near:false,kmh:0,notice:''});
+  const [rideLimit,setRideLimit]=useState(20),[braking,setBraking]=useState(false),[dismountRequest,setDismountRequest]=useState(0);
+  const rideUpdate=useCallback((next:RideStatus)=>setRideStatus(old=>old.riding===next.riding&&old.near===next.near&&old.kmh===next.kmh&&old.notice===next.notice?old:next),[]);
+
   const [character, setCharacter] = useState<CharacterKind>(savedCharacter);
   const chooseCharacter = (kind: CharacterKind) => {
+    if(rideStatus.riding)return;
     setCharacter(kind);
     try {
       localStorage.setItem(CHARACTER_STORAGE_KEY, kind);
@@ -233,6 +240,7 @@ function App() {
             <FrameBudget />
             <Town night={night} />
             <Player
+              speedLimit={rideLimit} braking={braking} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen}
               character={character}
               navigationRequest={navigationRequest}
               onNavigationResult={navigationResult}
@@ -251,6 +259,7 @@ function App() {
           </Canvas>
         </SceneError>
       </div>
+      {!mapOpen&&!settingsOpen&&<RideControls status={rideStatus} limit={rideLimit} onLimit={setRideLimit} onBrake={setBraking} onDismount={()=>{setBraking(false);setDismountRequest(n=>n+1)}}/>}
       <MobileControls
         key={navigationRequest?.seq ?? 0}
         input={mobileInput}
@@ -352,7 +361,7 @@ function App() {
             className="settings-menu"
             aria-label="အသုံးပြုနည်း လမ်းညွှန်"
           >
-            <CharacterPicker value={character} onChange={chooseCharacter} />
+            <CharacterPicker value={character} onChange={chooseCharacter} disabled={rideStatus.riding}/>
             <RobotLocationPanel
               x={pos.x}
               z={pos.z}

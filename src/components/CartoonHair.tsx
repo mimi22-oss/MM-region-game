@@ -42,7 +42,7 @@ function lock(points:P[],width:number,depth:number){
    const a=j/sides*Math.PI*2,w=Math.cos(a)*width*taper,d=Math.sin(a)*depth*taper;
    const v=c.clone().addScaledVector(across,w).addScaledVector(normal,d);
    p.push(v.x,v.y,v.z);uv.push(j/sides,t);
-   if(i<rings&&j<sides){const k=i*(sides+1)+j;idx.push(k,k+1,k+sides+1,k+1,k+sides+2,k+sides+1);}
+   if(i<rings&&j<sides){const k=i*(sides+1)+j;idx.push(k,k+sides+1,k+1,k+1,k+sides+1,k+sides+2);}
   }
  }
  return finish(p,idx,uv);

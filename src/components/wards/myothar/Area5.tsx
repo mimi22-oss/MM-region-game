@@ -50,7 +50,7 @@ export function Area5(){
   {area5.houses.filter(h=>h.id!==farmhouse.id&&h.id!==U_SHWE_HOUSE_ID&&h.id!==KALAY_SIGN_HOUSE_ID).map(h=><House key={h.id} h={h}/>)}
   <Trees/>
   <ParkedCars/>
-  <ParkedMotorcycle/>
+  
  </group>;
 }
 

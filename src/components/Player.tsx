@@ -1,10 +1,12 @@
+import { motorcycleRide,tryMount,parkMotorcycle,dismountSpot,stepMotorcycle,type RideStatus } from '../game/motorcycleRide';
+import { MotorcycleModel,ParkedMotorcycle } from './Motorcycle';
 import { updateHomeAccess } from '../game/homeAccess';
 import { panCamera, findTeleportSpot } from '../game/cameraNavigation';
 import { avatarHeading } from '../game/avatarHeading';
 import { RobotCharacter } from './RobotCharacter';
 import { CartoonCharacter } from './CartoonCharacter';
 import type { CharacterKind } from './CharacterPicker';
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { MobileInput } from '../game/mobileInput';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Group, Vector3, Raycaster, Object3D } from 'three';
@@ -26,6 +28,7 @@ export type TeleportTarget = {
 
 export function Player({
  character='robot',
+ speedLimit=20,braking=false,controlsBlocked=false,dismountRequest=0,onRideStatus,
  navigationRequest,
  onNavigationResult,
  mobileInput,
@@ -41,6 +44,7 @@ export function Player({
  onPosition,
 }:{
  character?:CharacterKind;
+ speedLimit?:number;braking?:boolean;controlsBlocked?:boolean;dismountRequest?:number;onRideStatus?:(s:RideStatus)=>void;
  navigationRequest?:{action:"locate"|"teleport";seq:number}|null;
  onNavigationResult?:(success:boolean)=>void;
  mobileInput?:RefObject<MobileInput>;
@@ -58,6 +62,8 @@ export function Player({
  const {camera,gl,scene}=useThree();
  const avatar=useRef<Group>(null);
  const wheels=useRef<Group>(null);
+ const [riding,setRiding]=useState(false);
+ const rideNotice=useRef('');
  const characterMotion=useRef({speed:0,distance:0});
  const state=useRef({
   x:ward.spawn.x,
@@ -106,7 +112,15 @@ export function Player({
    }
    onZoom(next);
  };
- useEffect(()=>{state.current.keys.clear()},[mapOpen]);
+ useEffect(()=>{state.current.keys.clear();motorcycleRide.speed=0},[mapOpen,controlsBlocked]);
+ useEffect(()=>{motorcycleRide.maxKmh=speedLimit},[speedLimit]);
+ useEffect(()=>{
+  if(!dismountRequest||!motorcycleRide.riding)return;
+  const spot=dismountSpot(canStand);
+  if(!spot){rideNotice.current='No clear space to get off. Move to an open area.';return;}
+  parkMotorcycle();setRiding(false);rideNotice.current='';
+  const s=state.current;s.x=spot.x;s.z=spot.z;s.camX=s.x;s.camZ=s.z;s.keys.clear();
+ },[dismountRequest]);
  useEffect(()=>{
   const s=state.current;
   s.targetDistance=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,zoom));
@@ -126,6 +140,7 @@ export function Player({
  },[topDown]);
  useEffect(()=>{
   if(!teleportTarget)return;
+  if(motorcycleRide.riding){parkMotorcycle();setRiding(false);}
   const s=state.current;
   s.x=teleportTarget.x;
   s.z=teleportTarget.z;
@@ -148,6 +163,7 @@ export function Player({
   if(navigationRequest.action==='teleport'){
    const spot=findTeleportSpot(s.camX,s.camZ,canStand);
    if(!spot){onNavigationResult?.(false);return}
+   if(motorcycleRide.riding){parkMotorcycle();setRiding(false);}
    s.x=spot.x;s.z=spot.z;
   }
   s.camX=s.x;s.camZ=s.z;s.panning=false;s.first=false;s.topDown=false;
@@ -157,7 +173,7 @@ export function Player({
  const target=useRef(new Vector3()); const desired=useRef(new Vector3()); const ray=useRef(new Raycaster());
  useEffect(()=>{
   const s=state.current;
-  const clear=()=>{s.keys.clear();s.dragging=false;s.shiftDrag=false;gl.domElement.style.cursor=''};
+  const clear=()=>{motorcycleRide.speed=0;s.keys.clear();s.dragging=false;s.shiftDrag=false;gl.domElement.style.cursor=''};
   const lock=()=>{s.locked=document.pointerLockElement===gl.domElement;clear();onLock(s.locked)};
   const key=(e:KeyboardEvent)=>{
    const movement=["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD","ShiftLeft","ShiftRight","KeyR","KeyT"].includes(e.code);
@@ -200,6 +216,7 @@ export function Player({
      onTopDown(nextTop);
     }
     if(e.code==='KeyR'){
+     if(motorcycleRide.riding){parkMotorcycle();setRiding(false);}
      s.x=ward.spawn.x;s.z=ward.spawn.z;s.camX=ward.spawn.x;s.camZ=ward.spawn.z;
      s.yaw=ward.spawnYaw;s.bodyYaw=ward.spawnYaw;s.pitch=-0.12;s.topDown=false;s.panning=false;s.targetDistance=ward.spawnZoom;
      onTopDown(false);onZoom(ward.spawnZoom);onPosition(s.x,s.z,s.bodyYaw);
@@ -244,7 +261,7 @@ export function Player({
    if(document.pointerLockElement!==gl.domElement)gl.domElement.requestPointerLock()?.catch(()=>onLock(false));
   };
   const wheel=(e:WheelEvent)=>{
-   if(mapOpen)return;
+   if(mapOpen||(e.target instanceof HTMLElement&&e.target.closest('.settings-menu,.ride-controls')))return;
    e.preventDefault();
    if(s.first&&e.deltaY>0){
     s.first=false;onMode(false);
@@ -261,7 +278,7 @@ export function Player({
  useFrame((_,delta)=>{
   const s=state.current;const dt=Math.min(delta,0.05);
   updateHomeAccess(s.x,s.z,dt);
-  const oldX=s.x,oldZ=s.z;
+  let oldX=s.x,oldZ=s.z;
   const touch=mobileInput?.current;
   if(touch){
    if(touch.panX||touch.panY){panView(touch.panX,touch.panY);touch.panX=0;touch.panY=0;}
@@ -273,12 +290,35 @@ export function Player({
   let forward=Number(s.keys.has('KeyW')||s.keys.has('ArrowUp'))-Number(s.keys.has('KeyS')||s.keys.has('ArrowDown'));
   let right=Number(s.keys.has('KeyD')||s.keys.has('ArrowRight'))-Number(s.keys.has('KeyA')||s.keys.has('ArrowLeft'));
   if(touch?.active){forward=touch.forward;right=touch.right;}
+  if(controlsBlocked||mapOpen){forward=0;right=0;}
   const len=Math.hypot(forward,right);if(len){forward/=len;right/=len;}
   const fast=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight')||!!touch?.sprint;
   const yaw=mapOpen?0:s.yaw;
   if(len>0&&s.distance<=20&&!s.topDown)s.panning=false;
   const aerial=!touch?.active&&!s.first&&(s.distance>20||s.topDown||s.panning);
-  if(aerial&&!mapOpen){
+  const ride=motorcycleRide;
+  ride.cooldown=Math.max(0,ride.cooldown-dt);
+  const near=character==='cartoon'&&Math.hypot(s.x-ride.x,s.z-ride.z)<1.6;
+  if(ride.mustLeave&&Math.hypot(s.x-ride.x,s.z-ride.z)>2.3)ride.mustLeave=false;
+  if(!ride.riding&&!ride.mustLeave&&near&&!aerial&&!controlsBlocked&&!mapOpen){
+   ride.nearTime+=dt;
+   if(ride.nearTime>.65&&tryMount(s.x,s.z,canStand)){
+    setRiding(true);rideNotice.current='';s.x=ride.x;s.z=ride.z;s.bodyYaw=ride.yaw;s.yaw=ride.yaw;s.panning=false;
+    oldX=s.x;oldZ=s.z;s.targetDistance=5;onZoom(5);
+   }
+  }else if(!ride.riding)ride.nearTime=0;
+  if(ride.riding){
+   let steer=right,throttle=forward;
+   if(touch?.active){
+    const tx=-Math.sin(yaw)*forward+Math.cos(yaw)*right,tz=-Math.cos(yaw)*forward-Math.sin(yaw)*right;
+    const targetYaw=Math.atan2(-tx,-tz),error=Math.atan2(Math.sin(targetYaw-ride.yaw),Math.cos(targetYaw-ride.yaw));
+    if(forward<-.35){steer=right;throttle=-1;}else{steer=-Math.max(-1,Math.min(1,error*2));throttle=len>0?1:0;}
+   }
+   const paused=aerial||mapOpen||controlsBlocked;
+   stepMotorcycle(dt,throttle,steer,braking,paused,canStand);
+   s.x=ride.x;s.z=ride.z;s.bodyYaw=ride.yaw;
+   if(!paused){s.camX=s.x;s.camZ=s.z;}
+  }else   if(aerial&&!mapOpen){
    if(len>0){
     const panSpeed=Math.max(12,s.distance*0.45)*(fast?1.8:1)*dt;
     const edge=ward.size/2-PLAYER_RADIUS;
@@ -293,7 +333,7 @@ export function Player({
   const travelled=Math.hypot(dx,dz);
   characterMotion.current.speed=dt>0?travelled/dt:0;
   characterMotion.current.distance+=travelled;
-  if(!aerial||mapOpen)s.bodyYaw=avatarHeading(s.bodyYaw,dx,dz);
+  if(!ride.riding&&(!aerial||mapOpen))s.bodyYaw=avatarHeading(s.bodyYaw,dx,dz);
   if(wheels.current&&(!aerial||mapOpen)){
    const travel=-Math.sin(s.bodyYaw)*dx-Math.cos(s.bodyYaw)*dz;
    wheels.current.rotation.x-=Math.hypot(dx,dz)*(travel<0?-1:1)/(0.24*0.95);
@@ -310,12 +350,14 @@ export function Player({
     ray.current.set(target.current,offset.normalize());ray.current.far=distance;
     // Ignore the player's own meshes when shortening the chase camera near scenery.
     const isAvatar=(o:Object3D):boolean=>o===avatar.current || (!!o.parent&&isAvatar(o.parent));
-    const hit=ray.current.intersectObjects(scene.children,true).find(h=>!isAvatar(h.object));
+    const isHidden=(o:Object3D):boolean=>!o.visible|| (!!o.parent&&isHidden(o.parent));
+    const hit=ray.current.intersectObjects(scene.children,true).find(h=>!isAvatar(h.object)&&!isHidden(h.object));
     if(hit)desired.current.copy(target.current).addScaledVector(offset,Math.max(0.15,hit.distance-0.3));
    }
    camera.position.copy(desired.current);camera.lookAt(target.current);
   }
-  s.time+=dt;if(s.time>0.08){s.time=0;onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
+  s.time+=dt;if(s.time>0.08){s.time=0;onRideStatus?.({riding:ride.riding,near:near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current});onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
  });
- return <group ref={avatar} name="player-avatar">{character==='cartoon'?<CartoonCharacter motion={characterMotion}/>:<RobotCharacter wheels={wheels}/>}</group>;
+ return <><ParkedMotorcycle/><group ref={avatar} name="player-avatar">{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel/></group><group position={[0,.10,.26]}><CartoonCharacter motion={characterMotion} riding/></group></>:character==='cartoon'?<CartoonCharacter motion={characterMotion}/>:<RobotCharacter wheels={wheels}/>}</group></>;
+
 }

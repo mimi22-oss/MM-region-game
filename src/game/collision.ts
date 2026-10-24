@@ -1,3 +1,4 @@
+import { motorcycleRide } from './motorcycleRide.ts';
 import { estateFenceBlocks, estatePalms } from "../data/farmEstate.ts";
 import { homeGateBlocks } from "./homeAccess.ts";
 import {
@@ -337,7 +338,7 @@ export function canStand(x: number, z: number): boolean {
   if (Math.hypot(x - 295.571, z - 261.63) < 2.4 + PLAYER_RADIUS) return false;
   if (Math.hypot(x - 109.721, z - 284.313) < 0.42 + PLAYER_RADIUS) return false;
   if (
-    Math.hypot(x - MOTORCYCLE_X, z - MOTORCYCLE_Z) <
+    !motorcycleRide.riding && Math.hypot(x - motorcycleRide.x, z - motorcycleRide.z) <
     MOTORCYCLE_RADIUS + PLAYER_RADIUS
   )
     return false;

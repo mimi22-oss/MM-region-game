@@ -6,8 +6,8 @@ export function savedCharacter(): CharacterKind {
  catch { return 'cartoon'; }
 }
 
-export function CharacterPicker({value,onChange}:{value:CharacterKind;onChange:(kind:CharacterKind)=>void}) {
- return <fieldset className="character-picker">
+export function CharacterPicker({value,onChange,disabled=false}:{value:CharacterKind;onChange:(kind:CharacterKind)=>void;disabled?:boolean}) {
+ return <fieldset className="character-picker" disabled={disabled}>
   <legend>ကစားမည့် ဇာတ်ကောင်</legend>
   <div className="character-options">
    <button type="button" aria-pressed={value==='cartoon'} onClick={()=>onChange('cartoon')}>

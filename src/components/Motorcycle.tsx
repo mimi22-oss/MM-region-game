@@ -1,3 +1,7 @@
+import { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { Group } from 'three';
+import { motorcycleRide } from '../game/motorcycleRide';
 import { BufferGeometry,Float32BufferAttribute,Shape,ExtrudeGeometry,MeshStandardMaterial,SphereGeometry,BoxGeometry,CylinderGeometry,TorusGeometry,CatmullRomCurve3,TubeGeometry,Vector3,Quaternion } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { motorcycleData } from '../data/motorcycle';
@@ -53,7 +57,7 @@ const cylinderFins=merge(Array.from({length:6},(_,i)=>new BoxGeometry(.15,.115,.
 function Part({g,m}:{g:BufferGeometry;m:MeshStandardMaterial}){return <mesh geometry={g} material={m} castShadow/>;}
 function Ball({p,s,m}:{p:P;s:P;m:MeshStandardMaterial}){return <mesh geometry={sphere} material={m} position={p} scale={s} castShadow/>;}
 function Box({p,s,m}:{p:P;s:P;m:MeshStandardMaterial}){return <mesh geometry={box} material={m} position={p} scale={s} castShadow/>;}
-function Wheel({z}:{z:number}){return <group position={[0,radius,z]} name="spoked-wheel"><Part g={wheelTire} m={rubber}/>{[-.027,.027].map(x=><mesh key={x} position={[x,0,0]} geometry={wheelRim} material={silver}/>)}<Part g={spokes} m={silver}/><Part g={hub} m={silver}/><Part g={axle} m={trim}/></group>}
+function Wheel({z}:{z:number}){const spin=useRef<Group>(null);useFrame(()=>{if(spin.current)spin.current.rotation.x=motorcycleRide.distance/radius});return <group ref={spin} position={[0,radius,z]} name="spoked-wheel"><Part g={wheelTire} m={rubber}/>{[-.027,.027].map(x=><mesh key={x} position={[x,0,0]} geometry={wheelRim} material={silver}/>)}<Part g={spokes} m={silver}/><Part g={hub} m={silver}/><Part g={axle} m={trim}/></group>}
 /** Reusable rounded step-through motorcycle; local forward is +Z. */
 export function MotorcycleModel({scale=1}:{scale?:number}){
  return <group scale={scale} name="classic-motorcycle-model" dispose={null}>
@@ -75,4 +79,4 @@ export function MotorcycleModel({scale=1}:{scale?:number}){
   <Part g={footrests} m={rubber}/><Part g={stand} m={trim}/>
  </group>;
 }
-export function ParkedMotorcycle(){const c=motorcycleData;return <group position={[c.x,.015,c.z]} rotation={[0,c.rotation+Math.PI,-.045]} name="parked-motorcycle-area5-west"><MotorcycleModel/></group>}
+export function ParkedMotorcycle(){const root=useRef<Group>(null);useFrame(()=>{if(root.current){root.current.visible=!motorcycleRide.riding;root.current.position.set(motorcycleRide.x,.015,motorcycleRide.z);root.current.rotation.set(0,motorcycleRide.yaw+Math.PI,-.045)}});return <group ref={root} position={[motorcycleData.x,.015,motorcycleData.z]} rotation={[0,motorcycleData.rotation+Math.PI,-.045]} userData={{dynamic:true}} name="parked-motorcycle-area5-west"><MotorcycleModel/></group>}

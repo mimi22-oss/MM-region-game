@@ -1388,3 +1388,10 @@ main.night-mode .home-guidance-pill {
   font-size: 10px;
   line-height: 1.7;
 }
+.character-picker:disabled{opacity:.6}
+.ride-controls{position:absolute;z-index:18;bottom:26px;right:20px;width:280px;padding:14px 16px;border:1px solid #d8f0f5aa;border-radius:16px;background:#123a48ed;color:#f3fbfd;box-shadow:0 8px 30px #102f3e33;font:12px system-ui;touch-action:none}
+.ride-controls p{font-size:10px;line-height:1.7;margin:8px 0 0}
+.ride-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.ride-heading output{font-size:25px;font-variant-numeric:tabular-nums}.ride-heading small{font-size:11px;font-weight:400}
+.ride-controls label{display:flex;justify-content:space-between;gap:10px;font-size:11px}.ride-controls input{display:block;width:100%;margin:10px 0 15px;accent-color:#61dcf3;min-height:24px}
+.ride-buttons{display:flex;gap:8px}.ride-buttons button{flex:1;min-height:42px;border:1px solid #a8d4dc66;border-radius:9px;background:#edf9fa;color:#173949;cursor:pointer;font-size:11px}.ride-buttons .ride-brake{background:#e69b58;color:#221d17}.ride-brake:active{background:#ffb36f}
+@media(max-width:700px){.ride-controls{top:64px;bottom:auto;right:12px;width:235px;padding:9px 12px}.ride-controls p{font-size:9px}.ride-heading{margin-bottom:3px}.ride-controls input{margin:5px 0 8px}.ride-heading output{font-size:20px}}

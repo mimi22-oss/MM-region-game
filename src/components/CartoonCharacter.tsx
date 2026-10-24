@@ -4,7 +4,7 @@ import { useRef, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import {
 	BufferGeometry, CatmullRomCurve3, Float32BufferAttribute, Group,
-	MeshStandardMaterial, SphereGeometry, Vector3, TubeGeometry,
+	MeshStandardMaterial, SphereGeometry, Vector3, TubeGeometry, Quaternion,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
@@ -184,8 +184,17 @@ function Leg({ side, innerRef }: { side: number; innerRef: RefObject<Group | nul
 	</group>;
 }
 
+// Bent limbs keep both hands on the grips and both feet beside the footrests.
+const ridingSleeves=join([-1,1].map(side=>line([[side*.219,1.175,0],[side*.25,1.00,-.23],[side*.27,.86,-.44]],.073)));
+function RidingLeg({side}:{side:number}){
+ const hip=new Vector3(side*.145,.707,.016),knee=new Vector3(side*.205,.48,-.32),ankle=new Vector3(side*.205,.24,-.25);
+ const segment=(a:Vector3,b:Vector3,r:number)=>{const d=b.clone().sub(a),q=new Quaternion().setFromUnitVectors(new Vector3(0,1,0),d.clone().normalize());return <mesh geometry={ball} material={materials.trousers} position={a.clone().add(b).multiplyScalar(.5)} quaternion={q} scale={[r,d.length()*.63,r]} castShadow/>};
+ return <group>{segment(hip,knee,.09)}{segment(knee,ankle,.068)}<Ellipsoid position={[side*.205,.48,-.32]} scale={[.082,.078,.082]} material={materials.trousers}/><group position={[side*.205,.16,-.25]}><mesh geometry={shoe} material={materials.white}/><mesh geometry={sole} material={materials.sole}/><mesh geometry={soleStripe} material={materials.rib}/><mesh geometry={laces} material={materials.lace}/></group></group>;
+}
+function RidingArms(){return <group><mesh geometry={ridingSleeves} material={materials.hoodie} castShadow/>{[-1,1].map(side=><group key={side}><Ellipsoid position={[side*.27,.85,-.45]} scale={[.062,.057,.058]} material={materials.rib}/><Ellipsoid position={[side*.27,.83,-.49]} scale={[.046,.037,.043]} material={materials.skin}/></group>)}</group>}
+
 /** Reference-inspired boy. Facing -Z; origin at the soles; no world movement here. */
-export function CartoonCharacter({ motion }: { motion: RefObject<CharacterMotion> }) {
+export function CartoonCharacter({ motion, riding=false }: { motion: RefObject<CharacterMotion>;riding?:boolean }) {
 	const body = useRef<Group>(null), headGroup = useRef<Group>(null);
 	const leftArm = useRef<Group>(null), rightArm = useRef<Group>(null);
 	const leftLeg = useRef<Group>(null), rightLeg = useRef<Group>(null);
@@ -194,7 +203,7 @@ export function CartoonCharacter({ motion }: { motion: RefObject<CharacterMotion
 	useFrame((_, delta) => {
 		const dt = Math.min(delta, .06), a = animation.current;
 		a.time += dt;
-		const speed = Math.abs(motion.current.speed), active = Math.min(1, speed / .8);
+		const speed = riding?0:Math.abs(motion.current.speed), active = Math.min(1, speed / .8);
 		a.stride += (active - a.stride) * (1 - Math.exp(-dt * 11));
 		const run = Math.min(1, Math.max(0, (speed - 2.8) / 4));
 		const phase = motion.current.distance * (4.9 - run * .6);
@@ -215,7 +224,7 @@ export function CartoonCharacter({ motion }: { motion: RefObject<CharacterMotion
 		if (rightEye.current) rightEye.current.scale.y = Math.min(1, blinkScale);
 	});
 	return <group name="cartoon-boy-character" dispose={null}>
-		<Leg side={-1} innerRef={leftLeg} /><Leg side={1} innerRef={rightLeg} />
+		{riding?<><RidingLeg side={-1}/><RidingLeg side={1}/></>:<><Leg side={-1} innerRef={leftLeg}/><Leg side={1} innerRef={rightLeg}/></>}
 		<group ref={body}>
 			<Ellipsoid position={[0, .72, .01]} scale={[.194, .106, .121]} material={materials.trousers} />
 			<mesh geometry={torso} material={materials.hoodie} castShadow />
@@ -231,7 +240,7 @@ export function CartoonCharacter({ motion }: { motion: RefObject<CharacterMotion
 			<mesh geometry={hoodRim} material={materials.hoodie} castShadow />
 			<mesh geometry={shirtV} material={materials.white} />
 			<Ellipsoid position={[0, 1.273, .004]} scale={[.077, .111, .072]} material={materials.skin} />
-			<Arm side={-1} innerRef={leftArm} /><Arm side={1} innerRef={rightArm} />
+			{riding?<RidingArms/>:<><Arm side={-1} innerRef={leftArm}/><Arm side={1} innerRef={rightArm}/></>}
 			<group ref={headGroup} position={[0, 1.565, 0]}>
 				<CartoonFace leftEye={leftEye} rightEye={rightEye}/>
 				<CartoonHair/>
