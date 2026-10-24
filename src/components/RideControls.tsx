@@ -1,57 +1,70 @@
-import { useState, type PointerEvent } from 'react';
-import type { RideStatus } from '../game/motorcycleRide';
+import { useState, useEffect, type PointerEvent } from 'react';
+import { setRideAccelerate, setRideBrake, type RideStatus } from '../game/motorcycleRide';
 
 export function RideControls({
 	status,
 	limit,
 	onLimit,
 	onBrake,
+	onAccelerate,
 	onDismount,
 }: {
 	status: RideStatus;
 	limit: number;
 	onLimit: (n: number) => void;
 	onBrake: (b: boolean) => void;
+	onAccelerate?: (v: boolean) => void;
 	onDismount: () => void;
 }) {
 	const [accelActive, setAccelActive] = useState(false);
 	const [brakeActive, setBrakeActive] = useState(false);
 
+	useEffect(() => {
+		return () => {
+			setRideAccelerate(false);
+			setRideBrake(false);
+		};
+	}, []);
+
 	if (!status.riding && !status.near) return null;
 
 	const startAccel = (e: PointerEvent<HTMLButtonElement>) => {
+		e.preventDefault();
+		e.stopPropagation();
 		try {
 			e.currentTarget.setPointerCapture(e.pointerId);
 		} catch {}
 		setAccelActive(true);
-		window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
-		window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowUp', bubbles: true }));
+		setRideAccelerate(true);
+		onAccelerate?.(true);
 	};
 
 	const stopAccel = () => {
 		setAccelActive(false);
-		window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', bubbles: true }));
-		window.dispatchEvent(new KeyboardEvent('keyup', { code: 'ArrowUp', bubbles: true }));
+		setRideAccelerate(false);
+		onAccelerate?.(false);
 	};
 
 	const startBrake = (e: PointerEvent<HTMLButtonElement>) => {
+		e.preventDefault();
+		e.stopPropagation();
 		try {
 			e.currentTarget.setPointerCapture(e.pointerId);
 		} catch {}
 		setBrakeActive(true);
+		setRideBrake(true);
 		onBrake(true);
 	};
 
 	const stopBrake = () => {
 		setBrakeActive(false);
+		setRideBrake(false);
 		onBrake(false);
 	};
 
 	return (
-		<>
-			{/* Mobile Screen: Speedometer below top-right buttons + Action buttons on bottom-right */}
-			<section
-				className="ride-mobile-orbit"
+		<section
+			className="ride-mobile-orbit"
 				aria-label="ဆိုင်ကယ် ထိန်းချုပ်ခလုတ်များ"
 				onPointerDown={(e) => e.stopPropagation()}
 			>
@@ -161,6 +174,15 @@ export function RideControls({
 								onPointerUp={stopAccel}
 								onPointerCancel={stopAccel}
 								onLostPointerCapture={stopAccel}
+								onKeyDown={(e) => {
+									if (e.code === 'Space' || e.code === 'Enter') {
+										setAccelActive(true);
+										setRideAccelerate(true);
+										onAccelerate?.(true);
+									}
+								}}
+								onKeyUp={() => stopAccel()}
+								onBlur={() => stopAccel()}
 								aria-label="အရှိန်မြှင့် မောင်းနှင်ရန် (Accelerate)"
 								title="အရှိန်မြှင့်ရန် ဖိထားပါ (Accelerate)"
 							>
@@ -189,76 +211,6 @@ export function RideControls({
 						)}
 					</>
 				)}
-			</section>
-
-			{/* Desktop Screen: Classic Control Panel at bottom-right */}
-			<section
-				className="ride-controls ride-controls-desktop"
-				aria-label="ဆိုင်ကယ် မောင်းနှင်မှု"
-				onPointerDown={(e) => e.stopPropagation()}
-			>
-				{!status.riding ? (
-					<p role="status">ဆိုင်ကယ်နား ရပ်လိုက်လျှင် တက်စီးပါမည်…</p>
-				) : (
-					<>
-						<div className="ride-heading">
-							<strong>
-								{status.kmh < 0 ? 'နောက်ဆုတ် · R' : 'ဆိုင်ကယ်'}
-							</strong>
-							<span className="ride-desktop-lives" aria-label={`အသက်: ${status.lives}/3`}>
-								{[0, 1, 2].map((i) => (
-									<span key={i} className={i < status.lives ? 'ride-life-heart-filled' : 'ride-life-heart-lost'}>
-										{i < status.lives ? '❤️' : '🖤'}
-									</span>
-								))}
-							</span>
-							<output aria-label="လက်ရှိအရှိန်">
-								{Math.abs(status.kmh)} <small>km/h</small>
-							</output>
-						</div>
-						<label htmlFor="ride-speed">
-							အမြင့်ဆုံးအရှိန် <b>{limit} km/h</b>
-						</label>
-						<input
-							id="ride-speed"
-							type="range"
-							min="5"
-							max="40"
-							step="5"
-							value={limit}
-							onChange={(e) => onLimit(Number(e.target.value))}
-						/>
-						<div className="ride-buttons">
-							<button
-								type="button"
-								className="ride-brake"
-								onPointerDown={startBrake}
-								onPointerUp={stopBrake}
-								onPointerCancel={stopBrake}
-								onLostPointerCapture={stopBrake}
-								onKeyDown={(e) => {
-									if (e.code === 'Space' || e.code === 'Enter') {
-										setBrakeActive(true);
-										onBrake(true);
-									}
-								}}
-								onKeyUp={stopBrake}
-								onBlur={stopBrake}
-							>
-								ဘရိတ်
-							</button>
-							<button type="button" onClick={onDismount}>
-								ဆိုင်ကယ်မှဆင်းရန်
-							</button>
-						</div>
-						<p>
-							W / ↑ မောင်း · S / ↓ အရှိန်လျှော့ / နောက်ဆုတ်
-							<br />A D / ← → ကွေ့ · Mobile: Joystick ဖြင့် ထိန်းချုပ်ပါ
-						</p>
-						{status.notice && <p role="status">{status.notice}</p>}
-					</>
-				)}
-			</section>
-		</>
+		</section>
 	);
 }

@@ -31,3 +31,26 @@ test('car and robot contact follows rotated bounds, bike wheels and vertical sep
  assert.equal(hitsTraffic(0,1,0,0),true);assert.equal(hitsTraffic(2,0,0,0),false);
  trafficColliders.clear();
 });
+
+import {motorcycleRide,setRideAccelerate,setRideBrake,stepMotorcycle,parkMotorcycle} from '../src/game/motorcycleRide.ts';
+
+test('orbit accel button accelerates motorcycle, releasing decelerates, brake stops quickly',()=>{
+ Object.assign(motorcycleRide,{x:0,z:0,yaw:0,riding:true,speed:0,maxKmh:20,accelerating:false,braking:false});
+ setRideAccelerate(true);
+ assert.equal(motorcycleRide.accelerating,true);
+ for(let i=0;i<40;i++)stepMotorcycle(.05,0,0,false,false,()=>true);
+ assert.ok(motorcycleRide.speed>3);
+ assert.ok(motorcycleRide.speed<=20/3.6);
+ const topSpeed=motorcycleRide.speed;
+ setRideAccelerate(false);
+ assert.equal(motorcycleRide.accelerating,false);
+ for(let i=0;i<10;i++)stepMotorcycle(.05,0,0,false,false,()=>true);
+ assert.ok(motorcycleRide.speed<topSpeed);
+ setRideBrake(true);
+ for(let i=0;i<20;i++)stepMotorcycle(.05,0,0,false,false,()=>true);
+ assert.equal(motorcycleRide.speed,0);
+ setRideBrake(false);
+ parkMotorcycle();
+ assert.equal(motorcycleRide.accelerating,false);
+ assert.equal(motorcycleRide.braking,false);
+});

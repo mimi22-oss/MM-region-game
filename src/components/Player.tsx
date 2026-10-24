@@ -33,7 +33,7 @@ export type TeleportTarget = {
 
 export function Player({
  character='robot',
- speedLimit=20,braking=false,controlsBlocked=false,dismountRequest=0,onRideStatus,
+ speedLimit=20,braking=false,accelerating=false,controlsBlocked=false,dismountRequest=0,onRideStatus,
  navigationRequest,
  onNavigationResult,
  mobileInput,
@@ -49,7 +49,7 @@ export function Player({
  onPosition,
 }:{
  character?:CharacterKind;
- speedLimit?:number;braking?:boolean;controlsBlocked?:boolean;dismountRequest?:number;onRideStatus?:(s:RideStatus)=>void;
+ speedLimit?:number;braking?:boolean;accelerating?:boolean;controlsBlocked?:boolean;dismountRequest?:number;onRideStatus?:(s:RideStatus)=>void;
  navigationRequest?:{action:"locate"|"teleport";seq:number}|null;
  onNavigationResult?:(success:boolean)=>void;
  mobileInput?:RefObject<MobileInput>;
@@ -324,14 +324,19 @@ export function Player({
    }
   }else if(!ride.riding)ride.nearTime=0;
   if(ride.riding){
+   const isAcc=accelerating||ride.accelerating||s.keys.has('KeyW')||s.keys.has('ArrowUp');
+   const isBrk=braking||ride.braking||s.keys.has('Space');
    let steer=right,throttle=forward;
    if(touch?.active){
     const tx=-Math.sin(yaw)*forward+Math.cos(yaw)*right,tz=-Math.cos(yaw)*forward-Math.sin(yaw)*right;
     const targetYaw=Math.atan2(-tx,-tz),error=Math.atan2(Math.sin(targetYaw-ride.yaw),Math.cos(targetYaw-ride.yaw));
-    if(forward<-.35){steer=right;throttle=-1;}else{steer=-Math.max(-1,Math.min(1,error*2));throttle=len>0?1:0;}
+    if(forward<-.35&&!isAcc){steer=right;throttle=-1;}
+    else{steer=-Math.max(-1,Math.min(1,error*2));throttle=isAcc?1:(len>.15?1:0);}
+   }else{
+    if(isAcc)throttle=1;
    }
    const paused=aerial||mapOpen||controlsBlocked;
-   const crash=()=>{if(hitRide()){ride.speed=0;s.keys.clear();if(touch)resetMobileInput(touch);}};
+   const crash=()=>{if(hitRide()){ride.speed=0;ride.accelerating=false;ride.braking=false;s.keys.clear();if(touch)resetMobileInput(touch);}};
    const touching=hitsTraffic(ride.x,ride.z,ride.yaw,height(ride.x,ride.z));
    if(!touching)rideLife.contact=false;
    if(!paused&&touching)crash();
@@ -339,7 +344,7 @@ export function Player({
     if(!paused&&hitsTraffic(x,z,ride.yaw,height(x,z),true))crash();
     return rideLife.crashTime<=0&&clear(x,z);
    };
-   stepMotorcycle(dt,throttle,steer,braking,paused||rideLife.crashTime>0,trafficClear);
+   stepMotorcycle(dt,throttle,steer,isBrk,paused||rideLife.crashTime>0,trafficClear);
    s.x=ride.x;s.z=ride.z;s.bodyYaw=ride.yaw;
    if(!paused){s.camX=s.x;s.camZ=s.z;}
   }else   if(aerial&&!mapOpen){

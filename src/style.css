@@ -954,6 +954,15 @@ main.night-mode .home-guidance-pill {
     -webkit-user-select: none;
     -webkit-touch-callout: none;
   }
+
+  .ride-mobile-actions {
+    right: max(16px, env(safe-area-inset-right))!important;
+    bottom: max(24px, calc(env(safe-area-inset-bottom) + 16px))!important;
+  }
+
+  .ride-orbit-speedo {
+    top: max(56px, calc(env(safe-area-inset-top) + 48px))!important;
+  }
   .mobile-move-zone,
   .mobile-run-zone {
     position: absolute;
@@ -1392,358 +1401,237 @@ main.night-mode .home-guidance-pill {
   opacity: 0.6;
 }
 
-/* Ride Controls - Desktop default panel */
+/* Unified Motorcycle Ride Controls (Desktop & Mobile) */
 .ride-mobile-orbit {
-  display: none;
-}
-.ride-controls {
-  position: absolute;
-  z-index: 18;
-  bottom: 26px;
-  right: 20px;
-  width: 280px;
-  padding: 14px 16px;
-  border: 1px solid #d8f0f5aa;
-  border-radius: 16px;
-  background: #123a48ed;
-  color: #f3fbfd;
-  box-shadow: 0 8px 30px #102f3e33;
-  font: 12px system-ui;
-  touch-action: none;
-}
-.ride-controls p {
-  font-size: 10px;
-  line-height: 1.7;
-  margin: 8px 0 0;
-}
-.ride-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.ride-heading output {
-  font-size: 25px;
-  font-variant-numeric: tabular-nums;
-}
-.ride-heading small {
-  font-size: 11px;
-  font-weight: 400;
-}
-.ride-controls label {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 11px;
-}
-.ride-controls input {
   display: block;
-  width: 100%;
-  margin: 10px 0 15px;
-  accent-color: #61dcf3;
-  min-height: 24px;
-}
-.ride-buttons {
-  display: flex;
-  gap: 8px;
-}
-.ride-buttons button {
-  flex: 1;
-  min-height: 42px;
-  border: 1px solid #a8d4dc66;
-  border-radius: 9px;
-  background: #edf9fa;
-  color: #173949;
-  cursor: pointer;
-  font-size: 11px;
-}
-.ride-buttons .ride-brake {
-  background: #e69b58;
-  color: #221d17;
-}
-.ride-buttons .ride-brake:active {
-  background: #ffb36f;
-}
-
-/* Mobile Screen: Orbit Ride Controls circling around mobile-joystick */
-@media (max-width: 760px), (hover: none) and (pointer: coarse) {
-  .ride-controls-desktop {
-    display: none !important;
-  }
-  .ride-mobile-orbit {
-    display: block !important;
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 22;
-  }
-
-  /* Near motorcycle prompt on mobile */
-  .ride-near-prompt {
-    position: absolute;
-    bottom: max(32px, calc(env(safe-area-inset-bottom) + 16px));
-    left: 50%;
-    transform: translateX(-50%);
-    width: max-content;
-    max-width: calc(100vw - 40px);
-    padding: 7px 16px;
-    background: rgba(18, 58, 72, 0.94);
-    border: 1px solid rgba(168, 212, 220, 0.55);
-    border-radius: 999px;
-    color: #f3fbfd;
-    font-size: 11.5px;
-    font-weight: 500;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
-    pointer-events: none;
-    animation: toastIn 0.2s ease-out;
-  }
-
-  /* Floating Mini Speedometer HUD below location-actions & settings icon at top-right */
-  .ride-orbit-speedo {
-    position: absolute;
-    top: max(56px, calc(env(safe-area-inset-top) + 48px));
-    right: max(14px, env(safe-area-inset-right));
-    left: auto;
-    transform: none;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 11px;
-    background: linear-gradient(
-      135deg,
-      rgba(14, 42, 53, 0.105),
-      rgba(18, 58, 72, 0.088)
-    );
-    border: 1.5px solid rgba(97, 221, 243, 0.041);
-    border-radius: 999px;
-    color: #e6f9fd;
-    box-shadow:
-      0 4px 16px rgba(0, 0, 0, 0.4),
-      0 0 12px rgba(97, 220, 243, 0.2);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    pointer-events: auto;
-    white-space: nowrap;
-    animation: toastIn 0.2s ease-out;
-  }
-  .ride-orbit-speedo-icon {
-    font-size: 13px;
-  }
-  .ride-orbit-speedo-val {
-    font-size: 16px;
-    font-variant-numeric: tabular-nums;
-    color: #61dcf3;
-    font-weight: 700;
-    margin-left: 2px;
-  }
-  .ride-orbit-speedo-unit {
-    font-size: 10px;
-    color: #a8d4dc;
-  }
-  .ride-orbit-speedo-rev {
-    padding: 1px 5px;
-    background: #ea580c;
-    color: #fff;
-    font-size: 9px;
-    font-weight: 700;
-    border-radius: 4px;
-    margin-left: 2px;
-  }
-  .ride-orbit-speedo-limit {
-    margin-left: 4px;
-    padding: 2px 6px;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .ride-orbit-speedo-limit:active {
-    background: rgba(97, 220, 243, 0.4);
-  }
-
-  /* Right-Hand Action Buttons Cluster at Bottom-Right */
-  .ride-mobile-actions {
-    position: absolute;
-    right: max(16px, env(safe-area-inset-right));
-    bottom: max(24px, calc(env(safe-area-inset-bottom) + 16px));
-    width: 140px;
-    height: 140px;
-    pointer-events: none;
-  }
-
-  .ride-orbit-btn {
-    position: absolute;
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
-    padding: 0;
-    cursor: pointer;
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-    pointer-events: auto;
-    color: #ffffffa2;
-    will-change: transform;
-    transition:
-      transform 0.12s ease,
-      box-shadow 0.12s ease,
-      background 0.12s ease;
-  }
-  .ride-orbit-btn svg {
-    flex-shrink: 0;
-  }
-  .ride-orbit-tag {
-    font-size: 8.5px;
-    font-weight: 700;
-    line-height: 1;
-    letter-spacing: -0.2px;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
-  }
-
-  /* 1. Leave Icon: Inner-Left of the right cluster */
-  .ride-orbit-btn-leave {
-    left: 4px;
-    bottom: 22px;
-    width: 46px;
-    height: 46px;
-    background: radial-gradient(
-      circle at 35% 35%,
-      rgba(100, 116, 139, 0.14) 0%,
-      rgba(51, 65, 85, 0.275) 60%,
-      rgba(30, 41, 59, 0.181) 100%
-    );
-    border: 2px solid rgba(226, 232, 240, 0.85);
-    box-shadow:
-      0 4px 14px rgba(0, 0, 0, 0.5),
-      inset 0 2px 4px rgba(255, 255, 255, 0.35);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-  }
-  .ride-orbit-btn-leave:active {
-    transform: scale(0.92);
-    background: radial-gradient(circle at 35% 35%, #475569 0%, #1e293b 100%);
-  }
-
-  /* 2. Break Icon: Upper-Middle of the right cluster */
-  .ride-orbit-btn-brake {
-    right: 46px;
-    top: 8px;
-    width: 50px;
-    height: 50px;
-    background: radial-gradient(
-      circle at 35% 35%,
-      rgba(251, 146, 60, 0.118) 0%,
-      rgba(234, 90, 12, 0.1) 60%,
-      rgba(154, 52, 18, 0.06) 100%
-    );
-    border: 2px solid rgba(254, 215, 170, 0.95);
-    box-shadow:
-      0 4px 14px rgba(154, 52, 18, 0.55),
-      inset 0 2px 4px rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-  }
-  .ride-orbit-btn-brake.ride-orbit-active,
-  .ride-orbit-btn-brake:active {
-    transform: scale(0.92);
-    background: radial-gradient(circle at 35% 35%, #ef4444 0%, #b91c1c 100%) !important;
-    box-shadow: 0 0 22px #ef4444, inset 0 2px 4px #ffffff !important;
-  }
-
-  /* 3. Accelerate Icon: Bottom-Right of the right cluster */
-  .ride-orbit-btn-accel {
-    right: 4px;
-    bottom: 4px;
-    width: 54px;
-    height: 54px;
-    background: radial-gradient(
-      circle at 35% 35%,
-      rgba(52, 211, 153, 0.258) 0%,
-      rgba(5, 150, 104, 0.212) 60%,
-      rgba(6, 78, 59, 0.184) 100%
-    );
-    border: 2.5px solid rgba(167, 243, 208, 0.95);
-    box-shadow:
-      0 4px 16px rgba(6, 78, 59, 0.6),
-      inset 0 2px 4px rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-  }
-  .ride-orbit-btn-accel.ride-orbit-active,
-  .ride-orbit-btn-accel:active {
-    transform: scale(0.92);
-    background: radial-gradient(circle at 35% 35%, #10b981 0%, #047857 100%) !important;
-    box-shadow: 0 0 24px rgba(52, 211, 153, 0.95), inset 0 2px 4px #ffffff !important;
-  }
-
-  .ride-orbit-notice {
-    position: absolute;
-    top: max(100px, calc(env(safe-area-inset-top) + 90px));
-    right: max(14px, env(safe-area-inset-right));
-    width: max-content;
-    max-width: calc(100vw - 40px);
-    padding: 5px 12px;
-    background: rgba(185, 28, 28, 0.92);
-    border: 1px solid #fca5a5;
-    border-radius: 8px;
-    color: #fff;
-    font-size: 10px;
-    pointer-events: none;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-  }
-}
-
-/* Life HUD (Top-Left during Motorcycle Ride) */
-.life-hud {
-  position: fixed;
-  top: max(18px, env(safe-area-inset-top));
-  left: max(18px, env(safe-area-inset-left));
-  z-index: 25;
+  position: absolute;
+  inset: 0;
   pointer-events: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
+  z-index: 22;
+}
+
+/* Near motorcycle prompt */
+.ride-near-prompt {
+  position: absolute;
+  bottom: max(32px, calc(env(safe-area-inset-bottom) + 16px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 40px);
+  padding: 7px 16px;
+  background: rgba(18, 58, 72, 0.94);
+  border: 1px solid rgba(168, 212, 220, 0.55);
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9));
-  border: 1.5px solid rgba(244, 63, 94, 0.45);
-  box-shadow:
-    0 4px 18px rgba(0, 0, 0, 0.45),
-    0 0 12px rgba(244, 63, 94, 0.25);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  color: #f3fbfd;
+  font-size: 11.5px;
+  font-weight: 500;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
   animation: toastIn 0.2s ease-out;
 }
-.life-hud-title {
-  font-size: 11px;
-  font-weight: 800;
-  color: #fda4af;
-  letter-spacing: 0.8px;
-}
-.life-hud-hearts {
+
+/* Floating Mini Speedometer HUD below location-actions & settings icon at top-right */
+.ride-orbit-speedo {
+  position: absolute;
+  /* top: max(56px, calc(env(safe-area-inset-top) + 48px)); */
+  top: max(80px, calc(env(safe-area-inset-top) + 48px));
+  right: max(14px, env(safe-area-inset-right));
+  left: auto;
+  transform: none;
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 15px;
+  padding: 4px 11px;
+  background: linear-gradient(
+    135deg,
+    rgba(14, 42, 53, 0.077),
+    rgba(18, 58, 72, 0.152)
+  );
+  border: 1.5px solid rgba(97, 221, 243, 0.45);
+  border-radius: 999px;
+  color: #e6f9fd;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 0 12px rgba(97, 220, 243, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+  white-space: nowrap;
+  animation: toastIn 0.2s ease-out;
+}
+.ride-orbit-speedo-icon {
+  font-size: 13px;
+}
+.ride-orbit-speedo-val {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  color: #61dcf3;
+  font-weight: 700;
+  margin-left: 2px;
+}
+.ride-orbit-speedo-unit {
+  font-size: 10px;
+  color: #a8d4dc;
+}
+.ride-orbit-speedo-rev {
+  padding: 1px 5px;
+  background: #ea580c;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 4px;
+  margin-left: 2px;
+}
+.ride-orbit-speedo-limit {
+  margin-left: 4px;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ride-orbit-speedo-limit:active {
+  background: rgba(97, 220, 243, 0.4);
+}
+
+/* Right-Hand Action Buttons Cluster at Bottom-Right (Leave, Brake, Accelerate) */
+.ride-mobile-actions {
+  position: absolute;
+  /* right: max(16px, env(safe-area-inset-right));
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 16px)); */
+  right: max(100px, env(safe-area-inset-right));
+  bottom: max(64px, calc(env(safe-area-inset-bottom) + 16px));
+  width: 140px;
+  height: 140px;
+  pointer-events: none;
+}
+
+.ride-orbit-btn {
+  position: absolute;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 0;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: auto;
+  color: #ffffff75;
+  will-change: transform;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background 0.12s ease;
+}
+.ride-orbit-btn svg {
+  flex-shrink: 0;
+}
+.ride-orbit-tag {
+  font-size: 8.5px;
+  font-weight: 700;
   line-height: 1;
+  letter-spacing: -0.2px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.416);
 }
-.life-heart-filled {
-  display: inline-block;
-  color: #f43f5e;
-  filter: drop-shadow(0 0 4px #f43f5e);
-  transform: scale(1);
-  transition: transform 0.2s ease;
+
+/* 1. Leave Icon: Inner-Left of the right cluster */
+.ride-orbit-btn-leave {
+  left: 4px;
+  bottom: 22px;
+  width: 46px;
+  height: 46px;
+  background: radial-gradient(
+    circle at 35% 35%,
+    rgba(100, 116, 139, 0.17) 0%,
+    rgba(51, 65, 85, 0.097) 60%,
+    rgba(30, 41, 59, 0.195) 100%
+  );
+  border: 2px solid rgba(226, 232, 240, 0.244);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
-.life-heart-lost {
-  display: inline-block;
-  opacity: 0.3;
-  filter: grayscale(1);
+.ride-orbit-btn-leave:active {
+  transform: scale(0.92);
+  background: radial-gradient(circle at 35% 35%, #475569 0%, #1e293b 100%);
+}
+
+/* 2. Break Icon: Upper-Middle of the right cluster */
+.ride-orbit-btn-brake {
+  right: 46px;
+  top: 8px;
+  width: 50px;
+  height: 50px;
+  background: radial-gradient(
+    circle at 35% 35%,
+    rgba(251, 146, 60, 0.189) 0%,
+    rgba(234, 90, 12, 0.058) 60%,
+    rgba(154, 52, 18, 0.056) 100%
+  );
+  border: 2px solid rgba(254, 215, 170, 0.101);
+  box-shadow:
+    0 4px 14px rgba(154, 52, 18, 0.55),
+    inset 0 2px 4px rgba(255, 255, 255, 0.314);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.ride-orbit-btn-brake.ride-orbit-active,
+.ride-orbit-btn-brake:active {
+  transform: scale(0.92);
+  background: radial-gradient(circle at 35% 35%, #ef4444 0%, #b91c1c 100%) !important;
+  box-shadow: 0 0 22px #ef4444, inset 0 2px 4px #ffffff !important;
+}
+
+/* 3. Accelerate Icon: Bottom-Right of the right cluster */
+.ride-orbit-btn-accel {
+  right: 4px;
+  bottom: 4px;
+  width: 54px;
+  height: 54px;
+  background: radial-gradient(
+    circle at 35% 35%,
+    rgba(52, 211, 153, 0.145) 0%,
+    rgba(5, 150, 104, 0.105) 60%,
+    rgba(6, 78, 59, 0.126) 100%
+  );
+  border: 2.5px solid rgba(167, 243, 208, 0.95);
+  box-shadow:
+    0 4px 16px rgba(6, 78, 59, 0.6),
+    inset 0 2px 4px rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.ride-orbit-btn-accel.ride-orbit-active,
+.ride-orbit-btn-accel:active {
+  transform: scale(0.92);
+  background: radial-gradient(circle at 35% 35%, #10b981 0%, #047857 100%) !important;
+  box-shadow: 0 0 24px rgba(52, 211, 153, 0.95), inset 0 2px 4px #ffffff !important;
+}
+
+.ride-orbit-notice {
+  position: absolute;
+  top: max(100px, calc(env(safe-area-inset-top) + 90px));
+  right: max(14px, env(safe-area-inset-right));
+  width: max-content;
+  max-width: calc(100vw - 40px);
+  padding: 5px 12px;
+  background: rgba(185, 28, 28, 0.92);
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 10px;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 /* Motorcycle Crash Alert Banner */
@@ -1819,14 +1707,7 @@ main.night-mode .home-guidance-pill {
   font-size: 11px;
   line-height: 1;
 }
-.ride-desktop-lives {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-left: 8px;
-  font-size: 13px;
-  line-height: 1;
-}
+
 .ride-life-heart-filled {
   display: inline-block;
   color: #f43f5e;

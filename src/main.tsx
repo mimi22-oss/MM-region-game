@@ -72,7 +72,7 @@ class SceneError extends Component<
 }
 function App() {
   const [rideStatus,setRideStatus]=useState<RideStatus>({riding:false,near:false,kmh:0,notice:'',lives:3,crashed:false});
-  const [rideLimit,setRideLimit]=useState(20),[braking,setBraking]=useState(false),[dismountRequest,setDismountRequest]=useState(0);
+  const [rideLimit,setRideLimit]=useState(20),[braking,setBraking]=useState(false),[accelerating,setAccelerating]=useState(false),[dismountRequest,setDismountRequest]=useState(0);
   const rideUpdate=useCallback((next:RideStatus)=>setRideStatus(old=>old.riding===next.riding&&old.near===next.near&&old.kmh===next.kmh&&old.notice===next.notice&&old.lives===next.lives&&old.crashed===next.crashed?old:next),[]);
 
   const [character, setCharacter] = useState<CharacterKind>(savedCharacter);
@@ -240,7 +240,7 @@ function App() {
             <FrameBudget />
             <Town night={night} />
             <Player
-              speedLimit={rideLimit} braking={braking} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen}
+              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen}
               character={character}
               navigationRequest={navigationRequest}
               onNavigationResult={navigationResult}
@@ -259,18 +259,6 @@ function App() {
           </Canvas>
         </SceneError>
       </div>
-      {(rideStatus.riding || rideStatus.crashed) && (
-        <div className="life-hud" role="status" aria-live="polite">
-          <span className="life-hud-title">LIFE</span>
-          <div className="life-hud-hearts" aria-label={`ကျန်ရှိသော အသက်: ${rideStatus.lives}`}>
-            {[0, 1, 2].map(i => (
-              <span key={i} className={i < rideStatus.lives ? "life-heart-filled" : "life-heart-lost"}>
-                {i < rideStatus.lives ? "❤️" : "🖤"}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
       {rideStatus.crashed && (
         <div className="ride-crash-banner" role="alert">
           <span className="ride-crash-icon">💥</span>
@@ -284,7 +272,7 @@ function App() {
           </div>
         </div>
       )}
-      {!mapOpen&&!settingsOpen&&<RideControls status={rideStatus} limit={rideLimit} onLimit={setRideLimit} onBrake={setBraking} onDismount={()=>{setBraking(false);setDismountRequest(n=>n+1)}}/>}
+      {!mapOpen&&!settingsOpen&&<RideControls status={rideStatus} limit={rideLimit} onLimit={setRideLimit} onBrake={setBraking} onAccelerate={setAccelerating} onDismount={()=>{setBraking(false);setAccelerating(false);setDismountRequest(n=>n+1)}}/>}
       <MobileControls
         key={navigationRequest?.seq ?? 0}
         input={mobileInput}
