@@ -49,7 +49,7 @@ export function Player({
  onZoom:(v:number)=>void;
  onLock:(v:boolean)=>void;
  onViewPosition?:(x:number,z:number)=>void;
- onPosition:(x:number,z:number)=>void;
+ onPosition:(x:number,z:number,yaw?:number)=>void;
 }){
  const {camera,gl,scene}=useThree();
  const avatar=useRef<Group>(null);
@@ -135,7 +135,7 @@ export function Player({
   const dist=teleportTarget.distance??10;
   s.distance=dist;
   s.targetDistance=dist;
-  onPosition(s.x,s.z);
+  onPosition(s.x,s.z,s.bodyYaw);
  },[teleportTarget,onPosition]);
  useEffect(()=>{
   if(!navigationRequest)return;
@@ -147,7 +147,7 @@ export function Player({
   }
   s.camX=s.x;s.camZ=s.z;s.panning=false;s.first=false;s.topDown=false;
   s.pitch=-.16;s.distance=10;s.targetDistance=10;s.keys.clear();
-  onMode(false);onTopDown(false);onZoom(10);onPosition(s.x,s.z);onNavigationResult?.(true);
+  onMode(false);onTopDown(false);onZoom(10);onPosition(s.x,s.z,s.bodyYaw);onNavigationResult?.(true);
  },[navigationRequest,onNavigationResult,onMode,onTopDown,onZoom,onPosition]);
  const target=useRef(new Vector3()); const desired=useRef(new Vector3()); const ray=useRef(new Raycaster());
  useEffect(()=>{
@@ -197,7 +197,7 @@ export function Player({
     if(e.code==='KeyR'){
      s.x=ward.spawn.x;s.z=ward.spawn.z;s.camX=ward.spawn.x;s.camZ=ward.spawn.z;
      s.yaw=ward.spawnYaw;s.bodyYaw=ward.spawnYaw;s.pitch=-0.12;s.topDown=false;s.panning=false;s.targetDistance=ward.spawnZoom;
-     onTopDown(false);onZoom(ward.spawnZoom);onPosition(s.x,s.z);
+     onTopDown(false);onZoom(ward.spawnZoom);onPosition(s.x,s.z,s.bodyYaw);
     }
    }
   };
@@ -307,7 +307,7 @@ export function Player({
    }
    camera.position.copy(desired.current);camera.lookAt(target.current);
   }
-  s.time+=dt;if(s.time>0.08){s.time=0;onPosition(s.x,s.z);onViewPosition?.(target.current.x,target.current.z);}
+  s.time+=dt;if(s.time>0.08){s.time=0;onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
  });
  return <group ref={avatar}><RobotCharacter wheels={wheels}/></group>;
 }

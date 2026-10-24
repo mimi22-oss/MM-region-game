@@ -1,10 +1,11 @@
 import { estateFenceBlocks,estatePalms } from '../data/farmEstate.ts';
 import { homeGateBlocks } from './homeAccess.ts';
-import { farmhouse } from '../data/ward.ts';
+import { farmhouse, angle } from '../data/ward.ts';
 import { parkedCars } from '../data/cars.ts';
 import { spatialIndex } from './spatialIndex.ts';
 import { ward } from '../data/ward.ts';
 import { kalayVillages } from '../data/villages/index.ts';
+import { mangoTrees } from '../data/mangoTrees.ts';
 export const PLAYER_RADIUS = 0.4;
 const nearbyAreca=spatialIndex(estatePalms,p=>({x:p.x,z:p.z,radius:.62}));
 const villageHouses=kalayVillages.flatMap(v=>v.houses);
@@ -12,7 +13,7 @@ const villageTrees=kalayVillages.flatMap(v=>[...v.trees,...v.largeTrees,...v.far
 const solidWardHouses=ward.houses.filter(h=>h.id!==farmhouse.id);
 const privateHomeIds=new Set([...solidWardHouses,...villageHouses].map(h=>h.id));
 const nearbyBuildings=spatialIndex([...solidWardHouses,...ward.warehouses,...ward.riceMill.buildings,...villageHouses],h=>({x:h.x,z:h.z,radius:Math.hypot(h.width/2+1.6,h.depth/2+2.6)+PLAYER_RADIUS}));
-const nearbyTrees=spatialIndex([...ward.trees,...ward.farmTrees,...ward.largeTrees,...villageTrees],t=>({x:t.x,z:t.z,radius:t.radius+PLAYER_RADIUS}));
+const nearbyTrees=spatialIndex([...ward.trees,...ward.farmTrees,...ward.largeTrees,...villageTrees,...mangoTrees],t=>({x:t.x,z:t.z,radius:t.radius+PLAYER_RADIUS}));
 const mountainObstacles=[...ward.mountains,...ward.weipula.peaks];
 const polylineCanals=[ward.crossCanal,...kalayVillages.flatMap(vl=>vl.connectingCanal?[vl.connectingCanal]:[])];
 
@@ -53,6 +54,39 @@ const farmhouseObstacles = [
   { minX: -9.0, maxX: -1.7, minZ: 7.3, maxZ: 7.7 }, // Front Fence Right Section
   { minX: 1.7, maxX: 18.0, minZ: 7.3, maxZ: 7.7 }, // Front Fence Left Section
 ];
+
+
+// Two-room toilet block (၂ ခန်းတွဲ အိမ်သာ) collision setup at (130.464, 277.362)
+const toiletPos = { x: 130.464, z: 277.362 };
+const toiletRot = angle + Math.PI;
+const tC = Math.cos(toiletRot);
+const tS = Math.sin(toiletRot);
+const toiletObstacles = [
+  // Outer walls & center partition
+  { minX: -1.7, maxX: 1.7, minZ: -1.1, maxZ: -0.9 }, // Back wall
+  { minX: -1.7, maxX: -1.5, minZ: -1.0, maxZ: 1.0 }, // Left wall
+  { minX: 1.5, maxX: 1.7, minZ: -1.0, maxZ: 1.0 }, // Right wall
+  { minX: -0.1, maxX: 0.1, minZ: -1.0, maxZ: 1.0 }, // Center dividing wall
+  // Front wall jambs (door openings at lx=-0.8 and lx=0.8)
+  { minX: -1.7, maxX: -1.35, minZ: 0.9, maxZ: 1.1 }, // Left front jamb
+  { minX: -0.25, maxX: 0.25, minZ: 0.9, maxZ: 1.1 }, // Center front jamb
+  { minX: 1.35, maxX: 1.7, minZ: 0.9, maxZ: 1.1 }, // Right front jamb
+  // Interior fixtures (swapped: water tub in Room 1 on Left, commode in Room 2 on Right)
+  { minX: -1.55, maxX: -1.0, minZ: -0.95, maxZ: -0.45 }, // Water tub in Room 1 (Left)
+  { minX: 0.5, maxX: 1.1, minZ: -0.95, maxZ: -0.45 }, // Commode in Room 2 (Right)
+];
+
+export function canStandToilet(x: number, z: number): boolean {
+  const dx = x - toiletPos.x, dz = z - toiletPos.z;
+  const lx = dx * tC - dz * tS, lz = dx * tS + dz * tC;
+  if (Math.abs(lx) > 3 || Math.abs(lz) > 3) return true;
+  for (const obs of toiletObstacles) {
+    const nx = Math.max(obs.minX, Math.min(lx, obs.maxX));
+    const nz = Math.max(obs.minZ, Math.min(lz, obs.maxZ));
+    if (Math.hypot(lx - nx, lz - nz) < PLAYER_RADIUS) return false;
+  }
+  return true;
+}
 
 function canStandFarmhouse(x: number, z: number): boolean {
   const dx = x - farmhouseData.x, dz = z - farmhouseData.z;
@@ -107,6 +141,8 @@ export function canStand(x:number,z:number):boolean {
  const edge=ward.size/2-PLAYER_RADIUS;
  if(!Number.isFinite(x)||!Number.isFinite(z)||Math.abs(x)>edge||Math.abs(z)>edge)return false;
  if(!canStandFarmhouse(x,z))return false;
+ if(!canStandToilet(x,z))return false;
+ if(Math.hypot(x-109.721,z-284.313)<0.42+PLAYER_RADIUS)return false;
  for(const h of nearbyBuildings(x,z)){
   const dx=x-h.x,dz=z-h.z,c=Math.cos(h.rotation),s=Math.sin(h.rotation);
   const lx=dx*c-dz*s,lz=dx*s+dz*c;

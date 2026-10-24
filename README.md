@@ -246,3 +246,6 @@ The chain-link perimeter in `src/data/farmEstate.ts` encloses the front empty lo
 
 ### Home startup and entry delay
 Reload/reset now starts the robot at a checked clear interior position in the farmhouse, with a short indoor chase-camera distance. Every owner-operated gate/door requires three continuous seconds standing still nearby before opening. Moving away or walking resets the wait. Once opened, the gate remains open while crossing, then retains the existing two-second departure hold before closing.
+
+### Robot location coordinates
+Settings includes an expandable robot location/direction panel driven by the actual player position and body heading. Copy includes approximate latitude/longitude, exact scene X/Z and local U/V, place and compass bearing. Geographic coordinates use a local tangent approximation anchored to the existing Thar Si reference; the scene is not geographically calibrated. Use X/Z or U/V for precise editing requests. Clipboard fallback supports manual selection on insecure mobile LAN pages.

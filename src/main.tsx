@@ -1,3 +1,4 @@
+import { RobotLocationPanel } from './components/RobotLocationPanel';
 import { homeGuidance } from './game/homeAccess';
 import { FrameBudget } from './components/FrameBudget';
 import { mobileQuality } from './game/sceneBudget';
@@ -27,6 +28,7 @@ function App(){
  const [visible,setVisible]=useState(!document.hidden);
  useEffect(()=>{const changed=()=>setVisible(!document.hidden);document.addEventListener('visibilitychange',changed);return ()=>document.removeEventListener('visibilitychange',changed)},[]);
  const [first,setFirst]=useState(false);const [locked,setLocked]=useState(false);const [pos,setPos]=useState(ward.spawn);
+ const [robotYaw,setRobotYaw]=useState(ward.spawnYaw);
  const [viewPos,setViewPos]=useState(ward.spawn);
  const viewPosition=useCallback((x:number,z:number)=>setViewPos(p=>p.x===x&&p.z===z?p:{x,z}),[]);
  const [mapOpen,setMapOpen]=useState(false);
@@ -82,7 +84,7 @@ function App(){
   document.addEventListener("keydown",close);
   return ()=>document.removeEventListener("keydown",close);
  },[]);
- const position=useCallback((x:number,z:number)=>setPos(previous=>previous.x===x&&previous.z===z?previous:{x,z}),[]);
+ const position=useCallback((x:number,z:number,yaw?:number)=>{setPos(previous=>previous.x===x&&previous.z===z?previous:{x,z});if(yaw!==undefined)setRobotYaw(yaw)},[]);
  const handleLock=useCallback((isLocked:boolean)=>{
   setLocked(isLocked);
   setSceneActive(isLocked);
@@ -134,6 +136,7 @@ function App(){
  <div className="settings-wrap">
   <button type="button" className={settingsOpen?"settings-btn settings-btn-active":"settings-btn"} aria-label="အသုံးပြုနည်း လမ်းညွှန်နှင့် ဆက်တင်" aria-expanded={settingsOpen} title="အသုံးပြုနည်း လမ်းညွှန် (Settings & Guide)" onClick={()=>{if(document.pointerLockElement)document.exitPointerLock();setSettingsOpen(v=>!v);}}>⚙</button>
   {settingsOpen&&<section className="settings-menu" aria-label="အသုံးပြုနည်း လမ်းညွှန်">
+   <RobotLocationPanel x={pos.x} z={pos.z} yaw={robotYaw}/>
    <div className="guide-item">
     <div className="guide-header">
      <strong>အသုံးပြုနည်း လမ်းညွှန် · GUIDE</strong>

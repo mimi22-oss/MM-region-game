@@ -2,7 +2,9 @@ import { updateHomeAccess } from '../src/game/homeAccess.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { canStand,move } from '../src/game/collision.ts';
-import { ward,toWorld,pitchLanes,oppositeLanes,residentialRows,tharSiVillage,chinSaiVillage,zingalinVillage,htomarVillage,htomarFiveColumnFields,htomarRoadsideShops,tharYarGoneVillage,htaukKyantVillage,allHtaukKyantPonds,htaukKyantLandmarks,kyarInnVillage,kyarInnTaphiChaung,kyarInnLandmarks,kyarInnLandmarkBuildings,kyarInnLakePonds,kyarInnLakeIsland,kyarInnLakeStructures } from '../src/data/ward.ts';
+import { mangoTrees, MANGO_START_GEO, MANGO_END_GEO } from '../src/data/mangoTrees.ts';
+import { robotLocation } from '../src/game/robotLocation.ts';
+import { ward,angle,toWorld,pitchLanes,oppositeLanes,residentialRows,tharSiVillage,chinSaiVillage,zingalinVillage,htomarVillage,htomarFiveColumnFields,htomarRoadsideShops,tharYarGoneVillage,htaukKyantVillage,allHtaukKyantPonds,htaukKyantLandmarks,kyarInnVillage,kyarInnTaphiChaung,kyarInnLandmarks,kyarInnLandmarkBuildings,kyarInnLakePonds,kyarInnLakeIsland,kyarInnLakeStructures } from '../src/data/ward.ts';
 test('Myothar inventory and safe AH1 spawn',()=>{assert.equal(ward.houses.length,98);assert.equal(ward.roads.length,18);assert.equal(ward.fields.length,2);assert.ok(canStand(ward.spawn.x,ward.spawn.z));for(let v=-120;v<=120;v+=2){const p=toWorld(0,v);assert.ok(canStand(p.x,p.z),'AH1 is walkable')}});
 test('every rotated house and trunk blocks walking',()=>{for(const h of ward.houses)assert.equal(canStand(h.x,h.z),false);for(const t of ward.trees)assert.equal(canStand(t.x,t.z),false);assert.equal(canStand(ward.size/2,0),false);assert.equal(canStand(NaN,0),false)});
 test('large movement cannot tunnel through rotated building',()=>{const h=ward.houses[0];const start=toWorld(-66,-110);assert.ok(canStand(start.x,start.z));move(start,h.x-start.x,h.z-start.z);assert.ok(canStand(start.x,start.z));assert.ok(Math.hypot(start.x-h.x,start.z-h.z)>4)});
@@ -142,6 +144,84 @@ test('character can enter walk-in farmhouse through front door and explore inter
  assert.equal(canStand(rightWireFence.x,rightWireFence.z),false,'right wire mesh fence blocks walking');
  const backWireFence=toFh(0,-7.5);
  assert.equal(canStand(backWireFence.x,backWireFence.z),false,'back wire mesh fence blocks walking');
+});
+
+test('character can enter two-room toilet block facing North with western commode and traditional squat cubicles',()=>{
+ const toiletPos={x:130.464,z:277.362};
+ const tRot=angle+Math.PI;
+ const tC=Math.cos(tRot),tS=Math.sin(tRot);
+ const toToilet=(lx:number,lz:number)=>({x:toiletPos.x+lx*tC+lz*tS,z:toiletPos.z-lx*tS+lz*tC});
+
+ // North entrance approach for both cubicles
+ // Room 1 (West / Left): Traditional Squat toilet
+ const frontRoom1=toToilet(-0.8,1.6);
+ assert.ok(canStand(frontRoom1.x,frontRoom1.z),'outside North door of Room 1 is walkable');
+ const door1=toToilet(-0.8,1.0);
+ assert.ok(canStand(door1.x,door1.z),'Room 1 doorway is walkable');
+ const insideRoom1=toToilet(-0.7,0.2);
+ assert.ok(canStand(insideRoom1.x,insideRoom1.z),'Room 1 Squat toilet standing area is walkable');
+
+ // Walk from outside into Room 1 (Squat Room)
+ const pos1={...frontRoom1};
+ move(pos1,insideRoom1.x-frontRoom1.x,insideRoom1.z-frontRoom1.z);
+ assert.ok(Math.hypot(pos1.x-insideRoom1.x,pos1.z-insideRoom1.z)<0.15,'can walk through North door into Room 1');
+
+ // Room 2 (East / Right): Western Sitting toilet
+ const frontRoom2=toToilet(0.8,1.6);
+ assert.ok(canStand(frontRoom2.x,frontRoom2.z),'outside North door of Room 2 is walkable');
+ const door2=toToilet(0.8,1.0);
+ assert.ok(canStand(door2.x,door2.z),'Room 2 doorway is walkable');
+ const insideRoom2=toToilet(0.8,0.2);
+ assert.ok(canStand(insideRoom2.x,insideRoom2.z),'Room 2 Western toilet standing area is walkable');
+
+ // Walk from outside into Room 2 (Western Room)
+ const pos2={...frontRoom2};
+ move(pos2,insideRoom2.x-frontRoom2.x,insideRoom2.z-frontRoom2.z);
+ assert.ok(Math.hypot(pos2.x-insideRoom2.x,pos2.z-insideRoom2.z)<0.15,'can walk through North door into Room 2');
+
+ // Walls and fixtures block walking
+ const backWall=toToilet(0,-1.0);
+ assert.equal(canStand(backWall.x,backWall.z),false,'back wall blocks walking');
+ const centerWall=toToilet(0,0);
+ assert.equal(canStand(centerWall.x,centerWall.z),false,'center dividing wall blocks walking');
+ const leftOuterWall=toToilet(-1.6,0);
+ assert.equal(canStand(leftOuterWall.x,leftOuterWall.z),false,'left outer wall blocks walking');
+ const rightOuterWall=toToilet(1.6,0);
+ assert.equal(canStand(rightOuterWall.x,rightOuterWall.z),false,'right outer wall blocks walking');
+ const waterTub=toToilet(-1.25,-0.6);
+ assert.equal(canStand(waterTub.x,waterTub.z),false,'masonry water tub in Room 1 blocks walking');
+ const commode=toToilet(0.8,-0.7);
+ assert.equal(canStand(commode.x,commode.z),false,'Western commode fixture in Room 2 blocks walking');
+});
+
+test('mango orchard trees sit between specified coordinates and their trunks block walking',()=>{
+ assert.ok(mangoTrees.length >= 6, 'mango orchard has planted trees');
+ const minLat = Math.min(MANGO_START_GEO.lat, MANGO_END_GEO.lat);
+ const maxLat = Math.max(MANGO_START_GEO.lat, MANGO_END_GEO.lat);
+ const minLng = Math.min(MANGO_START_GEO.lng, MANGO_END_GEO.lng);
+ const maxLng = Math.max(MANGO_START_GEO.lng, MANGO_END_GEO.lng);
+
+ for (const t of mangoTrees) {
+  const loc = robotLocation(t.x, t.z, 0);
+  assert.ok(loc.latitude >= minLat - 0.0001 && loc.latitude <= maxLat + 0.0001, 'tree latitude is within requested range');
+  assert.ok(loc.longitude >= minLng - 0.0001 && loc.longitude <= maxLng + 0.0001, 'tree longitude is within requested range');
+  assert.equal(canStand(t.x, t.z), false, 'mango tree trunk blocks walking');
+  assert.ok(canStand(t.x + 1.2, t.z) || canStand(t.x, t.z + 1.2), 'space around mango tree is walkable');
+ }
+});
+
+test('water pump station sits at requested location and pump blocks while splash observation space is walkable',()=>{
+ const pumpPos={x:109.721,z:284.313};
+ assert.equal(canStand(pumpPos.x,pumpPos.z),false,'pump motor blocks walking');
+ const loc=robotLocation(pumpPos.x,pumpPos.z,1.102371);
+ assert.ok(Math.abs(loc.latitude-23.1611070)<0.0001,'pump latitude matches request');
+ assert.ok(Math.abs(loc.longitude-94.0456336)<0.0001,'pump longitude matches request');
+
+ // Space in front of the flowing water stream is walkable
+ const viewPos={x:pumpPos.x+1.1*Math.sin(angle),z:pumpPos.z+1.1*Math.cos(angle)};
+ assert.ok(canStand(viewPos.x,viewPos.z),'space watching auto-flowing water is walkable');
+ const walkAround={x:pumpPos.x-1.3,z:pumpPos.z};
+ assert.ok(canStand(walkAround.x,walkAround.z),'path beside pump platform is walkable');
 });
 
 test('eastern rows face AH1 and cross-drain joins both north-south canals',()=>{

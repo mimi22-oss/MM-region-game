@@ -250,3 +250,16 @@ test('reload spawn is clear ground inside the owned farmhouse',async()=>{
  const p=localPoint(ward.spawn.x,ward.spawn.z,farmhouse.x,farmhouse.z,farmhouse.rotation);
  assert.ok(Math.abs(p.x)<5.5&&Math.abs(p.z)<4.5);assert.ok(canStand(ward.spawn.x,ward.spawn.z));assert.equal(ward.spawnZoom,3);
 });
+
+
+test('robot location uses a stable geographic anchor and true avatar compass direction',async()=>{
+ const {robotLocation,locationCopyText}=await import('../src/game/robotLocation.ts');
+ const {tharSiVillage}=await import('../src/data/villages/index.ts');const {angle,toWorld}=await import('../src/data/ward.ts');
+ const a=robotLocation(tharSiVillage.x,tharSiVillage.z,angle);
+ assert.equal(a.latitude,tharSiVillage.coordinates!.lat);assert.equal(a.longitude,tharSiVillage.coordinates!.lng);
+ for(const [turn,direction] of [[0,'North'],[Math.PI/2,'East'],[Math.PI,'South'],[Math.PI*1.5,'West']] as const)assert.equal(robotLocation(0,0,angle-turn).direction,direction);
+ const east=toWorld(100,0),north=toWorld(0,-100);
+ assert.ok(robotLocation(tharSiVillage.x+east.x,tharSiVillage.z+east.z,0).longitude>a.longitude);
+ assert.ok(robotLocation(tharSiVillage.x+north.x,tharSiVillage.z+north.z,0).latitude>a.latitude);
+ const copy=locationCopyText(12.345,67.89,angle);assert.ok(copy.includes('12.345, 67.890'));assert.ok(copy.includes('Latitude (approx)'));assert.ok(copy.includes('Facing: North'));assert.ok(copy.includes('Local U/V'));
+});

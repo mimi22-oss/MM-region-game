@@ -114,3 +114,6 @@ Full `npm test`: 47/47 passed. Includes owner/non-owner gate behavior, closed/op
 
 ### Three-second entry and farmhouse spawn
 49/49 tests passed, including no unlock before three seconds, movement resetting the wait, owner access, timed entry from the road, and safe interior spawn coordinates. TypeScript/Vite production build passed. Physical-device visual verification not performed.
+
+### Robot location panel
+50/50 tests passed, including geographic anchor, east/north coordinate signs, compass directions and precise coordinate copy text. TypeScript/Vite production build passed. Browser/device visual interaction and clipboard verification were not performed.

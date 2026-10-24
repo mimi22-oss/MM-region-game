@@ -2,6 +2,10 @@ import { ParkedCars, ParkedCarsPlan } from '../../Car';
 import { area5, farmhouse, toWorld } from '../../../data/wards/myothar/area5';
 import { House, FARMHOUSE_NAME, houseFenceBounds, houseVisualRotation } from '../../House';
 import { Farmhouse } from '../../Farmhouse';
+import { ToiletBlock, TOIL_X, TOIL_Z, TOIL_ROT } from '../../ToiletBlock';
+import { WaterPump, PUMP_X, PUMP_Z, PUMP_ROT } from '../../WaterPump';
+import { MangoTrees } from '../../MangoTrees';
+import { mangoTrees } from '../../../data/mangoTrees';
 import { MainRoad } from '../../MainRoad';
 import { Lanes } from '../../Lane';
 import { Trees } from '../../Tree';
@@ -22,6 +26,9 @@ export function Area5(){
   <FootballPitch/>
   <Canal/>
   <Farmhouse/>
+  <ToiletBlock/>
+  <MangoTrees/>
+  <WaterPump/>
   <OpenGround/>
   <Monastery/>
   <RiceMill/>
@@ -75,6 +82,25 @@ export function Area5Plan({labels,onSelectLocation}:{labels:boolean;onSelectLoca
   {[...area5.yards,area5.farm].map((p,i)=><rect key={`plot${i}`} x={p.x-p.width/2} y={p.z-p.depth/2} width={p.width} height={p.depth} fill={i<area5.yards.length?'#b7ad83':'#a6a66e'} stroke="#8b9367" transform={`rotate(${-p.rotation*180/Math.PI} ${p.x} ${p.z})`}/>)}
   <rect x={area5.pond.x-area5.pond.width/2} y={area5.pond.z-area5.pond.depth/2} width={area5.pond.width} height={area5.pond.depth} fill="#548f94" stroke="#97825c" strokeWidth="2" transform={`rotate(${-area5.pond.rotation*180/Math.PI} ${area5.pond.x} ${area5.pond.z})`}/>
   {area5.farmTrees.map(t=><circle key={t.id} cx={t.x} cy={t.z} r="2.4" fill="#547b48"/>)}
+   {mangoTrees.map(t=><g key={t.id}>
+    <circle cx={t.x} cy={t.z} r="2.8" fill="#356530" stroke="#234720" strokeWidth="0.3"/>
+    <circle cx={t.x+0.7} cy={t.z-0.6} r="0.75" fill="#f59e0b"/>
+    <circle cx={t.x-0.6} cy={t.z+0.7} r="0.75" fill="#f97316"/>
+   </g>)}
+   {labels&&<text x="85.7" y="298.5" textAnchor="middle" fontSize="3.2" fill="#fff" stroke="#1c3d1f" strokeWidth="0.45">သရက်ခြံ</text>}
+   <g transform={'translate(' + PUMP_X + ' ' + PUMP_Z + ') rotate(' + (-(PUMP_ROT)*180/Math.PI) + ')'}>
+    <rect x="-1.1" y="-1.0" width="2.2" height="2.0" fill="#a8a194" stroke="#716b60" strokeWidth="0.25"/>
+    <circle cx="0.25" cy="-0.2" r="0.28" fill="#1b5e43"/>
+    <circle cx="-0.45" cy="-0.2" r="0.2" fill="#235c4b"/>
+    <circle cx="0.3" cy="0.45" r="0.48" fill="#3ba9be" opacity="0.8"/>
+    {labels&&<text y="-0.4" textAnchor="middle" fontSize="1.6" fill="#1c382f">ရေစုပ်စက်</text>}
+   </g>
+   <g transform={'translate(' + TOIL_X + ' ' + TOIL_Z + ') rotate(' + (-(TOIL_ROT)*180/Math.PI) + ')'}>
+    <rect x="-1.7" y="-1.1" width="3.4" height="2.2" fill="#d2c9b8" stroke="#716758" strokeWidth="0.3"/>
+    <rect x="-1.28" y="-0.52" width="1.04" height="1.04" fill="#a8a194" stroke="#6b655a" strokeWidth="0.2"/>
+    <rect x="0.24" y="-0.52" width="1.04" height="1.04" fill="#a8a194" stroke="#6b655a" strokeWidth="0.2"/>
+    {labels&&<text y="0.5" textAnchor="middle" fontSize="1.8" fill="#1c382f">အိမ်သာ</text>}
+   </g>
   <g transform={`translate(${area5.monastery.x} ${area5.monastery.z}) rotate(${-area5.monastery.rotation*180/Math.PI})`}>
    <rect x="-48" y="-33" width="96" height="66" fill="#b9b08a" stroke="#eee2b8"/>
    {area5.monastery.buildings.map(b=><g key={b.id}>
