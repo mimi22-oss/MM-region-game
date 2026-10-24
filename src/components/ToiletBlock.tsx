@@ -62,12 +62,12 @@ export function ToiletBlock() {
 
 			{/* တံခါးများ (Doors - slightly ajar for open walk-in & visual inspection) */}
 			{/* အခန်း ၁ တံခါး (Room 1 Door hinged at lx=-1.35) */}
-			<group position={[-1.35, 0.2, 1.0]} rotation={[0, 0.7, 0]}>
+			<group position={[-1.35, 0.2, 1.0]} rotation={[0, Math.PI / 2, 0]}>
 				<Box position={[0.38, 0.95, 0.02]} size={[0.76, 1.9, 0.04]} color="#a17549" />
 				<Box position={[0.7, 0.95, 0.06]} size={[0.04, 0.08, 0.06]} color="#e3c27f" />
 			</group>
 			{/* အခန်း ၂ တံခါး (Room 2 Door hinged at lx=0.25) */}
-			<group position={[0.25, 0.2, 1.0]} rotation={[0, 0.65, 0]}>
+			<group position={[0.25, 0.2, 1.0]} rotation={[0, Math.PI / 2, 0]}>
 				<Box position={[0.38, 0.95, 0.02]} size={[0.76, 1.9, 0.04]} color="#a17549" />
 				<Box position={[0.7, 0.95, 0.06]} size={[0.04, 0.08, 0.06]} color="#e3c27f" />
 			</group>

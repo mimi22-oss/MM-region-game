@@ -32,6 +32,8 @@ oppositeHome(194,326,'ဆန်စက်ဝင်း · သိုလှောင
 oppositeHome(24,334,'ဆန်စက်ဘေး · ပထမအိမ်တန်း');
 oppositeHome(24,394,'ဆန်စက်ဘေး · နောက်ဆုံးအိမ်တန်း');
 for(const h of houses)if(h.x*Math.cos(angle)-h.z*Math.sin(angle)>0)h.rotation=angle-Math.PI/2;
+export const KALAY_SIGN_HOUSE_ID = 'h98';
+export const kalaySignHouse = houses.find(h => h.id === KALAY_SIGN_HOUSE_ID)!;
 
 /** မြို့သာရပ်ကွက် · နယ်မြေ (၅) ဒေတာ */
 export const area5={

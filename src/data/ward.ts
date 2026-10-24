@@ -9,6 +9,8 @@ import {
  residentialRows,
  farmhouse,
  uShweHouse,
+ KALAY_SIGN_HOUSE_ID,
+ kalaySignHouse,
  type House,
 } from './wards/index.ts';
 import {
@@ -117,5 +119,7 @@ export {
  residentialRows,
  farmhouse,
  uShweHouse,
+ KALAY_SIGN_HOUSE_ID,
+ kalaySignHouse,
  type House,
 };

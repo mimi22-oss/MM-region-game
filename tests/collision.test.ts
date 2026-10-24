@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import { canStand,move } from '../src/game/collision.ts';
 import { mangoTrees, MANGO_START_GEO, MANGO_END_GEO, orchardMangoTrees, standaloneMangoTree } from '../src/data/mangoTrees.ts';
 import { tamarindTrees } from '../src/data/tamarindTrees.ts';
-import { uShweHouse } from '../src/data/ward.ts';
+import { uShweHouse, KALAY_SIGN_HOUSE_ID, kalaySignHouse } from '../src/data/ward.ts';
+import { KALAY_SIGN_ROTATION, KALAY_SIGN_BEARING } from '../src/data/kalaySignboard.ts';
 import { robotLocation } from '../src/game/robotLocation.ts';
 import { ward,angle,toWorld,pitchLanes,oppositeLanes,residentialRows,tharSiVillage,chinSaiVillage,zingalinVillage,htomarVillage,htomarFiveColumnFields,htomarRoadsideShops,tharYarGoneVillage,htaukKyantVillage,allHtaukKyantPonds,htaukKyantLandmarks,kyarInnVillage,kyarInnTaphiChaung,kyarInnLandmarks,kyarInnLandmarkBuildings,kyarInnLakePonds,kyarInnLakeIsland,kyarInnLakeStructures } from '../src/data/ward.ts';
 test('Myothar inventory and safe AH1 spawn',()=>{assert.equal(ward.houses.length,98);assert.equal(ward.roads.length,18);assert.equal(ward.fields.length,2);assert.ok(canStand(ward.spawn.x,ward.spawn.z));for(let v=-120;v<=120;v+=2){const p=toWorld(0,v);assert.ok(canStand(p.x,p.z),'AH1 is walkable')}});
@@ -271,6 +272,46 @@ test('U Shwe house and snack shop blocks building and counter while customer sho
  const loc = robotLocation(robotPos.x, robotPos.z, 2.137380);
  assert.ok(Math.abs(loc.latitude - 23.1614608) < 0.0001, 'latitude matches request');
  assert.ok(Math.abs(loc.longitude - 94.0466737) < 0.0001, 'longitude matches request');
+});
+
+test('Kalaymyo signboard landmark replaces house h98 with 3D monument and walkable perimeter',()=>{
+ assert.ok(kalaySignHouse, 'Kalay sign house h98 exists in inventory');
+ assert.equal(KALAY_SIGN_HOUSE_ID, 'h98');
+
+ // 1. Monument structure blocks walking directly into pillars
+ const signPos = { x: 295.571, z: 261.630 };
+ assert.equal(canStand(signPos.x, signPos.z), false, 'monument center blocks walking');
+
+ // 2. Robot standing location facing the sign is walkable
+ const robotPos = { x: 289.406, z: 266.075 };
+ assert.ok(canStand(robotPos.x, robotPos.z), 'robot observation location in front of Kalay sign is walkable');
+ const loc = robotLocation(robotPos.x, robotPos.z, 0);
+ assert.ok(Math.abs(loc.latitude - 23.1600815) < 0.0001, 'latitude matches request');
+ assert.ok(Math.abs(loc.longitude - 94.0470009) < 0.0001, 'longitude matches request');
+
+ // 3. Signboard faces South / 180.0° and pillars stand side-by-side East & West
+ assert.ok(Math.abs(KALAY_SIGN_BEARING - 180.0) < 0.1, 'signboard configured to face South 180 deg');
+ const fwdX = Math.sin(KALAY_SIGN_ROTATION), fwdZ = Math.cos(KALAY_SIGN_ROTATION);
+ const faceYaw = Math.atan2(-fwdX, -fwdZ);
+ const faceLoc = robotLocation(signPos.x, signPos.z, faceYaw);
+ assert.ok(Math.abs(faceLoc.bearing - 180.0) < 0.1, 'signboard local front direction bearing is 180.0 deg');
+ assert.equal(faceLoc.direction, 'South', 'signboard faces South');
+
+ // Verify East pillar (x = +1.65) and West pillar (x = -1.65) stand side-by-side
+ const rot = KALAY_SIGN_ROTATION;
+ const dxEast = 1.65 * Math.cos(rot), dzEast = 1.65 * (-Math.sin(rot));
+ const eastYaw = Math.atan2(-dxEast, -dzEast);
+ const eastLoc = robotLocation(signPos.x, signPos.z, eastYaw);
+ assert.equal(eastLoc.direction, 'East', 'left pillar (+X) stands on the East side');
+
+ const dxWest = -1.65 * Math.cos(rot), dzWest = -1.65 * (-Math.sin(rot));
+ const westYaw = Math.atan2(-dxWest, -dzWest);
+ const westLoc = robotLocation(signPos.x, signPos.z, westYaw);
+ assert.equal(westLoc.direction, 'West', 'right pillar (-X) stands on the West side');
+
+ // 4. Perimeter space around the monument is walkable
+ assert.ok(canStand(signPos.x + 3.6, signPos.z), 'road beside monument is walkable');
+ assert.ok(canStand(signPos.x, signPos.z - 3.6), 'lane beside monument is walkable');
 });
 
 test('water pump station sits at requested location and pump blocks while splash observation space is walkable',()=>{

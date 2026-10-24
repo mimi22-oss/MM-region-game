@@ -1,6 +1,6 @@
 import { estateFenceBlocks,estatePalms } from '../data/farmEstate.ts';
 import { homeGateBlocks } from './homeAccess.ts';
-import { farmhouse, uShweHouse, angle } from '../data/ward.ts';
+import { farmhouse, uShweHouse, KALAY_SIGN_HOUSE_ID, angle } from '../data/ward.ts';
 import { parkedCars } from '../data/cars.ts';
 import { spatialIndex } from './spatialIndex.ts';
 import { ward } from '../data/ward.ts';
@@ -11,7 +11,7 @@ export const PLAYER_RADIUS = 0.4;
 const nearbyAreca=spatialIndex(estatePalms,p=>({x:p.x,z:p.z,radius:.62}));
 const villageHouses=kalayVillages.flatMap(v=>v.houses);
 const villageTrees=kalayVillages.flatMap(v=>[...v.trees,...v.largeTrees,...v.farmTrees]);
-const solidWardHouses=ward.houses.filter(h=>h.id!==farmhouse.id&&h.id!==uShweHouse.id);
+const solidWardHouses=ward.houses.filter(h=>h.id!==farmhouse.id&&h.id!==uShweHouse.id&&h.id!==KALAY_SIGN_HOUSE_ID);
 const privateHomeIds=new Set([...solidWardHouses,...villageHouses].map(h=>h.id));
 const nearbyBuildings=spatialIndex([...solidWardHouses,...ward.warehouses,...ward.riceMill.buildings,...villageHouses],h=>({x:h.x,z:h.z,radius:Math.hypot(h.width/2+1.6,h.depth/2+2.6)+PLAYER_RADIUS}));
 const nearbyTrees=spatialIndex([...ward.trees,...ward.farmTrees,...ward.largeTrees,...villageTrees,...mangoTrees,...tamarindTrees],t=>({x:t.x,z:t.z,radius:t.radius+PLAYER_RADIUS}));
@@ -174,6 +174,7 @@ export function canStand(x:number,z:number):boolean {
  if(!canStandFarmhouse(x,z))return false;
  if(!canStandToilet(x,z))return false;
  if(!canStandUShweHouse(x,z))return false;
+ if(Math.hypot(x-295.571,z-261.630)<2.4+PLAYER_RADIUS)return false;
  if(Math.hypot(x-109.721,z-284.313)<0.42+PLAYER_RADIUS)return false;
  for(const h of nearbyBuildings(x,z)){
   const dx=x-h.x,dz=z-h.z,c=Math.cos(h.rotation),s=Math.sin(h.rotation);

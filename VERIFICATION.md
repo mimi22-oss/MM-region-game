@@ -117,3 +117,6 @@ Full `npm test`: 47/47 passed. Includes owner/non-owner gate behavior, closed/op
 
 ### Robot location panel
 50/50 tests passed, including geographic anchor, east/north coordinate signs, compass directions and precise coordinate copy text. TypeScript/Vite production build passed. Browser/device visual interaction and clipboard verification were not performed.
+
+### Cartoon character / robot selection
+Full existing automated suite: 58/58 passed, including the two-room toilet approaches, entry and fixture/wall collision. Final TypeScript/Vite production build passed (existing large-chunk advisory remains). Isolated headless Chrome visual review covered front and rear views, with hair/hood refinements after inspection. Browser checks confirmed one active player model, Cartoon -> Robot -> Cartoon switching without changing position/yaw/camera, local persistence after reload, and a 390px mobile Settings layout without horizontal overflow; no runtime exceptions were observed in that smoke check. Physical-phone performance was not measured. Preview images are saved under artifacts/.

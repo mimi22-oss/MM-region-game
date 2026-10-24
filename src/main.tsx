@@ -1,4 +1,5 @@
 import { RobotLocationPanel } from './components/RobotLocationPanel';
+import { CharacterPicker, savedCharacter, CHARACTER_STORAGE_KEY, type CharacterKind } from './components/CharacterPicker';
 import { homeGuidance } from './game/homeAccess';
 import { FrameBudget } from './components/FrameBudget';
 import { mobileQuality } from './game/sceneBudget';
@@ -23,6 +24,11 @@ class SceneError extends Component<{children:ReactNode},{failed:boolean}>{
  render(){return this.state.failed?<div className="error">3D scene မဖွင့်နိုင်ပါ။ WebGL / hardware acceleration ဖွင့်ထားသော desktop browser ဖြင့် ပြန်စမ်းပါ။</div>:this.props.children}
 }
 function App(){
+ const [character,setCharacter]=useState<CharacterKind>(savedCharacter);
+ const chooseCharacter=(kind:CharacterKind)=>{
+  setCharacter(kind);
+  try{localStorage.setItem(CHARACTER_STORAGE_KEY,kind)}catch{}
+ };
  const mobileInput=useRef(createMobileInput());
  const activateMobile=useCallback(()=>setSceneActive(true),[]);
  const [visible,setVisible]=useState(!document.hidden);
@@ -108,13 +114,13 @@ function App(){
  };
  const hideHud=locked||sceneActive;
  return <main className={night?"night-mode":""}>
- <div className="scene-wrap" onClick={()=>{if(!mapOpen){setSceneActive(true);setSettingsOpen(false);}}}><SceneError><Canvas frameloop={visible?'always':'never'} shadows={!mobileQuality} gl={{logarithmicDepthBuffer:true,antialias:!mobileQuality,powerPreference:'default'}} camera={{position:[0,5,33],fov:65,near:0.1,far:9000}} dpr={mobileQuality?1:[1,1.25]}><FrameBudget/><Town night={night}/><Player navigationRequest={navigationRequest} onNavigationResult={navigationResult} mobileInput={mobileInput} mapOpen={mapOpen} topDown={topDown} zoom={zoom} teleportTarget={teleportTarget} onMode={setFirst} onTopDown={setTopDown} onZoom={setZoom} onLock={handleLock} onPosition={position} onViewPosition={viewPosition}/></Canvas></SceneError></div>
+ <div className="scene-wrap" onClick={()=>{if(!mapOpen){setSceneActive(true);setSettingsOpen(false);}}}><SceneError><Canvas frameloop={visible?'always':'never'} shadows={!mobileQuality} gl={{logarithmicDepthBuffer:true,antialias:!mobileQuality,powerPreference:'default'}} camera={{position:[0,5,33],fov:65,near:0.1,far:9000}} dpr={mobileQuality?1:[1,1.25]}><FrameBudget/><Town night={night}/><Player character={character} navigationRequest={navigationRequest} onNavigationResult={navigationResult} mobileInput={mobileInput} mapOpen={mapOpen} topDown={topDown} zoom={zoom} teleportTarget={teleportTarget} onMode={setFirst} onTopDown={setTopDown} onZoom={setZoom} onLock={handleLock} onPosition={position} onViewPosition={viewPosition}/></Canvas></SceneError></div>
  <MobileControls key={navigationRequest?.seq??0} input={mobileInput} disabled={mapOpen||settingsOpen} onInteract={activateMobile}/>
  {!mapOpen&&!settingsOpen&&<div className="location-actions" onPointerDown={e=>e.stopPropagation()}>
-  <button type="button" aria-label="Return camera to my robot" title="My robot: return camera to character" onClick={()=>navigate('locate')}>
+  <button type="button" aria-label="Return camera to my character" title="My character: return camera to character" onClick={()=>navigate('locate')}>
    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4"/></svg>
   </button>
-  <button type="button" aria-label="Teleport robot to the center of this view" title="Bring robot to the center of this view" onClick={()=>navigate('teleport')}>
+  <button type="button" aria-label="Teleport character to the center of this view" title="Bring character to the center of this view" onClick={()=>navigate('teleport')}>
    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M6 14c-3 1-4 2-4 4 0 2 4 3 10 3s10-1 10-3c0-2-1-3-4-4"/></svg>
   </button>
   {navigationNotice&&<p role="status">{navigationNotice}</p>}
@@ -136,7 +142,8 @@ function App(){
  <div className="settings-wrap">
   <button type="button" className={settingsOpen?"settings-btn settings-btn-active":"settings-btn"} aria-label="အသုံးပြုနည်း လမ်းညွှန်နှင့် ဆက်တင်" aria-expanded={settingsOpen} title="အသုံးပြုနည်း လမ်းညွှန် (Settings & Guide)" onClick={()=>{if(document.pointerLockElement)document.exitPointerLock();setSettingsOpen(v=>!v);}}>⚙</button>
   {settingsOpen&&<section className="settings-menu" aria-label="အသုံးပြုနည်း လမ်းညွှန်">
-   <RobotLocationPanel x={pos.x} z={pos.z} yaw={robotYaw}/>
+   <CharacterPicker value={character} onChange={chooseCharacter}/>
+   <RobotLocationPanel x={pos.x} z={pos.z} yaw={robotYaw} characterLabel={character==='robot'?'Robot':'Cartoon'}/>
    <div className="guide-item">
     <div className="guide-header">
      <strong>အသုံးပြုနည်း လမ်းညွှန် · GUIDE</strong>
@@ -212,7 +219,7 @@ function App(){
   <small>{ward.currentArea} · သာစည် · ချင်းဆိုင် · ဇင်းကလင်း · ထိုမာ · သာယာကုန်း · ထောက်ကြန့် · ကြာအင်း</small>
   {mapOpen&&<p className="map-help">မြေပုံပေါ်ရှိ သက်ဆိုင်ရာ ရပ်ကွက် / ရွာကို တိုက်ရိုက်နှိပ်၍ 3D မြင်ကွင်းသို့ သွားနိုင်ပါသည် · Esc ပိတ်ရန်</p>}
  </aside>
- <footer className={hideHud?"footer-clean":""}>{!hideHud&&<div><kbd>N</kbd> နေ့/ည <kbd>W A S D / ↑ ↓ ← →</kbd> လမ်းလျှောက် <kbd>Shift + Drag</kbd> မြေပုံဆွဲရွှေ့ <kbd>Shift</kbd> ပြေး <kbd>Scroll</kbd> Zoom <kbd>T</kbd> ကောင်းကင်တည့်တည့် <kbd>V</kbd> မြင်ကွင်း <kbd>R</kbd> အစသို့ <kbd>Esc</kbd> လွှတ်ရန်</div>}<span><span className="footer-location">📍 {currentLoc.subArea ?? currentLoc.label} · </span>{topDown?'TOP-DOWN SKY':first?'FIRST PERSON':'THIRD PERSON'} · ZOOM {Math.round(zoom)}m · {pos.x.toFixed(1)}, {pos.z.toFixed(1)} m</span></footer>
+ <footer><span><span className="footer-location">📍 {currentLoc.subArea ?? currentLoc.label} · </span>{topDown?'TOP-DOWN SKY':first?'FIRST PERSON':'THIRD PERSON'} · ZOOM {Math.round(zoom)}m · {pos.x.toFixed(1)}, {pos.z.toFixed(1)} m</span></footer>
  </main>
 }
 createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);

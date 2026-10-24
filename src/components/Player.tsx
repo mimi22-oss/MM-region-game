@@ -2,6 +2,8 @@ import { updateHomeAccess } from '../game/homeAccess';
 import { panCamera, findTeleportSpot } from '../game/cameraNavigation';
 import { avatarHeading } from '../game/avatarHeading';
 import { RobotCharacter } from './RobotCharacter';
+import { CartoonCharacter } from './CartoonCharacter';
+import type { CharacterKind } from './CharacterPicker';
 import { useEffect, useRef, type RefObject } from 'react';
 import type { MobileInput } from '../game/mobileInput';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -23,6 +25,7 @@ export type TeleportTarget = {
 };
 
 export function Player({
+ character='robot',
  navigationRequest,
  onNavigationResult,
  mobileInput,
@@ -37,6 +40,7 @@ export function Player({
  onViewPosition,
  onPosition,
 }:{
+ character?:CharacterKind;
  navigationRequest?:{action:"locate"|"teleport";seq:number}|null;
  onNavigationResult?:(success:boolean)=>void;
  mobileInput?:RefObject<MobileInput>;
@@ -54,6 +58,7 @@ export function Player({
  const {camera,gl,scene}=useThree();
  const avatar=useRef<Group>(null);
  const wheels=useRef<Group>(null);
+ const characterMotion=useRef({speed:0,distance:0});
  const state=useRef({
   x:ward.spawn.x,
   z:ward.spawn.z,
@@ -285,6 +290,9 @@ export function Player({
    s.camX=s.x;s.camZ=s.z;
   }
   const dx=s.x-oldX,dz=s.z-oldZ;
+  const travelled=Math.hypot(dx,dz);
+  characterMotion.current.speed=dt>0?travelled/dt:0;
+  characterMotion.current.distance+=travelled;
   if(!aerial||mapOpen)s.bodyYaw=avatarHeading(s.bodyYaw,dx,dz);
   if(wheels.current&&(!aerial||mapOpen)){
    const travel=-Math.sin(s.bodyYaw)*dx-Math.cos(s.bodyYaw)*dz;
@@ -309,5 +317,5 @@ export function Player({
   }
   s.time+=dt;if(s.time>0.08){s.time=0;onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
  });
- return <group ref={avatar}><RobotCharacter wheels={wheels}/></group>;
+ return <group ref={avatar} name="player-avatar">{character==='cartoon'?<CartoonCharacter motion={characterMotion}/>:<RobotCharacter wheels={wheels}/>}</group>;
 }

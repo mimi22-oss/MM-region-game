@@ -249,3 +249,6 @@ Reload/reset now starts the robot at a checked clear interior position in the fa
 
 ### Robot location coordinates
 Settings includes an expandable robot location/direction panel driven by the actual player position and body heading. Copy includes approximate latitude/longitude, exact scene X/Z and local U/V, place and compass bearing. Geographic coordinates use a local tangent approximation anchored to the existing Thar Si reference; the scene is not geographically calibrated. Use X/Z or U/V for precise editing requests. Clipboard fallback supports manual selection on insecure mobile LAN pages.
+
+### Cartoon character and preserved robot
+Settings now has Cartoon and Robot choices. The reference-inspired 3D boy has swept black hair, brown eyes, a purple hoodie, dark cargo joggers and white sneakers. Cartoon is the initial default; the selected appearance is saved locally. Switching only changes the avatar model and retains location, facing, camera, movement and farmhouse ownership. The original robot and ambient robot bots remain available. Gait follows actual movement after collision handling; the boy also blinks and breathes at rest. Shared model geometry/materials are reused across switches. The two-room North-facing toilet at X130.464/Z277.362 is already integrated with both fixtures and two roof tanks; door leaves are now fully open for clear entry.

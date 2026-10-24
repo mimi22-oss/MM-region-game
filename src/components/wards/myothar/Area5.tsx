@@ -3,6 +3,7 @@ import { area5, farmhouse, toWorld } from '../../../data/wards/myothar/area5';
 import { House, FARMHOUSE_NAME, houseFenceBounds, houseVisualRotation } from '../../House';
 import { Farmhouse } from '../../Farmhouse';
 import { UShweHouse, U_SHWE_HOUSE_ID } from '../../ushwehouse';
+import { KalaySignboard, KALAY_SIGN_HOUSE_ID, KALAY_SIGN_ROTATION } from '../../KalaySignboard';
 import { ToiletBlock, TOIL_X, TOIL_Z, TOIL_ROT } from '../../ToiletBlock';
 import { WaterPump, PUMP_X, PUMP_Z, PUMP_ROT } from '../../WaterPump';
 import { MangoTrees } from '../../MangoTrees';
@@ -30,6 +31,7 @@ export function Area5(){
   <Canal/>
   <Farmhouse/>
   <UShweHouse/>
+  <KalaySignboard/>
   <ToiletBlock/>
   <MangoTrees/>
   <TamarindTrees/>
@@ -40,7 +42,7 @@ export function Area5(){
   <Fields/>
   <MainRoad/>
   <Lanes/>
-  {area5.houses.filter(h=>h.id!==farmhouse.id&&h.id!==U_SHWE_HOUSE_ID).map(h=><House key={h.id} h={h}/>)}
+  {area5.houses.filter(h=>h.id!==farmhouse.id&&h.id!==U_SHWE_HOUSE_ID&&h.id!==KALAY_SIGN_HOUSE_ID).map(h=><House key={h.id} h={h}/>)}
   <Trees/>
   <ParkedCars/>
  </group>;
@@ -129,10 +131,15 @@ export function Area5Plan({labels,onSelectLocation}:{labels:boolean;onSelectLoca
   <RiceMillPlan labels={labels}/>
   {area5.houses.map(h=>{
    const {sideHalf,backHalf,frontHalf}=houseFenceBounds(h);
-   const rot=houseVisualRotation(h);
+   const rot = h.id === KALAY_SIGN_HOUSE_ID ? KALAY_SIGN_ROTATION : houseVisualRotation(h);
    return <g key={h.id}>
     <g transform={`translate(${h.x} ${h.z}) rotate(${-rot*180/Math.PI})`}>
-     {h.id===U_SHWE_HOUSE_ID?<>
+     {h.id===KALAY_SIGN_HOUSE_ID?<>
+      <circle cx="0" cy="0" r="4.2" fill="#497c36" stroke="#dde6cc" strokeWidth="0.3"/>
+      <rect x="-2.8" y="-0.25" width="5.6" height="0.5" fill="#f5c518" rx="0.2"/>
+      {[-1.65,1.65].map(px=><circle key={px} cx={px} cy="0" r="0.45" fill="#801424"/>)}
+      {labels&&<text y="0.8" textAnchor="middle" fontSize="1.8" fill="#fff" stroke="#801424" strokeWidth="0.3">ကလေးမြို့</text>}
+     </>:h.id===U_SHWE_HOUSE_ID?<>
       <line x1={-sideHalf} y1={-backHalf} x2={-sideHalf} y2={frontHalf} stroke="#68767a" strokeWidth="0.6" strokeDasharray="1.2 0.8"/>
       <line x1={sideHalf} y1={-backHalf} x2={sideHalf} y2={frontHalf} stroke="#68767a" strokeWidth="0.6" strokeDasharray="1.2 0.8"/>
       <rect x="-4.6" y="4.5" width="9.2" height="2.7" fill="#849699" stroke="#6b4c30" strokeWidth="0.2"/>
