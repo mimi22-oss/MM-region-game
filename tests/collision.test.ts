@@ -7,6 +7,7 @@ import { tamarindTrees } from '../src/data/tamarindTrees.ts';
 import { uShweHouse, KALAY_SIGN_HOUSE_ID, kalaySignHouse } from '../src/data/ward.ts';
 import { KALAY_SIGN_ROTATION, KALAY_SIGN_BEARING } from '../src/data/kalaySignboard.ts';
 import { MOTORCYCLE_X, MOTORCYCLE_Z, MOTORCYCLE_YAW } from '../src/data/motorcycle.ts';
+import { HAND_PUMP_X, HAND_PUMP_Z, SPOUT_END_X, SPOUT_END_Z, SPOUT_LENGTH, DRAIN_END_X, DRAIN_END_Z, DRAIN_LENGTH } from '../src/data/handPumpLongSpout.ts';
 import { robotLocation } from '../src/game/robotLocation.ts';
 import { ward,angle,toWorld,pitchLanes,oppositeLanes,residentialRows,tharSiVillage,chinSaiVillage,zingalinVillage,htomarVillage,htomarFiveColumnFields,htomarRoadsideShops,tharYarGoneVillage,htaukKyantVillage,allHtaukKyantPonds,htaukKyantLandmarks,kyarInnVillage,kyarInnTaphiChaung,kyarInnLandmarks,kyarInnLandmarkBuildings,kyarInnLakePonds,kyarInnLakeIsland,kyarInnLakeStructures } from '../src/data/ward.ts';
 test('Myothar inventory and safe AH1 spawn',()=>{assert.equal(ward.houses.length,98);assert.equal(ward.roads.length,18);assert.equal(ward.fields.length,2);assert.ok(canStand(ward.spawn.x,ward.spawn.z));for(let v=-120;v<=120;v+=2){const p=toWorld(0,v);assert.ok(canStand(p.x,p.z),'AH1 is walkable')}});
@@ -747,4 +748,33 @@ test('detectLocation identifies every ward, village, sub-ward, and landmark duri
   assert.equal(detectLocation(kiCenter.x, kiCenter.z).id, 'kyarinn');
   const kiLake = toWorld(-340, 3990);
   assert.equal(detectLocation(kiLake.x, kiLake.z).id, 'kyarinn-lake');
+});
+
+test('waist-height cast-iron hand water pump sits at requested coordinates with 10m long spout and canal drain outflow', () => {
+  const pumpPos = { x: HAND_PUMP_X, z: HAND_PUMP_Z };
+  const spoutEnd = { x: SPOUT_END_X, z: SPOUT_END_Z };
+
+  assert.equal(HAND_PUMP_X, 159.065);
+  assert.equal(HAND_PUMP_Z, 208.966);
+  assert.equal(SPOUT_END_X, 151.967);
+  assert.equal(SPOUT_END_Z, 216.093);
+  assert.equal(DRAIN_END_X, 146.809);
+  assert.equal(DRAIN_END_Z, 219.768);
+
+  assert.ok(Math.abs(SPOUT_LENGTH - 10.059) < 0.01, 'spout length is ~10.06m');
+  assert.ok(Math.abs(DRAIN_LENGTH - 6.333) < 0.01, 'drain channel length is ~6.33m');
+
+  const loc = robotLocation(pumpPos.x, pumpPos.z, 2.358194);
+  assert.equal(loc.direction, 'West');
+
+  assert.equal(canStand(pumpPos.x, pumpPos.z), false, 'pump stand blocks walking');
+
+  const midSpout = { x: (HAND_PUMP_X + SPOUT_END_X) / 2, z: (HAND_PUMP_Z + SPOUT_END_Z) / 2 };
+  assert.equal(canStand(midSpout.x, midSpout.z), false, 'spout pipe body blocks walking');
+
+  const besidePump = { x: pumpPos.x + 1.2, z: pumpPos.z };
+  assert.ok(canStand(besidePump.x, besidePump.z), 'ground beside pump is walkable');
+
+  const besideBasin = { x: spoutEnd.x + 1.2, z: spoutEnd.z };
+  assert.ok(canStand(besideBasin.x, besideBasin.z), 'ground beside spout basin is walkable');
 });

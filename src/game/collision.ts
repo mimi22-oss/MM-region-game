@@ -17,6 +17,14 @@ import {
   MOTORCYCLE_Z,
   MOTORCYCLE_RADIUS,
 } from "../data/motorcycle.ts";
+import {
+  HAND_PUMP_X,
+  HAND_PUMP_Z,
+  SPOUT_DX,
+  SPOUT_DZ,
+  SPOUT_LENGTH,
+  HAND_PUMP_RADIUS,
+} from "../data/handPumpLongSpout.ts";
 export const PLAYER_RADIUS = 0.4;
 const nearbyAreca = spatialIndex(estatePalms, (p) => ({
   x: p.x,
@@ -333,6 +341,25 @@ export function canStand(x: number, z: number): boolean {
     MOTORCYCLE_RADIUS + PLAYER_RADIUS
   )
     return false;
+  if (
+    Math.hypot(x - HAND_PUMP_X, z - HAND_PUMP_Z) <
+    HAND_PUMP_RADIUS + PLAYER_RADIUS
+  )
+    return false;
+  const spoutLenSq = SPOUT_LENGTH * SPOUT_LENGTH;
+  const tSpout = Math.max(
+    0,
+    Math.min(
+      1,
+      ((x - HAND_PUMP_X) * SPOUT_DX + (z - HAND_PUMP_Z) * SPOUT_DZ) /
+        spoutLenSq,
+    ),
+  );
+  if (tSpout > 0.05 && tSpout < 0.94) {
+    const pipeX = HAND_PUMP_X + tSpout * SPOUT_DX;
+    const pipeZ = HAND_PUMP_Z + tSpout * SPOUT_DZ;
+    if (Math.hypot(x - pipeX, z - pipeZ) < 0.2 + PLAYER_RADIUS) return false;
+  }
   for (const h of nearbyBuildings(x, z)) {
     const dx = x - h.x,
       dz = z - h.z,

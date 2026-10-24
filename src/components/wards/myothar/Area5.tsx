@@ -8,6 +8,8 @@ import { UShweHouse, U_SHWE_HOUSE_ID } from '../../ushwehouse';
 import { KalaySignboard, KALAY_SIGN_HOUSE_ID, KALAY_SIGN_ROTATION } from '../../KalaySignboard';
 import { ToiletBlock, TOIL_X, TOIL_Z, TOIL_ROT } from '../../ToiletBlock';
 import { WaterPump, PUMP_X, PUMP_Z, PUMP_ROT } from '../../WaterPump';
+import { HandPumpLongSpout } from '../../HandPumpLongSpout';
+import { HAND_PUMP_X, HAND_PUMP_Z, HAND_PUMP_ROT, SPOUT_LENGTH, SPOUT_END_X, SPOUT_END_Z, DRAIN_END_X, DRAIN_END_Z } from '../../../data/handPumpLongSpout';
 import { MangoTrees } from '../../MangoTrees';
 import { TamarindTrees } from '../../TamarindTrees';
 import { tamarindTrees } from '../../../data/tamarindTrees';
@@ -38,6 +40,7 @@ export function Area5(){
   <MangoTrees/>
   <TamarindTrees/>
   <WaterPump/>
+  <HandPumpLongSpout/>
   <OpenGround/>
   <Monastery/>
   <RiceMill/>
@@ -125,6 +128,15 @@ export function Area5Plan({labels,onSelectLocation}:{labels:boolean;onSelectLoca
     <rect x="-0.15" y="-0.15" width="0.3" height="0.5" rx="0.08" fill="#1f2228"/>
     {labels&&<text y="-0.9" textAnchor="middle" fontSize="1.8" fill="#1773a5" fontWeight="bold">ဆိုင်ကယ်</text>}
    </g>
+   <g transform={'translate(' + HAND_PUMP_X + ' ' + HAND_PUMP_Z + ') rotate(' + (-(HAND_PUMP_ROT)*180/Math.PI) + ')'}>
+    <rect x="-0.7" y="-0.7" width="1.4" height="1.4" fill="#a8a194" stroke="#6b655a" strokeWidth="0.2"/>
+    <circle cx="0" cy="0" r="0.28" fill="#1b5ea2"/>
+    <line x1="0" y1="0" x2="0" y2={SPOUT_LENGTH} stroke="#1b5ea2" strokeWidth="0.45"/>
+    <rect x="-0.8" y={SPOUT_LENGTH - 0.8} width="1.6" height="1.6" fill="#a8a194" stroke="#6b655a" strokeWidth="0.2"/>
+    <circle cx="0" cy={SPOUT_LENGTH} r="0.55" fill="#3ba9be" opacity="0.85"/>
+    {labels&&<text x="0" y="-1.0" textAnchor="middle" fontSize="1.8" fill="#164879" fontWeight="bold">လက်နှိပ်ဘုံဘိုင်</text>}
+    </g>
+    <line x1={SPOUT_END_X} y1={SPOUT_END_Z} x2={DRAIN_END_X} y2={DRAIN_END_Z} stroke="#3ba9be" strokeWidth="0.45"/>
   <g transform={`translate(${area5.monastery.x} ${area5.monastery.z}) rotate(${-area5.monastery.rotation*180/Math.PI})`}>
    <rect x="-48" y="-33" width="96" height="66" fill="#b9b08a" stroke="#eee2b8"/>
    {area5.monastery.buildings.map(b=><g key={b.id}>
