@@ -1,3 +1,5 @@
+import { CartoonFace } from './CartoonFace';
+import { CartoonHair } from './CartoonHair';
 import { useRef, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import {
@@ -80,66 +82,6 @@ const fingers = join([-.03, -.01, .011, .031].flatMap((x, i) => {
 	return [line([base, [x + fan * .4, -.028 - length * .58, .004 + fan * .12], tip], radius), tipBall];
 }));
 
-const head = new SphereGeometry(1, 36, 28);
-{
-	const p = head.attributes.position;
-	for (let i = 0; i < p.count; i++) {
-		const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
-		// Rounder, wider face: cheeks stay full and the chin tapers in gently and short.
-		const jaw = y < -.35 ? 1 + (y + .35) * .34 : 1;
-		const cheek = 1 + Math.max(0, .12 - Math.abs(y + .05) * .22);
-		p.setXYZ(i, x * .272 * jaw * cheek, y * .258, z * .238 * (y < -.5 ? .93 : 1));
-	}
-	head.computeVertexNormals();
-}
-
-// Hair cap follows the skull, with a high forehead and a low nape.
-const hairCap = (() => {
-	const vertices: number[] = [], indices: number[] = [], rings = 24, sides = 48;
-	for (let i = 0; i <= rings; i++) for (let j = 0; j <= sides; j++) {
-		const phi = j / sides * Math.PI * 2;
-		const front = Math.max(0, -Math.sin(phi));
-		const theta = i / rings * (2.04 - .91 * Math.pow(front, 3) + .025 * Math.sin(phi * 7));
-		const ridge = .004 * Math.sin(phi * 13 + theta * 7) * Math.sin(theta);
-		vertices.push(Math.cos(phi) * Math.sin(theta) * (.282 + ridge), Math.cos(theta) * .295 + .048, Math.sin(phi) * Math.sin(theta) * (.252 + ridge) + .018);
-		if (i < rings && j < sides) {
-			const k = i * (sides + 1) + j;
-			indices.push(k, k + 1, k + sides + 1, k + 1, k + sides + 2, k + sides + 1);
-		}
-	}
-	const g = new BufferGeometry(); g.setAttribute('position', new Float32BufferAttribute(vertices, 3)); g.setIndex(indices); g.computeVertexNormals(); return g;
-})();
-
-/** Tapered swept locks have a broad sculpted surface, rather than round tubes. */
-function hairLock(points: Point[], width: number, depth: number) {
-	const curve = new CatmullRomCurve3(points.map(p => new Vector3(...p)));
-	const vertices: number[] = [], indices: number[] = [], rings = 24, sides = 8;
-	for (let i = 0; i <= rings; i++) {
-		const t = i / rings, p = curve.getPoint(t), tangent = curve.getTangent(t);
-		const across = new Vector3(-tangent.y, tangent.x, 0).normalize();
-		const taper = Math.max(.006, Math.pow(Math.sin(Math.PI * (.06 + t * .94)), .57));
-		for (let j = 0; j <= sides; j++) {
-			const phi = j / sides * Math.PI * 2, w = Math.cos(phi) * width * taper;
-			vertices.push(p.x + across.x * w, p.y + across.y * w, p.z + Math.sin(phi) * depth * taper);
-			if (i < rings && j < sides) { const k = i * (sides + 1) + j; indices.push(k, k + 1, k + sides + 1, k + 1, k + sides + 2, k + sides + 1); }
-		}
-	}
-	const g = new BufferGeometry(); g.setAttribute('position', new Float32BufferAttribute(vertices, 3)); g.setIndex(indices); g.computeVertexNormals(); return g;
-}
-const locks = [
-	hairLock([[.12, .235, -.125], [.055, .291, -.147], [-.095, .282, -.158], [-.21, .215, -.14], [-.265, .145, -.082]], .048, .015),
-	hairLock([[.125, .21, -.167], [.05, .25, -.196], [-.10, .22, -.211], [-.21, .159, -.187], [-.266, .116, -.13]], .046, .014),
-	hairLock([[.11, .19, -.19], [.04, .221, -.216], [-.09, .167, -.23], [-.18, .13, -.20], [-.235, .101, -.15]], .038, .013),
-	hairLock([[.08, .20, -.203], [.015, .188, -.228], [-.023, .155, -.24], [-.057, .113, -.227]], .029, .011),
-	hairLock([[.12, .235, -.126], [.196, .21, -.137], [.242, .119, -.121], [.27, .095, -.071]], .043, .015),
-	hairLock([[.17, .205, -.07], [.239, .155, -.053], [.254, .032, -.044], [.237, -.055, -.01]], .033, .013),
-	hairLock([[-.17, .205, -.075], [-.239, .115, -.079], [-.25, -.028, -.054], [-.226, -.11, -.015]], .034, .014),
-	hairLock([[.12, .255, .07], [.0, .334, .045], [-.10, .342, .025], [-.152, .365, .01]], .043, .016),
-];
-const smile = line([[-.062, -.095, -.198], [-.034, -.104, -.216], [0, -.107, -.221], [.034, -.103, -.215], [.062, -.093, -.196]], .0042);
-const lowerLip = line([[-.038, -.114, -.212], [0, -.119, -.216], [.036, -.113, -.211]], .0038);
-const brow = line([[-.067, .088, -.05], [-.033, .1, -.063], [.009, .1, -.067], [.055, .087, -.058]], .0115);
-const upperLid = line([[-.07, .004, .003], [-.047, .062, -.001], [0, .082, -.003], [.049, .058, -.001], [.071, .005, .003]], .0042);
 // A folded fabric shell joins the shoulders all the way around the neck.
 // The inner lining and outer cloth are continuous surfaces, not floating rings.
 function hoodShell(inner: boolean) {
@@ -291,29 +233,8 @@ export function CartoonCharacter({ motion }: { motion: RefObject<CharacterMotion
 			<Ellipsoid position={[0, 1.273, .004]} scale={[.077, .111, .072]} material={materials.skin} />
 			<Arm side={-1} innerRef={leftArm} /><Arm side={1} innerRef={rightArm} />
 			<group ref={headGroup} position={[0, 1.565, 0]}>
-				<mesh geometry={head} material={materials.skin} castShadow />
-				{[-1, 1].map(side => <group key={side}>
-					<Ellipsoid position={[side * .252, -.04, .002]} scale={[.057, .086, .042]} material={materials.skin} />
-					<Ellipsoid position={[side * .27, -.038, -.032]} scale={[.027, .052, .014]} material={materials.innerEar} />
-					<Ellipsoid position={[side * .25, -.052, -.037]} scale={[.017, .027, .017]} material={materials.skin} />
-					<group ref={side < 0 ? leftEye : rightEye} position={[side * .084, .018, -.214]} rotation={[0, -side * .1, 0]}>
-						<Ellipsoid position={[0, 0, 0]} scale={[.079, .079, .032]} material={materials.eye} />
-						<Ellipsoid position={[-side * .004, -.002, -.03]} scale={[.041, .047, .009]} material={materials.iris} />
-						<Ellipsoid position={[-side * .004, .001, -.037]} scale={[.027, .034, .006]} material={materials.pupil} />
-						<Ellipsoid position={[-.016, .023, -.043]} scale={[.0095, .0105, .0035]} material={materials.shine} />
-						<Ellipsoid position={[.013, -.02, -.043]} scale={[.004, .0045, .0022]} material={materials.shine} />
-						<mesh geometry={upperLid} material={materials.lips} position={[0, -.002, -.012]} scale={[.94, .87, 1]} />
-					</group>
-					<mesh geometry={brow} material={materials.hair} position={[side * .088, .117, -.219]} rotation={[0, -side * .1, side * -.08]} />
-				</group>)}
-				<Ellipsoid position={[0, -.016, -.228]} scale={[.017, .04, .017]} material={materials.skin} />
-				<Ellipsoid position={[0, -.044, -.244]} scale={[.026, .026, .028]} material={materials.skin} />
-				<Ellipsoid position={[-.014, -.054, -.256]} scale={[.006, .0035, .0042]} material={materials.innerEar} />
-				<Ellipsoid position={[.014, -.054, -.256]} scale={[.006, .0035, .0042]} material={materials.innerEar} />
-				<mesh geometry={smile} material={materials.lips} />
-				<mesh geometry={lowerLip} material={materials.skin} />
-				<mesh geometry={hairCap} material={materials.hairShade} castShadow />
-				{locks.map((geometry, i) => <mesh key={i} geometry={geometry} material={i === 0 || i === 7 ? materials.hairLight : materials.hair} castShadow />)}
+				<CartoonFace leftEye={leftEye} rightEye={rightEye}/>
+				<CartoonHair/>
 			</group>
 		</group>
 	</group>;
