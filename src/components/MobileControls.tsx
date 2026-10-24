@@ -19,10 +19,10 @@ export function MobileControls({input,disabled,onInteract}:{input:RefObject<Mobi
  if(disabled)return null;
  return <div className={`mobile-controls${held?' mobile-controls-held':''}`} onContextMenu={e=>e.preventDefault()}>
   <div className="mobile-move-zone" onPointerDown={e=>down(e,'left')} onPointerMove={move} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}>
-   <div className="mobile-direction-pad" aria-label="Movement directions">
-    {['up','left','down','right'].map((direction,i)=><button key={direction} type="button" data-direction={direction} className={`mobile-arrow mobile-arrow-${direction}`} aria-label={`Move ${direction}`}>{['↑','←','↓','→'][i]}</button>)}
+   <div className="mobile-direction-pad" aria-label="လမ်းကြောင်း ထိန်းချုပ်ခလုတ်များ">
+    {['up','left','down','right'].map((direction,i)=><button key={direction} type="button" data-direction={direction} className={`mobile-arrow mobile-arrow-${direction}`} aria-label={direction==='up'?'အရှေ့သို့':direction==='down'?'အနောက်သို့':direction==='left'?'ဘယ်ဘက်သို့':'ညာဘက်သို့'}>{['↑','←','↓','→'][i]}</button>)}
    </div>
   </div>
-  <div className="mobile-run-zone" aria-label="Hold to sprint; drag to look around" onPointerDown={e=>down(e,'right')} onPointerMove={move} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}/>
+  <div className="mobile-run-zone" aria-label="အမြန်ပြေးရန် ဖိထားပါ၊ ပတ်ဝန်းကျင်ကြည့်ရန် ဆွဲရွှေ့ပါ" onPointerDown={e=>down(e,'right')} onPointerMove={move} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}/>
  </div>;
 }

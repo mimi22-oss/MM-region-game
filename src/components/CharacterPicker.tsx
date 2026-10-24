@@ -8,15 +8,15 @@ export function savedCharacter(): CharacterKind {
 
 export function CharacterPicker({value,onChange}:{value:CharacterKind;onChange:(kind:CharacterKind)=>void}) {
  return <fieldset className="character-picker">
-  <legend>ကစားမည့် Character</legend>
+  <legend>ကစားမည့် ဇာတ်ကောင်</legend>
   <div className="character-options">
    <button type="button" aria-pressed={value==='cartoon'} onClick={()=>onChange('cartoon')}>
     <span className="character-swatch character-swatch-cartoon" aria-hidden="true"/>
-    <span><strong>Cartoon</strong><small>ခရမ်းရောင် hoodie</small></span>
+    <span><strong>ကာတွန်းလူငယ်</strong><small>ခရမ်းရောင် hoodie</small></span>
    </button>
    <button type="button" aria-pressed={value==='robot'} onClick={()=>onChange('robot')}>
     <span className="character-swatch character-swatch-robot" aria-hidden="true"/>
-    <span><strong>Robot</strong><small>မူလစက်ရုပ်လေး</small></span>
+    <span><strong>စက်ရုပ်</strong><small>မူလစက်ရုပ်လေး</small></span>
    </button>
   </div>
   <p>နှစ်မျိုးလုံးကို လက်ရှိနေရာမှာ ပြောင်းလဲရွေးချယ်နိုင်ပါတယ်။</p>

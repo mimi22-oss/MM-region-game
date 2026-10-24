@@ -1,2 +1,2 @@
-export * from './components/ushwehouse';
-export * from './data/ushwehouse';
+export * from "./components/ushwehouse";
+export * from "./data/ushwehouse";
