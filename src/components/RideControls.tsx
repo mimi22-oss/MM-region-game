@@ -71,6 +71,13 @@ export function RideControls({
 							{status.kmh < 0 && (
 								<span className="ride-orbit-speedo-rev">R</span>
 							)}
+							<span className="ride-orbit-lives" aria-label={`အသက်: ${status.lives}/3`}>
+								{[0, 1, 2].map((i) => (
+									<span key={i} className={i < status.lives ? 'ride-life-heart-filled' : 'ride-life-heart-lost'}>
+										{i < status.lives ? '❤️' : '🖤'}
+									</span>
+								))}
+							</span>
 							<button
 								type="button"
 								className="ride-orbit-speedo-limit"
@@ -198,6 +205,13 @@ export function RideControls({
 							<strong>
 								{status.kmh < 0 ? 'နောက်ဆုတ် · R' : 'ဆိုင်ကယ်'}
 							</strong>
+							<span className="ride-desktop-lives" aria-label={`အသက်: ${status.lives}/3`}>
+								{[0, 1, 2].map((i) => (
+									<span key={i} className={i < status.lives ? 'ride-life-heart-filled' : 'ride-life-heart-lost'}>
+										{i < status.lives ? '❤️' : '🖤'}
+									</span>
+								))}
+							</span>
 							<output aria-label="လက်ရှိအရှိန်">
 								{Math.abs(status.kmh)} <small>km/h</small>
 							</output>

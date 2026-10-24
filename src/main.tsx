@@ -259,7 +259,31 @@ function App() {
           </Canvas>
         </SceneError>
       </div>
-      <div className="life-hud" role="status" aria-live="polite"><span aria-label={`${rideStatus.lives} lives remaining`}>{[0,1,2].map(i=><span key={i} style={{opacity:i<rideStatus.lives?1:.22}}>?</span>)}</span>{rideStatus.crashed&&<small>{rideStatus.lives===0?"Restarting?":"Crash ? ?1 life"}</small>}</div>
+      {(rideStatus.riding || rideStatus.crashed) && (
+        <div className="life-hud" role="status" aria-live="polite">
+          <span className="life-hud-title">LIFE</span>
+          <div className="life-hud-hearts" aria-label={`ကျန်ရှိသော အသက်: ${rideStatus.lives}`}>
+            {[0, 1, 2].map(i => (
+              <span key={i} className={i < rideStatus.lives ? "life-heart-filled" : "life-heart-lost"}>
+                {i < rideStatus.lives ? "❤️" : "🖤"}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {rideStatus.crashed && (
+        <div className="ride-crash-banner" role="alert">
+          <span className="ride-crash-icon">💥</span>
+          <div className="ride-crash-text">
+            <strong>{rideStatus.lives === 0 ? "ဆိုင်ကယ် ပျက်စီးသွားပါပြီ!" : "တိုက်မိပါပြီ!"}</strong>
+            <span>
+              {rideStatus.lives === 0
+                ? "အသက် (Life) ၃ ခုလုံး ကုန်သွားသဖြင့် အစသို့ ပြန်လည်စတင်ပါမည်…"
+                : `အသက် ၁ ခု လျော့သွားပါသည် (ကျန်ရှိ: ${rideStatus.lives} ❤️)`}
+            </span>
+          </div>
+        </div>
+      )}
       {!mapOpen&&!settingsOpen&&<RideControls status={rideStatus} limit={rideLimit} onLimit={setRideLimit} onBrake={setBraking} onDismount={()=>{setBraking(false);setDismountRequest(n=>n+1)}}/>}
       <MobileControls
         key={navigationRequest?.seq ?? 0}

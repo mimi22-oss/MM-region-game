@@ -371,7 +371,8 @@ export function Player({
   characterMotion.current.rightFoot=rightHeight-groundY+.012;
   characterMotion.current.stepLift=Math.min(.32,Math.abs(height(s.x-sn*.4,s.z-c*.4)-center)+.04);
   const fall=ride.riding&&rideLife.crashTime>0?Math.min(1,(2-rideLife.crashTime)/.35,rideLife.lives>0?rideLife.crashTime/.4:1):0;
-  if(avatar.current){avatar.current.position.set(s.x,groundY+fall*.33,s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:0,s.bodyYaw,fall*1.42,'YXZ');avatar.current.visible=!s.first;}
+  const isBlinking=ride.riding&&rideLife.invulnerable>0&&Math.floor(clock.elapsedTime*12)%2===0;
+  if(avatar.current){avatar.current.position.set(s.x,groundY+fall*.18,s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:0,s.bodyYaw,fall*1.42,'YXZ');avatar.current.visible=!s.first&&!isBlinking;}
   target.current.set(aerial?s.camX:s.x,(aerial?height(s.camX,s.camZ):groundY)+1.65,aerial?s.camZ:s.z);
   camera.userData.viewFocus={x:target.current.x,z:target.current.z};
   const direction=new Vector3(-Math.sin(s.yaw)*Math.cos(s.pitch),Math.sin(s.pitch),-Math.cos(s.yaw)*Math.cos(s.pitch));
