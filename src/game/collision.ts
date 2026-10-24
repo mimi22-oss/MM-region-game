@@ -387,10 +387,11 @@ export function move(
   position: { x: number; z: number },
   dx: number,
   dz: number,
+  clear:(x:number,z:number)=>boolean=canStand,
 ) {
   const steps = Math.max(1, Math.ceil(Math.hypot(dx, dz) / 0.15));
   for (let i = 0; i < steps; i++) {
-    if (canStand(position.x + dx / steps, position.z)) position.x += dx / steps;
-    if (canStand(position.x, position.z + dz / steps)) position.z += dz / steps;
+    if (clear(position.x + dx / steps, position.z)) position.x += dx / steps;
+    if (clear(position.x, position.z + dz / steps)) position.z += dz / steps;
   }
 }

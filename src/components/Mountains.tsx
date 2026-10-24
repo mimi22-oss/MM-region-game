@@ -55,7 +55,7 @@ const distantMountainTiers = [
 const foreground=[...ward.mountains,...ward.weipula.peaks];
 function RidgeSurface({peaks,step=10,haze=0}:{peaks:TerrainPeak[];step?:number;haze?:number}){
  const tiles=useMemo(()=>buildMountainTiles(peaks,step,haze),[peaks,step,haze]);
- return <>{tiles.map(t=>{const p=toWorld(t.u,t.v);return <mesh key={t.key} position={[p.x,0,p.z]} rotation={[0,angle,0]} geometry={t.geometry} receiveShadow>
+ return <>{tiles.map(t=>{const p=toWorld(t.u,t.v);return <mesh userData={{walkable:true}} key={t.key} position={[p.x,0,p.z]} rotation={[0,angle,0]} geometry={t.geometry} receiveShadow>
   <meshStandardMaterial vertexColors roughness={1}/>
  </mesh>})}</>;
 }

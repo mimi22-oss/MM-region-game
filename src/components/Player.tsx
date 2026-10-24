@@ -1,3 +1,4 @@
+import { sceneGround,motorcycleGroundPose } from '../game/groundSurface';
 import { motorcycleRide,tryMount,parkMotorcycle,dismountSpot,stepMotorcycle,type RideStatus } from '../game/motorcycleRide';
 import { MotorcycleModel,ParkedMotorcycle } from './Motorcycle';
 import { updateHomeAccess } from '../game/homeAccess';
@@ -64,7 +65,8 @@ export function Player({
  const wheels=useRef<Group>(null);
  const [riding,setRiding]=useState(false);
  const rideNotice=useRef('');
- const characterMotion=useRef({speed:0,distance:0});
+ const characterMotion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0});
+
  const state=useRef({
   x:ward.spawn.x,
   z:ward.spawn.z,
@@ -275,8 +277,11 @@ export function Player({
   document.addEventListener('pointerlockchange',lock);document.addEventListener('keydown',key);document.addEventListener('keyup',key);document.addEventListener('mousemove',mouse);document.addEventListener('mouseup',up);window.addEventListener('blur',clear);window.addEventListener('wheel',wheel,{passive:false});gl.domElement.addEventListener('mousedown',down);gl.domElement.addEventListener('click',click);
   return ()=>{document.removeEventListener('pointerlockchange',lock);document.removeEventListener('keydown',key);document.removeEventListener('keyup',key);document.removeEventListener('mousemove',mouse);document.removeEventListener('mouseup',up);window.removeEventListener('blur',clear);window.removeEventListener('wheel',wheel);gl.domElement.removeEventListener('mousedown',down);gl.domElement.removeEventListener('click',click);if(document.pointerLockElement===gl.domElement)document.exitPointerLock()};
  },[gl,onLock,onMode,onTopDown,onZoom,mapOpen]);
- useFrame((_,delta)=>{
+ useFrame(({clock},delta)=>{
   const s=state.current;const dt=Math.min(delta,0.05);
+  const ground=sceneGround(scene,clock.elapsedTime);
+  const height=(x:number,z:number)=>ground.height(x,z);
+  const clear=(x:number,z:number)=>canStand(x,z)&&height(x,z)-height(motorcycleRide.riding?motorcycleRide.x:s.x,motorcycleRide.riding?motorcycleRide.z:s.z)<.5;
   updateHomeAccess(s.x,s.z,dt);
   let oldX=s.x,oldZ=s.z;
   const touch=mobileInput?.current;
@@ -315,7 +320,7 @@ export function Player({
     if(forward<-.35){steer=right;throttle=-1;}else{steer=-Math.max(-1,Math.min(1,error*2));throttle=len>0?1:0;}
    }
    const paused=aerial||mapOpen||controlsBlocked;
-   stepMotorcycle(dt,throttle,steer,braking,paused,canStand);
+   stepMotorcycle(dt,throttle,steer,braking,paused,clear);
    s.x=ride.x;s.z=ride.z;s.bodyYaw=ride.yaw;
    if(!paused){s.camX=s.x;s.camZ=s.z;}
   }else   if(aerial&&!mapOpen){
@@ -326,7 +331,7 @@ export function Player({
    }
   }else{
    const speed=(fast?8:touch?.active?5.5:4)*dt;
-   move(s,(-Math.sin(yaw)*forward+Math.cos(yaw)*right)*speed,(-Math.cos(yaw)*forward-Math.sin(yaw)*right)*speed);
+   move(s,(-Math.sin(yaw)*forward+Math.cos(yaw)*right)*speed,(-Math.cos(yaw)*forward-Math.sin(yaw)*right)*speed,clear);
    s.camX=s.x;s.camZ=s.z;
   }
   const dx=s.x-oldX,dz=s.z-oldZ;
@@ -338,8 +343,16 @@ export function Player({
    const travel=-Math.sin(s.bodyYaw)*dx-Math.cos(s.bodyYaw)*dz;
    wheels.current.rotation.x-=Math.hypot(dx,dz)*(travel<0?-1:1)/(0.24*0.95);
   }
-  if(avatar.current){avatar.current.position.set(s.x,0,s.z);avatar.current.rotation.y=s.bodyYaw;avatar.current.visible=!s.first;}
-  target.current.set(aerial?s.camX:s.x,1.65,aerial?s.camZ:s.z);
+  const bikePose=motorcycleGroundPose(ride.x,ride.z,ride.yaw,height);
+  ride.groundY=bikePose.y;ride.pitch=bikePose.pitch;
+  const center=height(s.x,s.z),c=Math.cos(s.bodyYaw),sn=Math.sin(s.bodyYaw);
+  const left=height(s.x-.104*c,s.z+.104*sn),rightHeight=height(s.x+.104*c,s.z-.104*sn);
+  const groundY=ride.riding?bikePose.y:Math.max(center,left,rightHeight)+.012;
+  characterMotion.current.leftFoot=left-groundY+.012;
+  characterMotion.current.rightFoot=rightHeight-groundY+.012;
+  characterMotion.current.stepLift=Math.min(.32,Math.abs(height(s.x-sn*.4,s.z-c*.4)-center)+.04);
+  if(avatar.current){avatar.current.position.set(s.x,groundY,s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:0,s.bodyYaw,0,'YXZ');avatar.current.visible=!s.first;}
+  target.current.set(aerial?s.camX:s.x,(aerial?height(s.camX,s.camZ):groundY)+1.65,aerial?s.camZ:s.z);
   camera.userData.viewFocus={x:target.current.x,z:target.current.z};
   const direction=new Vector3(-Math.sin(s.yaw)*Math.cos(s.pitch),Math.sin(s.pitch),-Math.cos(s.yaw)*Math.cos(s.pitch));
   if(s.first){camera.position.copy(target.current);camera.lookAt(target.current.clone().add(direction));}

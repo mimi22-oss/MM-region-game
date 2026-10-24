@@ -17,16 +17,16 @@ export function ToiletBlock() {
 	return (
 		<group position={[TOIL_X, 0, TOIL_Z]} rotation={[0, TOIL_ROT, 0]} name="two-room-toilet">
 			{/* ၁။ အောက်ခံကွန်ကရစ်ခုံနှင့် အဝင်လှေကားထစ်များ (Concrete Base Plinth & Steps) */}
-			<Box position={[0, 0.1, 0]} size={[3.6, 0.2, 2.4]} color="#a39d91" />
+			<Box walkable position={[0, 0.1, 0]} size={[3.6, 0.2, 2.4]} color="#a39d91" />
 			{/* အဝင်လှေကားထစ်ငယ်များ (Entrance Steps at North facing doors) */}
-			<Box position={[-0.8, 0.05, 1.3]} size={[1.1, 0.1, 0.35]} color="#948e82" />
-			<Box position={[0.8, 0.05, 1.3]} size={[1.1, 0.1, 0.35]} color="#948e82" />
+			<Box walkable position={[-0.8, 0.05, 1.3]} size={[1.1, 0.1, 0.35]} color="#948e82" />
+			<Box walkable position={[0.8, 0.05, 1.3]} size={[1.1, 0.1, 0.35]} color="#948e82" />
 
 			{/* ၂။ အတွင်းပိုင်း ကြမ်းခင်းကြွေပြားများ (Interior Tiled Floors) */}
 			{/* အခန်း ၁ - ကြွေပြား (Room 1 Floor - Squat Toilet) */}
-			<Box position={[-0.8, 0.205, 0]} size={[1.4, 0.01, 1.9]} color="#b7cbcf" />
+			<Box walkable position={[-0.8, 0.205, 0]} size={[1.4, 0.01, 1.9]} color="#b7cbcf" />
 			{/* အခန်း ၂ - ကြွေပြား (Room 2 Floor - Western Toilet) */}
-			<Box position={[0.8, 0.205, 0]} size={[1.4, 0.01, 1.9]} color="#c2d5db" />
+			<Box walkable position={[0.8, 0.205, 0]} size={[1.4, 0.01, 1.9]} color="#c2d5db" />
 
 			{/* ၃။ အပြင်နံရံများနှင့် အလယ်အကန့်နံရံ (Exterior & Partition Walls, Height 2.4m) */}
 			{/* နောက်ဘက်နံရံ (Back Wall at lz=-1.0) */}

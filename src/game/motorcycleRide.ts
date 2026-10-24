@@ -1,7 +1,7 @@
 import { motorcycleData } from '../data/motorcycle.ts';
-export const motorcycleRide={x:motorcycleData.x,z:motorcycleData.z,yaw:motorcycleData.rotation,riding:false,mustLeave:false,speed:0,distance:0,cooldown:0,nearTime:0,reverseWait:0,maxKmh:20};
+export const motorcycleRide={x:motorcycleData.x,z:motorcycleData.z,yaw:motorcycleData.rotation,groundY:0,pitch:0,riding:false,mustLeave:false,speed:0,distance:0,cooldown:0,nearTime:0,reverseWait:0,maxKmh:20};
 export type RideStatus={riding:boolean;near:boolean;kmh:number;notice:string};
-export function parkMotorcycle(){motorcycleRide.riding=false;motorcycleRide.mustLeave=true;motorcycleRide.speed=0;motorcycleRide.cooldown=2;motorcycleRide.nearTime=0;}
+export function parkMotorcycle(){motorcycleRide.riding=false;motorcycleRide.mustLeave=true;motorcycleRide.speed=0;motorcycleRide.cooldown=2;motorcycleRide.nearTime=0;motorcycleRide.reverseWait=0;}
 export function rideFootprintClear(x:number,z:number,yaw:number,clear:(x:number,z:number)=>boolean){
  const dx=-Math.sin(yaw)*.56,dz=-Math.cos(yaw)*.56;
  return clear(x,z)&&clear(x+dx,z+dz)&&clear(x-dx,z-dz);
@@ -10,7 +10,7 @@ export function tryMount(x:number,z:number,clear:(x:number,z:number)=>boolean){
  const r=motorcycleRide;if(r.riding||r.mustLeave||r.cooldown>0||Math.hypot(x-r.x,z-r.z)>1.6)return false;
  r.riding=true;
  if(!rideFootprintClear(r.x,r.z,r.yaw,clear)){r.riding=false;return false;}
- r.speed=0;r.nearTime=0;return true;
+ r.speed=0;r.reverseWait=0;r.nearTime=0;return true;
 }
 export function dismountSpot(clear:(x:number,z:number)=>boolean){
  const r=motorcycleRide;

@@ -79,4 +79,4 @@ export function MotorcycleModel({scale=1}:{scale?:number}){
   <Part g={footrests} m={rubber}/><Part g={stand} m={trim}/>
  </group>;
 }
-export function ParkedMotorcycle(){const root=useRef<Group>(null);useFrame(()=>{if(root.current){root.current.visible=!motorcycleRide.riding;root.current.position.set(motorcycleRide.x,.015,motorcycleRide.z);root.current.rotation.set(0,motorcycleRide.yaw+Math.PI,-.045)}});return <group ref={root} position={[motorcycleData.x,.015,motorcycleData.z]} rotation={[0,motorcycleData.rotation+Math.PI,-.045]} userData={{dynamic:true}} name="parked-motorcycle-area5-west"><MotorcycleModel/></group>}
+export function ParkedMotorcycle(){const root=useRef<Group>(null);useFrame(()=>{if(root.current){root.current.visible=!motorcycleRide.riding;root.current.position.set(motorcycleRide.x,motorcycleRide.groundY,motorcycleRide.z);root.current.rotation.set(-motorcycleRide.pitch,motorcycleRide.yaw+Math.PI,0,'YXZ')}});return <group ref={root} position={[motorcycleData.x,.015,motorcycleData.z]} rotation={[0,motorcycleData.rotation+Math.PI,-.045]} userData={{dynamic:true}} name="parked-motorcycle-area5-west"><MotorcycleModel/></group>}

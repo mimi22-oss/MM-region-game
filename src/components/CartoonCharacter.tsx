@@ -9,7 +9,7 @@ import {
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 type Point = [number, number, number];
-export type CharacterMotion = { speed: number; distance: number };
+export type CharacterMotion = { speed: number; distance: number; stepLift?:number;leftFoot?:number;rightFoot?:number };
 
 // Shared resources keep switching characters inexpensive, including on phones.
 const ball = new SphereGeometry(1, 20, 14);
@@ -208,8 +208,8 @@ export function CartoonCharacter({ motion, riding=false }: { motion: RefObject<C
 		const run = Math.min(1, Math.max(0, (speed - 2.8) / 4));
 		const phase = motion.current.distance * (4.9 - run * .6);
 		const swing = Math.sin(phase) * (.40 + run * .22) * a.stride;
-		if (leftLeg.current) leftLeg.current.rotation.x = swing;
-		if (rightLeg.current) rightLeg.current.rotation.x = -swing;
+		if (leftLeg.current) {leftLeg.current.rotation.x = swing;leftLeg.current.position.y=.707+(motion.current.leftFoot??0)+Math.max(0,Math.sin(phase))*(motion.current.stepLift??0)*a.stride;}
+		if (rightLeg.current) {rightLeg.current.rotation.x = -swing;rightLeg.current.position.y=.707+(motion.current.rightFoot??0)+Math.max(0,-Math.sin(phase))*(motion.current.stepLift??0)*a.stride;}
 		if (leftArm.current) leftArm.current.rotation.x = -swing * .82;
 		if (rightArm.current) rightArm.current.rotation.x = swing * .82;
 		if (body.current) {

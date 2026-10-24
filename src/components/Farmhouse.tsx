@@ -79,25 +79,25 @@ export function FarmhouseBuilding() {
 			{/* ၁။ အောက်ခြေဖောင်ဒေးရှင်းနှင့် ကြမ်းခင်း (Foundation & Floors) */}
 			{/* ======================================================== */}
 			{/* အောက်ခြေ ကွန်ကရစ်ဖောင်ဒေးရှင်း (Concrete Base for 12m x 10m house) */}
-			<mesh position={[0, 0.08, 0]}>
+			<mesh userData={{walkable:true}} position={[0, 0.08, 0]}>
 				<boxGeometry args={[houseW + 0.4, 0.16, houseD + 0.4]} />
 				<meshStandardMaterial color="#aaa18d" roughness={0.9} />
 			</mesh>
 
 			{/* အိမ်အတွင်း ကျွန်းပျဉ်ခင်းကြမ်းပြင် (Polished Teak Wooden Floor) */}
-			<mesh position={[0, 0.165, 0]}>
+			<mesh userData={{walkable:true}} position={[0, 0.165, 0]}>
 				<boxGeometry args={[houseW - 0.4, 0.03, houseD - 0.4]} />
 				<meshStandardMaterial color="#966a42" roughness={0.45} />
 			</mesh>
 
 			{/* ဧည့်ခန်း ပန်းရောင်ကော်ဇောကြီး (Living Room Cozy Rug at lx=2.6, lz=-2.8) */}
-			<mesh position={[2.6, 0.182, -2.8]}>
+			<mesh userData={{walkable:true}} position={[2.6, 0.182, -2.8]}>
 				<boxGeometry args={[3.2, 0.005, 2.4]} />
 				<meshStandardMaterial color="#b3493b" roughness={0.8} />
 			</mesh>
 
 			{/* အိပ်ခန်း အခင်းကော်ဇော (Bedroom Rug at lx=-3.8, lz=-2.5) */}
-			<mesh position={[-3.8, 0.182, -2.5]}>
+			<mesh userData={{walkable:true}} position={[-3.8, 0.182, -2.5]}>
 				<boxGeometry args={[2.8, 0.005, 2.8]} />
 				<meshStandardMaterial color="#305470" roughness={0.8} />
 			</mesh>
@@ -107,12 +107,12 @@ export function FarmhouseBuilding() {
 			{/* (Front Entrance Verandah & Doorway at lz=+5.0) */}
 			{/* ======================================================== */}
 			{/* ဝရန်တာကြမ်းပြင် (Front Verandah Platform at lx=0, lz=5.9) */}
-			<mesh position={[0, 0.14, 5.9]}>
+			<mesh userData={{walkable:true}} position={[0, 0.14, 5.9]}>
 				<boxGeometry args={[3.6, 0.18, 1.8]} />
 				<meshStandardMaterial color="#947452" roughness={0.5} />
 			</mesh>
 			{/* အဝင်လှေကားထစ်များ (Entrance Steps down to front yard) */}
-			<mesh position={[0, 0.07, 7.0]}>
+			<mesh userData={{walkable:true}} position={[0, 0.07, 7.0]}>
 				<boxGeometry args={[3.0, 0.10, 0.6]} />
 				<meshStandardMaterial color="#aaa18d" roughness={0.7} />
 			</mesh>
@@ -134,7 +134,7 @@ export function FarmhouseBuilding() {
             <Box position={[0,2.65,5]} size={[2.72,.16,.26]} color="#573f30"/>
 
 			{/* အဝင်ကြိုဆို ကြမ်းသုတ်ဖျာ (Welcome Door Mat) */}
-			<mesh position={[0, 0.185, 4.6]}>
+			<mesh userData={{walkable:true}} position={[0, 0.185, 4.6]}>
 				<boxGeometry args={[1.4, 0.005, 0.7]} />
 				<meshStandardMaterial color="#2d523e" roughness={0.8} />
 			</mesh>
@@ -224,7 +224,7 @@ export function FarmhouseBuilding() {
 			{/* ======================================================== */}
 			<group name="grand-kitchen-annex-left">
 				{/* မီးဖိုဆောင် ကြမ်းခင်း (Kitchen Floor: lx=6.0..15.0, lz=-4.0..+4.0) */}
-				<mesh position={[10.5, 0.16, 0]}>
+				<mesh userData={{walkable:true}} position={[10.5, 0.16, 0]}>
 					<boxGeometry args={[9.0, 0.03, 8.0]} />
 					<meshStandardMaterial color="#7a8b90" roughness={0.7} />
 				</mesh>
@@ -513,7 +513,7 @@ export function FarmhouseBuilding() {
 
 				{/* ဧည့်ခန်း ကော်ဖီစားပွဲ (Living Room Coffee Table at lz=-3.5) */}
 				<group position={[2.6, 0.34, -3.5]}>
-					<mesh position={[0, 0.08, 0]}>
+					<mesh userData={{walkable:true}} position={[0, 0.08, 0]}>
 						<boxGeometry args={[1.4, 0.05, 0.75]} />
 						<meshStandardMaterial color="#573822" roughness={0.4} />
 					</mesh>

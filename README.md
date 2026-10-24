@@ -252,3 +252,6 @@ Settings includes an expandable robot location/direction panel driven by the act
 
 ### Cartoon character and preserved robot
 Settings now has Cartoon and Robot choices. The reference-inspired 3D boy has swept black hair, brown eyes, a purple hoodie, dark cargo joggers and white sneakers. Cartoon is the initial default; the selected appearance is saved locally. Switching only changes the avatar model and retains location, facing, camera, movement and farmhouse ownership. The original robot and ambient robot bots remain available. Gait follows actual movement after collision handling; the boy also blinks and breathes at rest. Shared model geometry/materials are reused across switches. The two-room North-facing toilet at X130.464/Z277.362 is already integrated with both fixtures and two roof tanks; door leaves are now fully open for clear entry.
+
+### Raised surfaces and riding
+Actors follow explicitly walkable road, bridge, floor, field and terrain meshes. When adding a raised surface, mark its mesh `userData.walkable=true` (or use `walkable` on Box/Block); keep roofs and rails unmarked. One spatial surface index is shared by the player, robots and cars. Cartoon approaches the motorcycle to mount; W/up accelerates, A/D steer, S/down brakes then reverses, and the ride panel controls the speed limit and dismount.

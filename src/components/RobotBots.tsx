@@ -1,3 +1,4 @@
+import {sceneGround} from '../game/groundSurface';
 import { mobileQuality } from '../game/sceneBudget';
 import { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
@@ -15,12 +16,15 @@ function Bot({graph,start,index}:{graph:RouteNode[];start:number;index:number}){
  const root=useRef<Group>(null),wheels=useRef<Group>(null),[detail,setDetail]=useState(false);
  const appearance=useMemo(()=>botAppearance(index),[index]);
  const state=useRef({x:graph[start].x,z:graph[start].z,from:start,to:graph[start].links[index%graph[start].links.length],seed:index+1,elapsed:index*0.01,travel:0});
- useFrame(({camera},delta)=>{
+ useFrame(({camera,scene,clock},delta)=>{
   const s=state.current,dt=Math.min(delta,0.05),target=graph[s.to];
   const dx=target.x-s.x,dz=target.z-s.z,distance=Math.hypot(dx,dz),travel=Math.min(distance,(1.1+(index%7)*0.13)*dt);
   if(distance>0.0001){s.x+=dx/distance*travel;s.z+=dz/distance*travel;if(root.current)root.current.rotation.y=Math.atan2(-dx,-dz);s.travel+=travel}
   if(distance<0.12){s.x=target.x;s.z=target.z;const previous=s.from;s.from=s.to;s.seed=(s.seed*1664525+1013904223)>>>0;s.to=nextRoadNode(graph,s.from,previous,s.seed/4294967296)}
-  if(root.current)root.current.position.set(s.x,0,s.z);
+  if(root.current){const g=sceneGround(scene,clock.elapsedTime),yaw=root.current.rotation.y,w=.305*.95*appearance.size;
+   const left=g.height(s.x-Math.cos(yaw)*w,s.z+Math.sin(yaw)*w),right=g.height(s.x+Math.cos(yaw)*w,s.z-Math.sin(yaw)*w);
+   root.current.position.set(s.x,Math.max(left,right,g.height(s.x,s.z))+.012,s.z);
+  }
   if(wheels.current)wheels.current.rotation.x=-s.travel/(0.24*0.95*appearance.size);
   s.elapsed+=dt;if(s.elapsed>0.4){s.elapsed=0;const d=Math.hypot(camera.position.x-s.x,camera.position.y,camera.position.z-s.z);const nearby=d<100;if(nearby!==detail)setDetail(nearby);if(root.current)root.current.visible=d<1000}
  });

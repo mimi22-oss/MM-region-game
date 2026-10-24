@@ -1,5 +1,8 @@
 import { windshieldGeometry, roofBoxRibbonGeometry } from '../game/carWindshield';
-import { useMemo } from 'react';
+import { useMemo,useRef } from 'react';
+import {useFrame} from '@react-three/fiber';
+import {Group} from 'three';
+import {sceneGround,carGroundPose} from '../game/groundSurface';
 import { Shape, ExtrudeGeometry, DoubleSide } from 'three';
 import { parkedCars } from '../data/cars';
 
@@ -383,17 +386,12 @@ export function Car({ color = '#277fbd', size = 1 }: { color?: string; size?: nu
 	);
 }
 
-export function ParkedCars() {
-	return (
-		<>
-			{parkedCars.map((car) => (
-				<group key={car.id} position={[car.x, 0, car.z]} rotation={[0, car.rotation, 0]}>
-					<Car color={car.color} size={car.size} />
-				</group>
-			))}
-		</>
-	);
+function GroundedCar({car}:{car:typeof parkedCars[number]}){
+ const root=useRef<Group>(null);
+ useFrame(({scene,clock})=>{if(!root.current)return;const ground=sceneGround(scene,clock.elapsedTime),p=carGroundPose(car.x,car.z,car.rotation,car.size,(x,z)=>ground.height(x,z));root.current.position.set(car.x,p.y,car.z);root.current.rotation.set(p.pitch,car.rotation,p.roll,'YXZ');});
+ return <group ref={root} userData={{dynamic:true}} position={[car.x,0,car.z]}><Car color={car.color} size={car.size}/></group>;
 }
+export function ParkedCars(){return <>{parkedCars.map(car=><GroundedCar key={car.id} car={car}/>)}</>}
 
 export function ParkedCarsPlan() {
 	return (

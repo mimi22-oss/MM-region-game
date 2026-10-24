@@ -69,6 +69,7 @@ export function batchStaticMeshes(root: Group) {
       object.castShadow,
       object.receiveShadow,
       object.renderOrder,
+      Boolean(object.userData.walkable),
     ]);
     let group = groups.get(key);
     if (!group) {
@@ -87,6 +88,7 @@ export function batchStaticMeshes(root: Group) {
         group.material,
         group.items.length,
       );
+    batch.userData.walkable=Boolean(first.userData.walkable);
     batch.castShadow = first.castShadow;
     batch.receiveShadow = first.receiveShadow;
     batch.renderOrder = first.renderOrder;
