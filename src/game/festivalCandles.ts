@@ -23,19 +23,19 @@ export function decorateFestivalRegion(root:Group){
   const [tx,tz]=key.split(',').map(Number);tile.position.set(tx*64,0,tz*64);
   const local=items.map(p=>({...p,x:p.x-tx*64,z:p.z-tz*64})),holders=local.filter(p=>p.holder);
   tile.userData.festivalTile=true;tile.userData.flamePositions=items.map(p=>[p.x,p.y+(p.holder?HOLDER_CANDLE_BASE+CANDLE_WICK_TOP*HOLDER_CANDLE_SCALE:CANDLE_WICK_TOP)+.06,p.z]);
-  const batch=(name:string,geometry:BufferGeometry,material:Material,points:Item[],height:(p:Item)=>number,scaleY:(p:Item)=>number=()=>1)=>{
+  const batch=(name:string,geometry:BufferGeometry,material:Material,points:Item[],height:(p:Item)=>number,scaleFn:(p:Item)=>[number,number,number]=()=>[1,1,1])=>{
    if(!points.length)return;
    const mesh=new InstancedMesh(geometry,material,points.length);mesh.name=name;mesh.raycast=noRaycast;
-   points.forEach((p,i)=>{matrix.makeScale(1,scaleY(p),1);matrix.setPosition(p.x,p.y+height(p),p.z);mesh.setMatrixAt(i,matrix);});
-   mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();if(mesh.boundingSphere)mesh.boundingSphere.radius+=.06;
+   points.forEach((p,i)=>{const [sx,sy,sz]=scaleFn(p);matrix.makeScale(sx,sy,sz);matrix.setPosition(p.x,p.y+height(p),p.z);mesh.setMatrixAt(i,matrix);});
+   mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();if(mesh.boundingSphere)mesh.boundingSphere.radius+=.1;
    tile.add(mesh);
   };
-  batch('festival-wax',candleGeometry,candleSolidMaterial,local,p=>p.holder?HOLDER_CANDLE_BASE:0,p=>p.holder?HOLDER_CANDLE_SCALE:1);
+  batch('festival-wax',candleGeometry,candleSolidMaterial,local,p=>p.holder?HOLDER_CANDLE_BASE:0,p=>p.holder?[1.1,HOLDER_CANDLE_SCALE,1.1]:[1,1,1]);
   batch('festival-holders',candleHolderGeometry,candleSolidMaterial,holders,()=>0);
   batch('festival-pools',candlePoolGeometry,candleSolidMaterial,holders,()=>0);
   const tip=(p:Item)=>p.holder?HOLDER_CANDLE_BASE+CANDLE_WICK_TOP*HOLDER_CANDLE_SCALE:CANDLE_WICK_TOP;
-  batch('festival-flames',flameGeometry,candleFlameMaterial,local,tip);
-  batch('festival-glows',candleGlowGeometry,candleGlowMaterial,local,p=>tip(p)+.065);
+  batch('festival-flames',flameGeometry,candleFlameMaterial,local,tip,p=>p.holder?[1.4,1.4,1.4]:[1,1,1]);
+  batch('festival-glows',candleGlowGeometry,candleGlowMaterial,local,p=>tip(p)+.065,p=>p.holder?[1.4,1.4,1.4]:[1,1,1]);
   festival.add(tile);
  }
  root.add(festival);
@@ -46,7 +46,7 @@ export function updateFestivalVisibility(root:Object3D,x:number,z:number,mobile=
  const festival=root.children.find(child=>child.name==='festival-candles');if(!festival)return;
  for(const tile of festival.children){
   const distance=Math.hypot(tile.position.x+32-x,tile.position.z+32-z);
-  tile.visible=distance<(mobile?220:400);
+  tile.visible=distance<(mobile?300:600);
   for(const child of tile.children)child.visible=child.name==='festival-flames'||child.name==='festival-glows'||distance<(mobile?80:130);
  }
 }

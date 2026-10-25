@@ -1,4 +1,4 @@
-import {BufferGeometry,Float32BufferAttribute,CylinderGeometry,TorusGeometry,SphereGeometry,LatheGeometry,Vector2,Color,MeshStandardMaterial,ShaderMaterial,AdditiveBlending} from 'three';
+import {BufferGeometry,Float32BufferAttribute,CylinderGeometry,TorusGeometry,SphereGeometry,LatheGeometry,Vector2,Color,MeshStandardMaterial,ShaderMaterial,AdditiveBlending,DoubleSide} from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 function colored(g:BufferGeometry,color:string){
@@ -31,7 +31,7 @@ export const flameGeometry=(()=>{
  const p=g.attributes.position;for(let i=0;i<p.count;i++){const t=p.getY(i)/.19;p.setX(i,p.getX(i)+.018*t*t*t);}
  g.computeVertexNormals();g.userData.shared=true;return g;
 })();
-export const candleGlowGeometry=new SphereGeometry(.22,10,8);candleGlowGeometry.userData.shared=true;
+export const candleGlowGeometry=new SphereGeometry(.48,12,8);candleGlowGeometry.userData.shared=true;
 export const candleSolidMaterial=new MeshStandardMaterial({vertexColors:true,roughness:.6,metalness:.08});candleSolidMaterial.userData.shared=true;
 
 const vertexShader=`
@@ -40,15 +40,17 @@ varying vec3 normalView;
 varying vec3 eye;
 varying float height;
 varying float pulse;
+varying vec3 localPos;
 void main(){
  vec3 p=position;
+ localPos=position;
  vec4 origin=vec4(0.,0.,0.,1.);
  #ifdef USE_INSTANCING
  origin=instanceMatrix*origin;
  #endif
  origin=modelMatrix*origin;
  float seed=dot(origin.xz,vec2(1.37,2.71));
- pulse=.92+.09*sin(time*8.+seed)+.04*sin(time*16.+seed*1.9);
+ pulse=.92+.10*sin(time*8.+seed)+.04*sin(time*16.+seed*1.9);
  height=clamp(p.y/.19,0.,1.);
  #ifndef HALO
  p.x+=sin(time*3.2+seed)*.014*height*height;
@@ -64,28 +66,28 @@ void main(){
  gl_Position=projectionMatrix*view;
 }`;
 export const candleFlameMaterial=new ShaderMaterial({uniforms:{time:{value:0}},vertexShader,fragmentShader:`
-varying vec3 normalView;varying vec3 eye;varying float height;varying float pulse;
+varying vec3 normalView;varying vec3 eye;varying float height;varying float pulse;varying vec3 localPos;
 void main(){
- vec3 n=normalize(normalView);
- vec3 v=normalize(eye);
- float facing=abs(dot(n,v));
- float core=pow(facing,2.0)*(1.-smoothstep(.06,.85,height));
- vec3 blueBase=vec3(.3,.6,1.8);
- vec3 flameColor=mix(vec3(3.2,1.8,.35),vec3(2.4,.85,.06),smoothstep(.12,.9,height));
- vec3 base=mix(blueBase,flameColor,smoothstep(0.,.16,height));
- vec3 fire=mix(base,vec3(4.2,3.8,2.5),core*.85+.35);
- gl_FragColor=vec4(fire*pulse,1.);
-}`,toneMapped:false});
+ float r=length(localPos.xz)/.054;
+ float core=pow(clamp(1.-r,0.,1.),1.25);
+ vec3 blueBase=vec3(.25,.55,2.2);
+ vec3 flameColor=mix(vec3(3.8,2.2,.4),vec3(2.5,.85,.05),smoothstep(.12,.92,height));
+ vec3 base=mix(blueBase,flameColor,smoothstep(0.,.18,height));
+ vec3 fire=mix(base,vec3(5.5,5.0,3.4),core*.88+.35);
+ float alpha=clamp((1.-smoothstep(.8,1.1,r))*(1.-smoothstep(.92,1.,height))+.4,0.,1.);
+ gl_FragColor=vec4(fire*pulse,alpha);
+}`,side:DoubleSide,transparent:true,depthWrite:false,blending:AdditiveBlending,toneMapped:false});
 export const candleGlowMaterial=new ShaderMaterial({uniforms:candleFlameMaterial.uniforms,defines:{HALO:1},vertexShader,fragmentShader:`
 varying vec3 normalView;varying vec3 eye;varying float pulse;
 void main(){
  vec3 n=normalize(normalView);
  vec3 v=normalize(eye);
- float facing=max(0.,dot(n,v));
- float a=(.48*pow(facing,1.6)+.15*facing)*pulse;
- vec3 glow=vec3(2.4,1.25,.32)*a;
+ float facing=abs(dot(n,v));
+ float a=(pow(facing,1.8)*.7+facing*.2)*pulse;
+ vec3 glow=vec3(2.6,1.35,.35)*a;
  gl_FragColor=vec4(glow,a);
-}`,transparent:true,depthWrite:false,blending:AdditiveBlending,toneMapped:false});
+}`,side:DoubleSide,transparent:true,depthWrite:false,blending:AdditiveBlending,toneMapped:false});
 candleFlameMaterial.userData.shared=true;candleGlowMaterial.userData.shared=true;
 export function animateCandleFlames(time:number){candleFlameMaterial.uniforms.time.value=time;}
+
 
