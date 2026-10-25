@@ -1,3 +1,5 @@
+import {useMemo,useEffect} from 'react';
+import type {HumanAppearance} from '../data/appearance';
 import { BufferGeometry,Float32BufferAttribute,Vector3,CatmullRomCurve3,MeshStandardMaterial,CanvasTexture,SRGBColorSpace } from 'three';
 type P=[number,number,number];
 // Fine directional strands are procedural surface detail, not individual hair meshes.
@@ -61,4 +63,8 @@ const locks=[
  lock([[.11,.27,.12],[.225,.223,.104],[.272,.097,.09],[.29,.083,.031]],.047,.021),
  lock([[-.17,.25,.095],[-.253,.167,.11],[-.268,.04,.086],[-.287,.081,.024]],.036,.019),
 ];
-export function CartoonHair(){return <group name="swept-layered-hair" dispose={null}><mesh geometry={cap} material={rootMat}/>{locks.filter((_,i)=>![5,7,9,10].includes(i)).map((g,i)=><mesh key={i} geometry={g} material={hair}/>)}</group>}
+export function CartoonHair({style='swept',color='#302b2b'}:{style?:HumanAppearance['hair'];color?:string}){
+ const custom=useMemo(()=>new MeshStandardMaterial({color,roughness:.6}),[color]);
+ useEffect(()=>()=>custom.dispose(),[custom]);
+ const strand=color==='#302b2b'?hair:custom,root=color==='#302b2b'?rootMat:custom;
+ return <group name="swept-layered-hair" dispose={null}><mesh geometry={cap} material={root}/>{style!=='swept'&&[-1,1].map(side=><mesh key={side} position={[side*.225,style==='long'?-.15:-.015,.09]} scale={[.085,style==='long'?.35:.18,.17]} material={strand}><sphereGeometry args={[1,16,12]}/></mesh>)}{style==='bun'&&<mesh position={[0,.20,.25]} scale={[.14,.13,.12]} material={strand}><sphereGeometry args={[1,16,12]}/></mesh>}{locks.filter((_,i)=>style==='swept'?![5,7,9,10].includes(i):i<3).map((g,i)=><mesh key={i} geometry={g} material={strand}/>)}</group>}

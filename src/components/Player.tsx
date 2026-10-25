@@ -1,9 +1,10 @@
+import {useAppearance} from '../game/appearanceStore';
 import {rideLife,hitRide,tickRideLife} from '../game/rideLife';
 import {hitsTraffic} from '../game/trafficColliders';
 import {motorcycleData} from '../data/motorcycle';
 import {resetMobileInput} from '../game/mobileInput';
 import { sceneGround,motorcycleGroundPose,carGroundPose } from '../game/groundSurface';
-import { carRide, carInput, currentCar, nearbyCar, enterCar, parkCar, carExitSpot, shiftCar, stepCar, clearCarInput, type CarStatus, type CarGear } from '../game/carRide';
+import { carRide, carInput, currentCar, nearbyCar, enterCar, parkCar, carExitSpot, shiftCar, selectAutomaticRange, stepCar, clearCarInput, type CarStatus, type CarGear } from '../game/carRide';
 import { canSummonCar, stepCarSummon, updateSummonStand, carSummonState } from '../game/carSummon';
 import { ParkedCars } from './Car';
 import { DRIVER_EYE } from '../game/carCabin';
@@ -75,6 +76,7 @@ export function Player({
  onViewPosition?:(x:number,z:number)=>void;
  onPosition:(x:number,z:number,yaw?:number)=>void;
 }){
+ const appearance=useAppearance();
  const {camera,gl,scene}=useThree();
  const avatar=useRef<Group>(null);
  const wheels=useRef<Group>(null);
@@ -214,7 +216,7 @@ export function Player({
   const lock=()=>{s.locked=document.pointerLockElement===gl.domElement;clear();onLock(s.locked)};
   const key=(e:KeyboardEvent)=>{
    if(controlsBlocked)return;
-   const carKey=!!currentCar()&&['KeyC','Space','KeyE','KeyN','Digit0','Digit1','Digit2','Digit3','Digit4','KeyV'].includes(e.code);
+   const carKey=!!currentCar()&&['KeyC','KeyP','Space','KeyE','KeyN','Digit0','Digit1','Digit2','Digit3','Digit4','KeyV'].includes(e.code);
    const movement=carKey||["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD","ShiftLeft","ShiftRight","KeyR","KeyT","KeyM"].includes(e.code);
    if(!s.locked&&!mapOpen&&!movement&&e.type!=="keyup")return;
    if(e.target instanceof HTMLElement&&e.target.matches("input,textarea,select"))return;
@@ -232,9 +234,10 @@ export function Player({
    }else{
     s.keys.add(e.code);
     if(currentCar()&&!mapOpen){
+     if(!e.repeat&&e.code==='KeyP'&&currentCar()?.transmission==='automatic'){selectAutomaticRange('P',s.keys.has('Space')||s.keys.has('KeyS')||carInput.brake);return;}
      if(!e.repeat&&(e.code==='KeyR'||e.code==='KeyN'||/^Digit[0-4]$/.test(e.code))){
       const gear=(e.code==='KeyR'?-1:e.code==='KeyN'?0:Number(e.code.slice(-1))) as CarGear;
-      shiftCar(gear,s.keys.has('KeyC')||carInput.clutch);return;
+      shiftCar(gear,s.keys.has('KeyC')||carInput.clutch,s.keys.has('Space')||s.keys.has('KeyS')||carInput.brake);return;
      }
      if(e.code==='KeyE'){if(!e.repeat)carInput.exit=true;return;}
      if(e.code==='KeyR')return;
@@ -439,7 +442,7 @@ export function Player({
     panCamera(s,right*panSpeed,forward*panSpeed,edge);
    }
   }else{
-   const speed=(fast?8:touch?.active?5.5:4)*dt;
+   const speed=(fast?9.5:touch?.active?5.5:4)*dt;
    move(s,(-Math.sin(yaw)*forward+Math.cos(yaw)*right)*speed,(-Math.cos(yaw)*forward-Math.sin(yaw)*right)*speed,clear);
    s.camX=s.x;s.camZ=s.z;
   }
@@ -456,17 +459,19 @@ export function Player({
   const bikePose=motorcycleGroundPose(ride.x,ride.z,ride.yaw,height);
   ride.groundY=bikePose.y;ride.pitch=bikePose.pitch;
   const center=height(s.x,s.z),c=Math.cos(s.bodyYaw),sn=Math.sin(s.bodyYaw);
-  const left=height(s.x-.104*c,s.z+.104*sn),rightHeight=height(s.x+.104*c,s.z-.104*sn);
+  const bodyScale=character==='cartoon'?appearance.human.height:appearance.robot.size;
+  const footWidth=(character==='cartoon'?.104:appearance.robot.legs==='wheels'?.305*.95:appearance.robot.legs==='tracks'?.27*.95:.16*.95)*bodyScale;
+  const left=height(s.x-footWidth*c,s.z+footWidth*sn),rightHeight=height(s.x+footWidth*c,s.z-footWidth*sn);
   const car=currentCar();
   carRide.interior=s.first;
   const groundY=car?car.groundY:ride.riding?bikePose.y:Math.max(center,left,rightHeight)+.012;
-  characterMotion.current.leftFoot=left-groundY+.012;
-  characterMotion.current.rightFoot=rightHeight-groundY+.012;
+  characterMotion.current.leftFoot=(left-groundY+.012)/bodyScale;
+  characterMotion.current.rightFoot=(rightHeight-groundY+.012)/bodyScale;
   characterMotion.current.stepLift=Math.min(.32,Math.abs(height(s.x-sn*.4,s.z-c*.4)-center)+.04);
   const fall=ride.riding&&rideLife.crashTime>0?Math.min(1,(2-rideLife.crashTime)/.35,rideLife.lives>0?rideLife.crashTime/.4:1):0;
   const isBlinking=ride.riding&&rideLife.invulnerable>0&&Math.floor(clock.elapsedTime*12)%2===0;
   if(avatar.current){avatar.current.position.set(s.x,groundY+fall*.18,s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:0,s.bodyYaw,fall*1.42,'YXZ');avatar.current.visible=!car&&!s.first&&!isBlinking;}
-  target.current.set(aerial?s.camX:s.x,(aerial?height(s.camX,s.camZ):groundY)+1.65,aerial?s.camZ:s.z);
+  target.current.set(aerial?s.camX:s.x,(aerial?height(s.camX,s.camZ):groundY)+1.65*(car||ride.riding?1:bodyScale),aerial?s.camZ:s.z);
   if(car&&s.first)target.current.set(DRIVER_EYE[0]*car.size,DRIVER_EYE[1]*car.size,DRIVER_EYE[2]*car.size).applyEuler(new Euler(car.pitch,car.yaw,car.roll,'YXZ')).add(new Vector3(car.x,car.groundY,car.z));
   camera.userData.viewFocus={x:target.current.x,z:target.current.z};
   const viewPitch=s.pitch+(car&&s.first?car.pitch:0);
@@ -485,8 +490,8 @@ export function Player({
    }
    camera.position.copy(desired.current);camera.lookAt(target.current);
   }
-  s.time+=dt;if(s.time>0.08){s.time=0;onCarStatus?.({driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:carInput.clutch||s.keys.has('KeyC'),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car,ride.riding),summonStatus:carSummonState.status});onRideStatus?.({riding:ride.riding,near:!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0});onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
+  s.time+=dt;if(s.time>0.08){s.time=0;onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car,ride.riding),summonStatus:carSummonState.status});onRideStatus?.({riding:ride.riding,near:!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0});onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
  },-1);
- return <><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar">{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter motion={characterMotion} riding/></group></>:character==='cartoon'?<CartoonCharacter motion={characterMotion}/>:<RobotCharacter wheels={wheels}/>}</group></>;
+ return <><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar">{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter appearance={appearance.human} motion={characterMotion} riding/></group></>:character==='cartoon'?<CartoonCharacter appearance={appearance.human} motion={characterMotion}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
 
 }

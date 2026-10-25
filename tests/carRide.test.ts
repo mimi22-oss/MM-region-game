@@ -1,7 +1,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { parkedCars } from '../src/data/cars.ts';
-import { carRide, carInput, driveableCars, enterCar, parkCar, shiftCar, stepCar, nearbyCar, carExitSpot, gearSpeed, frontWheelAngle, wheelStepDistances, type CarGear } from '../src/game/carRide.ts';
+import { carRide, carInput, driveableCars, enterCar, parkCar, shiftCar, stepCar, nearbyCar, carExitSpot, gearSpeed, frontWheelAngle, wheelStepDistances, selectAutomaticRange, configurePlayerCar, type CarGear } from '../src/game/carRide.ts';
 import { canSummonCar, startCarSummon, stepCarSummon, updateSummonStand, carSummonState, resetCarSummon, TARGET_PARKING_U, TARGET_PARKING_V, SOUTH_YAW, ORIGINAL_PARK_U, ORIGINAL_PARK_V, ORIGINAL_PARK_YAW } from '../src/game/carSummon.ts';
 import { farmhouse, toWorld } from '../src/data/ward.ts';
 import { canStand } from '../src/game/collision.ts';
@@ -9,7 +9,7 @@ import { windshieldFrameGeometry, windshieldGeometry, cabinCurvePoint } from '..
 import { Mesh, MeshBasicMaterial, DoubleSide, Raycaster, Vector3 } from 'three';
 import { carBodyShellGeometry, driverGrip, DRIVER_POSITION, DRIVER_SCALE, STEERING_POSITION, STEERING_RADIUS, STEERING_TILT } from '../src/game/carCabin.ts';
 const car=driveableCars[0],free=()=>true;
-beforeEach(()=>{parkCar();Object.assign(car,{...parkedCars[0],yaw:0,speed:0,distance:0,steering:0,wheelTravel:[0,0,0,0],mustLeave:false});});
+beforeEach(()=>{parkCar();Object.assign(car,{...parkedCars[0],model:'compact',transmission:'manual',yaw:0,speed:0,distance:0,steering:0,wheelTravel:[0,0,0,0],mustLeave:false});});
 
 test('car shell leaves the lap and footwell empty while preserving solid doors, hood and boot',()=>{
  const geometry=carBodyShellGeometry(),material=new MeshBasicMaterial({side:DoubleSide}),shell=new Mesh(geometry,material);
@@ -181,4 +181,31 @@ test('car summon appears only after standing still for 3 seconds in the summon z
  assert.equal(canSummonCar(185.429, 196.050, false, false), true);
 
  resetCarSummon();
+});
+
+
+test('automatic drive shifts up and down without a clutch, while P/R/D have brake and direction interlocks',()=>{
+ configurePlayerCar({model:'toyota',color:'#ff0000',transmission:'automatic'});enterCar(car);
+ assert.equal(carRide.automaticRange,'P');
+ stepCar(.05,1,0,false,false,false,free);assert.equal(car.speed,0);
+ assert.equal(selectAutomaticRange('D',false),false);
+ assert.equal(selectAutomaticRange('D',true),true);
+ for(let i=0;i<500;i++)stepCar(.05,1,0,false,true,false,free);
+ assert.equal(carRide.gear,4,'automatic ignores the manual clutch and shifts through all four gears');
+ assert.ok(car.speed>15);
+ assert.equal(selectAutomaticRange('R',true),false);assert.equal(selectAutomaticRange('P',true),false);
+ for(let i=0;i<200;i++)stepCar(.05,0,0,true,false,false,free);
+ assert.equal(car.speed,0);assert.equal(carRide.gear,1);
+ assert.equal(selectAutomaticRange('R',true),true);stepCar(.05,1,0,false,false,false,free);assert.ok(car.speed<0);
+ assert.equal(selectAutomaticRange('D',true),true,'a near-zero reverse speed permits a stationary direction change');
+ stepCar(.05,0,0,true,false,false,free);
+ assert.equal(selectAutomaticRange('N'),true);assert.equal(carRide.gear,0);
+ assert.equal(selectAutomaticRange('P',true),true);stepCar(.05,1,0,false,false,false,free);assert.equal(car.speed,0);
+});
+
+test('car customization is isolated to the player car and does not swap a moving chassis',()=>{
+ const other=driveableCars.slice(1).map(car=>({...car}));configurePlayerCar({model:'lighttruck',color:'#123456',transmission:'automatic'});
+ assert.equal(car.model,'lighttruck');assert.equal(car.transmission,'automatic');assert.deepEqual(driveableCars.slice(1),other);
+ enterCar(car);configurePlayerCar({model:'lambo',color:'#abcdef',transmission:'manual'});
+ assert.equal(car.model,'lighttruck');assert.equal(car.transmission,'automatic');assert.equal(car.color,'#abcdef');
 });

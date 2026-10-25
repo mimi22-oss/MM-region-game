@@ -1,3 +1,6 @@
+import {RobotHand,RobotLegs} from './RobotLimbs';
+import type {RobotAppearance} from '../data/appearance';
+import type {CharacterMotion} from './CartoonCharacter';
 import { useMemo, useRef, type RefObject } from 'react';
 import { Group, Mesh, Shape, DoubleSide } from 'three';
 import { useFrame } from '@react-three/fiber';
@@ -38,12 +41,15 @@ export function RobotCharacter({
 	wheels,
 	palette = playerPalette,
 	size = 1,
+	appearance, motion,
 }: {
 	wheels: RefObject<Group | null>;
 	palette?: RobotPalette;
 	size?: number;
+	appearance?:RobotAppearance; motion?:RefObject<CharacterMotion>;
 }) {
-	const { shell: mint, panel: dark, accent: orange, rubber, trim } = palette;
+	const { shell: mint, panel: dark, accent: orange, rubber, trim } = appearance?{...palette,shell:appearance.color,accent:appearance.accent,trim:appearance.color}:palette;
+ const legs=appearance?.legs??'wheels';
 
 	// Eyelid & Eyeball refs for smooth 60fps blinking animation
 	const leftEyeballRef = useRef<Group>(null);
@@ -233,9 +239,9 @@ export function RobotCharacter({
 	}, []);
 
 	return (
-		<group scale={0.95 * size} name="robot-character">
+		<group scale={0.95 * (appearance?.size??size)} name="robot-character">
 			{/* ဘီးများ (Wheels Assembly) */}
-			<group ref={wheels} position={[0, 0.24, 0]}>
+			<group ref={wheels} visible={legs==='wheels'} position={[0, 0.24, 0]}>
 				{[-1, 1].map((side) => (
 					<group key={side} position={[side * 0.305, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
 						<mesh castShadow>
@@ -270,6 +276,7 @@ export function RobotCharacter({
 				))}
 			</group>
 
+			{legs!=='wheels'&&<RobotLegs style={legs} color={mint} accent={orange} motion={motion}/>}
 			{/* အောက်ခံဝင်ရိုး (Axle) */}
 			<mesh position={[0, 0.28, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
 				<cylinderGeometry args={[0.065, 0.065, 0.62, 12]} />
@@ -368,7 +375,7 @@ export function RobotCharacter({
 						<cylinderGeometry args={[0.033, 0.033, 0.09, 10]} />
 						<meshStandardMaterial color={dark} />
 					</mesh>
-					<Ball position={[side * 0.34, 0.6, -0.01]} scale={[0.07, 0.085, 0.075]} color={mint} />
+					<group position={[side*.34,.6,-.01]}><RobotHand style={appearance?.hands??'rounded'} color={mint} accent={orange}/></group>
 				</group>
 			))}
 

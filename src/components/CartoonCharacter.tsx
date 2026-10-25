@@ -1,6 +1,7 @@
 import { CartoonFace } from './CartoonFace';
 import { CartoonHair } from './CartoonHair';
-import { useRef, type RefObject } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, type RefObject } from 'react';
+import { HUMAN_PRESETS, type HumanAppearance } from '../data/appearance';
 import { useFrame } from '@react-three/fiber';
 import {
 	BufferGeometry, CatmullRomCurve3, Float32BufferAttribute, Group,
@@ -16,7 +17,7 @@ export type DrivingPose = {active:boolean;wheelAngle:number;interior:boolean;clu
 // Shared resources keep switching characters inexpensive, including on phones.
 const ball = new SphereGeometry(1, 20, 14);
 const mat = (color: string, roughness = .8) => new MeshStandardMaterial({ color, roughness });
-const materials = {
+const defaultMaterials = {
 	skin: mat('#e6ad7f', .67), innerEar: mat('#ce856d'), lips: mat('#925943'),
 	hair: mat('#28242b', .72), hairLight: mat('#2c282e', .72), hairShade: mat('#25232b', .72),
 	hoodie: mat('#6936ae'), hoodInside: mat('#412571'), rib: mat('#562e91'), seam: mat('#7946bb'),
@@ -25,6 +26,10 @@ const materials = {
 	eye: mat('#fff9ed', .2), iris: mat('#714524', .28), pupil: mat('#16131a', .17),
 	shine: new MeshStandardMaterial({ color: '#ffffff', roughness: .12, emissive: '#ffffff', emissiveIntensity: .28 }),
 };
+
+const HumanContext=createContext<HumanAppearance>(HUMAN_PRESETS.boy);
+const MaterialContext=createContext(defaultMaterials);
+function useHumanMaterials(){return useContext(MaterialContext);}
 
 /** A smooth elliptical loft, used for tailored clothes instead of stacked balls. */
 function loft(rows: Point[], centers: number[] = [], segments = 24) {
@@ -153,6 +158,7 @@ function Ellipsoid({ position, scale, material }: { position: Point; scale: Poin
 }
 
 function Arm({ side, innerRef }: { side: number; innerRef: RefObject<Group | null> }) {
+ const materials=useHumanMaterials();
 	return <group ref={innerRef} position={[side * .219, 1.175, 0]} rotation={[0, 0, side * .14]}>
 		<mesh geometry={sleeve} material={materials.hoodie} castShadow />
 		<mesh geometry={cuff} material={materials.rib} castShadow />
@@ -172,16 +178,14 @@ function Arm({ side, innerRef }: { side: number; innerRef: RefObject<Group | nul
 }
 
 function Leg({ side, innerRef }: { side: number; innerRef: RefObject<Group | null> }) {
+ const materials=useHumanMaterials();
 	return <group ref={innerRef} position={[side * .104, .707, .016]}>
 		<mesh geometry={pantsLeg} material={materials.trousers} castShadow />
 		<mesh geometry={ankle} material={materials.trouserSeam} castShadow />
 		<Ellipsoid position={[side * .078, -.19, .003]} scale={[.025, .083, .064]} material={materials.trouserSeam} />
 		<Ellipsoid position={[side * .085, -.139, .002]} scale={[.025, .019, .064]} material={materials.trousers} />
 		<group position={[0, -.7, -.015]}>
-			<mesh geometry={shoe} material={materials.white} castShadow />
-			<mesh geometry={sole} material={materials.sole} castShadow />
-			<mesh geometry={soleStripe} material={materials.rib} />
-			<mesh geometry={laces} material={materials.lace} />
+			<HumanShoes/>
 		</group>
 	</group>;
 }
@@ -189,11 +193,26 @@ function Leg({ side, innerRef }: { side: number; innerRef: RefObject<Group | nul
 // Bent limbs keep both hands on the grips and both feet beside the footrests.
 const ridingSleeves=join([-1,1].map(side=>line([[side*.219,1.175,0],[side*.25,1.00,-.23],[side*.27,.86,-.44]],.073)));
 function RidingLeg({side}:{side:number}){
+ const materials=useHumanMaterials();
  const hip=new Vector3(side*.145,.707,.016),knee=new Vector3(side*.205,.48,-.32),ankle=new Vector3(side*.205,.24,-.25);
  const segment=(a:Vector3,b:Vector3,r:number)=>{const d=b.clone().sub(a),q=new Quaternion().setFromUnitVectors(new Vector3(0,1,0),d.clone().normalize());return <mesh geometry={ball} material={materials.trousers} position={a.clone().add(b).multiplyScalar(.5)} quaternion={q} scale={[r,d.length()*.63,r]} castShadow/>};
- return <group>{segment(hip,knee,.09)}{segment(knee,ankle,.068)}<Ellipsoid position={[side*.205,.48,-.32]} scale={[.082,.078,.082]} material={materials.trousers}/><group position={[side*.205,.16,-.25]}><mesh geometry={shoe} material={materials.white}/><mesh geometry={sole} material={materials.sole}/><mesh geometry={soleStripe} material={materials.rib}/><mesh geometry={laces} material={materials.lace}/></group></group>;
+ return <group>{segment(hip,knee,.09)}{segment(knee,ankle,.068)}<Ellipsoid position={[side*.205,.48,-.32]} scale={[.082,.078,.082]} material={materials.trousers}/><group position={[side*.205,.16,-.25]}><HumanShoes/></group></group>;
 }
-function RidingArms(){return <group><mesh geometry={ridingSleeves} material={materials.hoodie} castShadow/>{[-1,1].map(side=><group key={side}><Ellipsoid position={[side*.27,.85,-.45]} scale={[.062,.057,.058]} material={materials.rib}/><Ellipsoid position={[side*.27,.83,-.49]} scale={[.046,.037,.043]} material={materials.skin}/></group>)}</group>}
+function RidingArms(){const materials=useHumanMaterials();return <group><mesh geometry={ridingSleeves} material={materials.hoodie} castShadow/>{[-1,1].map(side=><group key={side}><Ellipsoid position={[side*.27,.85,-.45]} scale={[.062,.057,.058]} material={materials.rib}/><Ellipsoid position={[side*.27,.83,-.49]} scale={[.046,.037,.043]} material={materials.skin}/></group>)}</group>}
+
+function HumanShoes(){
+ const appearance=useContext(HumanContext),materials=useHumanMaterials();
+ if(appearance.shoes==='sandals')return <group name="human-sandals"><mesh geometry={sole} material={materials.white}/><Ellipsoid position={[0,.065,-.04]} scale={[.072,.045,.115]} material={materials.skin}/><mesh position={[0,.095,-.07]}><boxGeometry args={[.15,.025,.055]}/><primitive object={materials.white} attach="material"/></mesh></group>;
+ return <group name={`human-${appearance.shoes}`}><mesh geometry={shoe} material={materials.white} castShadow/><mesh geometry={sole} material={materials.sole}/><mesh geometry={soleStripe} material={materials.rib}/>{appearance.shoes==='boots'?<mesh position={[0,.17,.01]} scale={[1,1,.92]} material={materials.white}><cylinderGeometry args={[.066,.075,.18,12]}/></mesh>:<mesh geometry={laces} material={materials.lace}/>}</group>;
+}
+const skirt=loft([[.24,.68,.16],[.26,.52,.18],[.29,.28,.20],[.31,.16,.21]]);
+function HumanClothes({seated}:{seated:boolean}){
+ const a=useContext(HumanContext),materials=useHumanMaterials();
+ return <group name={`human-clothes-${a.clothes}`}>
+  {a.clothes==='hoodie'?<><mesh geometry={pocket} material={materials.hoodie}/><mesh geometry={pocketStitch} material={materials.seam}/><mesh geometry={drawstrings} material={materials.lace}/><mesh geometry={hoodOuter} material={materials.hoodie}/><mesh geometry={hoodInner} material={materials.hoodInside}/><mesh geometry={hoodFrontFolds} material={materials.hoodie}/><mesh geometry={hoodRim} material={materials.hoodie}/></>:<>{[.84,.96,1.08,1.19].map(y=><Ellipsoid key={y} position={[0,y,-.142]} scale={[.009,.009,.006]} material={materials.lace}/>)}<mesh position={[0,1.15,-.13]} material={materials.white}><boxGeometry args={[.13,.06,.018]}/></mesh></>}
+  {(a.clothes==='dress'||a.clothes==='longyi')&&(seated?<mesh position={[0,.61,-.12]} scale={[.24,.12,.30]} geometry={ball} material={a.clothes==='dress'?materials.hoodie:materials.trousers}/>:<mesh geometry={skirt} scale={[a.clothes==='longyi'?.84:1,1,1]} material={a.clothes==='dress'?materials.hoodie:materials.trousers}/>)}
+ </group>;
+}
 
 const limbUp=new Vector3(0,1,0),limbDirection=new Vector3();
 function fitLimb(mesh:Mesh|null,a:Vector3,b:Vector3,radius:number){
@@ -204,6 +223,7 @@ function fitLimb(mesh:Mesh|null,a:Vector3,b:Vector3,radius:number){
  mesh.quaternion.setFromUnitVectors(limbUp,limbDirection.normalize());
 }
 function DrivingArm({side,pose}:{side:number;pose:RefObject<DrivingPose>}){
+ const materials=useHumanMaterials();
  const upper=useRef<Mesh>(null),lower=useRef<Mesh>(null),hand=useRef<Group>(null);
  const points=useRef({shoulder:new Vector3(side*.219,1.175,0),elbow:new Vector3(),wrist:new Vector3(),grip:new Vector3()});
  useFrame(()=>{
@@ -227,6 +247,7 @@ function DrivingArm({side,pose}:{side:number;pose:RefObject<DrivingPose>}){
  </group>;
 }
 function DrivingLeg({side,pose}:{side:number;pose:RefObject<DrivingPose>}){
+ const materials=useHumanMaterials();
  const thigh=useRef<Mesh>(null),shin=useRef<Mesh>(null),foot=useRef<Group>(null);
  const points=useRef({hip:new Vector3(side*.104,.707,.016),knee:new Vector3(),ankle:new Vector3(),x:side<0?.12:.43});
  useFrame((_,delta)=>{
@@ -242,12 +263,13 @@ function DrivingLeg({side,pose}:{side:number;pose:RefObject<DrivingPose>}){
  return <group name={side<0?'driver-left-leg':'driver-right-leg'}>
   <mesh ref={thigh} geometry={ball} material={materials.trousers} castShadow/>
   <mesh ref={shin} geometry={ball} material={materials.trousers} castShadow/>
-  <group ref={foot}><mesh geometry={shoe} material={materials.white}/><mesh geometry={sole} material={materials.sole}/><mesh geometry={soleStripe} material={materials.rib}/><mesh geometry={laces} material={materials.lace}/></group>
+  <group ref={foot}><HumanShoes/></group>
  </group>;
 }
 
 /** Reference-inspired boy. Facing -Z; origin at the soles; no world movement here. */
-export function CartoonCharacter({ motion, riding=false, driving }: { motion: RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose> }) {
+function CharacterBody({ motion, riding=false, driving }: { motion: RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose> }) {
+ const appearance=useContext(HumanContext),materials=useHumanMaterials();
 	const body = useRef<Group>(null), headGroup = useRef<Group>(null);
 	const leftArm = useRef<Group>(null), rightArm = useRef<Group>(null);
 	const leftLeg = useRef<Group>(null), rightLeg = useRef<Group>(null);
@@ -282,24 +304,26 @@ export function CartoonCharacter({ motion, riding=false, driving }: { motion: Re
 		{driving?<><DrivingLeg side={-1} pose={driving}/><DrivingLeg side={1} pose={driving}/></>:riding?<><RidingLeg side={-1}/><RidingLeg side={1}/></>:<><Leg side={-1} innerRef={leftLeg}/><Leg side={1} innerRef={rightLeg}/></>}
 		<group ref={body}>
 			<Ellipsoid position={[0, .72, .01]} scale={[.194, .106, .121]} material={materials.trousers} />
-			<mesh geometry={torso} material={materials.hoodie} castShadow />
+			<mesh name="human-torso" geometry={torso} material={materials.hoodie} castShadow />
 			<mesh geometry={hem} material={materials.rib} castShadow />
-			<mesh geometry={pocket} material={materials.hoodie} castShadow />
-			<mesh geometry={pocketStitch} material={materials.seam} />
-			<mesh geometry={drawstrings} material={materials.lace} />
-			{[-1, 1].map(s => <Ellipsoid key={s} position={[s * .08, .967, -.146]} scale={[.0057, .015, .0057]} material={materials.sole} />)}
-			<mesh geometry={badge} material={materials.lace} /><mesh geometry={badgeGlyph} material={materials.lace} />
-			<mesh geometry={hoodOuter} material={materials.hoodie} castShadow />
-			<mesh geometry={hoodInner} material={materials.hoodInside} />
-			<mesh geometry={hoodFrontFolds} material={materials.hoodie} castShadow />
-			<mesh geometry={hoodRim} material={materials.hoodie} castShadow />
+			<HumanClothes seated={riding||!!driving}/>
 			<mesh geometry={shirtV} material={materials.white} />
 			<Ellipsoid position={[0, 1.273, .004]} scale={[.077, .111, .072]} material={materials.skin} />
 			{driving?<><DrivingArm side={-1} pose={driving}/><DrivingArm side={1} pose={driving}/></>:riding?<RidingArms/>:<><Arm side={-1} innerRef={leftArm}/><Arm side={1} innerRef={rightArm}/></>}
 			<group ref={headGroup} position={[0, 1.565, 0]}>
-				<CartoonFace leftEye={leftEye} rightEye={rightEye}/>
-				<CartoonHair/>
+				<group scale={[appearance.face==='round'?1.09:appearance.face==='mature'?.96:1,appearance.face==='mature'?1.02:1,1]}><CartoonFace leftEye={leftEye} rightEye={rightEye} appearance={appearance}/><CartoonHair style={appearance.hair} color={appearance.hairColor}/></group>
 			</group>
 		</group>
 	</group>;
+}
+
+/** Reusable person: independent appearance, shared geometry, walking/riding/driving poses. */
+export function CartoonCharacter({appearance=HUMAN_PRESETS.boy,...props}:{appearance?:HumanAppearance;motion:RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>}){
+ const palette=useMemo(()=>{
+  const tint=(base:MeshStandardMaterial,color:string,factor=1)=>{const m=base.clone();m.color.set(color).multiplyScalar(factor);return m;};
+  return {...defaultMaterials,skin:tint(defaultMaterials.skin,appearance.skin),hoodie:tint(defaultMaterials.hoodie,appearance.clothingColor),rib:tint(defaultMaterials.rib,appearance.clothingColor,.8),hoodInside:tint(defaultMaterials.hoodInside,appearance.clothingColor,.6),seam:tint(defaultMaterials.seam,appearance.clothingColor,1.12),trousers:tint(defaultMaterials.trousers,appearance.trousersColor),trouserSeam:tint(defaultMaterials.trouserSeam,appearance.trousersColor,1.15),white:tint(defaultMaterials.white,appearance.shoeColor)};
+ },[appearance.skin,appearance.clothingColor,appearance.trousersColor,appearance.shoeColor]);
+ useEffect(()=>()=>{for(const key of Object.keys(palette) as (keyof typeof palette)[])if(palette[key]!==defaultMaterials[key])palette[key].dispose();},[palette]);
+ // Seated poses use the vehicle's seat and grip dimensions, while walking height is configurable.
+ return <HumanContext.Provider value={appearance}><MaterialContext.Provider value={palette}><group scale={props.riding||props.driving?1:appearance.height} userData={{humanPreset:appearance.preset}}><CharacterBody {...props}/></group></MaterialContext.Provider></HumanContext.Provider>;
 }

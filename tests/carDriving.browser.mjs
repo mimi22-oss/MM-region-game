@@ -39,7 +39,8 @@ async function connect(url) {
 
 const version = await (await fetch(`${debug}/json/version`)).json();
 const browser = await connect(version.webSocketDebuggerUrl);
-const { targetId } = await browser.call('Target.createTarget', { url: 'about:blank' });
+const {browserContextId}=await browser.call('Target.createBrowserContext');
+const { targetId } = await browser.call('Target.createTarget', { url: 'about:blank',browserContextId });
 const targets = await (await fetch(`${debug}/json/list`)).json();
 const page = await connect(targets.find(target => target.id === targetId).webSocketDebuggerUrl);
 const errors = [];
@@ -134,4 +135,4 @@ try{
  assert.deepEqual(errors,[]);
  console.log('mobile: multi-touch clutch/gear, pedals, draggable steering, cancellation, pause and exit passed');
  console.log('Screenshots:',artifacts);
-}finally{await browser.call('Target.closeTarget',{targetId});page.ws.close();browser.ws.close();}
+}finally{await browser.call('Target.disposeBrowserContext',{browserContextId});page.ws.close();browser.ws.close();}

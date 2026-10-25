@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, type ReactNode } from 'react';
-import { carInput, clearCarInput, gearLabel, shiftCar, MAX_STEERING, STEERING_RATIO, type CarGear, type CarStatus } from '../game/carRide';
+import { carInput, clearCarInput, gearLabel, shiftCar, selectAutomaticRange, MAX_STEERING, STEERING_RATIO, type CarGear, type CarStatus } from '../game/carRide';
 import { startCarSummon } from '../game/carSummon';
 
 function SteeringWheel({ steering }: { steering: number }) {
@@ -160,6 +160,7 @@ function Hold({
 }
 
 export function CarControls({ status }: { status: CarStatus }) {
+ const automatic=status.transmission==='automatic';
 	useEffect(() => {
 		const release = () => clearCarInput();
 		window.addEventListener('blur', release);
@@ -230,8 +231,8 @@ export function CarControls({ status }: { status: CarStatus }) {
 							<strong className="car-speedo-kmh">{Math.abs(status.kmh)}</strong>
 							<small className="car-speedo-unit">km/h</small>
 						</div>
-						<span className={`car-gear-readout car-gear-readout-${status.gear === -1 ? 'r' : status.gear === 0 ? 'n' : 'fwd'}`} aria-label={`ဂီယာ ${gearLabel(status.gear)}`}>
-							{gearLabel(status.gear)}
+						<span className={`car-gear-readout car-gear-readout-${status.gear === -1 ? 'r' : status.gear === 0 ? 'n' : 'fwd'}`} aria-label={`ဂီယာ ${automatic?(status.automaticRange==='D'?`D${status.gear}`:status.automaticRange):gearLabel(status.gear)}`}>
+							{automatic?(status.automaticRange==='D'?`D${status.gear}`:status.automaticRange):gearLabel(status.gear)}
 						</span>
 						<span className="car-rpm-badge">
 							{status.rpm.toLocaleString()} <small>RPM</small>
@@ -242,7 +243,7 @@ export function CarControls({ status }: { status: CarStatus }) {
 					<div className={`car-instruction${status.notice ? ' car-instruction-alert' : ''}`} role="status">
 						<span className="car-instruction-dot" />
 						<span>
-							{status.notice || (status.clutch
+							{status.notice || (automatic?'ဘရိတ်ဖိ → D (1) / R → ဘရိတ်လွှတ် → W လီဗာ · N လွတ်ဂီယာ':status.clutch
 								? 'ကလပ်ဖိထားသည် · ဂီယာရွေးပြီး ကလပ်လွှတ်ပါ'
 								: status.gear === 0
 									? 'ကလပ်ဖိ → ဂီယာ 1 → ကလပ်လွှတ် → လီဗာ'
@@ -251,6 +252,7 @@ export function CarControls({ status }: { status: CarStatus }) {
 					</div>
 
 					{/* ၃။ စတီယာရင်ခွေ အပေါ်ရှိ အဝိုက်ပုံ ဂီယာခလုတ်များ (Upper Arc: R, N | Lower Arc: 1, 2, 3, 4) */}
+                    {automatic?<div className="car-shifter-panel car-auto-selector" aria-label="Auto ဂီယာ">{(['P','R','N','D'] as const).map(range=><button type="button" key={range} aria-pressed={status.automaticRange===range} onPointerDown={event=>{event.preventDefault();selectAutomaticRange(range);}} onClick={event=>{if(event.detail===0)selectAutomaticRange(range);}}>{range}</button>)}</div>:<>
 					<div className="car-shifter-panel" aria-label="ဂီယာရွေးရန်">
 						<div className="car-gearbox car-gearbox-arc">
 							{/* အပေါ်အဝိုက် circle: R, N (Upper Arc above 1, 2, 3, 4) */}
@@ -299,10 +301,11 @@ export function CarControls({ status }: { status: CarStatus }) {
 						</div>
 					</div>
 
+                    </>}
 					{/* ၄။ ညာဘက် အစုအဝိုင်းပုံစံ ကားမောင်းခလုတ်များ (Circular Orbit Cluster: Clutch, Brake, Throttle) */}
 					<div className="car-pedals" aria-label="ကားမောင်း ခြေနင်းခလုတ်များ">
 						{/* ကလပ် (Clutch Orbit Button) */}
-						<Hold label="ကလပ်" className="car-orbit-clutch" action={held => { carInput.clutch = held; }}>
+						{!automatic&&<Hold label="ကလပ်" className="car-orbit-clutch" action={held => { carInput.clutch = held; }}>
 							<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
 								<circle cx="12" cy="12" r="9" strokeDasharray="4 2" />
 								<circle cx="12" cy="12" r="3.5" fill="currentColor" fillOpacity="0.25" />
@@ -310,7 +313,7 @@ export function CarControls({ status }: { status: CarStatus }) {
 							</svg>
 							<span className="car-orbit-tag">ကလပ်</span>
 							<small className="car-orbit-key">C</small>
-						</Hold>
+						</Hold>}
 
 						{/* ဘရိတ် (Brake Orbit Button) */}
 						<Hold label="ဘရိတ်" className="car-orbit-brake" action={held => { carInput.brake = held; }}>

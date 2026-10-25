@@ -1,11 +1,13 @@
 import { parkedCars } from '../data/cars.ts';
+import type {CarAppearance,CarModel} from '../data/appearance';
 
 export type CarGear = -1 | 0 | 1 | 2 | 3 | 4;
-export const driveableCars = parkedCars.map(car => ({ ...car, yaw: car.rotation, speed: 0, groundY: 0, pitch: 0, roll: 0, distance: 0, steering: 0, wheelTravel: [0,0,0,0], mustLeave: false }));
+export const driveableCars = parkedCars.map(car => ({ ...car, model:'compact' as CarModel, transmission:'manual' as CarAppearance['transmission'], yaw: car.rotation, speed: 0, groundY: 0, pitch: 0, roll: 0, distance: 0, steering: 0, wheelTravel: [0,0,0,0], mustLeave: false }));
 export type DriveableCar = typeof driveableCars[number];
 export const carInput = { throttle: false, brake: false, clutch: false, steer: 0, exit: false };
-export const carRide = { carId: null as string | null, gear: 0 as CarGear, rpm: 850, nearId: null as string | null, nearTime: 0, notice: '', interior: true };
-export type CarStatus = { driving: boolean; near: boolean; kmh: number; gear: CarGear; rpm: number; clutch: boolean; notice: string; steering: number; first?: boolean; canSummon?: boolean; summonStatus?: 'idle' | 'calling' | 'driving' | 'arrived' | 'returning' };
+export type AutomaticRange='P'|'R'|'N'|'D';
+export const carRide = { carId: null as string | null, gear: 0 as CarGear, automaticRange:'P' as AutomaticRange, rpm: 850, nearId: null as string | null, nearTime: 0, notice: '', interior: true };
+export type CarStatus = { transmission?:CarAppearance['transmission']; automaticRange?:AutomaticRange; driving: boolean; near: boolean; kmh: number; gear: CarGear; rpm: number; clutch: boolean; notice: string; steering: number; first?: boolean; canSummon?: boolean; summonStatus?: 'idle' | 'calling' | 'driving' | 'arrived' | 'returning' };
 export const MAX_STEERING = .55;
 export const STEERING_RATIO = 15;
 /** Ackermann geometry: the inside front tire turns more sharply than the outside tire. */
@@ -27,9 +29,23 @@ export const gearLabel = (gear: CarGear) => gear === -1 ? 'R' : gear === 0 ? 'N'
 export function clearCarInput() { Object.assign(carInput, { throttle: false, brake: false, clutch: false, steer: 0, exit: false }); }
 export const gearSpeed = (gear: CarGear) => ({ '-1': 10, 0: 0, 1: 20, 2: 40, 3: 65, 4: 100 }[gear] / 3.6);
 
-export function shiftCar(gear: CarGear, clutch = carInput.clutch) {
+export function selectAutomaticRange(range:AutomaticRange,brake=carInput.brake){
+ const car=currentCar();if(!car||car.transmission!=='automatic')return false;
+ if(range===carRide.automaticRange)return true;
+ if(range!=='N'&&!brake){carRide.notice='ဘရိတ်ဖိပြီး P / R / D ရွေးပါ';return false;}
+ if((range==='P'&&Math.abs(car.speed)>.2)||(range==='R'&&car.speed>.2)||(range==='D'&&car.speed<-.2)){carRide.notice='ဦးတည်ချက်ပြောင်းရန် ကားကို အရင်ရပ်ပါ';return false;}
+ carRide.automaticRange=range;carRide.gear=range==='D'?1:range==='R'?-1:0;carRide.notice='';return true;
+}
+export function configurePlayerCar(appearance:CarAppearance){
+ const car=driveableCars[0];car.color=appearance.color;
+ // Model and transmission changes are deferred until the player leaves the car.
+ if(currentCar()!==car){car.model=appearance.model;car.transmission=appearance.transmission;}
+}
+export function shiftCar(gear: CarGear, clutch = carInput.clutch, brake=carInput.brake) {
  const car = currentCar();
- if (!car || gear === carRide.gear) return false;
+ if (!car)return false;
+ if(car.transmission==='automatic')return selectAutomaticRange(gear<0?'R':gear===0?'N':'D',brake);
+ if(gear===carRide.gear)return false;
  if (!clutch) { carRide.notice = 'ဂီယာပြောင်းရန် ကလပ်ကို ဖိထားပါ'; return false; }
  if ((gear === -1 && car.speed > .2) || (gear > 0 && car.speed < -.2)) { carRide.notice = 'ဦးတည်ချက်ပြောင်းရန် ကားကို အရင်ရပ်ပါ'; return false; }
  if (gear !== 0 && Math.abs(car.speed) > gearSpeed(gear) * 1.1) { carRide.notice = 'ဒီဂီယာအတွက် အရှိန်လျှော့ပါ'; return false; }
@@ -50,7 +66,7 @@ export function nearbyCar(x: number, z: number, clear: (x: number, z: number) =>
  });
 }
 export function enterCar(car: DriveableCar) {
- carRide.carId = car.id; carRide.gear = 0; carRide.nearTime = 0; carRide.nearId = null; carRide.notice = '';
+ carRide.carId = car.id; carRide.automaticRange='P'; carRide.gear = 0; carRide.nearTime = 0; carRide.nearId = null; carRide.notice = '';
  car.speed = 0; clearCarInput();
 }
 export function carExitSpot(clear: (x: number, z: number) => boolean) {
@@ -65,7 +81,7 @@ export function carExitSpot(clear: (x: number, z: number) => boolean) {
 }
 export function parkCar() {
  const car = currentCar(); if (car) { car.speed = 0; car.steering = 0; car.mustLeave = true; }
- carRide.carId = null; carRide.gear = 0; carRide.rpm = 850; carRide.nearTime = 0; carRide.notice = ''; clearCarInput();
+ carRide.carId = null; carRide.automaticRange='P'; carRide.gear = 0; carRide.rpm = 850; carRide.nearTime = 0; carRide.notice = ''; clearCarInput();
 }
 
 /** Dense perimeter samples plus swept 10 cm steps stop the whole body at thin obstacles. */
@@ -82,6 +98,16 @@ export function stepCar(dt: number, throttle: number, steer: number, brake: bool
  const car = currentCar(); if (!car) return;
  dt = Math.min(.05, Math.max(0, dt));
  if (paused) { car.speed = 0; car.steering = 0; return; }
+ if(car.transmission==='automatic'){
+  clutch=false;
+  if(carRide.automaticRange==='P'){car.speed=0;brake=true;carRide.gear=0;}
+  else if(carRide.automaticRange==='N')carRide.gear=0;
+  else if(carRide.automaticRange==='R')carRide.gear=-1;
+  else {
+   const kmh=Math.abs(car.speed)*3.6,g=Math.max(1,carRide.gear);
+   carRide.gear=(g<4&&kmh>[0,17,34,56][g]?g+1:g>1&&kmh<[0,0,12,26,44][g]?g-1:g) as CarGear;
+  }
+ }
  const gear = carRide.gear, limit = gearSpeed(gear), gas = Math.max(0, Math.min(1, throttle));
  if (brake) car.speed = Math.sign(car.speed) * Math.max(0, Math.abs(car.speed) - 10 * dt);
  else if (gas && !clutch && gear !== 0) {

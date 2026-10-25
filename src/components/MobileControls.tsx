@@ -13,6 +13,7 @@ export function MobileControls({
 	const gesture = useRef(new MobileGesture(input.current));
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const [held, setHeld] = useState(false);
+	const [sprinting, setSprinting] = useState(false);
 
 	const baseRef = useRef<HTMLDivElement | null>(null);
 	const knobRef = useRef<HTMLDivElement | null>(null);
@@ -42,8 +43,10 @@ export function MobileControls({
 		joystickAnchor.current = null;
 		updateKnob(0, 0, false);
 		gesture.current.clear();
+		if (input.current) input.current.sprint = false;
 		setHeld(false);
-	}, [updateKnob]);
+		setSprinting(false);
+	}, [input, updateKnob]);
 
 	useEffect(() => {
 		clear();
@@ -199,13 +202,77 @@ export function MobileControls({
 			</div>
 			<div
 				className="mobile-run-zone"
-				aria-label="အမြန်ပြေးရန် ဖိထားပါ၊ ပတ်ဝန်းကျင်ကြည့်ရန် ဆွဲရွှေ့ပါ"
+				aria-label="ပတ်ဝန်းကျင်ကြည့်ရန် ဆွဲရွှေ့ပါ"
 				onPointerDown={(e) => down(e, 'right')}
 				onPointerMove={move}
 				onPointerUp={release}
 				onPointerCancel={release}
 				onLostPointerCapture={release}
 			/>
+			<button
+				type="button"
+				className={`mobile-sprint-btn${sprinting ? ' mobile-sprint-btn-active' : ''}`}
+				aria-label="အမြန်ပြေးရန် ခလုတ် (ပြေး)"
+				title="အမြန်ပြေးရန် ဖိထားပါ (ပြေး)"
+				onPointerDown={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					try {
+						e.currentTarget.setPointerCapture(e.pointerId);
+					} catch {}
+					if (input.current) input.current.sprint = true;
+					setSprinting(true);
+					onInteract();
+				}}
+				onPointerUp={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					try {
+						e.currentTarget.releasePointerCapture(e.pointerId);
+					} catch {}
+					if (input.current) input.current.sprint = false;
+					setSprinting(false);
+				}}
+				onPointerCancel={() => {
+					if (input.current) input.current.sprint = false;
+					setSprinting(false);
+				}}
+				onLostPointerCapture={() => {
+					if (input.current) input.current.sprint = false;
+					setSprinting(false);
+				}}
+			>
+				<div className="mobile-sprint-btn-inner">
+					<svg
+						className="mobile-sprint-icon"
+						viewBox="0 0 24 24"
+						width="26"
+						height="26"
+						fill="currentColor"
+						aria-hidden="true"
+					>
+						{/* Right footprint (forward stride) */}
+						<g transform="translate(15.2, 8.2) rotate(16) scale(0.62)">
+							<path d="M -0.5,5 C -2,5 -3.2,3.5 -3.2,1.5 C -3.2,-0.5 -1.8,-2 -1.5,-4 C -1.2,-5.8 -0.5,-7.5 1.5,-7.5 C 3.5,-7.5 4.5,-5.5 4.2,-3.5 C 4,-1.8 2.5,-0.2 2.2,1.5 C 1.8,3.5 1,5 -0.5,5 Z" />
+							<circle cx="1.8" cy="-9.6" r="1.3" />
+							<circle cx="0.1" cy="-9.0" r="1.0" />
+							<circle cx="-1.4" cy="-8.1" r="0.85" />
+							<circle cx="-2.7" cy="-7.0" r="0.75" />
+							<circle cx="-3.8" cy="-5.6" r="0.65" />
+						</g>
+						{/* Left footprint (behind stride) */}
+						<g transform="translate(8.8, 14.8) rotate(16) scale(0.62)">
+							<path d="M 0.5,5 C 2,5 3.2,3.5 3.2,1.5 C 3.2,-0.5 1.8,-2 1.5,-4 C 1.2,-5.8 0.5,-7.5 -1.5,-7.5 C -3.5,-7.5 -4.5,-5.5 -4.2,-3.5 C -4,-1.8 -2.5,-0.2 -2.2,1.5 C -1.8,3.5 -1,5 0.5,5 Z" />
+							<circle cx="-1.8" cy="-9.6" r="1.3" />
+							<circle cx="-0.1" cy="-9.0" r="1.0" />
+							<circle cx="1.4" cy="-8.1" r="0.85" />
+							<circle cx="2.7" cy="-7.0" r="0.75" />
+							<circle cx="3.8" cy="-5.6" r="0.65" />
+						</g>
+					</svg>
+					<span className="mobile-sprint-label">ပြေး</span>
+				</div>
+			</button>
 		</div>
 	);
 }

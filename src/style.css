@@ -787,10 +787,10 @@ kbd {
 
 .teleport-confirm-card {
 	position: relative;
-	background: rgba(255, 255, 255, 0.95);
-	backdrop-filter: blur(14px);
+	background: rgba(255, 255, 255, 0.122);
+	backdrop-filter: blur(2px);
 	-webkit-backdrop-filter: blur(14px);
-	border: 1.5px solid rgba(14, 165, 233, 0.45);
+	border: 1.5px solid rgba(14, 164, 233, 0.04);
 	border-radius: 14px;
 	padding: 10px 12px;
 	box-shadow:
@@ -905,7 +905,7 @@ kbd {
 	height: 38px;
 	border-radius: 10px;
 	border: 1px solid #e2e8f0;
-	background: #f8fafc;
+	background: #f8fafc1a;
 	color: #64748b;
 	display: flex;
 	align-items: center;
@@ -1256,7 +1256,8 @@ main.night-mode .home-guidance-pill {
 }
 
 /* Touch controls sit below menus and never synthesize keyboard or mouse input. */
-.mobile-controls {
+.mobile-controls,
+.mobile-sprint-btn {
 	display: none;
 }
 
@@ -1288,9 +1289,9 @@ main.night-mode .home-guidance-pill {
 	}
 
 	.home-guidance {
-		bottom: 30px !important;
-		left: 60% !important;
-		transform: translateX(-30%) !important;
+		bottom: max(140px, calc(env(safe-area-inset-bottom) + 130px)) !important;
+		left: 50% !important;
+		transform: translateX(-50%) !important;
 	}
 
 	.ride-crash-banner {
@@ -1668,6 +1669,119 @@ main.night-mode .home-guidance-pill {
 				rgba(147, 197, 253, 0.8) 100%);
 	}
 
+	/* Mobile Right-Hand Shift/Sprint Button (အမြန်ပြေးရန် Shift ခလုတ်) */
+	.mobile-sprint-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: absolute;
+		right: max(22px, env(safe-area-inset-right));
+		bottom: max(28px, calc(env(safe-area-inset-bottom) + 16px));
+		width: 72px;
+		height: 72px;
+		border-radius: 50%;
+		border: 2px solid rgba(255, 255, 255, 0.38);
+		background: radial-gradient(circle at 35% 32%,
+				rgba(30, 80, 68, 0.75) 0%,
+				rgba(16, 46, 38, 0.88) 70%,
+				rgba(10, 30, 25, 0.95) 100%);
+		box-shadow:
+			0 6px 20px rgba(0, 0, 0, 0.4),
+			inset 0 0 14px rgba(116, 215, 180, 0.2),
+			inset 0 1px 2px rgba(255, 255, 255, 0.35);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		opacity: 0.7;
+		z-index: 10;
+		pointer-events: auto;
+		touch-action: none;
+		user-select: none;
+		-webkit-user-select: none;
+		-webkit-touch-callout: none;
+		cursor: pointer;
+		color: #ffffff;
+		padding: 0;
+		outline: none;
+		transition:
+			opacity 0.15s ease,
+			transform 0.12s ease,
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+
+	.mobile-sprint-btn:hover {
+		opacity: 0.95;
+	}
+
+	.mobile-sprint-btn:active,
+	.mobile-sprint-btn.mobile-sprint-btn-active {
+		opacity: 1;
+		transform: scale(0.92);
+		border-color: #34d399;
+		background: radial-gradient(circle at 35% 32%,
+				rgba(45, 120, 100, 0.9) 0%,
+				rgba(20, 70, 56, 0.95) 70%,
+				rgba(12, 45, 36, 1) 100%);
+		box-shadow:
+			0 0 20px rgba(52, 211, 153, 0.9),
+			0 4px 14px rgba(0, 0, 0, 0.5),
+			inset 0 0 14px rgba(52, 211, 153, 0.6);
+	}
+
+	.mobile-sprint-btn-inner {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		pointer-events: none;
+		line-height: 1;
+		gap: 3px;
+	}
+
+	.mobile-sprint-icon {
+		width: 40px;
+		height: 40px;
+		color: #ffffff;
+		filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+	}
+
+	.mobile-sprint-label {
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		font-size:5px;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		color: rgba(255, 255, 255, 0.95);
+		text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+	}
+
+	/* Night mode Shift button */
+	main.night-mode .mobile-sprint-btn {
+		background: radial-gradient(circle at 35% 32%,
+				rgba(28, 65, 120, 0.75) 0%,
+				rgba(14, 38, 75, 0.88) 70%,
+				rgba(8, 22, 45, 0.95) 100%);
+		border-color: rgba(147, 197, 253, 0.4);
+		box-shadow:
+			0 6px 20px rgba(0, 0, 0, 0.6),
+			inset 0 0 14px rgba(56, 113, 184, 0.28),
+			inset 0 1px 2px rgba(255, 255, 255, 0.3);
+	}
+
+	main.night-mode .mobile-sprint-btn:active,
+	main.night-mode .mobile-sprint-btn.mobile-sprint-btn-active {
+		border-color: #60a5fa;
+		box-shadow:
+			0 0 20px rgba(96, 165, 250, 0.9),
+			0 4px 14px rgba(0, 0, 0, 0.6),
+			inset 0 0 14px rgba(96, 165, 250, 0.6);
+	}
+
+	/* Hide mobile sprint button while riding motorcycle */
+	body:has(.ride-mobile-orbit) .mobile-sprint-btn,
+	.ride-mobile-orbit ~ .mobile-controls .mobile-sprint-btn {
+		display: none !important;
+	}
+
 	.welcome {
 		display: flex;
 		width: min(92vw, 360px);
@@ -1687,8 +1801,9 @@ main.night-mode .home-guidance-pill {
 	}
 
 	.home-guidance {
-		transform: translateX(-30%);
-		bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
+		left: 50% !important;
+		transform: translateX(-50%);
+		bottom: max(140px, calc(env(safe-area-inset-bottom) + 130px));
 		padding: 8px 14px;
 		font-size: 11.5px;
 		max-width: 92%;
@@ -4232,3 +4347,24 @@ main.night-mode .guide-btn-secondary:hover {
 		font-size: 12.5px;
 	}
 }
+/* Customizable, reusable people, robots and cars. */
+.appearance-settings{border-block:1px solid #d5ccb4;padding:12px 0;margin:10px 0;color:#234d43}
+.appearance-tabs{display:flex;gap:5px;margin-bottom:12px}
+.appearance-tabs button{flex:1;border:1px solid #c5cfbd;border-radius:9px;padding:7px;background:#fffaf0;color:inherit;font:inherit;cursor:pointer}
+.appearance-tabs button[aria-selected="true"]{background:#235c4d;color:white;border-color:#235c4d}
+.appearance-field{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0;font-size:11px}
+.appearance-field>span{flex:1}
+.appearance-field select{max-width:62%;min-width:0;border:1px solid #c5cfbd;border-radius:7px;padding:6px;background:#fffdf5;color:#234d43;font:inherit}
+.appearance-field input[type="color"]{width:36px;height:30px;padding:2px;border:1px solid #b6c8b7;border-radius:6px;background:white;cursor:pointer}
+.appearance-field input[type="range"]{width:55%;accent-color:#25634f}
+.appearance-colors{display:flex;gap:10px}.appearance-colors>.appearance-field{flex:1}
+.appearance-settings p,.appearance-saved{font-size:10px;line-height:1.9;color:#586d61;display:block}
+.appearance-vehicle-options{padding:0;border:0;margin:0;min-width:0}
+.appearance-vehicle-options:disabled{opacity:.55}
+.appearance-reset{border:1px solid #b9c8b8;background:#e8efe2;border-radius:8px;color:#345749;font:inherit;font-size:10px;padding:7px 10px;margin:8px 0;cursor:pointer}
+.appearance-reset:disabled{opacity:.5;cursor:default}
+.car-auto-selector{display:flex;gap:6px;pointer-events:auto}
+.car-auto-selector button{width:36px;height:36px;border-radius:50%;border:1px solid #bce2f5;background:#213f4edc;color:white;font-weight:bold;cursor:pointer}
+.car-auto-selector button[aria-pressed="true"]{background:#f6cc43;color:#253b3f;box-shadow:0 0 12px #f6cc4377}
+main.night-mode .appearance-settings{color:#e3eadb}
+main.night-mode .appearance-settings p,main.night-mode .appearance-saved{color:#bbcbbc}

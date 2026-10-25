@@ -1,3 +1,6 @@
+import { CarBodywork } from './CarBodywork';
+import { useAppearance } from '../game/appearanceStore';
+import type { CarModel } from '../data/appearance';
 import {useTrafficCollider} from './useTrafficCollider';
 import { windshieldGeometry, windshieldFrameGeometry, roofBoxRibbonGeometry } from '../game/carWindshield';
 import { useMemo,useRef } from 'react';
@@ -11,7 +14,7 @@ import { CarInterior } from './CarInterior';
 import { carBodyShellGeometry, DRIVER_POSITION, DRIVER_SCALE, STEERING_POSITION, STEERING_RADIUS, STEERING_TILT } from '../game/carCabin';
 
 /** Rounded reference-inspired compact car with crystal-clear windshield & detailed cabin interior; front is -Z. */
-export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; size?: number; motion?: { distance: number; steering: number; wheelTravel: number[]; speed?: number } }) {
+export function Car({ color = '#277fbd', size = 1, model='compact', motion }: { color?: string; size?: number; model?:CarModel; motion?: { distance: number; steering: number; wheelTravel: number[]; speed?: number } }) {
 	const wheelSteers=useRef<(Group|null)[]>([]),wheelSpins=useRef<(Group|null)[]>([]),steeringWheel=useRef<Group>(null);
 	useFrame(()=>{
 		if(!motion)return;
@@ -23,7 +26,7 @@ export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; s
 		});
 		if(steeringWheel.current)steeringWheel.current.rotation.z=-motion.steering*STEERING_RATIO;
 	});
-	const lowerBody = useMemo(carBodyShellGeometry, []);
+	const lowerBody = useMemo(()=>carBodyShellGeometry(model), [model]);
 
 	// Upper cabin arched roof cap (covers cabin top from t=0.27 to t=0.69)
 	const roofCap = useMemo(() => roofBoxRibbonGeometry(-0.70, 0.70, 0.27, 0.69, -0.015, 0.075, 16), []);
@@ -76,12 +79,13 @@ export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; s
 	}),[sideWindows]);
 
 	return (
-		<group scale={size} name="cartoon-compact-car">
+		<group scale={size} name="cartoon-compact-car" userData={{model}}>
 			{/* အောက်ပိုင်း ကိုယ်ထည် (Lower Car Body) */}
 			<mesh name="car-body-shell" geometry={lowerBody} castShadow receiveShadow>
 				<meshStandardMaterial color={color} metalness={0.18} roughness={0.32} />
 			</mesh>
 
+			{model==='compact'?<>
 			{/* အပေါ်ခေါင်မိုး (Roof Cap Panel) */}
 			<mesh geometry={roofCap} castShadow receiveShadow>
 				<meshStandardMaterial color={color} metalness={0.18} roughness={0.32} side={DoubleSide} />
@@ -103,7 +107,8 @@ export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; s
 				<meshStandardMaterial color={color} metalness={0.18} roughness={0.32} side={DoubleSide} />
 			</mesh>
 
-			<CarInterior motion={motion}/>
+			</>:<CarBodywork model={model} color={color}/>}
+			<CarInterior motion={motion} model={model}/>
 
 			{/* စတီယာရင်ခွေ (Steering Wheel) */}
 			<group position={STEERING_POSITION}>
@@ -140,6 +145,7 @@ export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; s
 				</mesh>
 			</group>
 
+			{model==='compact'&&<>
 			{/* ======================================================== */}
 			{/* ကားရှေ့ လေကာမှန်အစုံ (FRONT WINDSHIELD GLASS ASSEMBLY) */}
 			{/* ======================================================== */}
@@ -219,11 +225,12 @@ export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; s
 				/>
 			</mesh>
 
+			</>}
 			{/* ဘေးတံခါး၊ မှန်၊ မီးခွက်များနှင့် ဘီးများ (Side Doors, Windows, Lights & Wheels) */}
 			{[-1, 1].map((side) => (
 				<group key={side}>
 					{/* ဘေးပြတင်းပေါက် မှန်ကြည်လင်သား (Clear Side Windows with Black Rubber Trim) */}
-					{sideWindows.map((shape, i) => (
+					{model==='compact'&&sideWindows.map((shape, i) => (
 						<group key={i} position={[side * 0.77, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
 							{/* ဘောင်နက် (Rubber border trim) */}
 							<mesh>
@@ -249,7 +256,7 @@ export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; s
 					))}
 
 					{/* B-Pillar တံခါးခွဲတိုင် (Center Pillar Divider) */}
-					<mesh position={[side * 0.78, 1.58, 0.07]}>
+					<mesh visible={model==='compact'} position={[side * 0.78, 1.58, 0.07]}>
 						<boxGeometry args={[0.022, 0.72, 0.05]} />
 						<meshStandardMaterial color="#152129" roughness={0.6} />
 					</mesh>
@@ -325,7 +332,7 @@ export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; s
 					))}
 
 					{/* ရှေ့မီးကြီးများ (Headlights) */}
-					<mesh position={[side * 0.52, 0.95, -1.55]} scale={[0.17, 0.22, 0.07]}>
+					<mesh visible={model==='compact'} position={[side * 0.52, 0.95, -1.55]} scale={[0.17, 0.22, 0.07]}>
 						<sphereGeometry args={[1, 16, 12]} />
 						<meshStandardMaterial color="#ffe34b" emissive="#ffbd24" emissiveIntensity={0.25} />
 					</mesh>
@@ -350,6 +357,7 @@ export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; s
 }
 
 function GroundedCar({car}:{car:DriveableCar}){
+ const appearance=useAppearance();
  const root=useRef<Group>(null),driver=useRef<Group>(null),motion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0});
  const driving=useRef<DrivingPose>({active:false,wheelAngle:0,interior:true,clutch:false,brake:false,throttle:false});
  useTrafficCollider(root,car.width*car.size,car.depth*car.size);
@@ -366,9 +374,9 @@ function GroundedCar({car}:{car:DriveableCar}){
  });
  return (
    <group ref={root} name={`driveable-${car.id}`} userData={{dynamic:true,carId:car.id}} position={[car.x,0,car.z]}>
-     <Car color={car.color} size={car.size} motion={car}/>
+     <Car color={car.color} size={car.size} model={car.model} motion={car}/>
      <group name="car-driver" ref={driver} visible={false} position={[DRIVER_POSITION[0]*car.size,DRIVER_POSITION[1]*car.size,DRIVER_POSITION[2]*car.size]} scale={DRIVER_SCALE*car.size}>
-       <CartoonCharacter motion={motion} driving={driving}/>
+       <CartoonCharacter appearance={appearance.human} motion={motion} driving={driving}/>
      </group>
    </group>
  );

@@ -1,3 +1,4 @@
+import {AppearanceSettings} from './components/AppearanceSettings';
 import { RideControls } from './components/RideControls';
 import { CarControls } from './components/CarControls';
 import { GuideDialog } from './components/GuideDialog';
@@ -97,7 +98,7 @@ function App() {
   const loading = sceneLoading.blocking || sceneFailed;
   const [rideStatus,setRideStatus]=useState<RideStatus>({riding:false,near:false,kmh:0,notice:'',lives:3,crashed:false});
   const [carStatus,setCarStatus]=useState<CarStatus>({driving:false,near:false,kmh:0,gear:0,rpm:850,clutch:false,notice:'',steering:0,canSummon:false,summonStatus:'idle',first:false});
-  const carUpdate=useCallback((next:CarStatus)=>setCarStatus(old=>old.driving===next.driving&&old.near===next.near&&old.kmh===next.kmh&&old.gear===next.gear&&old.rpm===next.rpm&&old.clutch===next.clutch&&old.steering===next.steering&&old.notice===next.notice&&old.canSummon===next.canSummon&&old.summonStatus===next.summonStatus&&old.first===next.first?old:next),[]);
+  const carUpdate=useCallback((next:CarStatus)=>setCarStatus(old=>old.driving===next.driving&&old.near===next.near&&old.kmh===next.kmh&&old.gear===next.gear&&old.rpm===next.rpm&&old.clutch===next.clutch&&old.steering===next.steering&&old.notice===next.notice&&old.canSummon===next.canSummon&&old.summonStatus===next.summonStatus&&old.first===next.first&&old.transmission===next.transmission&&old.automaticRange===next.automaticRange?old:next),[]);
   const [rideLimit,setRideLimit]=useState(60),[braking,setBraking]=useState(false),[accelerating,setAccelerating]=useState(false),[dismountRequest,setDismountRequest]=useState(0);
   const rideUpdate=useCallback((next:RideStatus)=>setRideStatus(old=>old.riding===next.riding&&old.near===next.near&&old.kmh===next.kmh&&old.notice===next.notice&&old.lives===next.lives&&old.crashed===next.crashed?old:next),[]);
 
@@ -485,6 +486,7 @@ function App() {
             aria-label="အသုံးပြုနည်း လမ်းညွှန်"
           >
             <CharacterPicker value={character} onChange={chooseCharacter} disabled={rideStatus.riding||carStatus.driving}/>
+            <AppearanceSettings kind={character} onKindChange={chooseCharacter} characterLocked={rideStatus.riding||carStatus.driving} carLocked={carStatus.driving}/>
             <RobotLocationPanel
               x={pos.x}
               z={pos.z}

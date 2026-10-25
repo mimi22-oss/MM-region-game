@@ -15,7 +15,6 @@ import { carRide } from '../game/carRide';
  */
 export function CarCallSpotMarker() {
 	const rootRef = useRef<Group>(null);
-	const arrowRef = useRef<Group>(null);
 	const innerSpinRef = useRef<Group>(null);
 	const pulseRef = useRef<Mesh>(null);
 	const pulseMatRef = useRef<MeshBasicMaterial>(null);
@@ -33,15 +32,7 @@ export function CarCallSpotMarker() {
 		}
 		if (!visible) return;
 
-		// 1. Floating 3D Arrow bobbing and rotation
-		if (arrowRef.current) {
-			const time = clock.elapsedTime;
-			const bob = Math.sin(time * 3.2) * 0.25;
-			arrowRef.current.position.y = 2.45 + bob;
-			arrowRef.current.rotation.y = time * 1.5;
-		}
-
-		// 2. Rotating ground dashed ring
+		// 1. Rotating ground dashed ring
 		if (innerSpinRef.current) {
 			innerSpinRef.current.rotation.y += delta * 0.55;
 		}
@@ -71,8 +62,6 @@ export function CarCallSpotMarker() {
 	const isIncoming = carSummonState.status === 'driving';
 	const baseColor = isIncoming ? '#10b981' : '#0284c7';
 	const rimColor = isIncoming ? '#34d399' : '#38bdf8';
-	const arrowColor = isIncoming ? '#34d399' : '#f59e0b';
-	const arrowEmissive = isIncoming ? '#059669' : '#d97706';
 
 	return (
 		<group
@@ -157,47 +146,6 @@ export function CarCallSpotMarker() {
 					side={DoubleSide}
 				/>
 			</mesh>
-
-			{/* ======================================================== */}
-			{/* ၅။ အပေါ်မှ ညွှန်ပြနေသော 3D မြားလေး (Floating Downward 3D Arrow) */}
-			{/* ======================================================== */}
-			<group ref={arrowRef} position={[0, 2.45, 0]}>
-				{/* မြားထိပ်ချွန် (Cone pointing downwards) */}
-				<mesh position={[0, 0, 0]} rotation={[Math.PI, 0, 0]} castShadow>
-					<coneGeometry args={[0.55, 0.95, 16]} />
-					<meshStandardMaterial
-						color={arrowColor}
-						emissive={arrowEmissive}
-						emissiveIntensity={0.65}
-						roughness={0.3}
-						metalness={0.4}
-					/>
-				</mesh>
-
-				{/* မြားတံရိုး (Cylinder shaft above cone) */}
-				<mesh position={[0, 0.8, 0]} castShadow>
-					<cylinderGeometry args={[0.22, 0.22, 0.78, 16]} />
-					<meshStandardMaterial
-						color={arrowColor}
-						emissive={arrowEmissive}
-						emissiveIntensity={0.65}
-						roughness={0.3}
-						metalness={0.4}
-					/>
-				</mesh>
-
-				{/* မြားထိပ်လည်ပင်း အလှကွင်း (Glowing collar ring) */}
-				<mesh position={[0, 0.42, 0]} rotation={[Math.PI / 2, 0, 0]}>
-					<torusGeometry args={[0.54, 0.05, 12, 24]} />
-					<meshBasicMaterial color="#ffffff" />
-				</mesh>
-
-				{/* အပေါ်ထိပ် အလင်းခွေ (Top glowing halo ring) */}
-				<mesh position={[0, 1.3, 0]} rotation={[Math.PI / 2, 0, 0]}>
-					<torusGeometry args={[0.62, 0.04, 12, 32]} />
-					<meshBasicMaterial color={rimColor} />
-				</mesh>
-			</group>
 		</group>
 	);
 }

@@ -1,3 +1,4 @@
+import type {CarModel} from '../data/appearance';
 import { ExtrudeGeometry, Shape, Vector3 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
@@ -10,7 +11,7 @@ export const STEERING_TILT = -.45;
 export const STEERING_RADIUS = .17;
 
 /** Two thin body sides and separate engine/boot compartments leave the cabin empty. */
-export function carBodyShellGeometry() {
+export function carBodyShellGeometry(model:CarModel='compact') {
  const side = new Shape();
  side.moveTo(-1.55, .43); side.lineTo(1.64, .43);
  side.quadraticCurveTo(1.78, 1.15, .76, 1.24);
@@ -27,6 +28,7 @@ export function carBodyShellGeometry() {
   const g = new ExtrudeGeometry(shape, {depth, bevelEnabled:true, bevelSegments:2, steps:1, bevelSize:.025, bevelThickness:.025, curveSegments:16});
   return g.translate(0, 0, offset).rotateY(Math.PI / 2);
  };
+ if(model==='lighttruck'){boot.curves=[];boot.moveTo(-1.55,.43);boot.lineTo(-1.46,.43);boot.lineTo(-1.46,1.18);boot.lineTo(-1.55,1.18);boot.closePath();}
  const parts = [extrude(side, .09, -.745), extrude(side, .09, .655), extrude(hood, 1.40, -.70), extrude(boot, 1.40, -.70)];
  const shell = mergeGeometries(parts, false)!;
  parts.forEach(part => part.dispose());

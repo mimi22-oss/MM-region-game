@@ -1,4 +1,5 @@
-import { type RefObject } from 'react';
+import { useMemo, useEffect, type RefObject } from 'react';
+import { HUMAN_PRESETS, type HumanAppearance } from '../data/appearance';
 import { BufferGeometry, Float32BufferAttribute, SphereGeometry, MeshStandardMaterial, Color, Group, CatmullRomCurve3, Vector3, TubeGeometry } from 'three';
 type P=[number,number,number];
 const material=(color:string,roughness=.65)=>new MeshStandardMaterial({color,roughness});
@@ -80,7 +81,13 @@ const smile=tube(Array.from({length:31},(_,i)=>{const x=(i/30-.5)*.155,y=-.157+.
 const lip=tube(Array.from({length:25},(_,i)=>{const x=(i/24-.5)*.12,y=-.163+.008*(x/.06)**2;return [x,y,faceZ(x,y)-.002] as P}),.0024);
 const eyes=[-1,1].map(side=>({side,white:patch(side),iris:iris(side),top:lid(side,true),bottom:lid(side,false),brow:brow(side)}));
 function Ball({p,s,m}:{p:P;s:P;m:MeshStandardMaterial}){return <mesh geometry={sphere} position={p} scale={s} material={m}/>;}
-export function CartoonFace({leftEye,rightEye}:{leftEye:RefObject<Group|null>;rightEye:RefObject<Group|null>}){
+export function CartoonFace({leftEye,rightEye,appearance=HUMAN_PRESETS.boy}:{leftEye:RefObject<Group|null>;rightEye:RefObject<Group|null>;appearance?:HumanAppearance}){
+ const palette=useMemo(()=>{
+  const target=new Color(appearance.skin),base=new Color('#edba95');
+  return {skin:material(appearance.skin),inner:material(target.clone().multiplyScalar(.78).getStyle()),crease:material(target.clone().multiplyScalar(.52).getStyle()),browMat:material(appearance.hairColor,.85),skinVertex:new MeshStandardMaterial({vertexColors:true,roughness:.72,color:new Color(target.r/base.r,target.g/base.g,target.b/base.b)})};
+ },[appearance.skin,appearance.hairColor]);
+ useEffect(()=>()=>Object.values(palette).forEach(m=>m.dispose()),[palette]);
+ const {skin,inner,crease,browMat,skinVertex}=palette;
  return <group name="sculpted-cartoon-face" dispose={null}>
   <mesh geometry={head} material={skinVertex}/>
   {eyes.map(e=><group key={e.side}>
@@ -99,5 +106,7 @@ export function CartoonFace({leftEye,rightEye}:{leftEye:RefObject<Group|null>;ri
    <Ball p={[e.side*.079,-.144,faceZ(e.side*.079,-.144)-.0008]} s={[.003,.0025,.001]} m={crease}/>
   </group>)}
   <mesh geometry={smile} material={crease}/>
+  {appearance.face==='mature'&&[-1,1].map(side=><group key={side} position={[side*.105,-.057,-.211]}><mesh rotation={[0,0,side*.10]} material={crease}><boxGeometry args={[.067,.0025,.002]}/></mesh><mesh position={[0,-.009,0]} material={crease}><boxGeometry args={[.047,.002,.002]}/></mesh></group>)}
+  {appearance.preset==='grandmother'&&<group position={[0,.014,-.242]}>{[-1,1].map(side=><mesh key={side} position={[side*.105,0,0]}><torusGeometry args={[.073,.004,6,24]}/><meshStandardMaterial color="#665c58"/></mesh>)}<mesh><boxGeometry args={[.065,.006,.006]}/><meshStandardMaterial color="#665c58"/></mesh></group>}
  </group>;
 }

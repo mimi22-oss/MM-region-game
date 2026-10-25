@@ -1,3 +1,4 @@
+import type {CarModel,CarAppearance} from '../data/appearance';
 import { useRef } from 'react';
 import { BoxGeometry, CylinderGeometry, Group, MeshStandardMaterial, type BufferGeometry } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -49,6 +50,7 @@ for(const side of [-1,1]) {
  box('seat',[.22,.16,.10],[x,1.68,.29]);
  box('metal',[.035,.045,.025],[x-side*.19,1.01,.16]); // belt buckle
 }
+const rearStart=Object.fromEntries(Object.entries(parts).map(([key,value])=>[key,value.length]));
 box('seat',[1.22,.20,.42],[0,.88,.72]);
 box('insert',[1.08,.022,.33],[0,.989,.72]);
 box('seat',[1.22,.58,.12],[0,1.28,.90],.14);
@@ -56,14 +58,13 @@ for(const x of [-.32,.32]) {
  box('insert',[.39,.45,.022],[x,1.28,.83],.14);
  box('seat',[.22,.16,.10],[x,1.68,.96]);
 }
-const cabin = Object.entries(parts).map(([finish, geometries]) => {
- const geometry=mergeGeometries(geometries,false)!;
- geometries.forEach(part=>part.dispose());
- return {finish, geometry, material:new MeshStandardMaterial({color:colors[finish as Finish],roughness:finish==='metal'?.4:.85,metalness:finish==='metal'?.55:0})};
+const cabin = Object.entries(parts).flatMap(([finish, geometries]) => {
+ const result=[geometries.slice(0,rearStart[finish]),geometries.slice(rearStart[finish])].flatMap((list,rear)=>list.length?[{finish:finish+rear,rear:!!rear,geometry:mergeGeometries(list,false)!,material:new MeshStandardMaterial({color:colors[finish as Finish],roughness:finish==='metal'?.4:.85,metalness:finish==='metal'?.55:0})}]:[]);
+ geometries.forEach(part=>part.dispose());return result;
 });
 
 /** Static cabin details are batched by material and shared between every car. */
-export function CarInterior({motion}:{motion?:{speed?:number}}) {
+export function CarInterior({motion,model='compact'}:{motion?:{speed?:number;transmission?:CarAppearance['transmission']};model?:CarModel}) {
  const pedals=useRef<(Group|null)[]>([]),lever=useRef<Group>(null),needle=useRef<Group>(null);
  useFrame(()=>{
   const occupied=!!motion&&currentCar()===motion;
@@ -73,8 +74,8 @@ export function CarInterior({motion}:{motion?:{speed?:number}}) {
   if(needle.current)needle.current.rotation.z=2.2-Math.min(1,Math.abs(motion?.speed??0)*3.6/120)*4.4;
  });
  return <group name="car-cabin">
-  {cabin.map(part=><mesh key={part.finish} name={`cabin-${part.finish}`} geometry={part.geometry} material={part.material} dispose={null} receiveShadow/>)}
-  {[.12,.28,.43].map((x,i)=><group name={['clutch-pedal','brake-pedal','accelerator-pedal'][i]} key={x} ref={node=>{pedals.current[i]=node;}} position={[x,.79,-.64]}>
+  {cabin.filter(part=>model!=='lighttruck'||!part.rear).map(part=><mesh key={part.finish} name={`cabin-${part.finish}`} geometry={part.geometry} material={part.material} dispose={null} receiveShadow/>)}
+  {[.12,.28,.43].map((x,i)=><group visible={i!==0||motion?.transmission!=='automatic'} name={['clutch-pedal','brake-pedal','accelerator-pedal'][i]} key={x} ref={node=>{pedals.current[i]=node;}} position={[x,.79,-.64]}>
    <mesh position={[0,.035,-.012]}><boxGeometry args={[.012,.13,.018]}/><meshStandardMaterial color="#92959b"/></mesh>
    <mesh rotation={[-.30,0,0]}><boxGeometry args={[i===2?.055:.075,.10,.025]}/><meshStandardMaterial color="#15191d"/></mesh>
   </group>)}
