@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react';
+import {CandleRow,PorchCandles} from '../../FestivalAnchor';
 import type { KanbaleBuildingData } from '../../../data/villages/kanbale';
 import { Box } from '../../Primitives';
 
@@ -76,6 +77,8 @@ export const KanbaleBuilding = memo(function KanbaleBuilding({
       {/* ၀။ ခြံစည်းရိုး (Compound Fence) */}
       {/* ======================================================== */}
       <group name="compound-fence">
+        <CandleRow length={fenceD} x={-fenceW/2} y={1.3} alongZ/>
+        <CandleRow length={fenceD} x={fenceW/2} y={1.3} alongZ/>
         {/* နောက်ဘက် ခြံစည်းရိုး (Rear Fence) */}
         <Box
           position={[0, 0.65, -fenceD / 2]}
@@ -120,6 +123,7 @@ export const KanbaleBuilding = memo(function KanbaleBuilding({
 
       {/* ======================================================== */}
       {/* ၁။ အောက်ခြေ အုတ်မြစ်ခုံ (Foundation Plinth) */}
+      <PorchCandles width={balconyWidth} front={front}/>
       {/* ======================================================== */}
       <Box
         position={[0, 0.15, 0]}

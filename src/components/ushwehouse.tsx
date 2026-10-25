@@ -25,6 +25,8 @@ export function UShweHouse() {
 
 	return (
 		<group position={[h.x, 0, h.z]} rotation={[0, rot, 0]} name="u-shwe-house-and-snack-shop">
+            <PorchCandles width={h.width} front={front} y={.02}/>
+            <FestivalAnchor items={[{x:2.0,y:.75,z:6.05,holder:true}]}/>
 			{/* ======================================================== */}
 			{/* ၁။ ပင်မ ၂ ထပ်အိမ်ကြီး (Main 2-Storey House Building: 10m x 9m) */}
 			{/* ======================================================== */}
@@ -433,3 +435,4 @@ export function UShweHouse() {
 		</group>
 	);
 }
+import {FestivalAnchor,PorchCandles} from './FestivalAnchor';

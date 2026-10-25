@@ -27,6 +27,24 @@ export function FarmhouseBuilding() {
 
 	return (
 		<group position={[h.x, 0, h.z]} rotation={[0, rot, 0]} name="character-farmhouse">
+            <PorchCandles width={3.6} front={5} y={.23}/>
+            <FestivalAnchor items={[
+                {x: 0, y: .88, z: 0, holder: true},
+                {x: .65, y: .88, z: 0, holder: true},
+                {x: -.65, y: .88, z: 0, holder: true},
+                {x: 2.6, y: .42, z: -3.5, holder: true},
+                {x: 10.0, y: .88, z: 0, holder: true},
+                {x: 11.0, y: .88, z: 0, holder: true},
+                {x: -1.6, y: .23, z: 5.9, holder: true},
+                {x: 1.6, y: .23, z: 5.9, holder: true},
+                {x: -1.2, y: .12, z: 6.8, holder: true},
+                {x: 1.2, y: .12, z: 6.8, holder: true}
+            ]}/>
+            <pointLight position={[0, 1.8, 0]} color="#ffa347" intensity={2.8} distance={15} decay={1.5}/>
+            <pointLight position={[0, 1.6, 5.9]} color="#ffa347" intensity={3.2} distance={15} decay={1.5}/>
+            <pointLight position={[10.5, 1.8, 0]} color="#ffa347" intensity={2.4} distance={13} decay={1.5}/>
+            <CandleRow length={7.34} x={-5.35} z={7.5} y={1.865}/>
+            <CandleRow length={16.34} x={9.85} z={7.5} y={1.865}/>
 			{/* ======================================================== */}
 			{/* ၀။ ခြံစည်းရိုး သံဇကာများနှင့် ခြံဝင်း (Compound Fences) */}
 			{/* မီးဖိုဆောင် အဖီသည် lx=15.0 တွင်ရှိပြီး ဘယ်ဘက်သံဇကာကို lx=18.0 တွင်ထားရှိ၍ လွတ်အောင် ပြုလုပ်ထားပါသည် */}
@@ -891,3 +909,4 @@ export function Farmhouse() {
 		</>
 	);
 }
+import {CandleRow,FestivalAnchor,PorchCandles} from './FestivalAnchor';

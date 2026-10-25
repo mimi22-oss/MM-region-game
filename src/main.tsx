@@ -12,7 +12,7 @@ import {
   CHARACTER_STORAGE_KEY,
   type CharacterKind,
 } from "./components/CharacterPicker";
-import { homeGuidance, HOME_WELCOME_GUIDANCE } from "./game/homeAccess";
+import { homeGuidance } from "./game/homeAccess";
 import { FrameBudget } from "./components/FrameBudget";
 import { mobileQuality } from "./game/sceneBudget";
 import { MobileControls } from "./components/MobileControls";
@@ -227,23 +227,25 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [currentLoc]);
 
-  const activeGuidance = useMemo(
+  const rawGuidance = useMemo(
     () => homeGuidance(pos.x, pos.z),
     [pos.x, pos.z],
   );
-  const [welcomeGuidanceHidden, setWelcomeGuidanceHidden] = useState(false);
+  const [displayedGuidance, setDisplayedGuidance] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
-    if (activeGuidance === HOME_WELCOME_GUIDANCE) {
-      setWelcomeGuidanceHidden(false);
-      const timer = window.setTimeout(() => {
-        setWelcomeGuidanceHidden(true);
-      }, 3000);
-      return () => window.clearTimeout(timer);
-    } else {
-      setWelcomeGuidanceHidden(false);
+    if (!rawGuidance) {
+      setDisplayedGuidance(null);
+      return;
     }
-  }, [activeGuidance]);
+    setDisplayedGuidance(rawGuidance);
+    const timer = window.setTimeout(() => {
+      setDisplayedGuidance(null);
+    }, 2000);
+    return () => window.clearTimeout(timer);
+  }, [rawGuidance]);
 
   const handleSelectLocation = useCallback((id: string) => {
     const dest = MAP_DESTINATIONS.find((d) => d.id === id);
@@ -457,16 +459,12 @@ function App() {
         />
       )}
 
-      {!mapOpen &&
-        activeGuidance &&
-        !(
-          activeGuidance === HOME_WELCOME_GUIDANCE && welcomeGuidanceHidden
-        ) && (
-          <div className="home-guidance" role="status" aria-live="polite">
-            <span className="home-guidance-pill">🏡 အိမ်လမ်းညွှန်</span>
-            <span className="home-guidance-text">{activeGuidance}</span>
-          </div>
-        )}
+      {!mapOpen && displayedGuidance && (
+        <div className="home-guidance" role="status" aria-live="polite">
+          <span className="home-guidance-pill">🏡 အိမ်လမ်းညွှန်</span>
+          <span className="home-guidance-text">{displayedGuidance}</span>
+        </div>
+      )}
       <header>
         <h1 style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>
           MM Region Game - မြန်မာဒေသ 3D ဂိမ်း

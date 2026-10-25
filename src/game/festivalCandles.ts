@@ -1,0 +1,52 @@
+import {Group,InstancedMesh,Matrix4,Vector3,type Object3D,type BufferGeometry,type Material} from 'three';
+import {candleGeometry,candleHolderGeometry,candlePoolGeometry,flameGeometry,candleGlowGeometry,candleSolidMaterial,candleFlameMaterial,candleGlowMaterial,CANDLE_WICK_TOP,HOLDER_CANDLE_BASE,HOLDER_CANDLE_SCALE} from './candleModel.ts';
+type Item={x:number;y:number;z:number;holder?:boolean};
+const noRaycast=()=>{};
+/** One batch per part and 64m tile; no React trees or per-flame frame callbacks. */
+export function decorateFestivalRegion(root:Group){
+ if(root.getObjectByName('festival-candles'))return;
+ root.updateWorldMatrix(true,true);
+ const inverse=root.matrixWorld.clone().invert(),tiles=new Map<string,Item[]>(),point=new Vector3(),transform=new Matrix4();
+ root.traverse(object=>{
+  const items=object.userData.festivalCandles as Item[]|undefined;if(!items)return;
+  transform.multiplyMatrices(inverse,object.matrixWorld);
+  for(const item of items){point.set(item.x,item.y,item.z).applyMatrix4(transform);
+   const key=`${Math.floor(point.x/64)},${Math.floor(point.z/64)}`;
+   let tile=tiles.get(key);if(!tile){tile=[];tiles.set(key,tile);}
+   tile.push({x:point.x,y:point.y,z:point.z,holder:item.holder});
+  }
+ });
+ const festival=new Group();festival.name='festival-candles';festival.userData.dynamic=true;
+ const matrix=new Matrix4();
+ for(const [key,items] of tiles){
+  const tile=new Group();tile.name=`candle-tile-${key}`;
+  const [tx,tz]=key.split(',').map(Number);tile.position.set(tx*64,0,tz*64);
+  const local=items.map(p=>({...p,x:p.x-tx*64,z:p.z-tz*64})),holders=local.filter(p=>p.holder);
+  tile.userData.festivalTile=true;tile.userData.flamePositions=items.map(p=>[p.x,p.y+(p.holder?HOLDER_CANDLE_BASE+CANDLE_WICK_TOP*HOLDER_CANDLE_SCALE:CANDLE_WICK_TOP)+.06,p.z]);
+  const batch=(name:string,geometry:BufferGeometry,material:Material,points:Item[],height:(p:Item)=>number,scaleY:(p:Item)=>number=()=>1)=>{
+   if(!points.length)return;
+   const mesh=new InstancedMesh(geometry,material,points.length);mesh.name=name;mesh.raycast=noRaycast;
+   points.forEach((p,i)=>{matrix.makeScale(1,scaleY(p),1);matrix.setPosition(p.x,p.y+height(p),p.z);mesh.setMatrixAt(i,matrix);});
+   mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();if(mesh.boundingSphere)mesh.boundingSphere.radius+=.06;
+   tile.add(mesh);
+  };
+  batch('festival-wax',candleGeometry,candleSolidMaterial,local,p=>p.holder?HOLDER_CANDLE_BASE:0,p=>p.holder?HOLDER_CANDLE_SCALE:1);
+  batch('festival-holders',candleHolderGeometry,candleSolidMaterial,holders,()=>0);
+  batch('festival-pools',candlePoolGeometry,candleSolidMaterial,holders,()=>0);
+  const tip=(p:Item)=>p.holder?HOLDER_CANDLE_BASE+CANDLE_WICK_TOP*HOLDER_CANDLE_SCALE:CANDLE_WICK_TOP;
+  batch('festival-flames',flameGeometry,candleFlameMaterial,local,tip);
+  batch('festival-glows',candleGlowGeometry,candleGlowMaterial,local,p=>tip(p)+.065);
+  festival.add(tile);
+ }
+ root.add(festival);
+}
+
+/** Distant candles keep their flames and radiant glows; nearby cups and wax retain full detail. */
+export function updateFestivalVisibility(root:Object3D,x:number,z:number,mobile=false){
+ const festival=root.children.find(child=>child.name==='festival-candles');if(!festival)return;
+ for(const tile of festival.children){
+  const distance=Math.hypot(tile.position.x+32-x,tile.position.z+32-z);
+  tile.visible=distance<(mobile?220:400);
+  for(const child of tile.children)child.visible=child.name==='festival-flames'||child.name==='festival-glows'||distance<(mobile?80:130);
+ }
+}

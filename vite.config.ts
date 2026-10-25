@@ -43,6 +43,7 @@ export default defineConfig({
 		legalComments: 'none',
 	},
 	build: {
+		rollupOptions: { input: { main: 'index.html', candles: 'candle-preview.html' } },
 		sourcemap: false,
 		minify: 'esbuild',
 	},

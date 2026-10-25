@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react';
+import {CandleRow,PorchCandles} from '../../FestivalAnchor';
 import type { NatmyaungBuildingData } from '../../../data/villages/natmyaung';
 import { Box } from '../../Primitives';
 
@@ -81,6 +82,8 @@ export const NatmyaungBuilding = memo(function NatmyaungBuilding({
       {/* ======================================================== */}
       {showFence && (
         <group name="compound-fence">
+          <CandleRow length={fenceD} x={-fenceW/2} y={1.3} alongZ/>
+          <CandleRow length={fenceD} x={fenceW/2} y={1.3} alongZ/>
           {/* နောက်ဘက် ခြံစည်းရိုး */}
           <Box
             position={[0, 0.65, -fenceD / 2]}
@@ -126,6 +129,7 @@ export const NatmyaungBuilding = memo(function NatmyaungBuilding({
 
       {/* ======================================================== */}
       {/* ၁။ အောက်ခြေ အုတ်မြစ်ခုံ (Foundation Plinth) */}
+      <PorchCandles width={Math.min(w*.65,4.5)} front={front} y={building.type==='house'?.355:.02}/>
       {/* ======================================================== */}
       <Box
         position={[0, 0.15, 0]}

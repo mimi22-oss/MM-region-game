@@ -1,6 +1,7 @@
-import {useMemo,useEffect} from 'react';
+import {useMemo,useEffect,useRef,type RefObject} from 'react';
+import {useFrame} from '@react-three/fiber';
 import type {HumanAppearance} from '../data/appearance';
-import { BufferGeometry,Float32BufferAttribute,Vector3,CatmullRomCurve3,MeshStandardMaterial,CanvasTexture,SRGBColorSpace } from 'three';
+import { BufferGeometry,Float32BufferAttribute,Vector3,CatmullRomCurve3,MeshStandardMaterial,CanvasTexture,SRGBColorSpace,SphereGeometry,DynamicDrawUsage } from 'three';
 type P=[number,number,number];
 // Fine directional strands are procedural surface detail, not individual hair meshes.
 const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;
@@ -63,8 +64,43 @@ const locks=[
  lock([[.11,.27,.12],[.225,.223,.104],[.272,.097,.09],[.29,.083,.031]],.047,.021),
  lock([[-.17,.25,.095],[-.253,.167,.11],[-.268,.04,.086],[-.287,.081,.024]],.036,.019),
 ];
-export function CartoonHair({style='swept',color='#302b2b'}:{style?:HumanAppearance['hair'];color?:string}){
+type HairMotion=RefObject<{speed:number;distance:number}>;
+/** Keep the scalp attached; only the hanging lengths bend, with a little delay at the tips. */
+function LongHair({material,motion}:{material:MeshStandardMaterial;motion?:HairMotion}){
+ const lengths=useMemo(()=>[-1,1].map(side=>{
+  const geometry=new SphereGeometry(1,16,12);
+  geometry.scale(.085,.35,.17);geometry.translate(side*.225,-.15,.09);
+  geometry.computeBoundingSphere();geometry.boundingSphere!.radius+=.04;
+  (geometry.attributes.position as Float32BufferAttribute).setUsage(DynamicDrawUsage);
+  return {side,geometry,rest:new Float32Array(geometry.attributes.position.array),sway:0,drift:0};
+ }),[]);
+ const animation=useRef({time:0,activity:0});
+ useEffect(()=>()=>lengths.forEach(part=>part.geometry.dispose()),[lengths]);
+ useFrame((_,delta)=>{
+  const dt=Math.min(delta,.05),a=animation.current;
+  a.time+=dt;
+  a.activity+=(Math.min(1,Math.abs(motion?.current.speed??0)/2)-a.activity)*(1-Math.exp(-dt*5));
+  const stride=(motion?.current.distance??0)*4.9;
+  for(const part of lengths){
+   const sway=Math.sin(stride*.5+part.side*.55)*.025*a.activity+Math.sin(a.time*1.4+part.side*.6)*.002;
+   const drift=(.014+Math.sin(stride-part.side*.7)*.010)*a.activity;
+   const damping=1-Math.exp(-dt*7);
+   part.sway+=(sway-part.sway)*damping;part.drift+=(drift-part.drift)*damping;
+   const positions=part.geometry.attributes.position;
+   for(let i=0;i<positions.count;i++){
+    const x=part.rest[i*3],y=part.rest[i*3+1],z=part.rest[i*3+2];
+    const t=Math.max(0,Math.min(1,(.12-y)/.62)),bend=t*t;
+    const ripple=Math.sin(a.time*3.2-t*2.5+part.side*.8)*.004*a.activity;
+    positions.setXYZ(i,x+(part.sway+ripple)*bend,y,z+part.drift*bend);
+   }
+   positions.needsUpdate=true;
+   part.geometry.computeVertexNormals();
+  }
+ });
+ return <group name="soft-long-hair">{lengths.map(part=><mesh key={part.side} geometry={part.geometry} material={material}/>)}</group>;
+}
+export function CartoonHair({style='swept',color='#302b2b',motion}:{style?:HumanAppearance['hair'];color?:string;motion?:HairMotion}){
  const custom=useMemo(()=>new MeshStandardMaterial({color,roughness:.6}),[color]);
  useEffect(()=>()=>custom.dispose(),[custom]);
  const strand=color==='#302b2b'?hair:custom,root=color==='#302b2b'?rootMat:custom;
- return <group name="swept-layered-hair" dispose={null}><mesh geometry={cap} material={root}/>{style!=='swept'&&[-1,1].map(side=><mesh key={side} position={[side*.225,style==='long'?-.15:-.015,.09]} scale={[.085,style==='long'?.35:.18,.17]} material={strand}><sphereGeometry args={[1,16,12]}/></mesh>)}{style==='bun'&&<mesh position={[0,.20,.25]} scale={[.14,.13,.12]} material={strand}><sphereGeometry args={[1,16,12]}/></mesh>}{locks.filter((_,i)=>style==='swept'?![5,7,9,10].includes(i):i<3).map((g,i)=><mesh key={i} geometry={g} material={strand}/>)}</group>}
+ return <group name="swept-layered-hair" dispose={null}><mesh geometry={cap} material={root}/>{style==='long'?<LongHair material={strand} motion={motion}/>:style!=='swept'&&[-1,1].map(side=><mesh key={side} position={[side*.225,-.015,.09]} scale={[.085,.18,.17]} material={strand}><sphereGeometry args={[1,16,12]}/></mesh>)}{style==='bun'&&<mesh position={[0,.20,.25]} scale={[.14,.13,.12]} material={strand}><sphereGeometry args={[1,16,12]}/></mesh>}{locks.filter((_,i)=>style==='swept'?![5,7,9,10].includes(i):i<3).map((g,i)=><mesh key={i} geometry={g} material={strand}/>)}</group>}

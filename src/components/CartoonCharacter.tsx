@@ -314,7 +314,7 @@ function CharacterBody({ motion, riding=false, driving }: { motion: RefObject<Ch
 			<Ellipsoid position={[0, 1.273, .004]} scale={[.077, .111, .072]} material={materials.skin} />
 			{driving?<><DrivingArm side={-1} pose={driving}/><DrivingArm side={1} pose={driving}/></>:riding?<RidingArms/>:<><Arm side={-1} innerRef={leftArm}/><Arm side={1} innerRef={rightArm}/></>}
 			<group ref={headGroup} position={[0, 1.565, 0]}>
-				<group scale={[appearance.face==='round'?1.09:appearance.face==='mature'?.96:1,appearance.face==='mature'?1.02:1,1]}><CartoonFace leftEye={leftEye} rightEye={rightEye} appearance={appearance}/><CartoonHair style={appearance.hair} color={appearance.hairColor}/></group>
+				<group scale={[appearance.face==='round'?1.09:appearance.face==='mature'?.96:1,appearance.face==='mature'?1.02:1,1]}><CartoonFace leftEye={leftEye} rightEye={rightEye} appearance={appearance}/><CartoonHair style={appearance.hair} color={appearance.hairColor} motion={riding||driving?undefined:motion}/></group>
 			</group>
 		</group>
 	</group>;

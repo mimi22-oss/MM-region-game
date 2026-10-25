@@ -1,4 +1,5 @@
 import { HomeGate } from './HomeGate';
+import {CandleRow,PorchCandles} from './FestivalAnchor';
 import { mobileQuality } from '../game/sceneBudget';
 import { angle, ward, type House as HouseData } from '../data/ward';
 import { Box } from './Primitives';
@@ -14,9 +15,10 @@ export function houseFenceBounds(h:HouseData){
  return {sideHalf,backHalf,frontHalf};
 }
 export function WireMeshSegment({length}:{length:number}){
- if(mobileQuality)return <group><Box position={[0,1.45,0]} size={[length,.06,.06]} color="#68767a"/>{[-1,1].map(side=><Box key={side} position={[side*length/2,.78,0]} size={[.1,1.56,.1]} color="#566366"/>)}</group>;
+ if(mobileQuality)return <group><CandleRow length={length}/><Box position={[0,1.45,0]} size={[length,.06,.06]} color="#68767a"/>{[-1,1].map(side=><Box key={side} position={[side*length/2,.78,0]} size={[.1,1.56,.1]} color="#566366"/>)}</group>;
  const meshCount=Math.max(6,Math.round(length/1.2));
  return <group>
+  <CandleRow length={length}/>
   <Box position={[0,1.45,0]} size={[length,0.05,0.05]} color="#68767a"/>
   <Box position={[0,0.8,0]} size={[length,0.035,0.035]} color="#7a898d"/>
   <Box position={[0,0.16,0]} size={[length,0.05,0.05]} color="#68767a"/>
@@ -35,9 +37,10 @@ function BlueSheetSection({startX,endX}:{startX:number;endX:number}){
  const length=endX-startX;
  if(length<=0.2)return null;
  const centerX=(startX+endX)/2;
- if(mobileQuality)return <Box position={[centerX,.915,0]} size={[length,1.83,.06]} color="#2563a6"/>;
+ if(mobileQuality)return <><CandleRow length={length} x={centerX} y={1.83}/><Box position={[centerX,.915,0]} size={[length,1.83,.06]} color="#2563a6"/></>;
  const ribCount=Math.max(2,Math.round(length/0.85));
  return <group>
+  <CandleRow length={length} x={centerX} y={1.865}/>
   <mesh position={[centerX,0.915,0]} castShadow receiveShadow>
    <boxGeometry args={[length,1.83,0.06]}/>
    <meshStandardMaterial color="#2563a6" metalness={0.35} roughness={0.45}/>
@@ -100,6 +103,7 @@ export function House({h}:{h:HouseData}){
  const rot=houseVisualRotation(h);
  return <>
   <group position={[h.x,0,h.z]} rotation={[0,rot,0]}>
+   <PorchCandles width={balconyWidth} front={front}/>
    {/* Enclosed ground and upper storeys, separated by a visible floor band. */}
    <Box position={[0,0.15,0]} size={[h.width+0.3,0.3,h.depth+0.3]} color="#aaa18d"/>
    <Box position={[0,1.8,0]} size={[h.width,3,h.depth]} color="#d6cbb6"/>

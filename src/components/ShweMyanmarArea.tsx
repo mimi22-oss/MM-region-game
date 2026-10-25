@@ -358,6 +358,7 @@ export function ShweMyanmarArea() {
 				{/* လူနေအိမ်များ ၅ လုံး (Residential Myanmar Houses) */}
 				{res.houses.map((house) => (
 					<group key={house.id} position={[house.x, 0, house.z]} rotation={[0, house.rotation, 0]}>
+                        <PorchCandles width={house.width*.7} front={house.depth/2} y={house.height*.4+.06}/>
 						{/* အောက်ခံခုံ (Foundation Base) */}
 						<Block y={0.15} w={house.width + 0.8} h={0.3} d={house.depth + 0.8} color="#bfae95" />
 						{/* အိမ်ကိုယ်ထည် (House Body) */}
@@ -396,3 +397,4 @@ export function ShweMyanmarArea() {
 		</group>
 	);
 }
+import {PorchCandles} from './FestivalAnchor';

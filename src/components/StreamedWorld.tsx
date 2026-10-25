@@ -1,4 +1,5 @@
 import { CarBots } from './CarBots';
+import {decorateFestivalRegion,updateFestivalVisibility} from '../game/festivalCandles';
 import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect, useSyncExternalStore, memo, type ComponentType } from 'react';
 import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import { BoxGeometry, MeshLambertMaterial, InstancedMesh, Matrix4, Quaternion, Vector3, Color, Group, type Object3D } from 'three';
@@ -47,6 +48,7 @@ const RegionBuilder = memo(function RegionBuilder({ id, Scene, live = false, act
   if (sent.current) return;
   sent.current = true;
   const root = live ? host : snapshotRegion(host);
+  decorateFestivalRegion(root);
   root.name = `detail-${id}`;
   onBuilt(id, root);
  }, [id, host, live, onBuilt]);
@@ -151,6 +153,7 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
   elapsed.current += dt;
   if (elapsed.current < .2) return;
   elapsed.current = 0;
+  for(const id of active){const root=cache.current.get(id)?.root;if(root)updateFestivalVisibility(root,focus.x,focus.z,mobileQuality);}
   const next = selectRegions(bounds, focus.x, focus.z, camera.position.y, active, mobileQuality);
   // No heavy tree replacement remains: switching cached regions is safe in motion.
   if (next.join() !== active.join()) setActive(next);

@@ -5,10 +5,14 @@ import { StaticBatch } from './StaticBatch';
 import { ward } from '../data/ward';
 import { Box } from './Primitives';
 import { NightEnvironment } from './NightEnvironment';
+import {CandleAnimation} from './Candle';
+import {FestivalLighting} from './FestivalLighting';
 
 export const Town = memo(function Town({ night = false, ...streaming }: { night?: boolean } & StreamedWorldProps) {
 	return (
 		<>
+            <CandleAnimation/>
+            <FestivalLighting night={night}/>
 			{night ? (
 				<>
 					{/* ညချမ်း ကောင်းကင်နှင့် မြူခိုး (Midnight Blue Atmosphere) */}
