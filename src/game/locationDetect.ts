@@ -1,4 +1,6 @@
 import { ward, angle, toWorld } from "../data/ward.ts";
+import { isPointInsideKanbale } from "../data/villages/kanbale/index.ts";
+import { isPointInsideNatmyaung } from "../data/villages/natmyaung/index.ts";
 
 const cosA = Math.cos(angle);
 const sinA = Math.sin(angle);
@@ -37,6 +39,57 @@ export const MAP_DESTINATIONS: MapDestination[] = [
     yaw: 0,
     pitch: -0.14,
     distance: 8,
+  },
+  {
+    id: "kanbale",
+    label: "ကံပုလဲရွာ",
+    title: "ကံပုလဲရွာ · ကလေးမြို့နယ်",
+    subtitle: "ကလေးမြို့နယ် · မြို့သာရပ်ကွက် အရှေ့တောင်ဘက် · ကံပုလဲရွာ စံပြစိုက်ခင်းအိမ်",
+    x: 458.67,
+    z: -464.24,
+    yaw: -0.946,
+    pitch: -0.16,
+    distance: 14,
+  },
+  {
+    id: "shwe-myanmar-fuel",
+    label: "ရွှေမြန်မာ စက်သုံးဆီ",
+    title: "ရွှေမြန်မာ စက်သုံးဆီဆိုင် · မြို့သာရပ်ကွက်",
+    subtitle: "ရွှေမြန်မာ စက်သုံးဆီဆိုင် · AH1 အရှေ့ဘက် · မြို့သာ နယ်မြေ (၅) · ကလေးမြို့",
+    ...toWorld(5.926, -258.972),
+    yaw: -0.708,
+    pitch: -0.15,
+    distance: 10,
+  },
+  {
+    id: "myothar-rice-mill",
+    label: "ဆန်စက်ရုံဝင်း",
+    title: "ဆန်စက်ရုံဝင်း · မြို့သာရပ်ကွက်",
+    subtitle: "ဆန်စက်ရုံဝင်းနှင့် စပါးလှန်းပြင် · AH1 အနောက်ဘက် · မြို့သာ နယ်မြေ (၅) · ကလေးမြို့",
+    ...toWorld(-5.675, -238.528),
+    yaw: 2.268,
+    pitch: -0.15,
+    distance: 10,
+  },
+  {
+    id: "myothar-vacant-lot",
+    label: "မြေကွက်လပ်",
+    title: "မြေကွက်လပ် (ဝိုင်းအလွတ်မြေ) · မြို့သာရပ်ကွက်",
+    subtitle: "ဝိုင်းအလွတ်မြေ · AH1 အရှေ့ဘက် · မြို့သာ နယ်မြေ (၅) · ကလေးမြို့",
+    ...toWorld(4.377, -241.137),
+    yaw: -0.494,
+    pitch: -0.15,
+    distance: 10,
+  },
+  {
+    id: "myothar-residential",
+    label: "လူနေရပ်ကွက်",
+    title: "လူနေရပ်ကွက်နှင့် ဆိုင်များ · မြို့သာရပ်ကွက်",
+    subtitle: "လူနေအိမ်များနှင့် သိန်းထိုက်စံ ဆောက်လုပ်ရေးပစ္စည်းဆိုင် · AH1 အနောက်ဘက် · မြို့သာ နယ်မြေ (၅) · ကလေးမြို့",
+    ...toWorld(-6.836, -261.719),
+    yaw: 2.17,
+    pitch: -0.15,
+    distance: 10,
   },
   {
     id: "tharsi",
@@ -139,6 +192,16 @@ export const MAP_DESTINATIONS: MapDestination[] = [
     pitch: -0.16,
     distance: 24,
   },
+  {
+    id: "natmyaung",
+    label: "နတ်မြောင်းရွာ",
+    title: "နတ်မြောင်းရွာ · ကလေးမြို့နယ်",
+    subtitle: "ကြာအင်းရွာနှင့် ဝေပုလ္လတောင်ကြား · AH1 အာရှလမ်းမကြီး · ကလေးမြို့",
+    ...toWorld(0, 4220),
+    yaw: Math.PI / 4,
+    pitch: -0.18,
+    distance: 18,
+  },
 ];
 
 export type DetectedLocation = {
@@ -156,13 +219,49 @@ export type DetectedLocation = {
 export function detectLocation(x: number, z: number): DetectedLocation {
   const { u, v } = toLocalUV(x, z);
 
+  // ၀။ ကံပုလဲရွာ (Kanbale Village) — မြို့သာရပ်ကွက် နယ်မြေ (၅) အရှေ့တောင်ဘက်
+  if (isPointInsideKanbale(x, z) || (u >= 170 && u <= 2150 && v >= -340 && v <= 630)) {
+    const isFarmhouse = Math.hypot(x - 458.67, z - (-464.24)) < 30;
+    return {
+      id: "kanbale",
+      label: "ကံပုလဲရွာ",
+      title: "ကံပုလဲရွာ · ကလေးမြို့နယ်",
+      subtitle: "ကလေးမြို့နယ် · မြို့သာရပ်ကွက် အရှေ့တောင်ဘက် · ကံပုလဲကျေးရွာအုပ်စု",
+      subArea: isFarmhouse
+        ? "ကံပုလဲ စံပြစိုက်ခင်းအိမ် (Kanbale Farmhouse)"
+        : "ကံပုလဲရွာတွင်း ရပ်ကွက်",
+    };
+  }
+
   // ၁။ မြို့သာရပ်ကွက် · နယ်မြေ (၅) (v < 600)
   if (v < 600) {
     let subArea = "မြို့သာရပ်ကွက် · နယ်မြေ (၅)";
     let title = ward.name;
     let subtitle = `AH1 လမ်းမကြီး · မြို့သာ · ${ward.currentArea} · ကလေးမြို့`;
 
-    if (u <= -400 && v >= 20 && v <= 560) {
+    let locId = "myothar-area-5";
+
+    if (u >= 0 && u <= 95 && v >= -305 && v < -250) {
+      locId = "shwe-myanmar-fuel";
+      subArea = "ရွှေမြန်မာ စက်သုံးဆီဆိုင် · မြို့သာ နယ်မြေ (၅)";
+      title = "ရွှေမြန်မာ စက်သုံးဆီဆိုင် · မြို့သာရပ်ကွက်";
+      subtitle = "ရွှေမြန်မာ စက်သုံးဆီဆိုင် · AH1 အရှေ့ဘက် · မြို့သာ နယ်မြေ (၅) · ကလေးမြို့";
+    } else if (u < 0 && u >= -95 && v >= -305 && v < -250) {
+      locId = "myothar-residential";
+      subArea = "လူနေရပ်ကွက် · မြို့သာ နယ်မြေ (၅)";
+      title = "လူနေရပ်ကွက်နှင့် ဆိုင်များ · မြို့သာရပ်ကွက်";
+      subtitle = "လူနေအိမ်များနှင့် သိန်းထိုက်စံ ဆောက်လုပ်ရေးပစ္စည်းဆိုင် · AH1 အနောက်ဘက် · မြို့သာ နယ်မြေ (၅) · ကလေးမြို့";
+    } else if (u < 0 && u >= -95 && v >= -250 && v <= -210) {
+      locId = "myothar-rice-mill";
+      subArea = "ဆန်စက် · မြို့သာ နယ်မြေ (၅)";
+      title = "ဆန်စက်ရုံဝင်း · မြို့သာရပ်ကွက်";
+      subtitle = "ဆန်စက်ရုံဝင်းနှင့် စပါးလှန်းပြင် · AH1 အနောက်ဘက် · မြို့သာ နယ်မြေ (၅) · ကလေးမြို့";
+    } else if (u >= 0 && u <= 95 && v >= -250 && v <= -210) {
+      locId = "myothar-vacant-lot";
+      subArea = "မြေကွက်လပ် (ဝိုင်းအလွတ်မြေ) · မြို့သာ နယ်မြေ (၅)";
+      title = "မြေကွက်လပ် (ဝိုင်းအလွတ်မြေ) · မြို့သာရပ်ကွက်";
+      subtitle = "ဝိုင်းအလွတ်မြေ · AH1 အရှေ့ဘက် · မြို့သာ နယ်မြေ (၅) · ကလေးမြို့";
+    } else if (u <= -400 && v >= 20 && v <= 560) {
       subArea = "တောင်ဖီလာတောင် · မြို့သာ နယ်မြေ (၅)";
       title = "တောင်ဖီလာတောင် · မြို့သာရပ်ကွက်";
       subtitle = "တောင်ဖီလာတောင် · မြို့သာ · နယ်မြေ (၅) · ကလေးမြို့";
@@ -185,7 +284,7 @@ export function detectLocation(x: number, z: number): DetectedLocation {
     }
 
     return {
-      id: "myothar-area-5",
+      id: locId,
       label: "မြို့သာရပ်ကွက် · နယ်မြေ (၅)",
       title,
       subtitle,
@@ -375,8 +474,60 @@ export function detectLocation(x: number, z: number): DetectedLocation {
     };
   }
 
-  // ၉။ ဝေပုလ္လတောင်တန်းနှင့် လှေကားထစ်ရွာ (v > 4160)
-  if (v > 4160) {
+  // ၉။ နတ်မြောင်းရွာ (Nat Myaung Village: ကြာအင်းရွာနှင့် ဝေပုလ္လတောင်ကြား v = 4120 .. 4355)
+  if (isPointInsideNatmyaung(x, z) || (v >= 4120 && v <= 4355 && u >= -140 && u <= 180)) {
+    let subArea = "နတ်မြောင်းရွာ";
+    let subtitle = "ကြာအင်းရွာနှင့် ဝေပုလ္လတောင်ကြား · AH1 အာရှလမ်းမကြီး · ကလေးမြို့";
+
+    if (u >= 35 && u <= 75 && v >= 4180 && v <= 4210) {
+      subArea = "နတ်မြောင်း အခြေခံပညာ မူလတန်းကျောင်း";
+      subtitle = "အမက နတ်မြောင်း · မူလတန်းကျောင်းဝင်း · ကလေးမြို့";
+    } else if (u >= 65 && u <= 95 && v >= 4160 && v <= 4190) {
+      subArea = "နတ်မြောင်း ရွာလယ်ဓမ္မာရုံနှင့် ဘုန်းတော်ကြီးကျောင်း";
+      subtitle = "ရွာလယ်ဓမ္မာရုံနှင့် ဘုန်းတော်ကြီးကျောင်း · နတ်မြောင်းရွာ";
+    } else if (u >= 8 && u <= 28 && v >= 4185 && v <= 4215) {
+      subArea = "နတ်မြောင်း ကျေးရွာ အုပ်ချုပ်ရေးမှူးရုံး";
+      subtitle = "ကျေးရွာ အုပ်ချုပ်ရေးမှူးရုံး · နတ်မြောင်းရွာ";
+    } else if (u >= 15 && u <= 35 && v >= 4220 && v <= 4250) {
+      subArea = "နတ်မြောင်း ကျေးလက်ကျန်းမာရေးဌာနခွဲ";
+      subtitle = "ကျေးလက်ကျန်းမာရေးဌာနခွဲ · နတ်မြောင်းရွာ";
+    } else if (Math.hypot(u - 82, v - 4235) < 18) {
+      subArea = "နတ်မြောင်း ရွာလယ်ရေကန်";
+      subtitle = "ရွာလယ်ရေကန်ကြီး · နတ်မြောင်းရွာ";
+    } else if (Math.hypot(u - (-12), v - 4172) < 22) {
+      subArea = "အထက-နတ်မြောင်း ကျောင်းဝင်း";
+      subtitle = "အခြေခံပညာ အထက်တန်းကျောင်း (အထက နတ်မြောင်း) · ကျောင်းရပ်ကွက်";
+    } else if (Math.hypot(u - (-27), v - 4208) < 22) {
+      subArea = "ဆရာခန့် နေအိမ်နှင့် အနောက်ပိုင်းရပ်ကွက်";
+      subtitle = "ဆရာခန့် နေအိမ် · နတ်မြောင်းရွာ အနောက်ဘက်ရပ်ကွက်";
+    } else if (Math.hypot(u - 12, v - 4278) < 25) {
+      subArea = "ကျော်အင်နာဂျီ စက်သုံးဆီအရောင်းဆိုင်";
+      subtitle = "Kyaw Energy စက်သုံးဆီအရောင်းဆိုင် · AH1 လမ်းမကြီးဘေး";
+    } else if (Math.hypot(u - 42, v - 4230) < 20) {
+      subArea = "ငွေသရဖူ ဆိုင်နှင့် တောင်ဘက်ရပ်ကွက်";
+      subtitle = "ငွေသရဖူ ကုန်စုံဆိုင် · နတ်မြောင်းရွာ တောင်ဘက်ပိုင်း";
+    } else if (Math.hypot(u - 118, v - 4120) < 30) {
+      subArea = "ဂျပန်ကြီး အထင်ကရနေရာ";
+      subtitle = "Japan Gyi Landmark · နတ်မြောင်း အရှေ့မြောက်ရပ်ကွက်";
+    } else if (u < 0) {
+      subArea = "နတ်မြောင်းရွာ အနောက်ပိုင်း";
+      subtitle = "နတ်မြောင်း အနောက်ဘက် ရွာဝင်လမ်းနှင့် လူနေအိမ်များ";
+    } else {
+      subArea = "နတ်မြောင်းရွာ အရှေ့ပိုင်း";
+      subtitle = "နတ်မြောင်း အရှေ့ဘက် ပင်မရွာလယ်လမ်းနှင့် လူနေရပ်ကွက်";
+    }
+
+    return {
+      id: "natmyaung",
+      label: "နတ်မြောင်းရွာ",
+      title: "နတ်မြောင်းရွာ · ကလေးမြို့နယ်",
+      subtitle,
+      subArea,
+    };
+  }
+
+  // ၁၀။ ဝေပုလ္လတောင်တန်းနှင့် လှေကားထစ်ရွာ (v > 4355 သို့မဟုတ် အနောက်ဘက်တောင်တန်း u < -250)
+  if (v > 4355 || (v > 4160 && u < -250)) {
     if (u >= -365 && u <= -310 && v >= 4365 && v <= 4475) {
       let tierName = "ဝေပုလ္လ လှေကားထစ်ရွာ";
       if (v < 4395) tierName = "လှေကားထစ်ရွာ (၁) အဆင့် · ပန်းဥယျာဉ်နှင့် တောင်သူအိမ်";

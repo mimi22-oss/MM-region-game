@@ -360,7 +360,7 @@ function GroundedCar({car}:{car:DriveableCar}){
  const appearance=useAppearance();
  const root=useRef<Group>(null),driver=useRef<Group>(null),motion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0});
  const driving=useRef<DrivingPose>({active:false,wheelAngle:0,interior:true,clutch:false,brake:false,throttle:false});
- useTrafficCollider(root,car.width*car.size,car.depth*car.size);
+ useTrafficCollider(root,car.width*car.size,car.depth*car.size,'car');
  useFrame(({scene,clock})=>{
    if(!root.current)return;
    const ground=sceneGround(scene,clock.elapsedTime),p=carGroundPose(car.x,car.z,car.yaw,car.size,(x,z)=>ground.height(x,z));

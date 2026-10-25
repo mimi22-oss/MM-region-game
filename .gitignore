@@ -1,3 +1,9 @@
 node_modules/
 dist/
 *.tsbuildinfo
+map/
+.agents/
+.env
+.env.*
+!.env.example
+*.local

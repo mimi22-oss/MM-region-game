@@ -2,7 +2,7 @@ import { motorcycleData } from '../data/motorcycle.ts';
 export const motorcycleRide={x:motorcycleData.x,z:motorcycleData.z,yaw:motorcycleData.rotation,groundY:0,pitch:0,riding:false,mustLeave:false,speed:0,distance:0,cooldown:0,nearTime:0,reverseWait:0,maxKmh:60,accelerating:false,braking:false};
 export function setRideAccelerate(active:boolean){motorcycleRide.accelerating=active;}
 export function setRideBrake(active:boolean){motorcycleRide.braking=active;}
-export type RideStatus={riding:boolean;near:boolean;kmh:number;notice:string;lives:number;crashed:boolean};
+export type RideStatus={riding:boolean;near:boolean;kmh:number;notice:string;lives:number;crashed:boolean;impactMode?:'walking'|'motorcycle'|'car';damage?:number};
 export function parkMotorcycle(){motorcycleRide.riding=false;motorcycleRide.mustLeave=true;motorcycleRide.speed=0;motorcycleRide.accelerating=false;motorcycleRide.braking=false;motorcycleRide.cooldown=2;motorcycleRide.nearTime=0;motorcycleRide.reverseWait=0;}
 export function rideFootprintClear(x:number,z:number,yaw:number,clear:(x:number,z:number)=>boolean,boost=false){
  const dx=-Math.sin(yaw)*.56,dz=-Math.cos(yaw)*.56;

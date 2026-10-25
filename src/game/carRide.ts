@@ -95,9 +95,10 @@ export function carFootprintClear(car: DriveableCar, x: number, z: number, yaw: 
  return true;
 }
 export function stepCar(dt: number, throttle: number, steer: number, brake: boolean, clutch: boolean, paused: boolean, clear: (x: number, z: number) => boolean) {
- const car = currentCar(); if (!car) return;
+ const impact={blocked:false,speed:0};
+ const car = currentCar(); if (!car) return impact;
  dt = Math.min(.05, Math.max(0, dt));
- if (paused) { car.speed = 0; car.steering = 0; return; }
+ if (paused) { car.speed = 0; car.steering = 0; return impact; }
  if(car.transmission==='automatic'){
   clutch=false;
   if(carRide.automaticRange==='P'){car.speed=0;brake=true;carRide.gear=0;}
@@ -126,10 +127,11 @@ export function stepCar(dt: number, throttle: number, steer: number, brake: bool
   const d = distance / steps,beta=Math.atan(.5*Math.tan(car.steering));
   const yaw = car.yaw - d * Math.cos(beta)*Math.tan(car.steering) / (2.08 * car.size),heading=(car.yaw+yaw)/2-beta;
   const x = car.x - Math.sin(heading) * d, z = car.z - Math.cos(heading) * d;
-  if (!carFootprintClear(car, x, z, yaw, clear)) { car.speed = 0; carRide.notice = 'ရှေ့တွင် အတားအဆီးရှိပါသည်'; break; }
+  if (!carFootprintClear(car, x, z, yaw, clear)) { impact.blocked=true;impact.speed=Math.abs(car.speed);car.speed = 0; carRide.notice = 'ရှေ့တွင် အတားအဆီးရှိပါသည်'; break; }
   car.x = x; car.z = z; car.yaw = yaw; car.distance += d;
   wheelStepDistances(d,car.steering,car.size).forEach((travel,i)=>{car.wheelTravel[i]+=travel;});
  }
  const rpm = clutch || gear === 0 ? 850 + gas * 5000 : 850 + Math.abs(car.speed) / Math.max(1, limit) * 5000;
  carRide.rpm += (rpm - carRide.rpm) * Math.min(1, dt * 8);
+ return impact;
 }

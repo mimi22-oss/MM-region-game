@@ -57,6 +57,7 @@ import {
  kyarInnLakePonds,
  kyarInnLakeIsland,
  kyarInnLakeStructures,
+ natmyaungVillage,
 } from './villages/index.ts';
 
 export const ward = {
@@ -110,6 +111,7 @@ export {
  kyarInnLakePonds,
  kyarInnLakeIsland,
  kyarInnLakeStructures,
+ natmyaungVillage,
  myotharWard,
  area5,
  angle,

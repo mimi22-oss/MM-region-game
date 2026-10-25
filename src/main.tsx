@@ -1,3 +1,4 @@
+import {LifeMeter} from './components/LifeMeter';
 import {AppearanceSettings} from './components/AppearanceSettings';
 import { RideControls } from './components/RideControls';
 import { CarControls } from './components/CarControls';
@@ -100,7 +101,7 @@ function App() {
   const [carStatus,setCarStatus]=useState<CarStatus>({driving:false,near:false,kmh:0,gear:0,rpm:850,clutch:false,notice:'',steering:0,canSummon:false,summonStatus:'idle',first:false});
   const carUpdate=useCallback((next:CarStatus)=>setCarStatus(old=>old.driving===next.driving&&old.near===next.near&&old.kmh===next.kmh&&old.gear===next.gear&&old.rpm===next.rpm&&old.clutch===next.clutch&&old.steering===next.steering&&old.notice===next.notice&&old.canSummon===next.canSummon&&old.summonStatus===next.summonStatus&&old.first===next.first&&old.transmission===next.transmission&&old.automaticRange===next.automaticRange?old:next),[]);
   const [rideLimit,setRideLimit]=useState(60),[braking,setBraking]=useState(false),[accelerating,setAccelerating]=useState(false),[dismountRequest,setDismountRequest]=useState(0);
-  const rideUpdate=useCallback((next:RideStatus)=>setRideStatus(old=>old.riding===next.riding&&old.near===next.near&&old.kmh===next.kmh&&old.notice===next.notice&&old.lives===next.lives&&old.crashed===next.crashed?old:next),[]);
+  const rideUpdate=useCallback((next:RideStatus)=>setRideStatus(old=>old.riding===next.riding&&old.near===next.near&&old.kmh===next.kmh&&old.notice===next.notice&&old.lives===next.lives&&old.crashed===next.crashed&&old.impactMode===next.impactMode&&old.damage===next.damage?old:next),[]);
 
   const [character, setCharacter] = useState<CharacterKind>(savedCharacter);
   const chooseCharacter = (kind: CharacterKind) => {
@@ -353,15 +354,16 @@ function App() {
           </Canvas>
         </SceneError>
       </div>
+      {!loading&&<div className="player-life"><LifeMeter lives={rideStatus.lives}/></div>}
       {rideStatus.crashed && (
         <div className="ride-crash-banner" role="alert">
           <span className="ride-crash-icon">💥</span>
           <div className="ride-crash-text">
-            <strong>{rideStatus.lives === 0 ? "ဆိုင်ကယ် ပျက်စီးသွားပါပြီ!" : "တိုက်မိပါပြီ!"}</strong>
+            <strong>{rideStatus.lives === 0 ? "Life ကုန်သွားပါပြီ" : rideStatus.damage===0 ? "နောက်သို့ လွန့်သွားပါပြီ" : "တိုက်မိပါပြီ!"}</strong>
             <span>
               {rideStatus.lives === 0
-                ? "အသက် (Life) ၃ ခုလုံး ကုန်သွားသဖြင့် အစသို့ ပြန်လည်စတင်ပါမည်…"
-                : `အသက် ၁ ခု လျော့သွားပါသည် (ကျန်ရှိ: ${rideStatus.lives} ❤️)`}
+                ? "Life ကုန်သွားသဖြင့် အစသို့ ပြန်လည်စတင်ပါမည်…"
+                : rideStatus.damage===0 ? "နောက်သို့ ၅ လှမ်းခန့် ဆုတ်ပါမည်။ Life မလျော့ပါ။" : `Life ${rideStatus.damage??1} လျော့သွားပါသည် (ကျန်ရှိ: ${rideStatus.lives})`}
             </span>
           </div>
         </div>
@@ -782,7 +784,7 @@ function App() {
         </svg>
         <small>
           {ward.currentArea} · သာစည် · ချင်းဆိုင် · ဇင်းကလင်း · ထိုမာ ·
-          သာယာကုန်း · ထောက်ကြန့် · ကြာအင်း
+          သာယာကုန်း · ထောက်ကြန့် · ကြာအင်း · ကံပုလဲ · နတ်မြောင်း
         </small>
         {mapOpen && (
           <p className="map-help">

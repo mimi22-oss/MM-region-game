@@ -80,7 +80,7 @@ try{
  await page.call('Emulation.setDeviceMetricsOverride',{width:1280,height:850,deviceScaleFactor:1,mobile:false});
  await page.call('Page.navigate',{url:site+'/tests/fixtures/appearance.html'});
  await until('!!window.appearanceTest','appearance fixture');
- for(const preset of ['girl','mother','grandmother','father','boy']){
+ for(const preset of ['girl','mother','grandmother','grandfather','father','boy']){
   await choose('လူပုံစံ',preset);await until(`window.appearanceTest.settings.human.preset==='${preset}'`,'human preset '+preset);
   assert.equal(await evaluate('window.appearanceTest.other'),'6936ae','customizing one human leaves another instance unchanged');
  }

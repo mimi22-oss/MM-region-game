@@ -22,6 +22,8 @@ import { Fields } from '../../Field';
 import { Mountains, WesternLandscapePlan } from '../../Mountains';
 import { Monastery, OpenGround, RiceMill } from '../../Landmarks';
 import { RiceMillPlan } from '../../RiceMillPlan';
+import { ShweMyanmarArea } from '../../ShweMyanmarArea';
+import { ShweMyanmarPlan } from '../../ShweMyanmarPlan';
 import { Warehouses } from './Warehouses';
 import { FootballPitch } from './FootballPitch';
 
@@ -44,6 +46,7 @@ export function Area5(){
   <OpenGround/>
   <Monastery/>
   <RiceMill/>
+  <ShweMyanmarArea/>
   <Fields/>
   <MainRoad/>
   <Lanes/>
@@ -150,6 +153,7 @@ export function Area5Plan({labels,onSelectLocation}:{labels:boolean;onSelectLoca
    {area5.crossCanal.bridges.map((b,i)=><rect key={i} x={b.u-b.width/2} y={b.v-b.depth/2} width={b.width} height={b.depth} fill="#b7ad95"/>)}
   </g>
   <RiceMillPlan labels={labels}/>
+  <ShweMyanmarPlan labels={labels} onSelectLocation={onSelectLocation}/>
   {area5.houses.map(h=>{
    const {sideHalf,backHalf,frontHalf}=houseFenceBounds(h);
    const rot = h.id === KALAY_SIGN_HOUSE_ID ? KALAY_SIGN_ROTATION : houseVisualRotation(h);

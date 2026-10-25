@@ -26,13 +26,21 @@ import {
   SPOUT_LENGTH,
   HAND_PUMP_RADIUS,
 } from "../data/handPumpLongSpout.ts";
+import {
+  shweMyanmarFuelStation,
+  shweMyanmarRiceMill,
+  shweMyanmarResidential,
+  shweMyanmarVacantLot,
+} from "../data/wards/myothar/shweMyanmarArea.ts";
 export const PLAYER_RADIUS = 0.4;
 const nearbyAreca = spatialIndex(estatePalms, (p) => ({
   x: p.x,
   z: p.z,
   radius: 0.62,
 }));
-const villageHouses = kalayVillages.flatMap((v) => v.houses);
+const villageHouses = kalayVillages
+  .flatMap((v) => v.houses)
+  .filter((h) => h.id !== "way/403027623");
 const villageTrees = kalayVillages.flatMap((v) => [
   ...v.trees,
   ...v.largeTrees,
@@ -44,6 +52,15 @@ const solidWardHouses = ward.houses.filter(
     h.id !== uShweHouse.id &&
     h.id !== KALAY_SIGN_HOUSE_ID,
 );
+const shweMyanmarBuildings = [
+  shweMyanmarFuelStation.office,
+  shweMyanmarRiceMill.mainBuilding,
+  shweMyanmarRiceMill.storageBuilding,
+  shweMyanmarRiceMill.gateOffice,
+  shweMyanmarVacantLot.shed,
+  shweMyanmarResidential.store,
+  ...shweMyanmarResidential.houses,
+];
 const privateHomeIds = new Set(
   [...solidWardHouses, ...villageHouses].map((h) => h.id),
 );
@@ -53,6 +70,7 @@ const nearbyBuildings = spatialIndex(
     ...ward.warehouses,
     ...ward.riceMill.buildings,
     ...villageHouses,
+    ...shweMyanmarBuildings,
   ],
   (h) => ({
     x: h.x,

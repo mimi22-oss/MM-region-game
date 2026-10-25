@@ -107,6 +107,6 @@ export function CartoonFace({leftEye,rightEye,appearance=HUMAN_PRESETS.boy}:{lef
   </group>)}
   <mesh geometry={smile} material={crease}/>
   {appearance.face==='mature'&&[-1,1].map(side=><group key={side} position={[side*.105,-.057,-.211]}><mesh rotation={[0,0,side*.10]} material={crease}><boxGeometry args={[.067,.0025,.002]}/></mesh><mesh position={[0,-.009,0]} material={crease}><boxGeometry args={[.047,.002,.002]}/></mesh></group>)}
-  {appearance.preset==='grandmother'&&<group position={[0,.014,-.242]}>{[-1,1].map(side=><mesh key={side} position={[side*.105,0,0]}><torusGeometry args={[.073,.004,6,24]}/><meshStandardMaterial color="#665c58"/></mesh>)}<mesh><boxGeometry args={[.065,.006,.006]}/><meshStandardMaterial color="#665c58"/></mesh></group>}
+  {(appearance.preset==='grandmother'||appearance.preset==='grandfather')&&<group position={[0,.014,-.242]}>{[-1,1].map(side=><mesh key={side} position={[side*.105,0,0]}><torusGeometry args={[.073,.004,6,24]}/><meshStandardMaterial color="#665c58"/></mesh>)}<mesh><boxGeometry args={[.065,.006,.006]}/><meshStandardMaterial color="#665c58"/></mesh></group>}
  </group>;
 }

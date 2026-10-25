@@ -4377,3 +4377,10 @@ main.night-mode .guide-btn-secondary:hover {
 .car-auto-selector button[aria-pressed="true"]{background:#f6cc43;color:#253b3f;box-shadow:0 0 12px #f6cc4377}
 main.night-mode .appearance-settings{color:#e3eadb}
 main.night-mode .appearance-settings p,main.night-mode .appearance-saved{color:#bbcbbc}
+
+.player-life{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:12;padding:4px 10px;border-radius:20px;background:#fff8e8df;box-shadow:0 2px 10px #183b3020;pointer-events:none}
+.life-meter{display:inline-flex;align-items:center;gap:3px;line-height:1;color:#244139}
+.life-meter small{font-size:10px;margin-left:4px;font-variant-numeric:tabular-nums}
+.life-heart{position:relative;display:inline-block;font-size:21px;color:#acb1aa}
+.life-heart-fill{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#df4f62}
+@media(max-width:600px){.player-life{top:76px;left:20px;transform:none;padding:4px 8px}.life-heart{font-size:18px}}

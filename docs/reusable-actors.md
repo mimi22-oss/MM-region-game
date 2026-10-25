@@ -35,3 +35,7 @@ node tests/carDriving.browser.mjs http://127.0.0.1:5173 9334
 ```
 
 The browser checks use a dedicated browser context so appearance changes and saved preferences in tests do not overwrite the user's settings.
+
+Grandfather is also available in `HUMAN_PRESETS.grandfather`. Dresses and longyi use a closed, opaque cloth shell from `characterClothing.ts`; covered legs use short steps and expose only the ankles/footwear below the hem. Motorcycle sleeves have capped ends.
+
+Collision damage is shared across travel modes in `rideLife.ts`: walking into scenery or a robot pushes the person backward upright without spending life. `walkingCollision.ts` sweeps about five backward steps (3.2 metres over 1.6 seconds), stopping early at an obstacle; the person keeps facing the impact direction and animates backward steps. Car contact while walking spends all remaining life; a car crash spends 1.5 of the three lives. Motorcycle damage remains one life. Continuous contact cannot drain life every frame. Recovery and respawn retain the existing short protection period. `LifeMeter` displays half hearts. `Player` resets riding/driving and returns to the spawn point after a fatal impact.

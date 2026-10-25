@@ -1,0 +1,165 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "custom-label-1792938294273-h2ahj",
+        "name": "ChaungKhuah Baptist Church",
+        "kind": "place_of_worship",
+        "source": "manual"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.02049264194547,
+          22.991628481813635
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "custom-label-1792938784077-bvojd",
+        "name": "Planet Mobile Service & Training Center",
+        "kind": "other",
+        "source": "manual"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.03270902418208,
+          23.00051837783184
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "custom-label-1792938909516-vjexl",
+        "name": "Natchaung Railway",
+        "kind": "other",
+        "source": "manual"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.0291178226471,
+          22.999661426147995
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "custom-label-1792938938355-dugli",
+        "name": "Omega Mobile",
+        "kind": "shop",
+        "source": "manual"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.03130382299423,
+          22.99916762672294
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "custom-label-1792938960815-vqmfo",
+        "name": "Black cat",
+        "kind": "shop",
+        "source": "manual"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.03251484036446,
+          22.999136764198912
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "custom-label-1792939020306-2pdsj",
+        "name": "U Thein Paing",
+        "kind": "school",
+        "source": "manual"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.03380498290062,
+          22.99899356199501
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "custom-label-1792939039173-xce7x",
+        "name": "Classical Fingers",
+        "kind": "other",
+        "source": "manual"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.03467401862144,
+          22.99918490973333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "custom-label-1792939069427-42f7a",
+        "name": "Myo Center ကုန်စုံဆိုင်",
+        "kind": "shop",
+        "source": "manual"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.0262371301651,
+          22.994519651118257
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "custom-label-1792939119858-pdvfd",
+        "name": "Yinking Monastery",
+        "kind": "school",
+        "source": "manual"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.03514742851257,
+          22.99705414477325
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "custom-label-1792939154932-vx8th",
+        "name": "AungSuPan Monestry",
+        "kind": "place_of_worship",
+        "source": "manual"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          94.03696060180664,
+          23.00150081310885
+        ]
+      }
+    }
+  ]
+}

@@ -778,3 +778,103 @@ test('waist-height cast-iron hand water pump sits at requested coordinates with 
   const besideBasin = { x: spoutEnd.x + 1.2, z: spoutEnd.z };
   assert.ok(canStand(besideBasin.x, besideBasin.z), 'ground beside spout basin is walkable');
 });
+
+test('Kanbale village is integrated with real OSM data, boundary, custom farmhouse override and detection', async () => {
+  const { kanbaleVillage, kanbaleBuildings, kanbaleRoads, isPointInsideKanbale, geoToWorld, worldToGeo, KANBALE_CUSTOM_BUILDINGS } = await import('../src/data/villages/kanbale/index.ts');
+  const { detectLocation } = await import('../src/game/locationDetect.ts');
+
+  // 1. Metadata & Entity Counts
+  assert.equal(kanbaleVillage.id, 'kanbale');
+  assert.equal(kanbaleVillage.name, 'ကံပုလဲရွာ');
+  assert.equal(kanbaleBuildings.length, 680, 'Exactly 680 OSM buildings inside boundary');
+  assert.equal(kanbaleRoads.length, 46, 'Exactly 46 OSM road paths inside boundary');
+
+  // 2. Custom Building Override for target house way/403027623
+  assert.equal(KANBALE_CUSTOM_BUILDINGS['way/403027623'], 'KanbaleFarmhouse');
+  const targetHouse = kanbaleBuildings.find(b => b.id === 'way/403027623');
+  assert.ok(targetHouse, 'Target house way/403027623 exists in buildings list');
+  assert.equal(targetHouse?.osmId, 403027623);
+
+  // 3. Coordinate conversion round-trip
+  const testLon = 94.06925;
+  const testLat = 23.16164;
+  const { x, z } = geoToWorld(testLon, testLat);
+  const back = worldToGeo(x, z);
+  assert.ok(Math.abs(back.lon - testLon) < 1e-5, 'Longitude round-trips accurately');
+  assert.ok(Math.abs(back.lat - testLat) < 1e-5, 'Latitude round-trips accurately');
+
+  // 4. Boundary checking
+  assert.ok(isPointInsideKanbale(targetHouse!.x, targetHouse!.z), 'Target house is inside Kanbale boundary');
+  assert.equal(isPointInsideKanbale(-500, -500), false, 'Far point is outside Kanbale boundary');
+
+  // 5. Location detection
+  const loc = detectLocation(targetHouse!.x, targetHouse!.z);
+  assert.equal(loc.id, 'kanbale');
+  assert.equal(loc.label, 'ကံပုလဲရွာ');
+  assert.equal(loc.subArea, 'ကံပုလဲ စံပြစိုက်ခင်းအိမ် (Kanbale Farmhouse)');
+});
+
+test('Nat Myaung village is integrated between Kyar Inn and Weipula with boundary, roads, landmarks and detection', async () => {
+  const {
+    natmyaungVillage,
+    natmyaungBuildings,
+    natmyaungRoads,
+    natmyaungBoundaryWorldPoints,
+    isPointInsideNatmyaung,
+    geoToWorld,
+    worldToGeo,
+    toWorld,
+  } = await import('../src/data/villages/natmyaung/index.ts');
+  const { detectLocation } = await import('../src/game/locationDetect.ts');
+
+  // 1. Metadata & Spatial Placement
+  assert.equal(natmyaungVillage.id, 'natmyaung');
+  assert.equal(natmyaungVillage.name, 'နတ်မြောင်းရွာ');
+  assert.equal(natmyaungVillage.englishName, 'Nat Myaung');
+  assert.ok(natmyaungVillage.v === 4220 || natmyaungVillage.coordinates.lat === 23.0094395);
+
+  // 2. Boundary & Roads
+  assert.equal(natmyaungBoundaryWorldPoints.length, 18, 'Boundary has 18 points from GeoJSON');
+  assert.equal(natmyaungRoads.length, 5, 'Exactly 5 road paths (AH1 + 4 village side roads)');
+
+  // 3. Buildings & Landmarks
+  assert.ok(natmyaungBuildings.length >= 35, 'Village has residential houses and landmarks');
+  const school = natmyaungBuildings.find(b => b.id === 'natmyaung-primary-school');
+  const monastery = natmyaungBuildings.find(b => b.id === 'natmyaung-monastery');
+  const admin = natmyaungBuildings.find(b => b.id === 'natmyaung-admin-office');
+  const clinic = natmyaungBuildings.find(b => b.id === 'natmyaung-clinic');
+  assert.ok(school && monastery && admin && clinic, 'All 4 landmark buildings exist');
+
+  // 4. Coordinate round-trip
+  const testLon = 94.0414276;
+  const testLat = 23.0094395;
+  const { x, z } = geoToWorld(testLon, testLat);
+  const back = worldToGeo(x, z);
+  assert.ok(Math.abs(back.lon - testLon) < 1e-4, 'Longitude round-trips accurately');
+  assert.ok(Math.abs(back.lat - testLat) < 1e-4, 'Latitude round-trips accurately');
+
+  // 5. Boundary test
+  assert.ok(isPointInsideNatmyaung(school!.x, school!.z), 'School is inside Nat Myaung boundary');
+  assert.equal(isPointInsideNatmyaung(-1000, -1000), false, 'Far point is outside boundary');
+
+  // 6. Collision: houses block walking, AH1 road is walkable
+  assert.equal(canStand(school!.x, school!.z), false, 'School building blocks walking');
+  assert.equal(canStand(monastery!.x, monastery!.z), false, 'Monastery building blocks walking');
+  const ah1Center = toWorld(0, 4220);
+  assert.ok(canStand(ah1Center.x, ah1Center.z), 'AH1 center through Nat Myaung is walkable');
+
+  // 7. Location Detection (HUD Toast)
+  const locVillage = detectLocation(ah1Center.x, ah1Center.z);
+  assert.equal(locVillage.id, 'natmyaung');
+  assert.equal(locVillage.label, 'နတ်မြောင်းရွာ');
+  assert.equal(locVillage.title, 'နတ်မြောင်းရွာ · ကလေးမြို့နယ်');
+
+  const locSchool = detectLocation(school!.x, school!.z);
+  assert.equal(locSchool.id, 'natmyaung');
+  assert.equal(locSchool.subArea, 'နတ်မြောင်း အခြေခံပညာ မူလတန်းကျောင်း');
+
+  const locMonastery = detectLocation(monastery!.x, monastery!.z);
+  assert.equal(locMonastery.id, 'natmyaung');
+  assert.equal(locMonastery.subArea, 'နတ်မြောင်း ရွာလယ်ဓမ္မာရုံနှင့် ဘုန်းတော်ကြီးကျောင်း');
+});
+

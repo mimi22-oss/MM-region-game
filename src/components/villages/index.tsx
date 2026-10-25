@@ -5,6 +5,8 @@ import { HtomarVillage, HtomarVillagePlan } from './htomar';
 import { TharYarGoneVillage, TharYarGoneVillagePlan } from './tharyargone';
 import { HtaukKyantVillage, HtaukKyantVillagePlan } from './htaukkyant';
 import { KyarInnVillage, KyarInnVillagePlan } from './kyarinn';
+import { KanbaleVillage, KanbalePlan } from './kanbale';
+import { NatmyaungVillage, NatmyaungPlan } from './natmyaung';
 
 export {
 	TharSiVillage,
@@ -21,6 +23,10 @@ export {
 	HtaukKyantVillagePlan,
 	KyarInnVillage,
 	KyarInnVillagePlan,
+	KanbaleVillage,
+	KanbalePlan,
+	NatmyaungVillage,
+	NatmyaungPlan,
 };
 
 /**
@@ -36,6 +42,8 @@ export function KalayVillages() {
 			<TharYarGoneVillage />
 			<HtaukKyantVillage />
 			<KyarInnVillage />
+			<KanbaleVillage />
+			<NatmyaungVillage />
 		</group>
 	);
 }
@@ -56,6 +64,9 @@ export function KalayVillagesPlan({
 			<TharYarGoneVillagePlan labels={labels} onSelectLocation={onSelectLocation} />
 			<HtaukKyantVillagePlan labels={labels} onSelectLocation={onSelectLocation} />
 			<KyarInnVillagePlan labels={labels} onSelectLocation={onSelectLocation} />
+			<KanbalePlan labels={labels} onSelectLocation={onSelectLocation} />
+			<NatmyaungPlan labels={labels} onSelectLocation={onSelectLocation} />
 		</g>
 	);
 }
+

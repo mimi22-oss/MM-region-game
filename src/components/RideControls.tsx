@@ -1,3 +1,4 @@
+import {LifeMeter} from './LifeMeter';
 import { useState, useEffect, type PointerEvent } from 'react';
 import { setRideAccelerate, setRideBrake, type RideStatus } from '../game/motorcycleRide';
 
@@ -106,13 +107,7 @@ export function RideControls({
 							{status.kmh < 0 && (
 								<span className="ride-orbit-speedo-rev">R</span>
 							)}
-							<span className="ride-orbit-lives" aria-label={`အသက်: ${status.lives}/3`}>
-								{[0, 1, 2].map((i) => (
-									<span key={i} className={i < status.lives ? 'ride-life-heart-filled' : 'ride-life-heart-lost'}>
-										{i < status.lives ? '❤️' : '🖤'}
-									</span>
-								))}
-							</span>
+							<span className="ride-orbit-lives"><LifeMeter lives={status.lives}/></span>
 							<button
 								type="button"
 								className="ride-orbit-speedo-limit"

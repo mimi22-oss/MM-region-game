@@ -1,10 +1,11 @@
+import {walkWithContacts,createWalkingRecoil,stepWalkingRecoil} from '../game/walkingCollision';
 import {useAppearance} from '../game/appearanceStore';
-import {rideLife,hitRide,tickRideLife} from '../game/rideLife';
-import {hitsTraffic} from '../game/trafficColliders';
+import {rideLife,hitRide,hitActor,isWalkingRecoil,actorFallProgress,tickRideLife} from '../game/rideLife';
+import {hitsTraffic,trafficContact} from '../game/trafficColliders';
 import {motorcycleData} from '../data/motorcycle';
 import {resetMobileInput} from '../game/mobileInput';
 import { sceneGround,motorcycleGroundPose,carGroundPose } from '../game/groundSurface';
-import { carRide, carInput, currentCar, nearbyCar, enterCar, parkCar, carExitSpot, shiftCar, selectAutomaticRange, stepCar, clearCarInput, type CarStatus, type CarGear } from '../game/carRide';
+import { carRide, carInput, currentCar, nearbyCar, enterCar, parkCar, carExitSpot, shiftCar, selectAutomaticRange, stepCar, carFootprintClear, clearCarInput, type CarStatus, type CarGear } from '../game/carRide';
 import { canSummonCar, stepCarSummon, updateSummonStand, carSummonState } from '../game/carSummon';
 import { ParkedCars } from './Car';
 import { DRIVER_EYE } from '../game/carCabin';
@@ -21,7 +22,7 @@ import type { MobileInput } from '../game/mobileInput';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Group, Vector3, Raycaster, Object3D, Euler } from 'three';
 import { ward, angle } from '../data/ward';
-import { canStand, move, PLAYER_RADIUS } from '../game/collision';
+import { canStand, PLAYER_RADIUS } from '../game/collision';
 
 export const MIN_ZOOM = 2;
 export const MAX_ZOOM = 3600;
@@ -81,7 +82,8 @@ export function Player({
  const avatar=useRef<Group>(null);
  const wheels=useRef<Group>(null);
  const [riding,setRiding]=useState(false);
- const rideNotice=useRef('');
+ const rideNotice=useRef(''),fallYaw=useRef(0);
+ const walkingRecoil=useRef(createWalkingRecoil(0));
  const characterMotion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0});
 
  const state=useRef({
@@ -343,7 +345,8 @@ export function Player({
   const ground=sceneGround(scene,clock.elapsedTime);
   const height=(x:number,z:number)=>ground.height(x,z);
   const clear=(x:number,z:number)=>canStand(x,z)&&height(x,z)-height(motorcycleRide.riding?motorcycleRide.x:s.x,motorcycleRide.riding?motorcycleRide.z:s.z)<.5;
-  if(tickRideLife(dt)){
+  if(tickRideLife(mapOpen||controlsBlocked?0:dt)){
+   parkCar();clearCarInput();
    parkMotorcycle();setRiding(false);
    Object.assign(motorcycleRide,{x:motorcycleData.x,z:motorcycleData.z,yaw:motorcycleData.rotation,mustLeave:false,distance:0});
    Object.assign(s,{x:ward.spawn.x,z:ward.spawn.z,camX:ward.spawn.x,camZ:ward.spawn.z,yaw:ward.spawnYaw,bodyYaw:ward.spawnYaw,panning:false,first:false,topDown:false,pitch:-.12,distance:ward.spawnZoom,targetDistance:ward.spawnZoom});
@@ -370,12 +373,12 @@ export function Player({
   if(len>0&&s.distance<=20&&!s.topDown)s.panning=false;
   const aerial=!currentCar()&&!touch?.active&&!s.first&&(s.distance>20||s.topDown||s.panning);
   const ride=motorcycleRide;
-  if(carInput.exit&&currentCar()){
+  if(carInput.exit&&currentCar()&&rideLife.crashTime<=0){
    carInput.exit=false;
    const car=currentCar()!,spot=carExitSpot((x,z)=>clear(x,z)&&!hitsTraffic(x,z,car.yaw,height(x,z),true,car.id));
    if(spot){parkCar();s.x=spot.x;s.z=spot.z;s.camX=s.x;s.camZ=s.z;s.first=false;s.panning=false;s.pitch=-.16;s.targetDistance=6;s.keys.clear();if(touch)resetMobileInput(touch);onMode(false);onZoom(6);}
   }
-  const nearCar=!ride.riding&&!currentCar()&&!aerial&&!controlsBlocked&&!mapOpen&&!loading?nearbyCar(s.x,s.z,clear):undefined;
+  const nearCar=rideLife.crashTime<=0&&!ride.riding&&!currentCar()&&!aerial&&!controlsBlocked&&!mapOpen&&!loading?nearbyCar(s.x,s.z,clear):undefined;
   if(nearCar){
    carRide.nearTime=carRide.nearId===nearCar.id?carRide.nearTime+dt:0;carRide.nearId=nearCar.id;
    if(carRide.nearTime>.65){carSummonState.status='idle';enterCar(nearCar);s.x=nearCar.x;s.z=nearCar.z;s.camX=s.x;s.camZ=s.z;s.yaw=nearCar.yaw;s.bodyYaw=s.yaw;s.first=true;s.topDown=false;s.panning=false;s.pitch=-.04;s.targetDistance=8;s.keys.clear();if(touch)resetMobileInput(touch);onMode(true);onTopDown(false);onZoom(8);oldX=s.x;oldZ=s.z;}
@@ -383,7 +386,7 @@ export function Player({
   ride.cooldown=Math.max(0,ride.cooldown-dt);
   const near=Math.hypot(s.x-ride.x,s.z-ride.z)<1.8;
   if(ride.mustLeave&&Math.hypot(s.x-ride.x,s.z-ride.z)>2.3)ride.mustLeave=false;
-  if(!currentCar()&&!nearCar&&!ride.riding&&!ride.mustLeave&&near&&!aerial&&!controlsBlocked&&!mapOpen&&!loading){
+  if(rideLife.crashTime<=0&&!currentCar()&&!nearCar&&!ride.riding&&!ride.mustLeave&&near&&!aerial&&!controlsBlocked&&!mapOpen&&!loading){
    ride.nearTime+=dt;
    if(ride.nearTime>.65&&tryMount(s.x,s.z,canStand)){
     setRiding(true);rideNotice.current='';s.x=ride.x;s.z=ride.z;s.bodyYaw=ride.yaw;s.yaw=ride.yaw;s.panning=false;
@@ -391,9 +394,14 @@ export function Player({
    }
   }else if(!ride.riding)ride.nearTime=0;
   if(currentCar()){
-   const car=currentCar()!,paused=mapOpen||controlsBlocked||loading;
+   const car=currentCar()!,paused=mapOpen||controlsBlocked||loading||rideLife.crashTime>0;
    const carClear=(x:number,z:number)=>canStand(x,z)&&!hitsTraffic(x,z,car.yaw,car.groundY,true,car.id);
-   stepCar(dt,carInput.throttle?1:Math.max(0,forward),carInput.steer||right,carInput.brake||s.keys.has('Space')||forward<-.1,carInput.clutch||s.keys.has('KeyC'),paused,carClear);
+   const impact=stepCar(dt,carInput.throttle?1:Math.max(0,forward),carInput.steer||right,carInput.brake||s.keys.has('Space')||forward<-.1,carInput.clutch||s.keys.has('KeyC'),paused,carClear);
+   const actorContact=!paused&&!carFootprintClear(car,car.x,car.z,car.yaw,(x,z)=>!hitsTraffic(x,z,car.yaw,car.groundY,true,car.id));
+   if(!paused){
+    if(!impact.blocked&&!actorContact)rideLife.contact=false;
+    if((actorContact||(impact.blocked&&impact.speed>.05))&&hitActor('car')){car.speed=0;clearCarInput();s.keys.clear();if(touch)resetMobileInput(touch);}
+   }
    const pose=carGroundPose(car.x,car.z,car.yaw,car.size,height);car.groundY=pose.y;car.pitch=pose.pitch;car.roll=pose.roll;
    s.x=car.x;s.z=car.z;s.bodyYaw=car.yaw;s.camX=s.x;s.camZ=s.z;
    if(!paused&&Math.abs(car.speed)>.1)s.yaw+=Math.atan2(Math.sin(car.yaw-s.yaw),Math.cos(car.yaw-s.yaw))*Math.min(1,dt*5);
@@ -435,6 +443,9 @@ export function Player({
    stepMotorcycle(dt,throttle,steer,isBrk,paused||rideLife.crashTime>0,trafficClear,isBoosting);
    s.x=ride.x;s.z=ride.z;s.bodyYaw=ride.yaw;
    if(!paused){s.camX=s.x;s.camZ=s.z;}
+  }else if(isWalkingRecoil()){
+   if(!mapOpen&&!controlsBlocked&&!loading)stepWalkingRecoil(walkingRecoil.current,s,dt,clear,(x,z)=>trafficContact(x,z,s.bodyYaw,height(x,z),true));
+   s.bodyYaw=walkingRecoil.current.yaw;s.camX=s.x;s.camZ=s.z;
   }else   if(aerial&&!mapOpen){
    if(len>0){
     const panSpeed=Math.max(12,s.distance*0.45)*(fast?1.8:1)*dt;
@@ -443,15 +454,24 @@ export function Player({
    }
   }else{
    const speed=(fast?9.5:touch?.active?5.5:4)*dt;
-   move(s,(-Math.sin(yaw)*forward+Math.cos(yaw)*right)*speed,(-Math.cos(yaw)*forward-Math.sin(yaw)*right)*speed,clear);
+   const mx=(-Math.sin(yaw)*forward+Math.cos(yaw)*right)*speed,mz=(-Math.cos(yaw)*forward-Math.sin(yaw)*right)*speed;
+   if(!mapOpen&&!controlsBlocked&&!loading){
+    const contact=walkWithContacts(s,mx,mz,clear,(x,z)=>trafficContact(x,z,s.bodyYaw,height(x,z),true));
+    if(!contact&&rideLife.crashTime<=0)rideLife.contact=false;
+    if(contact&&hitActor('walking',contact==='car')){
+     fallYaw.current=Math.hypot(mx,mz)>.0001?Math.atan2(-mx,-mz):s.bodyYaw;
+     if(contact!=='car'){walkingRecoil.current=createWalkingRecoil(fallYaw.current);s.bodyYaw=fallYaw.current;}
+     s.keys.clear();if(touch)resetMobileInput(touch);s.first=false;s.topDown=false;s.panning=false;s.targetDistance=6;onMode(false);onTopDown(false);onZoom(6);
+    }
+   }
    s.camX=s.x;s.camZ=s.z;
   }
   const dx=s.x-oldX,dz=s.z-oldZ;
   const travelled=Math.hypot(dx,dz);
   characterMotion.current.speed=dt>0?travelled/dt:0;
-  characterMotion.current.distance+=travelled;
+  characterMotion.current.distance+=isWalkingRecoil()?-travelled:travelled;
   updateSummonStand(dt,s.x,s.z,travelled>0.02,!!currentCar(),ride.riding);
-  if(!currentCar()&&!ride.riding&&(!aerial||mapOpen))s.bodyYaw=avatarHeading(s.bodyYaw,dx,dz);
+  if(!currentCar()&&!ride.riding&&!isWalkingRecoil()&&(!aerial||mapOpen))s.bodyYaw=avatarHeading(s.bodyYaw,dx,dz);
   if(wheels.current&&(!aerial||mapOpen)){
    const travel=-Math.sin(s.bodyYaw)*dx-Math.cos(s.bodyYaw)*dz;
    wheels.current.rotation.x-=Math.hypot(dx,dz)*(travel<0?-1:1)/(0.24*0.95);
@@ -468,9 +488,9 @@ export function Player({
   characterMotion.current.leftFoot=(left-groundY+.012)/bodyScale;
   characterMotion.current.rightFoot=(rightHeight-groundY+.012)/bodyScale;
   characterMotion.current.stepLift=Math.min(.32,Math.abs(height(s.x-sn*.4,s.z-c*.4)-center)+.04);
-  const fall=ride.riding&&rideLife.crashTime>0?Math.min(1,(2-rideLife.crashTime)/.35,rideLife.lives>0?rideLife.crashTime/.4:1):0;
-  const isBlinking=ride.riding&&rideLife.invulnerable>0&&Math.floor(clock.elapsedTime*12)%2===0;
-  if(avatar.current){avatar.current.position.set(s.x,groundY+fall*.18,s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:0,s.bodyYaw,fall*1.42,'YXZ');avatar.current.visible=!car&&!s.first&&!isBlinking;}
+  const fall=!car?actorFallProgress():0;
+  const isBlinking=!car&&rideLife.invulnerable>0&&Math.floor(clock.elapsedTime*12)%2===0;
+  if(avatar.current){avatar.current.position.set(s.x,groundY+fall*(ride.riding?.18:.28*bodyScale),s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:fall*Math.PI/2,fall&&!ride.riding?fallYaw.current:s.bodyYaw,ride.riding?fall*1.42:0,'YXZ');avatar.current.visible=!car&&!s.first&&!isBlinking;}
   target.current.set(aerial?s.camX:s.x,(aerial?height(s.camX,s.camZ):groundY)+1.65*(car||ride.riding?1:bodyScale),aerial?s.camZ:s.z);
   if(car&&s.first)target.current.set(DRIVER_EYE[0]*car.size,DRIVER_EYE[1]*car.size,DRIVER_EYE[2]*car.size).applyEuler(new Euler(car.pitch,car.yaw,car.roll,'YXZ')).add(new Vector3(car.x,car.groundY,car.z));
   camera.userData.viewFocus={x:target.current.x,z:target.current.z};
@@ -490,7 +510,7 @@ export function Player({
    }
    camera.position.copy(desired.current);camera.lookAt(target.current);
   }
-  s.time+=dt;if(s.time>0.08){s.time=0;onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car,ride.riding),summonStatus:carSummonState.status});onRideStatus?.({riding:ride.riding,near:!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0});onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
+  s.time+=dt;if(s.time>0.08){s.time=0;onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car,ride.riding),summonStatus:carSummonState.status});onRideStatus?.({riding:ride.riding,near:!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0,impactMode:rideLife.mode,damage:rideLife.damage});onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
  },-1);
  return <><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar">{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter appearance={appearance.human} motion={characterMotion} riding/></group></>:character==='cartoon'?<CartoonCharacter appearance={appearance.human} motion={characterMotion}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
 

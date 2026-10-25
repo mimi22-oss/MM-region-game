@@ -1,4 +1,4 @@
-export type HumanPreset = 'boy' | 'girl' | 'mother' | 'grandmother' | 'father';
+export type HumanPreset = 'boy' | 'girl' | 'mother' | 'grandmother' | 'grandfather' | 'father';
 export type HumanAppearance = {
  preset:HumanPreset; hair:'swept'|'bob'|'long'|'bun'; hairColor:string; skin:string;
  face:'oval'|'round'|'mature'; clothes:'hoodie'|'shirt'|'dress'|'longyi';
@@ -13,6 +13,7 @@ export const HUMAN_PRESETS:Record<HumanPreset,HumanAppearance>={
  girl:{preset:'girl',hair:'bob',hairColor:'#352720',skin:'#e9b18a',face:'round',clothes:'dress',clothingColor:'#b8518e',trousersColor:'#483346',height:.94,shoes:'sneakers',shoeColor:'#f2d8e5'},
  mother:{preset:'mother',hair:'long',hairColor:'#292324',skin:'#bd875f',face:'oval',clothes:'longyi',clothingColor:'#298c86',trousersColor:'#244b6e',height:1.07,shoes:'sandals',shoeColor:'#71482d'},
  grandmother:{preset:'grandmother',hair:'bun',hairColor:'#b6b3b0',skin:'#c69b7c',face:'mature',clothes:'longyi',clothingColor:'#99734f',trousersColor:'#56396d',height:.97,shoes:'sandals',shoeColor:'#49382c'},
+ grandfather:{preset:'grandfather',hair:'swept',hairColor:'#b4b2af',skin:'#b88a68',face:'mature',clothes:'longyi',clothingColor:'#ded2af',trousersColor:'#59675d',height:1.05,shoes:'sandals',shoeColor:'#594531'},
  father:{preset:'father',hair:'swept',hairColor:'#252222',skin:'#aa7552',face:'mature',clothes:'shirt',clothingColor:'#4f7198',trousersColor:'#303b47',height:1.16,shoes:'boots',shoeColor:'#4b3529'},
 };
 export const CAR_MODELS:Record<CarModel,{label:string;roofFront:number;roofRear:number;roofY:number}>={

@@ -2,7 +2,7 @@ import {useState,type ReactNode} from 'react';
 import {CAR_MODELS,HUMAN_PRESETS,defaultAppearance,type HumanPreset,type HumanAppearance,type RobotAppearance,type CarAppearance} from '../data/appearance';
 import {setAppearance,useAppearance} from '../game/appearanceStore';
 import type {CharacterKind} from './CharacterPicker';
-const labels:Record<HumanPreset,string>={boy:'Boy · လူငယ်',girl:'Girl · မိန်းကလေး',mother:'Mother · အမေ',grandmother:'Grandmother · အဘွား',father:'Father · အဖေ'};
+const labels:Record<HumanPreset,string>={boy:'Boy · လူငယ်',girl:'Girl · မိန်းကလေး',mother:'Mother · အမေ',grandmother:'Grandmother · အဘွား',grandfather:'Grandfather · အဖိုး',father:'Father · အဖေ'};
 function Field({label,children}:{label:string;children:ReactNode}){return <label className="appearance-field"><span>{label}</span>{children}</label>;}
 function Choice<T extends string>({label,value,options,onChange}:{label:string;value:T;options:readonly (readonly [T,string])[];onChange:(v:T)=>void}){
  return <Field label={label}><select value={value} onChange={e=>onChange(e.target.value as T)}>{options.map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></Field>;
