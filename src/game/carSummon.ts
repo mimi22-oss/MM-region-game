@@ -42,19 +42,9 @@ export const carSummonState = {
 };
 
 export function isPlayerInSummonZone(px: number, pz: number): boolean {
-	// 1. Check exact requested coordinates: (185.429, 196.050) / U/V (-7.510, 269.747) with generous detection radius
+	// Strictly check if player is inside the 3.5m ground animated summon circle at (185.429, 196.050)
 	const distToPoint = Math.hypot(px - SUMMON_TRIGGER_X, pz - SUMMON_TRIGGER_Z);
-	if (distToPoint <= 10.0) return true;
-
-	// 2. Also check farmhouse front doorway / verandah / front gate area
-	const dx = px - farmhouse.x;
-	const dz = pz - farmhouse.z;
-	const c = Math.cos(farmhouse.rotation);
-	const s = Math.sin(farmhouse.rotation);
-	const lx = c * dx - s * dz;
-	const lz = s * dx + c * dz;
-	// Doorway: lx=0, lz=5.0. Verandah: lz=5..6.8. Steps: lz=6.8..7.3. Gate: lz=7.5. Driveway: lz=7.5..12.
-	return lz >= 4.8 && lz <= 12.0 && Math.abs(lx) <= 4.5;
+	return distToPoint <= 3.8;
 }
 
 export function updateSummonStand(dt: number, px: number, pz: number, isMoving: boolean, driving: boolean, riding: boolean): void {

@@ -1,5 +1,6 @@
 import { RideControls } from './components/RideControls';
 import { CarControls } from './components/CarControls';
+import { GuideDialog } from './components/GuideDialog';
 import type { CarStatus } from './game/carRide';
 import type { RideStatus } from './game/motorcycleRide';
 import { RobotLocationPanel } from "./components/RobotLocationPanel";
@@ -38,6 +39,14 @@ import {
   MAX_ZOOM,
   type TeleportTarget,
 } from "./components/Player";
+import {
+  TeleportPicker,
+  TeleportConfirmOverlay,
+  type TeleportPin,
+  type ScreenPosition,
+} from "./components/TeleportPicker";
+import { findTeleportSpot } from "./game/cameraNavigation";
+import { canStand } from "./game/collision";
 import { ward } from "./data/ward";
 import {
   MAP_DESTINATIONS,
@@ -127,6 +136,7 @@ function App() {
   );
   const [mapOpen, setMapOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [sceneActive, setSceneActive] = useState(false);
   const [topDown, setTopDown] = useState(false);
@@ -157,6 +167,46 @@ function App() {
   const [teleportTarget, setTeleportTarget] = useState<TeleportTarget | null>(
     null,
   );
+  const [teleportMode, setTeleportMode] = useState(false);
+  const [teleportPin, setTeleportPin] = useState<TeleportPin | null>(null);
+  const [teleportScreenPos, setTeleportScreenPos] = useState<ScreenPosition | null>(null);
+  const [teleportDragging, setTeleportDragging] = useState(false);
+
+  const handleToggleTeleportMode = () => {
+    if (document.pointerLockElement) document.exitPointerLock();
+    setTeleportMode((prev) => {
+      const next = !prev;
+      if (!next) {
+        setTeleportPin(null);
+        setTeleportScreenPos(null);
+      }
+      return next;
+    });
+  };
+
+  const handleConfirmTeleport = (pin: TeleportPin) => {
+    if (document.pointerLockElement) document.exitPointerLock();
+    const targetX = pin.safeX;
+    const targetZ = pin.safeZ;
+    setPos({ x: targetX, z: targetZ });
+    setTeleportTarget({
+      x: targetX,
+      z: targetZ,
+      seq: Date.now(),
+    });
+    setTeleportMode(false);
+    setTeleportPin(null);
+    setTeleportScreenPos(null);
+    const loc = detectLocation(targetX, targetZ);
+    setArrivalToast(loc);
+  };
+
+  const handleCancelTeleport = () => {
+    setTeleportPin(null);
+    setTeleportScreenPos(null);
+    setTeleportMode(false);
+  };
+
   const [arrivalToast, setArrivalToast] = useState<DetectedLocation | null>(
     null,
   );
@@ -201,6 +251,9 @@ function App() {
         setMapOpen(false);
         setSettingsOpen(false);
         setSceneActive(false);
+        setTeleportMode(false);
+        setTeleportPin(null);
+        setTeleportScreenPos(null);
       }
       if (e.code === "KeyN" && !e.repeat) {
         setNight((v) => !v);
@@ -269,8 +322,15 @@ function App() {
           >
             <FrameBudget />
             <Town night={night} destination={teleportTarget} paused={loading} onLoadingChange={setSceneLoading} onSceneError={sceneError} />
+            <TeleportPicker
+              active={teleportMode}
+              pin={teleportPin}
+              onPickPin={setTeleportPin}
+              onScreenPos={setTeleportScreenPos}
+              onDraggingChange={setTeleportDragging}
+            />
             <Player
-              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading} loading={loading}
+              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen} loading={loading}
               onCarStatus={carUpdate}
               character={character}
               navigationRequest={navigationRequest}
@@ -280,6 +340,8 @@ function App() {
               topDown={topDown}
               zoom={zoom}
               teleportTarget={teleportTarget}
+              teleportMode={teleportMode}
+              teleportDragging={teleportDragging}
               onMode={setFirst}
               onTopDown={setTopDown}
               onZoom={setZoom}
@@ -338,9 +400,10 @@ function App() {
           </button>
           <button
             type="button"
-            aria-label="ဇာတ်ကောင်ကို ဤမြင်ကွင်းအလယ်သို့ ရွှေ့ပြောင်းမည်"
-            title="ဇာတ်ကောင်ကို ဤမြင်ကွင်းအလယ်သို့ ရွှေ့ပြောင်းမည်"
-            onClick={() => navigate("teleport")}
+            className={teleportMode ? "location-btn-active" : ""}
+            aria-label="Scene ပေါ်တွင် ထောက်၍ သွားလိုသည့်နေရာသို့ Teleport လုပ်မည်"
+            title={teleportMode ? "Teleport ရွေးချယ်မှု ပိတ်မည်" : "Scene ပေါ်တွင် ထောက်၍ သွားလိုသည့်နေရာသို့ Teleport လုပ်မည်"}
+            onClick={handleToggleTeleportMode}
           >
             <svg
               width="24"
@@ -356,6 +419,21 @@ function App() {
           </button>
           {navigationNotice && <p role="status">{navigationNotice}</p>}
         </div>
+      )}
+
+      {/* Floating Confirmation Overlay for Teleport Target */}
+      {teleportMode && teleportPin && teleportScreenPos && (
+        <TeleportConfirmOverlay
+          screenX={teleportScreenPos.x}
+          screenY={teleportScreenPos.y}
+          visible={teleportScreenPos.visible}
+          pin={teleportPin}
+          playerX={pos.x}
+          playerZ={pos.z}
+          playerYaw={robotYaw}
+          onConfirm={handleConfirmTeleport}
+          onCancel={handleCancelTeleport}
+        />
       )}
 
       {!mapOpen && homeGuidance(pos.x, pos.z) && (
@@ -463,6 +541,17 @@ function App() {
                   onClick={() => {
                     if (document.pointerLockElement) document.exitPointerLock();
                     setSettingsOpen(false);
+                    setGuideOpen(true);
+                  }}
+                >
+                  📖 အသုံးပြုနည်း လမ်းညွှန် ↗
+                </button>
+                <button
+                  type="button"
+                  className="cam-btn"
+                  onClick={() => {
+                    if (document.pointerLockElement) document.exitPointerLock();
+                    setSettingsOpen(false);
                     setMapOpen(true);
                   }}
                 >
@@ -543,35 +632,9 @@ function App() {
           </section>
         )}
       </div>
-      {!welcomeDismissed && !mapOpen && !topDown && !rideStatus.riding && !carStatus.driving && (
+      {!welcomeDismissed && !mapOpen && !topDown && !rideStatus.riding && !carStatus.driving && !guideOpen && (
         <section className="welcome" aria-label="ကြိုဆိုပါသည်">
           <div className="welcome-actions">
-            <button
-              type="button"
-              className="welcome-btn welcome-btn-greet"
-              onClick={() => {
-                setWelcomeDismissed(true);
-                setArrivalToast({
-                  id: "greet",
-                  label: "မင်္ဂလာပါ",
-                  title: "မင်္ဂလာပါ · ကလေးမြို့သို့ ကြိုဆိုပါသည်",
-                  subtitle: "Kalaymyo 3D Virtual Prototype",
-                });
-                window.setTimeout(() => setArrivalToast(null), 3000);
-              }}
-            >
-              မင်္ဂလာပါ
-            </button>
-            <button
-              type="button"
-              className="welcome-btn welcome-btn-tour"
-              onClick={() => {
-                setWelcomeDismissed(true);
-                setSettingsOpen(true);
-              }}
-            >
-              လျှောက်လည်ကြမယ်
-            </button>
             <button
               type="button"
               className="welcome-btn welcome-btn-start"
@@ -583,9 +646,28 @@ function App() {
             >
               စတင်မယ်
             </button>
+            <button
+              type="button"
+              className="welcome-btn welcome-btn-guide"
+              onClick={() => {
+                setGuideOpen(true);
+              }}
+            >
+              လမ်းညွှန်
+            </button>
           </div>
         </section>
       )}
+      <GuideDialog
+        isOpen={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        onStart={() => {
+          setGuideOpen(false);
+          setWelcomeDismissed(true);
+          setSceneActive(true);
+          document.querySelector("canvas")?.requestPointerLock();
+        }}
+      />
       {locked && <div className="crosshair">+</div>}
       {/* <aside className={mapOpen?"map map-expanded":"map"} aria-label="Ward plan" onClick={()=>{if(!mapOpen){if(document.pointerLockElement)document.exitPointerLock();setSettingsOpen(false);setMapOpen(true);}}}>
   <button type="button" className="map-toggle" aria-expanded={mapOpen} onClick={e=>{e.stopPropagation();if(document.pointerLockElement)document.exitPointerLock();setSettingsOpen(false);setMapOpen(v=>!v);}}>{mapOpen?`✕ ပိတ်ရန် · WARD PLAN (${currentLoc.label})`:`📍 ${currentLoc.label} ↗`}<b>မြောက် ↖</b></button>

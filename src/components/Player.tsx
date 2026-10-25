@@ -6,6 +6,7 @@ import { sceneGround,motorcycleGroundPose,carGroundPose } from '../game/groundSu
 import { carRide, carInput, currentCar, nearbyCar, enterCar, parkCar, carExitSpot, shiftCar, stepCar, clearCarInput, type CarStatus, type CarGear } from '../game/carRide';
 import { canSummonCar, stepCarSummon, updateSummonStand, carSummonState } from '../game/carSummon';
 import { ParkedCars } from './Car';
+import { DRIVER_EYE } from '../game/carCabin';
 import { motorcycleRide,tryMount,parkMotorcycle,dismountSpot,stepMotorcycle,type RideStatus } from '../game/motorcycleRide';
 import { MotorcycleModel,ParkedMotorcycle } from './Motorcycle';
 import { updateHomeAccess } from '../game/homeAccess';
@@ -45,6 +46,8 @@ export function Player({
  topDown,
  zoom,
  teleportTarget,
+ teleportMode=false,
+ teleportDragging=false,
  onMode,
  onTopDown,
  onZoom,
@@ -63,6 +66,8 @@ export function Player({
  topDown:boolean;
  zoom:number;
  teleportTarget?:TeleportTarget|null;
+ teleportMode?:boolean;
+ teleportDragging?:boolean;
  onMode:(v:boolean)=>void;
  onTopDown:(v:boolean)=>void;
  onZoom:(v:number)=>void;
@@ -201,6 +206,9 @@ export function Player({
  },[navigationRequest,onNavigationResult,onMode,onTopDown,onZoom,onPosition]);
  const target=useRef(new Vector3()); const desired=useRef(new Vector3()); const ray=useRef(new Raycaster());
  useEffect(()=>{
+  if(teleportMode&&document.pointerLockElement===gl.domElement)document.exitPointerLock();
+ },[teleportMode,gl]);
+ useEffect(()=>{
   const s=state.current;
   const clear=()=>{motorcycleRide.speed=0;const car=currentCar();if(car)car.speed=0;clearCarInput();s.keys.clear();s.dragging=false;s.shiftDrag=false;gl.domElement.style.cursor=''};
   const lock=()=>{s.locked=document.pointerLockElement===gl.domElement;clear();onLock(s.locked)};
@@ -275,7 +283,7 @@ export function Player({
    }
   };
   const mouse=(e:MouseEvent)=>{
-   if(controlsBlocked)return;
+   if(controlsBlocked||teleportDragging)return;
    if(!s.locked&&!s.dragging)return;
    if(s.dragging)s.dragMoved+=Math.hypot(e.movementX,e.movementY);
    const isShiftDrag=s.dragging&&(s.shiftDrag||e.shiftKey||s.keys.has('ShiftLeft')||s.keys.has('ShiftRight'));
@@ -293,7 +301,7 @@ export function Player({
    else if(s.pitch>-1.45&&s.topDown){s.topDown=false;onTopDown(false);}
   };
   const down=(e:MouseEvent)=>{
-   if(mapOpen||controlsBlocked||e.button!==0)return;
+   if(mapOpen||controlsBlocked||teleportDragging||e.button!==0||(e.target instanceof HTMLElement&&e.target.closest('.teleport-confirm-card,.location-actions')))return;
    s.dragging=true;
    s.dragMoved=0;
    s.shiftDrag=e.shiftKey||s.keys.has('ShiftLeft')||s.keys.has('ShiftRight');
@@ -309,11 +317,11 @@ export function Player({
    gl.domElement.style.cursor=shiftHeld?'grab':'';
   };
   const click=(e:MouseEvent)=>{
-   if(mapOpen||controlsBlocked||s.dragMoved>5||e.shiftKey||s.keys.has('ShiftLeft')||s.keys.has('ShiftRight'))return;
+   if(teleportMode||mapOpen||controlsBlocked||s.dragMoved>5||e.shiftKey||s.keys.has('ShiftLeft')||s.keys.has('ShiftRight'))return;
    if(document.pointerLockElement!==gl.domElement)gl.domElement.requestPointerLock()?.catch(()=>onLock(false));
   };
   const wheel=(e:WheelEvent)=>{
-   if(mapOpen||controlsBlocked||(e.target instanceof HTMLElement&&e.target.closest('.settings-menu,.ride-controls,.car-controls')))return;
+   if(mapOpen||controlsBlocked||(e.target instanceof HTMLElement&&e.target.closest('.settings-menu,.ride-controls,.car-controls,.guide-dialog-modal,.teleport-confirm-card')))return;
    e.preventDefault();
    if(s.first&&e.deltaY>0){
     s.first=false;onMode(false);
@@ -326,7 +334,7 @@ export function Player({
   };
   document.addEventListener('pointerlockchange',lock);document.addEventListener('keydown',key);document.addEventListener('keyup',key);document.addEventListener('mousemove',mouse);document.addEventListener('mouseup',up);window.addEventListener('blur',clear);window.addEventListener('wheel',wheel,{passive:false});gl.domElement.addEventListener('mousedown',down);gl.domElement.addEventListener('click',click);
   return ()=>{document.removeEventListener('pointerlockchange',lock);document.removeEventListener('keydown',key);document.removeEventListener('keyup',key);document.removeEventListener('mousemove',mouse);document.removeEventListener('mouseup',up);window.removeEventListener('blur',clear);window.removeEventListener('wheel',wheel);gl.domElement.removeEventListener('mousedown',down);gl.domElement.removeEventListener('click',click);if(document.pointerLockElement===gl.domElement)document.exitPointerLock()};
- },[gl,onLock,onMode,onTopDown,onZoom,mapOpen,controlsBlocked]);
+ },[gl,onLock,onMode,onTopDown,onZoom,mapOpen,controlsBlocked,teleportMode,teleportDragging]);
  useFrame(({clock},delta)=>{
   const s=state.current;const dt=loading?0:Math.min(delta,0.05);
   const ground=sceneGround(scene,clock.elapsedTime);
@@ -459,7 +467,7 @@ export function Player({
   const isBlinking=ride.riding&&rideLife.invulnerable>0&&Math.floor(clock.elapsedTime*12)%2===0;
   if(avatar.current){avatar.current.position.set(s.x,groundY+fall*.18,s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:0,s.bodyYaw,fall*1.42,'YXZ');avatar.current.visible=!car&&!s.first&&!isBlinking;}
   target.current.set(aerial?s.camX:s.x,(aerial?height(s.camX,s.camZ):groundY)+1.65,aerial?s.camZ:s.z);
-  if(car&&s.first)target.current.set(.28*car.size,1.80*car.size,.04*car.size).applyEuler(new Euler(car.pitch,car.yaw,car.roll,'YXZ')).add(new Vector3(car.x,car.groundY,car.z));
+  if(car&&s.first)target.current.set(DRIVER_EYE[0]*car.size,DRIVER_EYE[1]*car.size,DRIVER_EYE[2]*car.size).applyEuler(new Euler(car.pitch,car.yaw,car.roll,'YXZ')).add(new Vector3(car.x,car.groundY,car.z));
   camera.userData.viewFocus={x:target.current.x,z:target.current.z};
   const viewPitch=s.pitch+(car&&s.first?car.pitch:0);
   const direction=new Vector3(-Math.sin(s.yaw)*Math.cos(viewPitch),Math.sin(viewPitch),-Math.cos(s.yaw)*Math.cos(viewPitch));

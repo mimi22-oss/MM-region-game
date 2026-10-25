@@ -7,8 +7,33 @@ import { farmhouse, toWorld } from '../src/data/ward.ts';
 import { canStand } from '../src/game/collision.ts';
 import { windshieldFrameGeometry, windshieldGeometry, cabinCurvePoint } from '../src/game/carWindshield.ts';
 import { Mesh, MeshBasicMaterial, DoubleSide, Raycaster, Vector3 } from 'three';
+import { carBodyShellGeometry, driverGrip, DRIVER_POSITION, DRIVER_SCALE, STEERING_POSITION, STEERING_RADIUS, STEERING_TILT } from '../src/game/carCabin.ts';
 const car=driveableCars[0],free=()=>true;
 beforeEach(()=>{parkCar();Object.assign(car,{...parkedCars[0],yaw:0,speed:0,distance:0,steering:0,wheelTravel:[0,0,0,0],mustLeave:false});});
+
+test('car shell leaves the lap and footwell empty while preserving solid doors, hood and boot',()=>{
+ const geometry=carBodyShellGeometry(),material=new MeshBasicMaterial({side:DoubleSide}),shell=new Mesh(geometry,material);
+ const down=new Vector3(0,-1,0);
+ for(const x of [-.28,.28])for(const z of [-.6,-.3,.04,.72]){
+  assert.equal(new Raycaster(new Vector3(x,1.75,z),down,0,1.15).intersectObject(shell).length,0,'painted body must not fill the cabin');
+ }
+ for(const side of [-1,1]){
+  const hit=new Raycaster(new Vector3(0,.95,.04),new Vector3(side,0,0),0,1).intersectObject(shell)[0];
+  assert.ok(hit&&hit.distance>.60&&hit.distance<.80,'solid door surrounds the cabin');
+ }
+ for(const z of [-1.2,1.3])assert.ok(new Raycaster(new Vector3(0,2,z),down).intersectObject(shell).length>0);
+ geometry.dispose();material.dispose();
+});
+
+test('driver grips stay on the steering rim in both directions and at full lock',()=>{
+ for(const angle of [-8,-1,-.4,0,.4,1,8])for(const side of [-1,1]){
+  const grip=driverGrip(side,angle,new Vector3()).multiplyScalar(DRIVER_SCALE).add(new Vector3(...DRIVER_POSITION));
+  grip.sub(new Vector3(...STEERING_POSITION)).applyAxisAngle(new Vector3(1,0,0),-STEERING_TILT);
+  assert.ok(Math.abs(grip.z)<1e-10);
+  assert.ok(Math.abs(Math.hypot(grip.x,grip.y)-STEERING_RADIUS)<1e-10);
+  assert.equal(Math.sign(grip.x),side,'hands do not cross through each other at full lock');
+ }
+});
 
 test('the driver can see through the hollow windshield frame',()=>{
  const point=cabinCurvePoint(.14),normal=new Vector3(0,point.ny,point.nz);

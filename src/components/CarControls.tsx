@@ -189,7 +189,7 @@ export function CarControls({ status }: { status: CarStatus }) {
 							{(!status.summonStatus || status.summonStatus === 'idle') && (
 								<div className="car-summon-row">
 									<span className="car-summon-prompt-icon">🚗</span>
-									<span className="car-summon-text">ကားခေါ်မှာလား?</span>
+									<span className="car-summon-text">ကားခေါ်မည်</span>
 									<button
 										type="button"
 										className="car-summon-btn"

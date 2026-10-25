@@ -4,12 +4,14 @@ import { useRef, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import {
 	BufferGeometry, CatmullRomCurve3, Float32BufferAttribute, Group,
-	MeshStandardMaterial, SphereGeometry, Vector3, TubeGeometry, Quaternion,
+	MeshStandardMaterial, SphereGeometry, Vector3, TubeGeometry, Quaternion, Mesh,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { driverGrip, DRIVER_POSITION, DRIVER_SCALE, STEERING_TILT } from '../game/carCabin';
 
 type Point = [number, number, number];
 export type CharacterMotion = { speed: number; distance: number; stepLift?:number;leftFoot?:number;rightFoot?:number };
+export type DrivingPose = {active:boolean;wheelAngle:number;interior:boolean;clutch:boolean;brake:boolean;throttle:boolean};
 
 // Shared resources keep switching characters inexpensive, including on phones.
 const ball = new SphereGeometry(1, 20, 14);
@@ -193,17 +195,69 @@ function RidingLeg({side}:{side:number}){
 }
 function RidingArms(){return <group><mesh geometry={ridingSleeves} material={materials.hoodie} castShadow/>{[-1,1].map(side=><group key={side}><Ellipsoid position={[side*.27,.85,-.45]} scale={[.062,.057,.058]} material={materials.rib}/><Ellipsoid position={[side*.27,.83,-.49]} scale={[.046,.037,.043]} material={materials.skin}/></group>)}</group>}
 
+const limbUp=new Vector3(0,1,0),limbDirection=new Vector3();
+function fitLimb(mesh:Mesh|null,a:Vector3,b:Vector3,radius:number){
+ if(!mesh)return;
+ limbDirection.subVectors(b,a);
+ mesh.position.lerpVectors(a,b,.5);
+ mesh.scale.set(radius,limbDirection.length()*.5+radius*.4,radius);
+ mesh.quaternion.setFromUnitVectors(limbUp,limbDirection.normalize());
+}
+function DrivingArm({side,pose}:{side:number;pose:RefObject<DrivingPose>}){
+ const upper=useRef<Mesh>(null),lower=useRef<Mesh>(null),hand=useRef<Group>(null);
+ const points=useRef({shoulder:new Vector3(side*.219,1.175,0),elbow:new Vector3(),wrist:new Vector3(),grip:new Vector3()});
+ useFrame(()=>{
+  if(!pose.current.active)return;
+  const p=points.current,angle=Math.max(-.85,Math.min(.85,pose.current.wheelAngle));
+  driverGrip(side,pose.current.wheelAngle,p.grip);
+  p.elbow.set(side*.30,1.01+(p.grip.y-1.025)*.35,-.16);
+  p.wrist.copy(p.grip).lerp(p.elbow,.16);
+  fitLimb(upper.current,p.shoulder,p.elbow,.074);
+  fitLimb(lower.current,p.elbow,p.wrist,.064);
+  if(hand.current){hand.current.position.copy(p.grip);hand.current.rotation.set(STEERING_TILT,0,angle);}
+ });
+ return <group name={side<0?'driver-left-arm':'driver-right-arm'}>
+  <mesh ref={upper} geometry={ball} material={materials.hoodie} castShadow/>
+  <mesh ref={lower} geometry={ball} material={materials.hoodie} castShadow/>
+  <group ref={hand} name={side<0?'driver-left-grip':'driver-right-grip'}>
+   <Ellipsoid position={[0,0,.030]} scale={[.040,.052,.021]} material={materials.skin}/>
+   {[-.029,-.010,.009,.028].map(y=><mesh key={y} position={[0,y,0]} rotation={[Math.PI/2,0,0]} material={materials.skin}><torusGeometry args={[.032,.009,6,12,Math.PI*1.65]}/></mesh>)}
+   <Ellipsoid position={[-side*.031,.014,.002]} scale={[.019,.031,.019]} material={materials.skin}/>
+  </group>
+ </group>;
+}
+function DrivingLeg({side,pose}:{side:number;pose:RefObject<DrivingPose>}){
+ const thigh=useRef<Mesh>(null),shin=useRef<Mesh>(null),foot=useRef<Group>(null);
+ const points=useRef({hip:new Vector3(side*.104,.707,.016),knee:new Vector3(),ankle:new Vector3(),x:side<0?.12:.43});
+ useFrame((_,delta)=>{
+  if(!pose.current.active)return;
+  const p=points.current,targetX=side<0?.12:pose.current.brake?.28:.43;
+  p.x+=(targetX-p.x)*(1-Math.exp(-Math.min(delta,.05)*15));
+  const x=(p.x-DRIVER_POSITION[0])/DRIVER_SCALE;
+  const pressed=side<0?pose.current.clutch:pose.current.brake||pose.current.throttle;
+  p.knee.set(x,.64,-.40);p.ankle.set(x,.29,-.70);
+  fitLimb(thigh.current,p.hip,p.knee,.088);fitLimb(shin.current,p.knee,p.ankle,.068);
+  if(foot.current){foot.current.position.set(x,.225,-.73);foot.current.rotation.x=pressed?.30:.60;}
+ });
+ return <group name={side<0?'driver-left-leg':'driver-right-leg'}>
+  <mesh ref={thigh} geometry={ball} material={materials.trousers} castShadow/>
+  <mesh ref={shin} geometry={ball} material={materials.trousers} castShadow/>
+  <group ref={foot}><mesh geometry={shoe} material={materials.white}/><mesh geometry={sole} material={materials.sole}/><mesh geometry={soleStripe} material={materials.rib}/><mesh geometry={laces} material={materials.lace}/></group>
+ </group>;
+}
+
 /** Reference-inspired boy. Facing -Z; origin at the soles; no world movement here. */
-export function CartoonCharacter({ motion, riding=false }: { motion: RefObject<CharacterMotion>;riding?:boolean }) {
+export function CartoonCharacter({ motion, riding=false, driving }: { motion: RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose> }) {
 	const body = useRef<Group>(null), headGroup = useRef<Group>(null);
 	const leftArm = useRef<Group>(null), rightArm = useRef<Group>(null);
 	const leftLeg = useRef<Group>(null), rightLeg = useRef<Group>(null);
 	const leftEye = useRef<Group>(null), rightEye = useRef<Group>(null);
 	const animation = useRef({ stride: 0, time: 0, blink: 2.6 });
 	useFrame((_, delta) => {
+		if(driving&&!driving.current.active)return;
 		const dt = Math.min(delta, .06), a = animation.current;
 		a.time += dt;
-		const speed = riding?0:Math.abs(motion.current.speed), active = Math.min(1, speed / .8);
+		const speed = riding||driving?0:Math.abs(motion.current.speed), active = Math.min(1, speed / .8);
 		a.stride += (active - a.stride) * (1 - Math.exp(-dt * 11));
 		const run = Math.min(1, Math.max(0, (speed - 2.8) / 4));
 		const phase = motion.current.distance * (4.9 - run * .6);
@@ -213,10 +267,11 @@ export function CartoonCharacter({ motion, riding=false }: { motion: RefObject<C
 		if (leftArm.current) leftArm.current.rotation.x = -swing * .82;
 		if (rightArm.current) rightArm.current.rotation.x = swing * .82;
 		if (body.current) {
-			body.current.position.y = Math.abs(Math.sin(phase)) * .018 * a.stride + Math.sin(a.time * 1.8) * .0025 * (1 - a.stride);
+			body.current.position.y = driving?0:Math.abs(Math.sin(phase)) * .018 * a.stride + Math.sin(a.time * 1.8) * .0025 * (1 - a.stride);
 			body.current.rotation.z = Math.sin(phase) * .013 * a.stride;
 		}
 		if (headGroup.current) headGroup.current.rotation.y = Math.sin(a.time * .65) * .022 * (1 - a.stride);
+		if (headGroup.current&&driving) headGroup.current.visible=!driving.current.interior;
 		a.blink -= dt;
 		const blinkScale = a.blink < 0 ? Math.max(.06, Math.abs(a.blink + .085) / .085) : 1;
 		if (a.blink < -.17) a.blink = 3.1 + Math.sin(a.time * 2.3) * .8;
@@ -224,7 +279,7 @@ export function CartoonCharacter({ motion, riding=false }: { motion: RefObject<C
 		if (rightEye.current) rightEye.current.scale.y = Math.min(1, blinkScale);
 	});
 	return <group name="cartoon-boy-character" dispose={null}>
-		{riding?<><RidingLeg side={-1}/><RidingLeg side={1}/></>:<><Leg side={-1} innerRef={leftLeg}/><Leg side={1} innerRef={rightLeg}/></>}
+		{driving?<><DrivingLeg side={-1} pose={driving}/><DrivingLeg side={1} pose={driving}/></>:riding?<><RidingLeg side={-1}/><RidingLeg side={1}/></>:<><Leg side={-1} innerRef={leftLeg}/><Leg side={1} innerRef={rightLeg}/></>}
 		<group ref={body}>
 			<Ellipsoid position={[0, .72, .01]} scale={[.194, .106, .121]} material={materials.trousers} />
 			<mesh geometry={torso} material={materials.hoodie} castShadow />
@@ -240,7 +295,7 @@ export function CartoonCharacter({ motion, riding=false }: { motion: RefObject<C
 			<mesh geometry={hoodRim} material={materials.hoodie} castShadow />
 			<mesh geometry={shirtV} material={materials.white} />
 			<Ellipsoid position={[0, 1.273, .004]} scale={[.077, .111, .072]} material={materials.skin} />
-			{riding?<RidingArms/>:<><Arm side={-1} innerRef={leftArm}/><Arm side={1} innerRef={rightArm}/></>}
+			{driving?<><DrivingArm side={-1} pose={driving}/><DrivingArm side={1} pose={driving}/></>:riding?<RidingArms/>:<><Arm side={-1} innerRef={leftArm}/><Arm side={1} innerRef={rightArm}/></>}
 			<group ref={headGroup} position={[0, 1.565, 0]}>
 				<CartoonFace leftEye={leftEye} rightEye={rightEye}/>
 				<CartoonHair/>

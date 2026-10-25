@@ -4,12 +4,14 @@ import { useMemo,useRef } from 'react';
 import { useRegionFrame as useFrame } from './RegionActivity';
 import {Group} from 'three';
 import {sceneGround,carGroundPose} from '../game/groundSurface';
-import { Shape, Path, ExtrudeGeometry, DoubleSide } from 'three';
-import { driveableCars, carRide, frontWheelAngle, STEERING_RATIO, type DriveableCar } from '../game/carRide';
-import { CartoonCharacter } from './CartoonCharacter';
+import { Shape, Path, DoubleSide } from 'three';
+import { driveableCars, carRide, carInput, frontWheelAngle, STEERING_RATIO, type DriveableCar } from '../game/carRide';
+import { CartoonCharacter, type DrivingPose } from './CartoonCharacter';
+import { CarInterior } from './CarInterior';
+import { carBodyShellGeometry, DRIVER_POSITION, DRIVER_SCALE, STEERING_POSITION, STEERING_RADIUS, STEERING_TILT } from '../game/carCabin';
 
 /** Rounded reference-inspired compact car with crystal-clear windshield & detailed cabin interior; front is -Z. */
-export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; size?: number; motion?: { distance: number; steering: number; wheelTravel: number[] } }) {
+export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; size?: number; motion?: { distance: number; steering: number; wheelTravel: number[]; speed?: number } }) {
 	const wheelSteers=useRef<(Group|null)[]>([]),wheelSpins=useRef<(Group|null)[]>([]),steeringWheel=useRef<Group>(null);
 	useFrame(()=>{
 		if(!motion)return;
@@ -21,31 +23,7 @@ export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; s
 		});
 		if(steeringWheel.current)steeringWheel.current.rotation.z=-motion.steering*STEERING_RATIO;
 	});
-	// Lower car body (beltline dips to y ~ 1.16 along windows, leaving cabin open for genuine transparent glass)
-	const lowerBody = useMemo(() => {
-		const s = new Shape();
-		s.moveTo(-1.55, 0.43);
-		s.lineTo(1.64, 0.43);
-		s.quadraticCurveTo(1.78, 1.15, 0.76, 1.24); // front nose, bumper & hood
-		s.lineTo(0.65, 1.16); // front door window sill
-		s.lineTo(0.13, 1.16);
-		s.lineTo(-0.16, 1.18); // center pillar base
-		s.lineTo(-0.91, 1.18); // rear door window sill
-		s.lineTo(-1.18, 1.22); // beltline along rear quarter
-		s.quadraticCurveTo(-1.44, 1.18, -1.55, 0.43); // rear trunk / bumper curve
-		s.closePath();
-		const g = new ExtrudeGeometry(s, {
-			depth: 1.42,
-			bevelEnabled: true,
-			bevelSegments: 3,
-			steps: 1,
-			bevelSize: 0.07,
-			bevelThickness: 0.07,
-			curveSegments: 16,
-		});
-		g.translate(0, 0, -0.71);
-		return g;
-	}, []);
+	const lowerBody = useMemo(carBodyShellGeometry, []);
 
 	// Upper cabin arched roof cap (covers cabin top from t=0.27 to t=0.69)
 	const roofCap = useMemo(() => roofBoxRibbonGeometry(-0.70, 0.70, 0.27, 0.69, -0.015, 0.075, 16), []);
@@ -100,7 +78,7 @@ export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; s
 	return (
 		<group scale={size} name="cartoon-compact-car">
 			{/* အောက်ပိုင်း ကိုယ်ထည် (Lower Car Body) */}
-			<mesh geometry={lowerBody} rotation={[0, Math.PI / 2, 0]} castShadow receiveShadow>
+			<mesh name="car-body-shell" geometry={lowerBody} castShadow receiveShadow>
 				<meshStandardMaterial color={color} metalness={0.18} roughness={0.32} />
 			</mesh>
 
@@ -125,89 +103,25 @@ export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; s
 				<meshStandardMaterial color={color} metalness={0.18} roughness={0.32} side={DoubleSide} />
 			</mesh>
 
-			{/* ၃D အတွင်းခန်း (3D Cabin Interior visible through glass) */}
-			{/* အတွင်းကြမ်းပြင် (Cabin Floor) */}
-			<mesh position={[0, 0.60, 0.15]}>
-				<boxGeometry args={[1.30, 0.06, 2.0]} />
-				<meshStandardMaterial color="#15191d" roughness={0.9} />
-			</mesh>
-
-			{/* ဒက်ရှ်ဘုတ်ခုံ (Dashboard Console) */}
-			<mesh position={[0, 1.18, -0.50]}>
-				<boxGeometry args={[1.22, 0.18, 0.36]} />
-				<meshStandardMaterial color="#1a1e22" roughness={0.85} />
-			</mesh>
-			{/* ယာဉ်မောင်းဘက် အမြန်နှုန်းပြဒိုင်ခွက်ခုံး (Driver Instrument Cluster Hood & Glow) */}
-			<mesh position={[0.28, 1.28, -0.48]}>
-				<boxGeometry args={[0.34, 0.08, 0.32]} />
-				<meshStandardMaterial color="#13161a" roughness={0.8} />
-			</mesh>
-			<mesh position={[0.28, 1.24, -0.31]}>
-				<circleGeometry args={[0.065, 16]} />
-				<meshStandardMaterial color="#0c1520" emissive="#38bdf8" emissiveIntensity={0.65} />
-			</mesh>
-			{/* အလယ်စခရင် (Center Console Infotainment Glow) */}
-			<mesh position={[0, 1.21, -0.31]}>
-				<planeGeometry args={[0.20, 0.12]} />
-				<meshStandardMaterial color="#0c1520" emissive="#38bdf8" emissiveIntensity={0.5} />
-			</mesh>
+			<CarInterior motion={motion}/>
 
 			{/* စတီယာရင်ခွေ (Steering Wheel) */}
-			<group position={[0.28, 1.25, -0.26]}>
-				<mesh position={[0, -0.05, -0.07]} rotation={[-0.45, 0, 0]}>
+			<group position={STEERING_POSITION}>
+				<mesh position={[0, -0.05, -0.07]} rotation={[STEERING_TILT, 0, 0]}>
 					<cylinderGeometry args={[0.025, 0.025, 0.16, 10]} />
 					<meshStandardMaterial color="#171b1f" roughness={0.8} />
 				</mesh>
-				<group rotation={[-0.45, 0, 0]}><group ref={steeringWheel} name="steering-wheel">
+				<group rotation={[STEERING_TILT, 0, 0]}><group ref={steeringWheel} name="steering-wheel">
 				<mesh>
-					<torusGeometry args={[0.13, 0.018, 8, 24]} />
+					<torusGeometry args={[STEERING_RADIUS, 0.018, 8, 32]} />
 					<meshStandardMaterial color="#1e2329" roughness={0.7} />
 				</mesh>
-				{[0,Math.PI*2/3,Math.PI*4/3].map(a=><mesh key={a} position={[Math.sin(a)*.075,Math.cos(a)*.075,0]} rotation={[0,0,-a]}><boxGeometry args={[.017,.11,.016]}/><meshStandardMaterial color="#59616a" roughness={.6}/></mesh>)}
+				{[0,Math.PI*2/3,Math.PI*4/3].map(a=><mesh key={a} position={[Math.sin(a)*.095,Math.cos(a)*.095,0]} rotation={[0,0,-a]}><boxGeometry args={[.017,.15,.016]}/><meshStandardMaterial color="#59616a" roughness={.6}/></mesh>)}
 				<mesh rotation={[Math.PI/2, 0, 0]}>
 					<cylinderGeometry args={[0.045, 0.045, 0.02, 12]} />
 					<meshStandardMaterial color="#2a323a" roughness={0.6} />
 				</mesh>
 				</group></group>
-			</group>
-
-			{/* ရှေ့ထိုင်ခုံ ၂ လုံး (Driver & Passenger Front Bucket Seats with Headrests) */}
-			{[-0.28, 0.28].map((x) => (
-				<group key={x}>
-					{/* ထိုင်ခုံအခင်း (Seat Bottom Cushion) */}
-					<mesh position={[x, 0.88, 0.08]}>
-						<boxGeometry args={[0.38, 0.20, 0.44]} />
-						<meshStandardMaterial color="#222930" roughness={0.8} />
-					</mesh>
-					{/* ခါးမှီ (Seat Backrest) */}
-					<mesh position={[x, 1.28, 0.24]} rotation={[0.14, 0, 0]}>
-						<boxGeometry args={[0.38, 0.58, 0.12]} />
-						<meshStandardMaterial color="#222930" roughness={0.8} />
-					</mesh>
-					{/* ခေါင်းမှီ (Headrest) */}
-					<mesh position={[x, 1.68, 0.29]}>
-						<boxGeometry args={[0.22, 0.16, 0.10]} />
-						<meshStandardMaterial color="#2a323b" roughness={0.8} />
-					</mesh>
-				</group>
-			))}
-
-			{/* နောက်ထိုင်ခုံတန်း (Rear Passenger Bench Seat) */}
-			<group>
-				<mesh position={[0, 0.88, 0.72]}>
-					<boxGeometry args={[1.24, 0.20, 0.42]} />
-					<meshStandardMaterial color="#222930" roughness={0.8} />
-				</mesh>
-				<mesh position={[0, 1.28, 0.90]} rotation={[0.14, 0, 0]}>
-					<boxGeometry args={[1.24, 0.58, 0.12]} />
-					<meshStandardMaterial color="#222930" roughness={0.8} />
-				</mesh>
-				{[-0.32, 0.32].map((x) => (
-					<mesh key={x} position={[x, 1.68, 0.96]}>
-						<boxGeometry args={[0.22, 0.16, 0.10]} />
-						<meshStandardMaterial color="#2a323b" roughness={0.8} />
-					</mesh>
-				))}
 			</group>
 
 			{/* ကားအတွင်း နောက်ကြည့်မှန် (Interior Rearview Mirror) */}
@@ -437,6 +351,7 @@ export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; s
 
 function GroundedCar({car}:{car:DriveableCar}){
  const root=useRef<Group>(null),driver=useRef<Group>(null),motion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0});
+ const driving=useRef<DrivingPose>({active:false,wheelAngle:0,interior:true,clutch:false,brake:false,throttle:false});
  useTrafficCollider(root,car.width*car.size,car.depth*car.size);
  useFrame(({scene,clock})=>{
    if(!root.current)return;
@@ -446,13 +361,14 @@ function GroundedCar({car}:{car:DriveableCar}){
    root.current.rotation.set(p.pitch,car.yaw,p.roll,'YXZ');
    motion.current.speed=car.speed;
    motion.current.distance=car.distance;
-   if(driver.current)driver.current.visible=carRide.carId===car.id&&!carRide.interior;
+   Object.assign(driving.current,{active:carRide.carId===car.id,wheelAngle:-car.steering*STEERING_RATIO,interior:carRide.interior,clutch:carInput.clutch,brake:carInput.brake,throttle:carInput.throttle});
+   if(driver.current)driver.current.visible=carRide.carId===car.id;
  });
  return (
    <group ref={root} name={`driveable-${car.id}`} userData={{dynamic:true,carId:car.id}} position={[car.x,0,car.z]}>
      <Car color={car.color} size={car.size} motion={car}/>
-     <group ref={driver} visible={false} position={[.28*car.size,.58*car.size,.14*car.size]} scale={.82*car.size}>
-       <CartoonCharacter motion={motion} riding/>
+     <group name="car-driver" ref={driver} visible={false} position={[DRIVER_POSITION[0]*car.size,DRIVER_POSITION[1]*car.size,DRIVER_POSITION[2]*car.size]} scale={DRIVER_SCALE*car.size}>
+       <CartoonCharacter motion={motion} driving={driving}/>
      </group>
    </group>
  );

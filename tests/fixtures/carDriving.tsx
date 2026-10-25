@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { Vector3 } from 'three';
 import { Player, type TeleportTarget } from '../../src/components/Player';
 import { CarControls } from '../../src/components/CarControls';
 import { carRide, carInput, currentCar, driveableCars, type CarStatus } from '../../src/game/carRide';
@@ -15,7 +16,11 @@ function Inspect(){
  useFrame(({scene,camera,clock})=>{
   const car=currentCar()??driveableCars[0],avatar=scene.getObjectByName('player-avatar');
   const model=scene.getObjectByName(`driveable-${car.id}`);
-  (window as any).carTest={...car,input:{...carInput},frontAngles:['left','right'].map(side=>model?.getObjectByName(`${side}-front-wheel`)?.rotation.y),steeringWheel:model?.getObjectByName('steering-wheel')?.rotation.z,driving:!!currentCar(),gear:carRide.gear,interior:carRide.interior,feetY:avatar?.position.y,ground:sceneGround(scene,clock.elapsedTime).height(car.x,car.z),camera:camera.position.toArray()};
+  const wheel=model?.getObjectByName('steering-wheel');
+  const grips=['left','right'].map(side=>{const hand=model?.getObjectByName(`driver-${side}-grip`);return hand&&wheel?wheel.worldToLocal(hand.getWorldPosition(new Vector3())).toArray():null;});
+  const view=(window as any).carViewCamera;
+  if(view&&model){camera.position.copy(model.localToWorld(new Vector3(...view.position).multiplyScalar(car.size)));camera.lookAt(model.localToWorld(new Vector3(...view.target).multiplyScalar(car.size)));}
+  (window as any).carTest={...car,input:{...carInput},grips,driverVisible:model?.getObjectByName('car-driver')?.visible,frontAngles:['left','right'].map(side=>model?.getObjectByName(`${side}-front-wheel`)?.rotation.y),steeringWheel:wheel?.rotation.z,driving:!!currentCar(),gear:carRide.gear,interior:carRide.interior,feetY:avatar?.position.y,ground:sceneGround(scene,clock.elapsedTime).height(car.x,car.z),camera:camera.position.toArray()};
  });return null;
 }
 function Fixture(){
