@@ -339,7 +339,7 @@ export function Player({
    s.keys.clear();if(mobileInput?.current)resetMobileInput(mobileInput.current);
    onMode(false);onTopDown(false);onZoom(ward.spawnZoom);rideNotice.current='';
   }
-  updateHomeAccess(s.x,s.z,dt);stepCarSummon(dt,height);
+  updateHomeAccess(s.x,s.z,dt);stepCarSummon(dt,height,s.x,s.z,!!currentCar(),motorcycleRide.riding);
   let oldX=s.x,oldZ=s.z;
   const touch=mobileInput?.current;
   if(touch){

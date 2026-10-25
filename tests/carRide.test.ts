@@ -2,7 +2,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { parkedCars } from '../src/data/cars.ts';
 import { carRide, carInput, driveableCars, enterCar, parkCar, shiftCar, stepCar, nearbyCar, carExitSpot, gearSpeed, frontWheelAngle, wheelStepDistances, type CarGear } from '../src/game/carRide.ts';
-import { canSummonCar, startCarSummon, stepCarSummon, updateSummonStand, carSummonState, resetCarSummon, TARGET_PARKING_U, TARGET_PARKING_V, SOUTH_YAW } from '../src/game/carSummon.ts';
+import { canSummonCar, startCarSummon, stepCarSummon, updateSummonStand, carSummonState, resetCarSummon, TARGET_PARKING_U, TARGET_PARKING_V, SOUTH_YAW, ORIGINAL_PARK_U, ORIGINAL_PARK_V, ORIGINAL_PARK_YAW } from '../src/game/carSummon.ts';
 import { farmhouse, toWorld } from '../src/data/ward.ts';
 import { canStand } from '../src/game/collision.ts';
 import { windshieldFrameGeometry, windshieldGeometry, cabinCurvePoint } from '../src/game/carWindshield.ts';
@@ -93,7 +93,7 @@ test('parked-car collision follows the driven position and does not block its ow
  assert.equal(carInput.throttle,false);
 });
 
-test('car summon appears only after standing still for 3 seconds in the summon zone and drives car to main road front facing South',()=>{
+test('car summon appears only after standing still for 3 seconds in the summon zone and drives car to main road front facing South, and returns after 10s if not boarded',()=>{
  resetCarSummon();
  // Inside farmhouse (lx=0, lz=0): cannot summon
  const inside = toWorld(-72, 270);
@@ -133,5 +133,27 @@ test('car summon appears only after standing still for 3 seconds in the summon z
  const target = toWorld(TARGET_PARKING_U, TARGET_PARKING_V);
  assert.ok(Math.hypot(car.x - target.x, car.z - target.z) < 0.1, 'car is parked in front of main road');
  assert.ok(Math.abs(car.yaw - SOUTH_YAW) < 1e-4, 'car is facing South');
+
+ // Advance 10 seconds while player is outside the circle (e.g. at (0, 0)) and not boarding:
+ for (let i = 0; i < 205; i++) {
+  stepCarSummon(0.05, () => 0, 0, 0, false, false);
+ }
+ assert.equal(carSummonState.status, 'returning');
+
+ // Advance simulation until car finishes returning to original spot (6s = 120 steps)
+ for (let i = 0; i < 130; i++) {
+  stepCarSummon(0.05, () => 0, 0, 0, false, false);
+ }
+ assert.equal(carSummonState.status, 'idle');
+ assert.equal(car.speed, 0);
+ const originalPos = toWorld(ORIGINAL_PARK_U, ORIGINAL_PARK_V);
+ assert.ok(Math.hypot(car.x - originalPos.x, car.z - originalPos.z) < 0.1, 'car returned to original spot');
+ assert.ok(Math.abs(car.yaw - ORIGINAL_PARK_YAW) < 1e-4, 'car is facing North');
+
+ // Now player enters circle again: stands for 3 seconds, can summon again!
+ assert.equal(canSummonCar(185.429, 196.050, false, false), false);
+ updateSummonStand(3.1, 185.429, 196.050, false, false, false);
+ assert.equal(canSummonCar(185.429, 196.050, false, false), true);
+
  resetCarSummon();
 });

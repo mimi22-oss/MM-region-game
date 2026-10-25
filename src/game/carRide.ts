@@ -5,7 +5,7 @@ export const driveableCars = parkedCars.map(car => ({ ...car, yaw: car.rotation,
 export type DriveableCar = typeof driveableCars[number];
 export const carInput = { throttle: false, brake: false, clutch: false, steer: 0, exit: false };
 export const carRide = { carId: null as string | null, gear: 0 as CarGear, rpm: 850, nearId: null as string | null, nearTime: 0, notice: '', interior: true };
-export type CarStatus = { driving: boolean; near: boolean; kmh: number; gear: CarGear; rpm: number; clutch: boolean; notice: string; steering: number; first?: boolean; canSummon?: boolean; summonStatus?: 'idle' | 'calling' | 'driving' | 'arrived' };
+export type CarStatus = { driving: boolean; near: boolean; kmh: number; gear: CarGear; rpm: number; clutch: boolean; notice: string; steering: number; first?: boolean; canSummon?: boolean; summonStatus?: 'idle' | 'calling' | 'driving' | 'arrived' | 'returning' };
 export const MAX_STEERING = .55;
 export const STEERING_RATIO = 15;
 /** Ackermann geometry: the inside front tire turns more sharply than the outside tire. */

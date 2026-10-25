@@ -172,7 +172,7 @@ export function CarControls({ status }: { status: CarStatus }) {
 		};
 	}, []);
 
-	if (!status.driving && !status.near && !status.canSummon && (!status.summonStatus || status.summonStatus === 'idle')) return null;
+	if (!status.driving && !status.near && !status.canSummon && (!status.summonStatus || status.summonStatus === 'idle' || status.summonStatus === 'returning')) return null;
 
 	return (
 		<section className={`car-controls${status.driving ? ' car-controls-driving' : ''}`} aria-label="ကားမောင်း ထိန်းချုပ်မှု" onPointerDown={event => event.stopPropagation()}>
@@ -184,7 +184,7 @@ export function CarControls({ status }: { status: CarStatus }) {
 							<span>ကားတံခါးနား ရပ်လိုက်လျှင် ဝင်ထိုင်ပါမည်…</span>
 						</p>
 					)}
-					{!status.near && (status.canSummon || (status.summonStatus && status.summonStatus !== 'idle')) && (
+					{!status.near && (status.canSummon || (status.summonStatus && status.summonStatus !== 'idle' && status.summonStatus !== 'returning')) && (
 						<div className="car-summon-card" role="region" aria-label="ကားခေါ်ယူမှု">
 							{(!status.summonStatus || status.summonStatus === 'idle') && (
 								<div className="car-summon-row">
