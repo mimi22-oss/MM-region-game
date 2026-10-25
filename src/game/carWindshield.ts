@@ -75,6 +75,23 @@ export function windshieldGeometry(
   return g;
 }
 
+/** A hollow weatherstrip, not a black pane behind the transparent windshield. */
+export function windshieldFrameGeometry(width=.57,start=.008,end=.282,offset=.038){
+ const positions:number[]=[],indices:number[]=[];
+ const innerWidth=width-.03,edge=Math.min(.014,(end-start)/4);
+ function strip(x0:number,x1:number,t0:number,t1:number){
+  const base=positions.length/3,steps=16;
+  for(let i=0;i<=steps;i++){
+   const point=cabinCurvePoint(t0+(t1-t0)*i/steps,offset);
+   for(const x of [x0,x1]){const crown=(1-(x/width)**2)*.018;positions.push(x,point.y+crown*point.ny,point.z+crown*point.nz);}
+   if(i<steps){const a=base+i*2;indices.push(a,a+1,a+2,a+1,a+3,a+2);}
+  }
+ }
+ strip(-width,-innerWidth,start,end);strip(innerWidth,width,start,end);
+ strip(-innerWidth,innerWidth,start,start+edge);strip(-innerWidth,innerWidth,end-edge,end);
+ const geometry=new BufferGeometry();geometry.setAttribute('position',new Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
+}
+
 /**
  * Solid 3D curved arch ribbon along the cabin Bezier profile (for the roof cap, A-pillars, C-pillars, and window seals).
  */

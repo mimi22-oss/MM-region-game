@@ -1,21 +1,37 @@
 import {useTrafficCollider} from './useTrafficCollider';
-import { windshieldGeometry, roofBoxRibbonGeometry } from '../game/carWindshield';
+import { windshieldGeometry, windshieldFrameGeometry, roofBoxRibbonGeometry } from '../game/carWindshield';
 import { useMemo,useRef } from 'react';
-import {useFrame} from '@react-three/fiber';
+import { useRegionFrame as useFrame } from './RegionActivity';
 import {Group} from 'three';
 import {sceneGround,carGroundPose} from '../game/groundSurface';
-import { Shape, ExtrudeGeometry, DoubleSide } from 'three';
-import { parkedCars } from '../data/cars';
+import { Shape, Path, ExtrudeGeometry, DoubleSide } from 'three';
+import { driveableCars, carRide, frontWheelAngle, STEERING_RATIO, type DriveableCar } from '../game/carRide';
+import { CartoonCharacter } from './CartoonCharacter';
 
 /** Rounded reference-inspired compact car with crystal-clear windshield & detailed cabin interior; front is -Z. */
-export function Car({ color = '#277fbd', size = 1 }: { color?: string; size?: number }) {
-	// Lower car body (stops cleanly at the beltline y ~ 1.24, leaving cabin open for genuine transparent glass)
+export function Car({ color = '#277fbd', size = 1, motion }: { color?: string; size?: number; motion?: { distance: number; steering: number; wheelTravel: number[] } }) {
+	const wheelSteers=useRef<(Group|null)[]>([]),wheelSpins=useRef<(Group|null)[]>([]),steeringWheel=useRef<Group>(null);
+	useFrame(()=>{
+		if(!motion)return;
+		wheelSteers.current.forEach((wheel,i)=>{
+			if(wheel)wheel.rotation.y=i%2===0?frontWheelAngle(motion.steering,i<2?-1:1,size):0;
+		});
+		wheelSpins.current.forEach((wheel,i)=>{
+			if(wheel)wheel.rotation.x=-motion.wheelTravel[i]/(.43*size);
+		});
+		if(steeringWheel.current)steeringWheel.current.rotation.z=-motion.steering*STEERING_RATIO;
+	});
+	// Lower car body (beltline dips to y ~ 1.16 along windows, leaving cabin open for genuine transparent glass)
 	const lowerBody = useMemo(() => {
 		const s = new Shape();
 		s.moveTo(-1.55, 0.43);
 		s.lineTo(1.64, 0.43);
-		s.quadraticCurveTo(1.78, 1.15, 0.76, 1.26); // front nose, bumper & hood
-		s.lineTo(-1.18, 1.24); // beltline along doors and rear quarter
+		s.quadraticCurveTo(1.78, 1.15, 0.76, 1.24); // front nose, bumper & hood
+		s.lineTo(0.65, 1.16); // front door window sill
+		s.lineTo(0.13, 1.16);
+		s.lineTo(-0.16, 1.18); // center pillar base
+		s.lineTo(-0.91, 1.18); // rear door window sill
+		s.lineTo(-1.18, 1.22); // beltline along rear quarter
 		s.quadraticCurveTo(-1.44, 1.18, -1.55, 0.43); // rear trunk / bumper curve
 		s.closePath();
 		const g = new ExtrudeGeometry(s, {
@@ -44,7 +60,7 @@ export function Car({ color = '#277fbd', size = 1 }: { color?: string; size?: nu
 
 	// Front Windshield Assemblies:
 	// 1. Black rubber weatherstrip frame around the front opening
-	const windshieldSeal = useMemo(() => windshieldGeometry(0.57, 0.008, 0.282, 0.038), []);
+	const windshieldSeal = useMemo(() => windshieldFrameGeometry(), []);
 	// 2. Crystal-clear front windshield glass pane
 	const windshieldGlass = useMemo(() => windshieldGeometry(0.54, 0.02, 0.272, 0.046), []);
 	// 3. Specular reflection highlight streaks (gives tangible glossy glass sheen)
@@ -52,30 +68,34 @@ export function Car({ color = '#277fbd', size = 1 }: { color?: string; size?: nu
 	const windshieldGlareRight = useMemo(() => windshieldGeometry(0.04, 0.065, 0.23, 0.049, -0.10), []);
 
 	// Rear Windshield Assemblies:
-	const rearSeal = useMemo(() => windshieldGeometry(0.57, 0.68, 0.89, 0.038), []);
+	const rearSeal = useMemo(() => windshieldFrameGeometry(0.57, 0.68, 0.89, 0.038), []);
 	const rearGlass = useMemo(() => windshieldGeometry(0.54, 0.695, 0.875, 0.046), []);
 
 	// Side Windows:
 	const sideWindows = useMemo(() => {
 		const rear = new Shape();
-		rear.moveTo(-1.08, 1.28);
+		rear.moveTo(-1.08, 1.24);
 		rear.quadraticCurveTo(-1.03, 1.87, -0.28, 2.02);
 		rear.quadraticCurveTo(-0.16, 2.04, -0.16, 1.90);
-		rear.lineTo(-0.16, 1.28);
-		rear.quadraticCurveTo(-0.16, 1.20, -0.31, 1.20);
-		rear.lineTo(-0.91, 1.20);
-		rear.quadraticCurveTo(-1.08, 1.20, -1.08, 1.28);
+		rear.lineTo(-0.16, 1.20);
+		rear.quadraticCurveTo(-0.16, 1.16, -0.31, 1.16);
+		rear.lineTo(-0.91, 1.16);
+		rear.quadraticCurveTo(-1.08, 1.16, -1.08, 1.24);
 
 		const front = new Shape();
-		front.moveTo(0.02, 1.26);
+		front.moveTo(0.02, 1.20);
 		front.lineTo(0.02, 1.93);
 		front.quadraticCurveTo(0.02, 2.07, 0.17, 2.01);
-		front.quadraticCurveTo(0.68, 1.85, 0.77, 1.28);
-		front.quadraticCurveTo(0.79, 1.20, 0.65, 1.20);
-		front.lineTo(0.13, 1.20);
-		front.quadraticCurveTo(0.02, 1.20, 0.02, 1.26);
+		front.quadraticCurveTo(0.68, 1.85, 0.77, 1.24);
+		front.quadraticCurveTo(0.79, 1.16, 0.65, 1.16);
+		front.lineTo(0.13, 1.16);
+		front.quadraticCurveTo(0.02, 1.16, 0.02, 1.20);
 		return [rear, front];
 	}, []);
+	const sideFrames=useMemo(()=>sideWindows.map(shape=>{
+	 const points=shape.getPoints(24),frame=shape.clone(),cx=(Math.min(...points.map(p=>p.x))+Math.max(...points.map(p=>p.x)))/2,cy=(Math.min(...points.map(p=>p.y))+Math.max(...points.map(p=>p.y)))/2;
+	 frame.holes.push(new Path(points.map(p=>p.clone().set(cx+(p.x-cx)*.94,cy+(p.y-cy)*.94))));return frame;
+	}),[sideWindows]);
 
 	return (
 		<group scale={size} name="cartoon-compact-car">
@@ -133,37 +153,40 @@ export function Car({ color = '#277fbd', size = 1 }: { color?: string; size?: nu
 			</mesh>
 
 			{/* စတီယာရင်ခွေ (Steering Wheel) */}
-			<group position={[0.28, 1.23, -0.27]}>
+			<group position={[0.28, 1.25, -0.26]}>
 				<mesh position={[0, -0.05, -0.07]} rotation={[-0.45, 0, 0]}>
 					<cylinderGeometry args={[0.025, 0.025, 0.16, 10]} />
 					<meshStandardMaterial color="#171b1f" roughness={0.8} />
 				</mesh>
-				<mesh rotation={[-0.45, 0, 0]}>
+				<group rotation={[-0.45, 0, 0]}><group ref={steeringWheel} name="steering-wheel">
+				<mesh>
 					<torusGeometry args={[0.13, 0.018, 8, 24]} />
 					<meshStandardMaterial color="#1e2329" roughness={0.7} />
 				</mesh>
-				<mesh rotation={[-0.45, 0, 0]}>
+				{[0,Math.PI*2/3,Math.PI*4/3].map(a=><mesh key={a} position={[Math.sin(a)*.075,Math.cos(a)*.075,0]} rotation={[0,0,-a]}><boxGeometry args={[.017,.11,.016]}/><meshStandardMaterial color="#59616a" roughness={.6}/></mesh>)}
+				<mesh rotation={[Math.PI/2, 0, 0]}>
 					<cylinderGeometry args={[0.045, 0.045, 0.02, 12]} />
 					<meshStandardMaterial color="#2a323a" roughness={0.6} />
 				</mesh>
+				</group></group>
 			</group>
 
 			{/* ရှေ့ထိုင်ခုံ ၂ လုံး (Driver & Passenger Front Bucket Seats with Headrests) */}
 			{[-0.28, 0.28].map((x) => (
 				<group key={x}>
 					{/* ထိုင်ခုံအခင်း (Seat Bottom Cushion) */}
-					<mesh position={[x, 0.76, 0.05]}>
-						<boxGeometry args={[0.36, 0.12, 0.40]} />
+					<mesh position={[x, 0.88, 0.08]}>
+						<boxGeometry args={[0.38, 0.20, 0.44]} />
 						<meshStandardMaterial color="#222930" roughness={0.8} />
 					</mesh>
 					{/* ခါးမှီ (Seat Backrest) */}
-					<mesh position={[x, 1.08, 0.22]} rotation={[0.15, 0, 0]}>
-						<boxGeometry args={[0.34, 0.46, 0.10]} />
+					<mesh position={[x, 1.28, 0.24]} rotation={[0.14, 0, 0]}>
+						<boxGeometry args={[0.38, 0.58, 0.12]} />
 						<meshStandardMaterial color="#222930" roughness={0.8} />
 					</mesh>
 					{/* ခေါင်းမှီ (Headrest) */}
-					<mesh position={[x, 1.38, 0.27]}>
-						<boxGeometry args={[0.18, 0.13, 0.09]} />
+					<mesh position={[x, 1.68, 0.29]}>
+						<boxGeometry args={[0.22, 0.16, 0.10]} />
 						<meshStandardMaterial color="#2a323b" roughness={0.8} />
 					</mesh>
 				</group>
@@ -171,17 +194,17 @@ export function Car({ color = '#277fbd', size = 1 }: { color?: string; size?: nu
 
 			{/* နောက်ထိုင်ခုံတန်း (Rear Passenger Bench Seat) */}
 			<group>
-				<mesh position={[0, 0.76, 0.72]}>
-					<boxGeometry args={[1.22, 0.12, 0.38]} />
+				<mesh position={[0, 0.88, 0.72]}>
+					<boxGeometry args={[1.24, 0.20, 0.42]} />
 					<meshStandardMaterial color="#222930" roughness={0.8} />
 				</mesh>
-				<mesh position={[0, 1.08, 0.90]} rotation={[0.15, 0, 0]}>
-					<boxGeometry args={[1.22, 0.46, 0.10]} />
+				<mesh position={[0, 1.28, 0.90]} rotation={[0.14, 0, 0]}>
+					<boxGeometry args={[1.24, 0.58, 0.12]} />
 					<meshStandardMaterial color="#222930" roughness={0.8} />
 				</mesh>
 				{[-0.32, 0.32].map((x) => (
-					<mesh key={x} position={[x, 1.37, 0.95]}>
-						<boxGeometry args={[0.18, 0.13, 0.09]} />
+					<mesh key={x} position={[x, 1.68, 0.96]}>
+						<boxGeometry args={[0.22, 0.16, 0.10]} />
 						<meshStandardMaterial color="#2a323b" roughness={0.8} />
 					</mesh>
 				))}
@@ -220,7 +243,7 @@ export function Car({ color = '#277fbd', size = 1 }: { color?: string; size?: nu
 					roughness={0.03}
 					metalness={0.15}
 					transparent
-					opacity={0.38}
+					opacity={0.16}
 					depthWrite={false}
 					side={DoubleSide}
 				/>
@@ -276,7 +299,7 @@ export function Car({ color = '#277fbd', size = 1 }: { color?: string; size?: nu
 					roughness={0.04}
 					metalness={0.16}
 					transparent
-					opacity={0.42}
+					opacity={0.18}
 					depthWrite={false}
 					side={DoubleSide}
 				/>
@@ -290,11 +313,11 @@ export function Car({ color = '#277fbd', size = 1 }: { color?: string; size?: nu
 						<group key={i} position={[side * 0.77, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
 							{/* ဘောင်နက် (Rubber border trim) */}
 							<mesh>
-								<shapeGeometry args={[shape]} />
+								<shapeGeometry args={[sideFrames[i]]} />
 								<meshStandardMaterial color="#131c22" roughness={0.7} side={DoubleSide} />
 							</mesh>
 							{/* ဘေးမှန်ကြည် (Transparent side glass) */}
-							<mesh position={[0, 0.03, side * 0.005]} scale={[0.94, 0.94, 1]}>
+							<mesh position={[0, 0, side * 0.005]}>
 								<shapeGeometry args={[shape]} />
 								<meshStandardMaterial
 									color="#d8f4fa"
@@ -303,7 +326,7 @@ export function Car({ color = '#277fbd', size = 1 }: { color?: string; size?: nu
 									roughness={0.04}
 									metalness={0.18}
 									transparent
-									opacity={0.40}
+									opacity={0.18}
 									depthWrite={false}
 									side={DoubleSide}
 								/>
@@ -346,19 +369,44 @@ export function Car({ color = '#277fbd', size = 1 }: { color?: string; size?: nu
 
 					{/* ကားဘီးများ (Front & Rear Wheels) */}
 					{[-1.04, 1.04].map((z) => (
-						<group key={z} position={[side * 0.79, 0.43, z]} rotation={[0, 0, Math.PI / 2]}>
-							<mesh castShadow>
-								<cylinderGeometry args={[0.43, 0.43, 0.22, 24]} />
-								<meshStandardMaterial color="#2d2527" roughness={0.95} />
-							</mesh>
-							<mesh position={[0, -side * 0.12, 0]}>
-								<cylinderGeometry args={[0.25, 0.25, 0.025, 24]} />
-								<meshStandardMaterial color="#f4932e" roughness={0.4} />
-							</mesh>
-							<mesh position={[0, -side * 0.136, 0]}>
-								<cylinderGeometry args={[0.065, 0.065, 0.012, 16]} />
-								<meshStandardMaterial color="#ffb24f" />
-							</mesh>
+						<group
+							key={z}
+							name={`${side<0?'left':'right'}-${z<0?'front':'rear'}-wheel`}
+							ref={node=>{wheelSteers.current[(side===-1?0:2)+(z<0?0:1)]=node}}
+							position={[side * 0.79, 0.43, z]}
+						>
+							<group ref={node=>{wheelSpins.current[(side===-1?0:2)+(z<0?0:1)]=node}}>
+								<group rotation={[0, 0, Math.PI / 2]}>
+									<mesh castShadow>
+										<cylinderGeometry args={[0.43, 0.43, 0.22, 24]} />
+										<meshStandardMaterial color="#2d2527" roughness={0.95} />
+									</mesh>
+									<mesh position={[0, -side * 0.12, 0]}>
+										<cylinderGeometry args={[0.26, 0.26, 0.025, 24]} />
+										<meshStandardMaterial color="#f4932e" roughness={0.4} />
+									</mesh>
+									<mesh position={[0, -side * 0.136, 0]}>
+										<cylinderGeometry args={[0.075, 0.075, 0.015, 16]} />
+										<meshStandardMaterial color="#ffb24f" />
+									</mesh>
+									{/* အပြင်က ကားဘီးများကဲ့သို့ လည်ပတ်မှု ထင်ရှားစေရန် ၅ ချောင်းပါ အလွိုင်းဒေါက် (5-Spoke Alloy Rim & Lug Nuts) */}
+									{[0, 1, 2, 3, 4].map((k) => {
+										const ang = (k * Math.PI * 2) / 5;
+										return (
+											<group key={k}>
+												<mesh position={[Math.sin(ang) * 0.15, -side * 0.122, Math.cos(ang) * 0.15]} rotation={[0, -ang, 0]}>
+													<boxGeometry args={[0.042, 0.016, 0.18]} />
+													<meshStandardMaterial color="#e2e8f0" metalness={0.7} roughness={0.25} />
+												</mesh>
+												<mesh position={[Math.sin(ang) * 0.052, -side * 0.132, Math.cos(ang) * 0.052]}>
+													<cylinderGeometry args={[0.011, 0.011, 0.012, 6]} />
+													<meshStandardMaterial color="#cbd5e1" metalness={0.85} roughness={0.15} />
+												</mesh>
+											</group>
+										);
+									})}
+								</group>
+							</group>
 						</group>
 					))}
 
@@ -387,19 +435,35 @@ export function Car({ color = '#277fbd', size = 1 }: { color?: string; size?: nu
 	);
 }
 
-function GroundedCar({car}:{car:typeof parkedCars[number]}){
- const root=useRef<Group>(null);
- useTrafficCollider(root,car.width,car.depth);
- useFrame(({scene,clock})=>{if(!root.current)return;const ground=sceneGround(scene,clock.elapsedTime),p=carGroundPose(car.x,car.z,car.rotation,car.size,(x,z)=>ground.height(x,z));root.current.position.set(car.x,p.y,car.z);root.current.rotation.set(p.pitch,car.rotation,p.roll,'YXZ');});
- return <group ref={root} userData={{dynamic:true}} position={[car.x,0,car.z]}><Car color={car.color} size={car.size}/></group>;
+function GroundedCar({car}:{car:DriveableCar}){
+ const root=useRef<Group>(null),driver=useRef<Group>(null),motion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0});
+ useTrafficCollider(root,car.width*car.size,car.depth*car.size);
+ useFrame(({scene,clock})=>{
+   if(!root.current)return;
+   const ground=sceneGround(scene,clock.elapsedTime),p=carGroundPose(car.x,car.z,car.yaw,car.size,(x,z)=>ground.height(x,z));
+   car.groundY=p.y;car.pitch=p.pitch;car.roll=p.roll;
+   root.current.position.set(car.x,p.y,car.z);
+   root.current.rotation.set(p.pitch,car.yaw,p.roll,'YXZ');
+   motion.current.speed=car.speed;
+   motion.current.distance=car.distance;
+   if(driver.current)driver.current.visible=carRide.carId===car.id&&!carRide.interior;
+ });
+ return (
+   <group ref={root} name={`driveable-${car.id}`} userData={{dynamic:true,carId:car.id}} position={[car.x,0,car.z]}>
+     <Car color={car.color} size={car.size} motion={car}/>
+     <group ref={driver} visible={false} position={[.28*car.size,.58*car.size,.14*car.size]} scale={.82*car.size}>
+       <CartoonCharacter motion={motion} riding/>
+     </group>
+   </group>
+ );
 }
-export function ParkedCars(){return <>{parkedCars.map(car=><GroundedCar key={car.id} car={car}/>)}</>}
+export function ParkedCars(){return <>{driveableCars.map(car=><GroundedCar key={car.id} car={car}/>)}</>}
 
 export function ParkedCarsPlan() {
 	return (
 		<>
-			{parkedCars.map((car) => (
-				<g key={car.id} transform={`translate(${car.x} ${car.z}) rotate(${(-car.rotation * 180) / Math.PI})`}>
+			{driveableCars.map((car) => (
+				<g key={car.id} transform={`translate(${car.x} ${car.z}) rotate(${(-car.yaw * 180) / Math.PI})`}>
 					<rect
 						x={-car.width / 2}
 						y={-car.depth / 2}

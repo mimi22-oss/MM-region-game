@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useRegionFrame as useFrame } from './RegionActivity';
 import { Mesh } from 'three';
 import { angle } from '../data/ward';
 import { Box } from './Primitives';

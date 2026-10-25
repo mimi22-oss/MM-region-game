@@ -1,4 +1,4 @@
-import { ParkedCars, ParkedCarsPlan } from '../../Car';
+import { ParkedCarsPlan } from '../../Car';
 import { ParkedMotorcycle } from '../../Motorcycle';
 import { MOTORCYCLE_X, MOTORCYCLE_Z, MOTORCYCLE_YAW } from '../../../data/motorcycle';
 import { area5, farmhouse, toWorld } from '../../../data/wards/myothar/area5';
@@ -49,7 +49,6 @@ export function Area5(){
   <Lanes/>
   {area5.houses.filter(h=>h.id!==farmhouse.id&&h.id!==U_SHWE_HOUSE_ID&&h.id!==KALAY_SIGN_HOUSE_ID).map(h=><House key={h.id} h={h}/>)}
   <Trees/>
-  <ParkedCars/>
   
  </group>;
 }

@@ -1,4 +1,4 @@
-import { StreamedWorld } from './StreamedWorld';
+import { StreamedWorld, type StreamedWorldProps } from './StreamedWorld';
 import { Mountains } from './Mountains';
 import { memo } from 'react';
 import { StaticBatch } from './StaticBatch';
@@ -6,7 +6,7 @@ import { ward } from '../data/ward';
 import { Box } from './Primitives';
 import { NightEnvironment } from './NightEnvironment';
 
-export const Town = memo(function Town({ night = false }: { night?: boolean }) {
+export const Town = memo(function Town({ night = false, ...streaming }: { night?: boolean } & StreamedWorldProps) {
 	return (
 		<>
 			{night ? (
@@ -57,7 +57,7 @@ export const Town = memo(function Town({ night = false }: { night?: boolean }) {
 				</>
 			)}
 
-			<StreamedWorld />
+			<StreamedWorld {...streaming} />
             <Mountains />
 
 			{/* A low visual border; collision follows the ward boundary. */}

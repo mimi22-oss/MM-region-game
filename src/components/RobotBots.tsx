@@ -41,16 +41,15 @@ function Bot({graph,start,index}:{graph:RouteNode[];start:number;index:number}){
 }
 type BotDefinition={graph:RouteNode[];start:number;index:number;key:string};
 const cachedPatrols=new Map<string,BotDefinition[]>();
-function patrols(id:string){
+export function prepareRobotPatrols(id:string){
  const existing=cachedPatrols.get(id);if(existing)return existing;
  const r=regions.findIndex(r=>r.id===id);if(r<0)return [];
  const region=regions[r],graph=buildRoadGraph(region.roads,clear),starts=graph.map((n,i)=>n.links.length&&n.lane?i:-1).filter(i=>i>=0);
  const count=Math.min(mobileQuality?3:8,starts.length);
  const bots=Array.from({length:count},(_,i)=>({graph,start:starts[Math.floor(i*starts.length/count)],index:r*8+i,key:`${region.id}-${i}`}));
- if(cachedPatrols.size>=2)cachedPatrols.delete(cachedPatrols.keys().next().value!);
  cachedPatrols.set(id,bots);return bots;
 }
 export function RobotBots({activeRegions=[]}:{activeRegions?:string[]}){
- const bots=useMemo(()=>activeRegions.flatMap(patrols),[activeRegions]);
+ const bots=useMemo(()=>activeRegions.flatMap(prepareRobotPatrols),[activeRegions]);
  return <group name="autonomous-village-robots">{bots.map(b=><Bot key={b.key} graph={b.graph} start={b.start} index={b.index}/>)}</group>;
 }

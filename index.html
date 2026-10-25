@@ -1,2 +1,59 @@
-<!doctype html><html lang="my"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="theme-color" content="#143d36"/><title>မြို့သာရပ်ကွက် · ကလေးမြို့</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+<!doctype html>
+<html lang="my">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#143d36" />
+
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+    <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
+
+    <!-- Primary Meta Tags -->
+    <title>မြို့သာရပ်ကွက် · ကလေးမြို့</title>
+    <meta name="title" content="မြို့သာရပ်ကွက် · ကလေးမြို့ | Myanmar Town 3D Prototype" />
+    <meta name="description" content="စစ်ကိုင်းတိုင်းဒေသကြီး၊ ကလေးမြို့၊ မြို့သာရပ်ကွက် (နယ်မြေ ၅) နှင့် အနီးဝန်းကျင်ကျေးရွာများ၏ 3D အပြန်အလှန် လေ့လာစူးစမ်းနိုင်သော မြို့ပုံစံငယ်။ စိုက်ခင်းအိမ်၊ လမ်းကွန်ရက်၊ ကားနှင့် ဆိုင်ကယ် မောင်းနှင်နိုင်မှု စနစ်များ ပါဝင်သော Web 3D Application။" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://myanmar-town.web.app/" />
+    <meta property="og:site_name" content="မြို့သာရပ်ကွက် · ကလေးမြို့ (Myanmar Town Prototype)" />
+    <meta property="og:title" content="မြို့သာရပ်ကွက် · ကလေးမြို့ | Myanmar Town 3D Prototype" />
+    <meta property="og:description" content="စစ်ကိုင်းတိုင်းဒေသကြီး၊ ကလေးမြို့၊ မြို့သာရပ်ကွက် (နယ်မြေ ၅) နှင့် အနီးဝန်းကျင်ကျေးရွာများ၏ 3D အပြန်အလှန် လေ့လာစူးစမ်းနိုင်သော မြို့ပုံစံငယ်။ စိုက်ခင်းအိမ်၊ လမ်းကွန်ရက်၊ ကားနှင့် ဆိုင်ကယ် မောင်းနှင်နိုင်မှု စနစ်များ ပါဝင်သော Web 3D Application။" />
+    <meta property="og:image" content="/ogp.png" />
+    <meta property="og:image:alt" content="မြို့သာရပ်ကွက် ကလေးမြို့ 3D အပြန်အလှန် မြို့ပုံစံငယ် မြင်ကွင်း (Myanmar Town 3D Interactive Scene)" />
+    <meta property="og:image:width" content="1597" />
+    <meta property="og:image:height" content="909" />
+    <meta property="og:locale" content="my_MM" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://myanmar-town.web.app/" />
+    <meta name="twitter:title" content="မြို့သာရပ်ကွက် · ကလေးမြို့ | Myanmar Town 3D Prototype" />
+    <meta name="twitter:description" content="စစ်ကိုင်းတိုင်းဒေသကြီး၊ ကလေးမြို့၊ မြို့သာရပ်ကွက် (နယ်မြေ ၅) နှင့် အနီးဝန်းကျင်ကျေးရွာများ၏ 3D အပြန်အလှန် လေ့လာစူးစမ်းနိုင်သော မြို့ပုံစံငယ်။ စိုက်ခင်းအိမ်၊ လမ်းကွန်ရက်၊ ကားနှင့် ဆိုင်ကယ် မောင်းနှင်နိုင်မှု စနစ်များ ပါဝင်သော Web 3D Application။" />
+    <meta name="twitter:image" content="/ogp.png" />
+    <meta name="twitter:image:alt" content="မြို့သာရပ်ကွက် ကလေးမြို့ 3D အပြန်အလှန် မြို့ပုံစံငယ် မြင်ကွင်း (Myanmar Town 3D Interactive Scene)" />
+    <style>
+      #boot-loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 24px; background: #143d36; color: #fff7e7; font-family: system-ui, sans-serif; line-height: 2; }
+      .boot-dots { display: inline-flex; gap: 5px; }
+      .boot-dots i { width: 6px; height: 6px; border-radius: 50%; background: #efd89d; animation: boot-wave 1.2s ease-in-out infinite; }
+      .boot-dots i:nth-child(2) { animation-delay: .15s; }
+      .boot-dots i:nth-child(3) { animation-delay: .3s; }
+      @keyframes boot-wave { 0%,60%,100% { transform: translateY(0); opacity: .35; } 30% { transform: translateY(-6px); opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) { .boot-dots i { animation: none; } }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="boot-loading" role="status" aria-live="polite">
+        <span className="boot-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>မြို့သာရပ်ကွက်</span>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
 

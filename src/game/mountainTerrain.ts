@@ -4,6 +4,8 @@ export type TerrainPeak = {
   v: number;
   radius: number;
   height: number;
+  plateau?: number;
+  obstacleRadius?: number;
 };
 const smooth = (t: number) => t * t * (3 - 2 * t);
 function hash(x: number, z: number) {
@@ -20,27 +22,59 @@ export function terrainNoise(x: number, z: number) {
     (hash(a, b + 1) * (1 - u) + hash(a + 1, b + 1) * u) * v
   );
 }
-/** Compact support keeps the road pass and village footprints unchanged. */
+function smax(a: number, b: number, k = 8) {
+  const d = Math.max(k - Math.abs(a - b), 0);
+  return Math.max(a, b) + (d * d) / (4 * k);
+}
+/**
+ * Plateau / Tableland mountain model:
+ * Generates flat walkable/drivable highland plateaus (တိုက်အိမ်ခေါင်မိုးလို flat ဖြစ်သော ကုန်းပြင်မြင့်)
+ * with natural rolling mounds and knolls (အတက်အဆင်းအဖုများ), eliminating sharp spikes and crags.
+ */
 export function mountainHeight(
   u: number,
   v: number,
   peaks: readonly TerrainPeak[],
 ) {
-  let sum = 0;
+  let totalH = 0;
   for (const p of peaks) {
     const dx = (u - p.u) / p.radius,
       dz = (v - p.v) / p.radius,
       r = Math.hypot(dx, dz);
     if (r >= 1) continue;
-    const azimuth = Math.atan2(dz, dx),
-      valley =
-        (1 + Math.sin(azimuth * 9 + r * 5 + terrainNoise(u / 90, v / 90) * 2)) /
-        2;
-    const erosion = 1 - (0.32 * valley * r) / (r + 0.12);
-    const h = p.height * Math.pow(1 - r * r, 1.25) * erosion;
-    sum += Math.pow(h, 6);
+
+    // Plateau tabletop ratio: defaults to 0.52 for flat highland plateaus
+    const plateauRatio = p.plateau ?? 0.52;
+    let topFactor: number;
+    if (r <= plateauRatio) {
+      topFactor = 1;
+    } else {
+      const t = (r - plateauRatio) / (1 - plateauRatio);
+      topFactor = 1 - t * t * (3 - 2 * t);
+    }
+
+    // Natural undulating knolls and rolling mounds across the plateau (အတက်အဆင်းအဖုများ)
+    const centerTaper = Math.min(1, r / 0.12);
+    const roll1 =
+      Math.sin(u / 28 + terrainNoise(u / 60, v / 60) * 1.5) *
+      Math.cos(v / 24) *
+      2.2;
+    const roll2 = (terrainNoise(u / 16, v / 16) - 0.5) * 2.5;
+    const roll3 = Math.sin((u + v) / 11) * 0.7;
+    const undulation = (roll1 + roll2 + roll3) * topFactor * centerTaper;
+
+    // Soft organic natural valley contouring on flanks without sharp azimuth spikes
+    const azimuth = Math.atan2(dz, dx);
+    const softRidge =
+      1 -
+      0.08 *
+        Math.sin(azimuth * 3 + terrainNoise(u / 75, v / 75) * 2) *
+        (1 - topFactor);
+
+    const peakH = Math.max(0, (p.height * topFactor + undulation) * softRidge);
+    totalH = totalH === 0 ? peakH : smax(totalH, peakH, 8);
   }
-  return Math.pow(sum, 1 / 6);
+  return totalH;
 }
 /** Connected tiled heightfield, vertex colors and shared-edge normals; no tree meshes. */
 export function buildMountainTiles(

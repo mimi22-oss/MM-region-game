@@ -1,9 +1,30 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {BoxGeometry,Group,Mesh,MeshBasicMaterial} from 'three';
-import {GroundSurface,motorcycleGroundPose,carGroundPose,sceneGround} from '../src/game/groundSurface.ts';
+import {GroundSurface,motorcycleGroundPose,carGroundPose,sceneGround,registerGroundRegion,releaseGroundRegions} from '../src/game/groundSurface.ts';
 import {batchStaticMeshes} from '../src/game/staticBatch.ts';
 import {motorcycleRide as r,stepMotorcycle,parkMotorcycle,tryMount} from '../src/game/motorcycleRide.ts';
+
+test('ground survives town detachment, a distant village and return without a frame delay',()=>{
+ const scene=new Group(),town=new Group(),village=new Group();
+ for(const [root,x,height] of [[town,0,.47],[village,1800,.36]] as const){
+  const deck=new Mesh(new BoxGeometry(20,height,20),new MeshBasicMaterial());
+  deck.position.set(x,height/2,0);deck.userData.walkable=true;root.add(deck);
+ }
+ scene.add(town);registerGroundRegion(scene,'town',town);registerGroundRegion(scene,'village',village);
+ const ground=sceneGround(scene,0);
+ for(const active of [village,town,village,town]){
+  town.removeFromParent();village.removeFromParent();scene.add(active);
+  for(const [x,expected] of [[0,.47],[1800,.36]]){
+   assert.ok(Math.abs(sceneGround(scene,100).height(x,0)-expected)<1e-6);
+   assert.ok(carGroundPose(x,0,0,1,(x,z)=>ground.height(x,z)).y>=expected);
+   assert.ok(motorcycleGroundPose(x,0,0,(x,z)=>ground.height(x,z)).y>=expected);
+  }
+  assert.equal(sceneGround(town,100),ground,'portal actors use the world ground');
+ }
+ releaseGroundRegions(scene);
+ assert.notEqual(sceneGround(scene,101),ground);
+});
 
 test('raised rotated deck, stairs and batched floors support actors but roofs do not',()=>{
  const root=new Group(),surface=new GroundSurface(),material=new MeshBasicMaterial();

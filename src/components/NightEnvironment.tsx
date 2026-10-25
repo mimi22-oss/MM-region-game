@@ -1,6 +1,7 @@
 import { mobileQuality } from '../game/sceneBudget';
 import { useMemo } from 'react';
 import { ward, toWorld, kalayVillages } from '../data/ward';
+import { mountainHeight } from '../game/mountainTerrain';
 
 /**
  * တောက်ပသော ကြယ်တာရာများ (Night Sky Stars)
@@ -132,6 +133,10 @@ export function NightEnvironment() {
 
 	// မဟာဝေပုလ္လတောင်တော် စေတီတော် တည်နေရာ (တောင်ထွတ် ရွှေရောင်မီး)
 	const mahaWeipulaPeak = ward.weipula.peaks[2];
+	const mahaWeipulaHeight = useMemo(() => {
+		if (!mahaWeipulaPeak) return 905;
+		return mountainHeight(mahaWeipulaPeak.u, mahaWeipulaPeak.v, [...ward.mountains, ...ward.weipula.peaks]);
+	}, [mahaWeipulaPeak]);
 
 	// ထောက်ကြန့် စေတီတော် တည်နေရာ
 	const htaukKyantVillage = kalayVillages.find(v => v.id === 'htaukkyant');
@@ -194,10 +199,10 @@ export function NightEnvironment() {
 
 			{/* ၁။ မဟာဝေပုလ္လတောင်တော် ရွှေရောင်ညမီးရောင် (Golden Mountaintop Beacon) */}
 			{mahaWeipulaPeak && (
-				<group position={[mahaWeipulaPeak.x, 905, mahaWeipulaPeak.z]}>
+				<group position={[mahaWeipulaPeak.x, mahaWeipulaHeight + 18, mahaWeipulaPeak.z]}>
 					{!mobileQuality&&<pointLight color="#ffd055" intensity={3.5} distance={180} decay={1.8} />}
 					<mesh position={[0, 4, 0]}>
-						<sphereGeometry args={[5, 8, 8]} />
+						<sphereGeometry args={[3, 8, 8]} />
 						<meshBasicMaterial color="#ffe880" />
 					</mesh>
 				</group>

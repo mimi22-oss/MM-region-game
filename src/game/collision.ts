@@ -7,7 +7,7 @@ import {
   KALAY_SIGN_HOUSE_ID,
   angle,
 } from "../data/ward.ts";
-import { parkedCars } from "../data/cars.ts";
+import { driveableCars, carRide } from "./carRide.ts";
 import { spatialIndex } from "./spatialIndex.ts";
 import { ward } from "../data/ward.ts";
 import { kalayVillages } from "../data/villages/index.ts";
@@ -215,6 +215,40 @@ export function canStandUShweHouse(x: number, z: number): boolean {
   return true;
 }
 
+const cosA = Math.cos(angle);
+const sinA = Math.sin(angle);
+const mountainVillageHouses = [
+  // House 1 & 2 (Tier 1)
+  { minU: -349, maxU: -341, minV: 4372.5, maxV: 4379.5 },
+  { minU: -330.2, maxU: -321.8, minV: 4372.2, maxV: 4379.8 },
+  // House 3 & 4 (Tier 2)
+  { minU: -349, maxU: -341, minV: 4397.2, maxV: 4404.8 },
+  { minU: -330.5, maxU: -321.5, minV: 4397, maxV: 4405 },
+  // House 5 & Tea shop counter (Tier 3)
+  { minU: -328, maxU: -320, minV: 4422.2, maxV: 4429.8 },
+  { minU: -347, maxU: -341, minV: 4423, maxV: 4427 },
+  // House 6 & 7 (Tier 4)
+  { minU: -348.8, maxU: -339.2, minV: 4446.8, maxV: 4455.2 },
+  { minU: -328.2, maxU: -319.8, minV: 4447.2, maxV: 4454.8 },
+];
+
+function canStandMountainVillage(x: number, z: number): boolean {
+  const u = x * cosA - z * sinA;
+  const v = x * sinA + z * cosA;
+  if (v < 4360 || v > 4470 || u < -360 || u > -310) return true;
+  for (const h of mountainVillageHouses) {
+    if (
+      u >= h.minU - PLAYER_RADIUS &&
+      u <= h.maxU + PLAYER_RADIUS &&
+      v >= h.minV - PLAYER_RADIUS &&
+      v <= h.maxV + PLAYER_RADIUS
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function canStand(x: number, z: number): boolean {
   if (
     homeGateBlocks(x, z) ||
@@ -308,16 +342,19 @@ export function canStand(x: number, z: number): boolean {
   for (const p of m.stupas)
     if (Math.hypot(mu - p.u, mv - p.v) < p.radius + PLAYER_RADIUS) return false;
   if (
-    mountainObstacles.some(
-      (m) => Math.hypot(x - m.x, z - m.z) < m.radius + PLAYER_RADIUS,
-    )
+    mountainObstacles.some((m) => {
+      const obstacleRadius =
+        (m as { obstacleRadius?: number }).obstacleRadius ?? m.radius;
+      return Math.hypot(x - m.x, z - m.z) < obstacleRadius + PLAYER_RADIUS;
+    })
   )
     return false;
-  for (const car of parkedCars) {
+  for (const car of driveableCars) {
+    if (car.id === carRide.carId) continue;
     const dx = x - car.x,
       dz = z - car.z,
-      c = Math.cos(car.rotation),
-      s = Math.sin(car.rotation);
+      c = Math.cos(car.yaw),
+      s = Math.sin(car.yaw);
     if (
       Math.abs(dx * c - dz * s) < (car.width * car.size) / 2 + PLAYER_RADIUS &&
       Math.abs(dx * s + dz * c) < (car.depth * car.size) / 2 + PLAYER_RADIUS
@@ -335,6 +372,7 @@ export function canStand(x: number, z: number): boolean {
   if (!canStandFarmhouse(x, z)) return false;
   if (!canStandToilet(x, z)) return false;
   if (!canStandUShweHouse(x, z)) return false;
+  if (!canStandMountainVillage(x, z)) return false;
   if (Math.hypot(x - 295.571, z - 261.63) < 2.4 + PLAYER_RADIUS) return false;
   if (Math.hypot(x - 109.721, z - 284.313) < 0.42 + PLAYER_RADIUS) return false;
   if (

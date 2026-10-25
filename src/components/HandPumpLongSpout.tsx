@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useRegionFrame as useFrame } from './RegionActivity';
 import { Mesh, DoubleSide } from 'three';
 import {
 	HAND_PUMP_X,

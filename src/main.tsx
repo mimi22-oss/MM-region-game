@@ -1,4 +1,6 @@
 import { RideControls } from './components/RideControls';
+import { CarControls } from './components/CarControls';
+import type { CarStatus } from './game/carRide';
 import type { RideStatus } from './game/motorcycleRide';
 import { RobotLocationPanel } from "./components/RobotLocationPanel";
 import {
@@ -11,7 +13,7 @@ import { homeGuidance } from "./game/homeAccess";
 import { FrameBudget } from "./components/FrameBudget";
 import { mobileQuality } from "./game/sceneBudget";
 import { MobileControls } from "./components/MobileControls";
-import { createMobileInput } from "./game/mobileInput";
+import { createMobileInput, resetMobileInput } from "./game/mobileInput";
 import React, {
   Component,
   lazy,
@@ -27,6 +29,8 @@ import React, {
 import { createRoot } from "react-dom/client";
 import { Canvas } from "@react-three/fiber";
 import { Town } from "./components/Town";
+import { WorldLoading } from "./components/WorldLoading";
+import type { WorldLoadingState } from "./game/regionLoading";
 
 import {
   Player,
@@ -52,12 +56,15 @@ const KalayVillagesPlan = lazy(() =>
 );
 
 class SceneError extends Component<
-  { children: ReactNode },
+  { children: ReactNode; onError: () => void },
   { failed: boolean }
 > {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onError();
   }
   render() {
     return this.state.failed ? (
@@ -71,19 +78,36 @@ class SceneError extends Component<
   }
 }
 function App() {
+  const [sceneLoading, setSceneLoading] = useState<WorldLoadingState>({
+    blocking: true,
+    required: [{ id: "myothar", name: ward.name, phase: "queued" }],
+    downloads: [],
+  });
+  const [sceneFailed, setSceneFailed] = useState(false);
+  const sceneError = useCallback(() => setSceneFailed(true), []);
+  const loading = sceneLoading.blocking || sceneFailed;
   const [rideStatus,setRideStatus]=useState<RideStatus>({riding:false,near:false,kmh:0,notice:'',lives:3,crashed:false});
+  const [carStatus,setCarStatus]=useState<CarStatus>({driving:false,near:false,kmh:0,gear:0,rpm:850,clutch:false,notice:'',steering:0,canSummon:false,summonStatus:'idle',first:false});
+  const carUpdate=useCallback((next:CarStatus)=>setCarStatus(old=>old.driving===next.driving&&old.near===next.near&&old.kmh===next.kmh&&old.gear===next.gear&&old.rpm===next.rpm&&old.clutch===next.clutch&&old.steering===next.steering&&old.notice===next.notice&&old.canSummon===next.canSummon&&old.summonStatus===next.summonStatus&&old.first===next.first?old:next),[]);
   const [rideLimit,setRideLimit]=useState(60),[braking,setBraking]=useState(false),[accelerating,setAccelerating]=useState(false),[dismountRequest,setDismountRequest]=useState(0);
   const rideUpdate=useCallback((next:RideStatus)=>setRideStatus(old=>old.riding===next.riding&&old.near===next.near&&old.kmh===next.kmh&&old.notice===next.notice&&old.lives===next.lives&&old.crashed===next.crashed?old:next),[]);
 
   const [character, setCharacter] = useState<CharacterKind>(savedCharacter);
   const chooseCharacter = (kind: CharacterKind) => {
-    if(rideStatus.riding)return;
+    if(rideStatus.riding||carStatus.driving)return;
     setCharacter(kind);
     try {
       localStorage.setItem(CHARACTER_STORAGE_KEY, kind);
     } catch {}
   };
   const mobileInput = useRef(createMobileInput());
+  useEffect(() => {
+    if (!loading) return;
+    if (document.pointerLockElement) document.exitPointerLock();
+    resetMobileInput(mobileInput.current);
+    setBraking(false);
+    setAccelerating(false);
+  }, [loading]);
   const activateMobile = useCallback(() => setSceneActive(true), []);
   const [visible, setVisible] = useState(!document.hidden);
   useEffect(() => {
@@ -103,6 +127,7 @@ function App() {
   );
   const [mapOpen, setMapOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [sceneActive, setSceneActive] = useState(false);
   const [topDown, setTopDown] = useState(false);
   const [zoom, setZoom] = useState(ward.spawnZoom);
@@ -171,6 +196,7 @@ function App() {
   }, []);
   useEffect(() => {
     const close = (e: KeyboardEvent) => {
+      if (loading) return;
       if (e.code === "Escape") {
         setMapOpen(false);
         setSettingsOpen(false);
@@ -182,7 +208,7 @@ function App() {
     };
     document.addEventListener("keydown", close);
     return () => document.removeEventListener("keydown", close);
-  }, []);
+  }, [loading]);
   const position = useCallback((x: number, z: number, yaw?: number) => {
     setPos((previous) =>
       previous.x === x && previous.z === z ? previous : { x, z },
@@ -192,7 +218,10 @@ function App() {
   const handleLock = useCallback((isLocked: boolean) => {
     setLocked(isLocked);
     setSceneActive(isLocked);
-    if (isLocked) setSettingsOpen(false);
+    if (isLocked) {
+      setSettingsOpen(false);
+      setWelcomeDismissed(true);
+    }
   }, []);
   const toggleTopDown = () => {
     if (document.pointerLockElement) document.exitPointerLock();
@@ -216,18 +245,19 @@ function App() {
   const hideHud = locked || sceneActive;
   return (
     <main className={night ? "night-mode" : ""}>
+      <div className="game-content" inert={loading}>
       <div
         className="scene-wrap"
         onClick={() => {
-          if (!mapOpen) {
+          if (!mapOpen && !loading) {
             setSceneActive(true);
             setSettingsOpen(false);
           }
         }}
       >
-        <SceneError>
+        <SceneError onError={sceneError}>
           <Canvas
-            frameloop={visible ? "always" : "never"}
+            frameloop={visible ? loading ? "demand" : "always" : "never"}
             shadows={!mobileQuality}
             gl={{
               logarithmicDepthBuffer: true,
@@ -238,9 +268,10 @@ function App() {
             dpr={mobileQuality ? 1 : [1, 1.25]}
           >
             <FrameBudget />
-            <Town night={night} />
+            <Town night={night} destination={teleportTarget} paused={loading} onLoadingChange={setSceneLoading} onSceneError={sceneError} />
             <Player
-              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen}
+              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading} loading={loading}
+              onCarStatus={carUpdate}
               character={character}
               navigationRequest={navigationRequest}
               onNavigationResult={navigationResult}
@@ -273,10 +304,11 @@ function App() {
         </div>
       )}
       {!mapOpen&&!settingsOpen&&<RideControls status={rideStatus} limit={rideLimit} onLimit={setRideLimit} onBrake={setBraking} onAccelerate={setAccelerating} onDismount={()=>{setBraking(false);setAccelerating(false);setDismountRequest(n=>n+1)}}/>}
+      {!mapOpen&&!settingsOpen&&!loading&&<CarControls status={carStatus}/>}
       <MobileControls
         key={navigationRequest?.seq ?? 0}
         input={mobileInput}
-        disabled={mapOpen || settingsOpen}
+        disabled={mapOpen || settingsOpen || loading || carStatus.driving}
         onInteract={activateMobile}
       />
       {!mapOpen && !settingsOpen && (
@@ -374,7 +406,7 @@ function App() {
             className="settings-menu"
             aria-label="အသုံးပြုနည်း လမ်းညွှန်"
           >
-            <CharacterPicker value={character} onChange={chooseCharacter} disabled={rideStatus.riding}/>
+            <CharacterPicker value={character} onChange={chooseCharacter} disabled={rideStatus.riding||carStatus.driving}/>
             <RobotLocationPanel
               x={pos.x}
               z={pos.z}
@@ -511,21 +543,47 @@ function App() {
           </section>
         )}
       </div>
-      {!hideHud && !mapOpen && !topDown && zoom <= 10 && !rideStatus.riding && (
-        <section className="welcome">
-          <span className="eyebrow">မင်္ဂလာပါ</span>
-          <h2>ရပ်ကွက်ထဲ လမ်းလျှောက်ကြမယ်</h2>
-          <p>
-            စတင်ရန် မြင်ကွင်းကို နှိပ်ပါ
-            <br />
-            မောက်စ်ဖြင့် လှည့်လည်ကြည့်ရှုနိုင်ပြီး Scroll ဖြင့် Zoom
-            ချဲ့/ချုံ့နိုင်ပါသည်
-          </p>
-          <strong>စတင်လေ့လာရန် မြင်ကွင်းကို နှိပ်ပါ →</strong>
-          <small>
-            ကီးဘုတ် / မောက်စ်ဖြင့် ထိန်းချုပ် · Scroll ချဲ့/ချုံ့ · T
-            အပေါ်စီးမြင်ကွင်း
-          </small>
+      {!welcomeDismissed && !mapOpen && !topDown && !rideStatus.riding && !carStatus.driving && (
+        <section className="welcome" aria-label="ကြိုဆိုပါသည်">
+          <div className="welcome-actions">
+            <button
+              type="button"
+              className="welcome-btn welcome-btn-greet"
+              onClick={() => {
+                setWelcomeDismissed(true);
+                setArrivalToast({
+                  id: "greet",
+                  label: "မင်္ဂလာပါ",
+                  title: "မင်္ဂလာပါ · ကလေးမြို့သို့ ကြိုဆိုပါသည်",
+                  subtitle: "Kalaymyo 3D Virtual Prototype",
+                });
+                window.setTimeout(() => setArrivalToast(null), 3000);
+              }}
+            >
+              မင်္ဂလာပါ
+            </button>
+            <button
+              type="button"
+              className="welcome-btn welcome-btn-tour"
+              onClick={() => {
+                setWelcomeDismissed(true);
+                setSettingsOpen(true);
+              }}
+            >
+              လျှောက်လည်ကြမယ်
+            </button>
+            <button
+              type="button"
+              className="welcome-btn welcome-btn-start"
+              onClick={() => {
+                setWelcomeDismissed(true);
+                setSceneActive(true);
+                document.querySelector("canvas")?.requestPointerLock();
+              }}
+            >
+              စတင်မယ်
+            </button>
+          </div>
         </section>
       )}
       {locked && <div className="crosshair">+</div>}
@@ -551,6 +609,8 @@ function App() {
       <footer>
         {/* <span><span className="footer-location">📍 {currentLoc.subArea ?? currentLoc.label} · </span>{topDown ? 'ကောင်းကင်တည့်တည့်' : first ? 'ပထမလူ မြင်ကွင်း' : 'တတိယလူ မြင်ကွင်း'} · Zoom {Math.round(zoom)} မီတာ · {pos.x.toFixed(1)}, {pos.z.toFixed(1)} မီတာ</span> */}
       </footer>
+      </div>
+      <WorldLoading state={sceneLoading} sceneFailed={sceneFailed} />
     </main>
   );
 }

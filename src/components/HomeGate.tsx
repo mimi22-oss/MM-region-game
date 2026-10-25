@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useRegionFrame as useFrame } from './RegionActivity';
 import { Group } from 'three';
 import { homeAccess, homeGuidance, type HomeGate as GateId } from '../game/homeAccess';
 export function HomeGate({id,width,height=1.8,color='#2563a6'}:{id:GateId;width:number;height?:number;color?:string}){

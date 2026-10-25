@@ -5,6 +5,7 @@ import { houseVisualRotation, FrontLotFence, WireMeshSegment } from './House';
 import { Gardens } from './Landmarks';
 import { Box } from './Primitives';
 import { DoubleSide } from 'three';
+import { CarCallSpotMarker } from './CarCallSpotMarker';
 
 /**
  * Character's walk-in Farmhouse (စိုက်ခင်းအိမ်):
@@ -886,6 +887,7 @@ export function Farmhouse() {
 			<FarmhouseBuilding />
 			<Gardens />
 			<FarmEstate />
+			<CarCallSpotMarker />
 		</>
 	);
 }

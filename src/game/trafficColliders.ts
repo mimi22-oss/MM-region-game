@@ -2,8 +2,9 @@ import {Vector3,type Group} from 'three';
 export const trafficColliders=new Map<Group,{width:number;depth:number}>();
 const position=new Vector3();
 /** Short swept samples cover the bike's two wheels and body against actor boxes. */
-export function hitsTraffic(x:number,z:number,yaw:number,y:number,pointOnly=false){
+export function hitsTraffic(x:number,z:number,yaw:number,y:number,pointOnly=false,ignoreCarId?:string){
  for(const [root,box] of trafficColliders){
+  if(ignoreCarId&&root.userData.carId===ignoreCarId)continue;
   root.getWorldPosition(position);
   if(Math.abs(position.y-y)>1.5||Math.hypot(position.x-x,position.z-z)>box.depth+2)continue;
   const a=root.rotation.y,c=Math.cos(a),s=Math.sin(a);

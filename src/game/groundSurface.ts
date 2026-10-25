@@ -1,36 +1,73 @@
 import { Box3, Euler, Mesh, Object3D, Raycaster, Vector3 } from 'three';
+import { mountainHeight } from './mountainTerrain.ts';
+import { ward, angle } from '../data/ward.ts';
+
+const mountainPeaks = [...ward.mountains, ...ward.weipula.peaks];
+const cosA = Math.cos(angle);
+const sinA = Math.sin(angle);
 
 /** Semantic surfaces only: roofs, railings, plants and water cannot lift the player. */
 export class GroundSurface {
  private cells=new Map<string,Mesh[]>();
- private bounds=new WeakMap<Mesh,Box3>();
  private ray=new Raycaster(new Vector3(),new Vector3(0,-1,0),0,20000);
- refresh(root:Object3D){
+ refresh(...roots:Object3D[]){
   this.cells.clear();
+  for(const root of roots){
+  root.updateWorldMatrix(true,true);
   root.traverse(o=>{
    if(!(o instanceof Mesh)||!o.userData.walkable)return;
-   let b=this.bounds.get(o);
-   if(!b){o.updateWorldMatrix(true,false);b=new Box3().setFromObject(o);this.bounds.set(o,b);}
+   const b=new Box3().setFromObject(o);
    if(b.isEmpty())return;
    for(let x=Math.floor(b.min.x/64);x<=Math.floor(b.max.x/64);x++)
     for(let z=Math.floor(b.min.z/64);z<=Math.floor(b.max.z/64);z++){
      const key=x+','+z,items=this.cells.get(key)||[];items.push(o);this.cells.set(key,items);
     }
   });
+  }
  }
  height(x:number,z:number){
   this.ray.ray.origin.set(x,10000,z);
   const hits=this.ray.intersectObjects(this.cells.get(Math.floor(x/64)+','+Math.floor(z/64))||[],false);
-  return Math.max(0,hits[0]?.point.y??0);
+  if (hits.length > 0) return Math.max(0, hits[0].point.y);
+  const u = x * cosA - z * sinA;
+  const v = x * sinA + z * cosA;
+  if (v > 4100 || u < -450) {
+    const mh = mountainHeight(u, v, mountainPeaks);
+    if (mh > 0) return mh;
+  }
+  return 0;
  }
 }
 
-const scenes=new WeakMap<Object3D,{surface:GroundSurface;time:number}>();
-/** All actors share one index; adding bots does not add scene traversals. */
-export function sceneGround(scene:Object3D,time:number){
+type GroundEntry={surface:GroundSurface;time:number;regions?:Map<string,Object3D>};
+const scenes=new WeakMap<Object3D,GroundEntry>();
+const groundWorlds=new WeakMap<Object3D,Object3D>();
+function groundEntry(scene:Object3D){
  let entry=scenes.get(scene);
  if(!entry){entry={surface:new GroundSurface(),time:-Infinity};scenes.set(scene,entry);}
- if(time-entry.time>.5){entry.surface.refresh(scene);entry.time=time;}
+ return entry;
+}
+/** Physics keeps every prepared road/deck even when its visual region is detached.
+ * Portal actors also use this same world index, rather than their local render host. */
+export function registerGroundRegion(scene:Object3D,id:string,root:Object3D){
+ const entry=groundEntry(scene);
+ entry.regions??=new Map();
+ const previous=entry.regions.get(id);
+ if(previous===root)return;
+ if(previous)groundWorlds.delete(previous);
+ entry.regions.set(id,root);
+ groundWorlds.set(root,scene);
+ entry.surface.refresh(...entry.regions.values());
+}
+export function releaseGroundRegions(scene:Object3D){
+ const entry=scenes.get(scene);
+ for(const root of entry?.regions?.values()??[])groundWorlds.delete(root);
+ scenes.delete(scene);
+}
+/** All actors share one index; adding bots does not add scene traversals. */
+export function sceneGround(scene:Object3D,time:number){
+ const world=groundWorlds.get(scene)??scene,entry=groundEntry(world);
+ if(!entry.regions&&time-entry.time>.5){entry.surface.refresh(world);entry.time=time;}
  return entry.surface;
 }
 

@@ -22,6 +22,7 @@ export function batchStaticMeshes(root: Group) {
       items: { mesh: Mesh; matrix: Matrix4 }[];
     }
   >();
+  const materialKeys = new WeakMap<Material, string>();
   root.traverse((object) => {
     if (
       !(object instanceof Mesh) ||
@@ -38,9 +39,14 @@ export function batchStaticMeshes(root: Group) {
       !["MeshStandardMaterial", "MeshBasicMaterial"].includes(material.type)
     )
       return;
-    const json = material.toJSON();
-    delete json.uuid;
-    delete json.metadata;
+    let materialKey = materialKeys.get(material);
+    if (!materialKey) {
+      const json = material.toJSON();
+      delete json.uuid;
+      delete json.metadata;
+      materialKey = JSON.stringify(json);
+      materialKeys.set(material, materialKey);
+    }
     const geometry = object.geometry,
       parameters = (
         geometry as BufferGeometry & { parameters?: Record<string, number> }
@@ -65,7 +71,7 @@ export function batchStaticMeshes(root: Group) {
       Math.floor(e[14] / 128),
       shape === unitBox ? "box" : [geometry.type, parameters],
       detail,
-      json,
+      materialKey,
       object.castShadow,
       object.receiveShadow,
       object.renderOrder,
@@ -107,15 +113,31 @@ export function batchStaticMeshes(root: Group) {
     root.add(batch);
     batches.push(batch);
   }
+  // Batching removed the leaves. Remove their empty parent trees as well so
+  // rendering, ground queries and camera rays do not visit thousands of empty groups.
+  const emptyGroups: { group: Group; parent: Object3D }[] = [];
+  function prune(parent: Object3D) {
+    for (const child of [...parent.children]) {
+      if (!(child instanceof Group) || child.userData.dynamic) continue;
+      prune(child);
+      if (child.children.length === 0) {
+        emptyGroups.push({ group: child, parent });
+        parent.remove(child);
+      }
+    }
+  }
+  prune(root);
   return {
     batches,
     sourceMeshes: removed.length,
     batchCount: batches.length,
+    prunedGroups: emptyGroups.length,
     dispose() {
       for (const batch of batches) {
         root.remove(batch);
         batch.dispose();
       }
+      for (const { group, parent } of [...emptyGroups].reverse()) parent.add(group);
       for (const { mesh, parent } of removed) parent.add(mesh);
       unitBox.dispose();
     },
