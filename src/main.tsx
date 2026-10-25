@@ -12,7 +12,7 @@ import {
   CHARACTER_STORAGE_KEY,
   type CharacterKind,
 } from "./components/CharacterPicker";
-import { homeGuidance } from "./game/homeAccess";
+import { homeGuidance, HOME_WELCOME_GUIDANCE } from "./game/homeAccess";
 import { FrameBudget } from "./components/FrameBudget";
 import { mobileQuality } from "./game/sceneBudget";
 import { MobileControls } from "./components/MobileControls";
@@ -227,6 +227,24 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [currentLoc]);
 
+  const activeGuidance = useMemo(
+    () => homeGuidance(pos.x, pos.z),
+    [pos.x, pos.z],
+  );
+  const [welcomeGuidanceHidden, setWelcomeGuidanceHidden] = useState(false);
+
+  useEffect(() => {
+    if (activeGuidance === HOME_WELCOME_GUIDANCE) {
+      setWelcomeGuidanceHidden(false);
+      const timer = window.setTimeout(() => {
+        setWelcomeGuidanceHidden(true);
+      }, 3000);
+      return () => window.clearTimeout(timer);
+    } else {
+      setWelcomeGuidanceHidden(false);
+    }
+  }, [activeGuidance]);
+
   const handleSelectLocation = useCallback((id: string) => {
     const dest = MAP_DESTINATIONS.find((d) => d.id === id);
     if (!dest) return;
@@ -355,15 +373,15 @@ function App() {
         </SceneError>
       </div>
       {!loading&&<div className="player-life"><LifeMeter lives={rideStatus.lives}/></div>}
-      {rideStatus.crashed && (
+      {rideStatus.crashed && (rideStatus.damage??1)>0 && (
         <div className="ride-crash-banner" role="alert">
           <span className="ride-crash-icon">💥</span>
           <div className="ride-crash-text">
-            <strong>{rideStatus.lives === 0 ? "Life ကုန်သွားပါပြီ" : rideStatus.damage===0 ? "နောက်သို့ လွန့်သွားပါပြီ" : "တိုက်မိပါပြီ!"}</strong>
+            <strong>{rideStatus.lives === 0 ? "Life ကုန်သွားပါပြီ" : "တိုက်မိပါပြီ!"}</strong>
             <span>
               {rideStatus.lives === 0
                 ? "Life ကုန်သွားသဖြင့် အစသို့ ပြန်လည်စတင်ပါမည်…"
-                : rideStatus.damage===0 ? "နောက်သို့ ၅ လှမ်းခန့် ဆုတ်ပါမည်။ Life မလျော့ပါ။" : `Life ${rideStatus.damage??1} လျော့သွားပါသည် (ကျန်ရှိ: ${rideStatus.lives})`}
+                : `Life ${rideStatus.damage??1} လျော့သွားပါသည် (ကျန်ရှိ: ${rideStatus.lives})`}
             </span>
           </div>
         </div>
@@ -439,15 +457,20 @@ function App() {
         />
       )}
 
-      {!mapOpen && homeGuidance(pos.x, pos.z) && (
-        <div className="home-guidance" role="status" aria-live="polite">
-          <span className="home-guidance-pill">🏡 အိမ်လမ်းညွှန်</span>
-          <span className="home-guidance-text">
-            {homeGuidance(pos.x, pos.z)}
-          </span>
-        </div>
-      )}
+      {!mapOpen &&
+        activeGuidance &&
+        !(
+          activeGuidance === HOME_WELCOME_GUIDANCE && welcomeGuidanceHidden
+        ) && (
+          <div className="home-guidance" role="status" aria-live="polite">
+            <span className="home-guidance-pill">🏡 အိမ်လမ်းညွှန်</span>
+            <span className="home-guidance-text">{activeGuidance}</span>
+          </div>
+        )}
       <header>
+        <h1 style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>
+          MM Region Game - မြန်မာဒေသ 3D ဂိမ်း
+        </h1>
         {/* <span className="eyebrow">EXPLORE MYANMAR · 📍 {currentLoc.subArea ?? currentLoc.label}</span> */}
         {/* <h1>{currentLoc.title}</h1> */}
         {/* <p>{currentLoc.subtitle}</p> */}

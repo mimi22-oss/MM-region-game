@@ -1,19 +1,41 @@
 import {test,beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
 import {Group,Mesh,MeshBasicMaterial,Raycaster,Vector3} from 'three';
-import {rideLife,hitActor,fallProgress,actorFallProgress,isWalkingRecoil,tickRideLife} from '../src/game/rideLife.ts';
+import {rideLife,hitActor,hitWalkingContact,fallProgress,actorFallProgress,isWalkingRecoil,tickRideLife} from '../src/game/rideLife.ts';
 import {walkWithContacts,createWalkingRecoil,stepWalkingRecoil,WALKING_RECOIL_DISTANCE} from '../src/game/walkingCollision.ts';
 import {trafficColliders,trafficContact} from '../src/game/trafficColliders.ts';
 import {closedSleeveGeometry,garmentGeometry,coveredStride} from '../src/game/characterClothing.ts';
 import {driveableCars,carRide,enterCar,parkCar,stepCar,shiftCar} from '../src/game/carRide.ts';
+import {treeBlocks} from '../src/game/collision.ts';
+import {ward} from '../src/data/ward.ts';
+import {kalayVillages} from '../src/data/villages/index.ts';
+import {mangoTrees} from '../src/data/mangoTrees.ts';
+import {tamarindTrees} from '../src/data/tamarindTrees.ts';
+import {estatePalms} from '../src/data/farmEstate.ts';
 beforeEach(()=>{Object.assign(rideLife,{lives:3,crashTime:0,invulnerable:0,contact:false,damage:0});trafficColliders.clear();parkCar();});
 
-test('walking into a wall recoils upright without damage and cannot repeatedly retrigger while in contact',()=>{
+test('ordinary walls block without recoil, damage or recovery time, and allow walking along the edge',()=>{
  const p={x:0,z:0},contact=walkWithContacts(p,2,0,x=>x<.7,()=>null);
- assert.equal(contact,'obstacle');assert.ok(p.x<.7);assert.equal(hitActor('walking'),true);assert.equal(rideLife.lives,3);assert.equal(rideLife.damage,0);
- assert.equal(hitActor('walking'),false);tickRideLife(.5);assert.equal(isWalkingRecoil(),true);assert.equal(actorFallProgress(),0,'person remains upright throughout recoil');
+ assert.equal(contact,'obstacle');assert.ok(p.x<.7);assert.equal(hitWalkingContact(contact),false);
+ assert.equal(rideLife.lives,3);assert.equal(rideLife.crashTime,0);assert.equal(isWalkingRecoil(),false);
+ const beforeZ=p.z;walkWithContacts(p,1,1,x=>x<.7,()=>null);
+ assert.ok(p.x<.7);assert.ok(Math.abs(p.z-beforeZ-1)<1e-9);
+});
+
+test('a tree contact triggers a short upright recoil without damage or repeated triggering',()=>{
+ const p={x:0,z:0},contact=walkWithContacts(p,2,0,x=>x<.7,()=>null,x=>x>=.7);
+ assert.equal(contact,'tree');assert.equal(hitWalkingContact(contact),true);assert.equal(rideLife.lives,3);assert.equal(rideLife.damage,0);
+ assert.equal(hitWalkingContact(contact),false);tickRideLife(.2);assert.equal(isWalkingRecoil(),true);assert.equal(actorFallProgress(),0);
  tickRideLife(2);assert.equal(hitActor('walking'),false);tickRideLife(3);assert.equal(hitActor('walking'),false);
  rideLife.contact=false;assert.equal(hitActor('walking'),true);
+});
+
+test('tree classification covers town, village, orchard and estate trunks without classifying a house as a tree',()=>{
+ const trees=[...ward.trees,...ward.farmTrees,...ward.largeTrees,...mangoTrees,...tamarindTrees,...estatePalms,
+  ...kalayVillages.flatMap(v=>[...v.trees,...v.largeTrees,...v.farmTrees])];
+ for(const tree of trees)assert.equal(treeBlocks(tree.x,tree.z),true);
+ const house=ward.houses[0];assert.equal(treeBlocks(house.x,house.z),false);
+ assert.equal(treeBlocks(ward.spawn.x,ward.spawn.z),false);
 });
 
 test('a car moving into a standing person is fatal, while a robot contact causes upright recoil',()=>{
@@ -30,7 +52,8 @@ test('a car moving into a standing person is fatal, while a robot contact causes
  assert.equal(tickRideLife(1),false);assert.equal(tickRideLife(1),true);assert.equal(rideLife.lives,3);
 });
 
-test('recoil retreats about five steps opposite the impact direction at any frame rate',()=>{
+test('recoil retreats one step opposite the impact direction at any frame rate',()=>{
+ assert.equal(WALKING_RECOIL_DISTANCE,.64);
  for(const dt of [1/30,1/60,.05])for(const yaw of [0,Math.PI/2,-.7]){
   const p={x:4,z:7},recoil=createWalkingRecoil(yaw);
   for(let elapsed=0;elapsed<2;elapsed+=dt)stepWalkingRecoil(recoil,p,dt,()=>true,()=>null);
@@ -43,18 +66,18 @@ test('recoil retreats about five steps opposite the impact direction at any fram
 test('recoil pauses with zero time and stops before a thin wall or another actor',()=>{
  const p={x:0,z:0},recoil=createWalkingRecoil(0);
  stepWalkingRecoil(recoil,p,0,()=>true,()=>null);assert.deepEqual(p,{x:0,z:0});
- stepWalkingRecoil(recoil,p,2,(_x,z)=>z<.8||z>1,()=>null);
- assert.ok(p.z<.8);assert.equal(recoil.finished,true);
+ stepWalkingRecoil(recoil,p,2,(_x,z)=>z<.3||z>.45,()=>null);
+ assert.ok(p.z<.3);assert.equal(recoil.finished,true);
  for(const kind of ['car','robot'] as const){
-  const q={x:0,z:0};stepWalkingRecoil(createWalkingRecoil(0),q,2,()=>true,(_x,z)=>z>.6?kind:null);
-  assert.ok(q.z<=.6);
+  const q={x:0,z:0};stepWalkingRecoil(createWalkingRecoil(0),q,2,()=>true,(_x,z)=>z>.3?kind:null);
+  assert.ok(q.z<=.3);
  }
 });
 
 test('recoil can escape an initially overlapping robot but stops at the next robot',()=>{
  const p={x:0,z:0},recoil=createWalkingRecoil(0);
- stepWalkingRecoil(recoil,p,2,()=>true,(_x,z)=>z<.4||z>1?'robot':null);
- assert.ok(p.z>=.4&&p.z<=1);assert.equal(recoil.escapedRobot,true);assert.equal(recoil.finished,true);
+ stepWalkingRecoil(recoil,p,2,()=>true,(_x,z)=>z<.2||z>.4?'robot':null);
+ assert.ok(p.z>=.2&&p.z<=.4);assert.equal(recoil.escapedRobot,true);assert.equal(recoil.finished,true);
 });
 
 test('car impacts cost exactly 1.5 lives per distinct collision and a second crash restarts',()=>{

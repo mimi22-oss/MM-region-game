@@ -1,6 +1,6 @@
 import {walkWithContacts,createWalkingRecoil,stepWalkingRecoil} from '../game/walkingCollision';
 import {useAppearance} from '../game/appearanceStore';
-import {rideLife,hitRide,hitActor,isWalkingRecoil,actorFallProgress,tickRideLife} from '../game/rideLife';
+import {rideLife,hitRide,hitActor,hitWalkingContact,isWalkingRecoil,actorFallProgress,tickRideLife} from '../game/rideLife';
 import {hitsTraffic,trafficContact} from '../game/trafficColliders';
 import {motorcycleData} from '../data/motorcycle';
 import {resetMobileInput} from '../game/mobileInput';
@@ -22,7 +22,7 @@ import type { MobileInput } from '../game/mobileInput';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Group, Vector3, Raycaster, Object3D, Euler } from 'three';
 import { ward, angle } from '../data/ward';
-import { canStand, PLAYER_RADIUS } from '../game/collision';
+import { canStand, treeBlocks, PLAYER_RADIUS } from '../game/collision';
 
 export const MIN_ZOOM = 2;
 export const MAX_ZOOM = 3600;
@@ -456,9 +456,9 @@ export function Player({
    const speed=(fast?9.5:touch?.active?5.5:4)*dt;
    const mx=(-Math.sin(yaw)*forward+Math.cos(yaw)*right)*speed,mz=(-Math.cos(yaw)*forward-Math.sin(yaw)*right)*speed;
    if(!mapOpen&&!controlsBlocked&&!loading){
-    const contact=walkWithContacts(s,mx,mz,clear,(x,z)=>trafficContact(x,z,s.bodyYaw,height(x,z),true));
-    if(!contact&&rideLife.crashTime<=0)rideLife.contact=false;
-    if(contact&&hitActor('walking',contact==='car')){
+    const contact=walkWithContacts(s,mx,mz,clear,(x,z)=>trafficContact(x,z,s.bodyYaw,height(x,z),true),treeBlocks);
+    if((!contact||contact==='obstacle')&&rideLife.crashTime<=0)rideLife.contact=false;
+    if(hitWalkingContact(contact)){
      fallYaw.current=Math.hypot(mx,mz)>.0001?Math.atan2(-mx,-mz):s.bodyYaw;
      if(contact!=='car'){walkingRecoil.current=createWalkingRecoil(fallYaw.current);s.bodyYaw=fallYaw.current;}
      s.keys.clear();if(touch)resetMobileInput(touch);s.first=false;s.topDown=false;s.panning=false;s.targetDistance=6;onMode(false);onTopDown(false);onZoom(6);
@@ -489,7 +489,7 @@ export function Player({
   characterMotion.current.rightFoot=(rightHeight-groundY+.012)/bodyScale;
   characterMotion.current.stepLift=Math.min(.32,Math.abs(height(s.x-sn*.4,s.z-c*.4)-center)+.04);
   const fall=!car?actorFallProgress():0;
-  const isBlinking=!car&&rideLife.invulnerable>0&&Math.floor(clock.elapsedTime*12)%2===0;
+  const isBlinking=!car&&rideLife.damage>0&&rideLife.invulnerable>0&&Math.floor(clock.elapsedTime*12)%2===0;
   if(avatar.current){avatar.current.position.set(s.x,groundY+fall*(ride.riding?.18:.28*bodyScale),s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:fall*Math.PI/2,fall&&!ride.riding?fallYaw.current:s.bodyYaw,ride.riding?fall*1.42:0,'YXZ');avatar.current.visible=!car&&!s.first&&!isBlinking;}
   target.current.set(aerial?s.camX:s.x,(aerial?height(s.camX,s.camZ):groundY)+1.65*(car||ride.riding?1:bodyScale),aerial?s.camZ:s.z);
   if(car&&s.first)target.current.set(DRIVER_EYE[0]*car.size,DRIVER_EYE[1]*car.size,DRIVER_EYE[2]*car.size).applyEuler(new Euler(car.pitch,car.yaw,car.roll,'YXZ')).add(new Vector3(car.x,car.groundY,car.z));

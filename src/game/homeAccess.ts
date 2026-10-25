@@ -102,6 +102,9 @@ export function homeGateBlocks(x: number, z: number, radius = 0.4) {
     );
   });
 }
+export const HOME_WELCOME_GUIDANCE =
+  "နွေးထွေးစွာ ကြိုဆိုပါသည် · ဘယ်ဘက်တွင် မီးဖိုချောင် · ညာဘက်တွင် အိပ်ခန်း";
+
 export function homeGuidance(x: number, z: number) {
   for (const id of Object.keys(homeGates) as HomeGate[]) {
     const g = homeGates[id];
@@ -115,8 +118,9 @@ export function homeGuidance(x: number, z: number) {
   if (p.x > -9 && p.x < 18 && p.z > -7.5 && p.z < 7.5)
     return p.z > 4.5
       ? "အိမ်ရှေ့မုခ်ပေါက်သို့ မြှားပြထားသည့်အတိုင်း လျှောက်လှမ်းပါ"
-      : "နွေးထွေးစွာ ကြိုဆိုပါသည် · ဘယ်ဘက်တွင် မီးဖိုချောင် · ညာဘက်တွင် အိပ်ခန်း";
+      : HOME_WELCOME_GUIDANCE;
   if (Math.hypot(x - homeGates.yard.x, z - homeGates.yard.z) < 8)
     return "ခြံတံခါး အလိုအလျောက် ပွင့်ပါမည်";
   return "";
 }
+

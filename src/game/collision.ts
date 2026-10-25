@@ -267,11 +267,16 @@ function canStandMountainVillage(x: number, z: number): boolean {
   return true;
 }
 
+/** The same trunk bounds are used for blocking and the pedestrian's small recoil. */
+export function treeBlocks(x: number, z: number): boolean {
+  return nearbyAreca(x, z).some((p) => Math.hypot(x - p.x, z - p.z) < 0.62) ||
+    nearbyTrees(x, z).some((t) => Math.hypot(x - t.x, z - t.z) < t.radius + PLAYER_RADIUS);
+}
+
 export function canStand(x: number, z: number): boolean {
   if (
     homeGateBlocks(x, z) ||
-    estateFenceBlocks(x, z) ||
-    nearbyAreca(x, z).some((p) => Math.hypot(x - p.x, z - p.z) < 0.62)
+    estateFenceBlocks(x, z)
   )
     return false;
   const c = Math.cos(ward.canal.rotation),
@@ -435,9 +440,7 @@ export function canStand(x: number, z: number): boolean {
     const nz = Math.max(-h.depth / 2 - 0.6, Math.min(lz, h.depth / 2 + 2.6));
     if (Math.hypot(lx - nx, lz - nz) < PLAYER_RADIUS) return false;
   }
-  return !nearbyTrees(x, z).some(
-    (t) => Math.hypot(x - t.x, z - t.z) < t.radius + PLAYER_RADIUS,
-  );
+  return !treeBlocks(x, z);
 }
 export function move(
   position: { x: number; z: number },
