@@ -12,11 +12,11 @@ export function CharacterPicker({value,onChange,disabled=false}:{value:Character
   <div className="character-options">
    <button type="button" aria-pressed={value==='cartoon'} onClick={()=>onChange('cartoon')}>
     <span className="character-swatch character-swatch-cartoon" aria-hidden="true"/>
-    <span><strong>လူဇာတ်ကောင်</strong><small>လူပုံစံနှင့် အဝတ်အစား ရွေးနိုင်သည်</small></span>
+    <span><strong>ဇာတ်ကောင်</strong></span>
    </button>
    <button type="button" aria-pressed={value==='robot'} onClick={()=>onChange('robot')}>
     <span className="character-swatch character-swatch-robot" aria-hidden="true"/>
-    <span><strong>စက်ရုပ်</strong><small>အရောင်၊ လက်၊ ခြေ ပြောင်းနိုင်သည်</small></span>
+    <span><strong>စက်ရုပ်</strong></span>
    </button>
   </div>
   <p>နှစ်မျိုးလုံးကို လက်ရှိနေရာမှာ ပြောင်းလဲရွေးချယ်နိုင်ပါတယ်။</p>

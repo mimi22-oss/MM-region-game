@@ -497,7 +497,7 @@ function App() {
               <div className="guide-header">
                 <strong>အသုံးပြုနည်း လမ်းညွှန်</strong>
                 <div className="badge">
-                  <span /> မြေပုံလေ့လာခြင်း · {currentLoc.label}{" "}
+                  <span /> မြေပုံ · {currentLoc.label}{" "}
                   <b>
                     {ward.size} × {ward.size} မီတာ
                   </b>
@@ -671,25 +671,126 @@ function App() {
         }}
       />
       {locked && <div className="crosshair">+</div>}
-      {/* <aside className={mapOpen?"map map-expanded":"map"} aria-label="Ward plan" onClick={()=>{if(!mapOpen){if(document.pointerLockElement)document.exitPointerLock();setSettingsOpen(false);setMapOpen(true);}}}>
-  <button type="button" className="map-toggle" aria-expanded={mapOpen} onClick={e=>{e.stopPropagation();if(document.pointerLockElement)document.exitPointerLock();setSettingsOpen(false);setMapOpen(v=>!v);}}>{mapOpen?`✕ ပိတ်ရန် · WARD PLAN (${currentLoc.label})`:`📍 ${currentLoc.label} ↗`}<b>မြောက် ↖</b></button>
-  {mapOpen&&<div className="map-jump-bar" aria-label="နယ်မြေနှင့် ရွာများသို့ တိုက်ရိုက်သွားရန်">
-   <span>နယ်မြေ / ရွာ ရွေး၍ 3D Scene သို့ သွားရန် —</span>
-   {MAP_DESTINATIONS.map(d=><button key={d.id} type="button" className={currentLoc.id===d.id?"map-jump-btn map-jump-btn-active":"map-jump-btn"} onClick={e=>{e.stopPropagation();handleSelectLocation(d.id);}}>📍 {d.label} ↗</button>)}
-  </div>}
-  <svg viewBox={`${-ward.size/2-5} ${-ward.size/2-5} ${ward.size+10} ${ward.size+10}`} aria-label="မြို့သာရပ်ကွက် မြေပုံ">
-   <rect x={-ward.size/2} y={-ward.size/2} width={ward.size} height={ward.size} fill="#92a36b"/>
-   {mapOpen&&!mobileQuality&&<Suspense fallback={null}><KalayWardsPlan labels={mapOpen} onSelectLocation={handleSelectLocation}/>
-   <KalayVillagesPlan labels={mapOpen} onSelectLocation={handleSelectLocation}/></Suspense>}
-   {(!mapOpen||mobileQuality)&&MAP_DESTINATIONS.map(d=><g key={d.id} onClick={e=>{e.stopPropagation();handleSelectLocation(d.id)}} style={{cursor:'pointer'}}>
-    <circle cx={d.x} cy={d.z} r={55} fill="#2563a6"/>
-    {mapOpen&&<text x={d.x+70} y={d.z} fontSize={65} fill="#173d35">{d.label}</text>}
-   </g>)}
-   <circle cx={pos.x} cy={pos.z} r="4" fill="#fff4b3" stroke="#173d35" strokeWidth="2"/>
-  </svg>
-  <small>{ward.currentArea} · သာစည် · ချင်းဆိုင် · ဇင်းကလင်း · ထိုမာ · သာယာကုန်း · ထောက်ကြန့် · ကြာအင်း</small>
-  {mapOpen&&<p className="map-help">မြေပုံပေါ်ရှိ သက်ဆိုင်ရာ ရပ်ကွက် / ရွာကို တိုက်ရိုက်နှိပ်၍ 3D မြင်ကွင်းသို့ သွားနိုင်ပါသည် · Esc ပိတ်ရန်</p>}
- </aside> */}
+      <aside
+        className={mapOpen ? "map map-expanded" : "map"}
+        aria-label="Ward plan"
+        onClick={() => {
+          if (!mapOpen) {
+            if (document.pointerLockElement) document.exitPointerLock();
+            setSettingsOpen(false);
+            setMapOpen(true);
+          }
+        }}
+      >
+        <button
+          type="button"
+          className="map-toggle"
+          aria-expanded={mapOpen}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (document.pointerLockElement) document.exitPointerLock();
+            setSettingsOpen(false);
+            setMapOpen((v) => !v);
+          }}
+        >
+          {mapOpen ? (
+            <span>✕ ပိတ်ရန် · ရပ်ကွက်နှင့် ကျေးရွာများ မြေပုံ ({currentLoc.label})</span>
+          ) : (
+            <span>📍 {currentLoc.label} ↗</span>
+          )}
+          <b>မြောက် ↖</b>
+        </button>
+        {mapOpen && (
+          <div
+            className="map-jump-bar"
+            aria-label="နယ်မြေနှင့် ရွာများသို့ တိုက်ရိုက်သွားရန်"
+          >
+            <span>နယ်မြေ / ရွာ ရွေး၍ 3D Scene သို့ သွားရန် —</span>
+            {MAP_DESTINATIONS.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                className={
+                  currentLoc.id === d.id
+                    ? "map-jump-btn map-jump-btn-active"
+                    : "map-jump-btn"
+                }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelectLocation(d.id);
+                }}
+              >
+                📍 {d.label} ↗
+              </button>
+            ))}
+          </div>
+        )}
+        <svg
+          viewBox={`${-ward.size / 2 - 5} ${-ward.size / 2 - 5} ${ward.size + 10} ${ward.size + 10}`}
+          aria-label="မြို့သာရပ်ကွက် မြေပုံ"
+        >
+          <rect
+            x={-ward.size / 2}
+            y={-ward.size / 2}
+            width={ward.size}
+            height={ward.size}
+            fill="#92a36b"
+          />
+          {mapOpen && !mobileQuality && (
+            <Suspense fallback={null}>
+              <KalayWardsPlan
+                labels={mapOpen}
+                onSelectLocation={handleSelectLocation}
+              />
+              <KalayVillagesPlan
+                labels={mapOpen}
+                onSelectLocation={handleSelectLocation}
+              />
+            </Suspense>
+          )}
+          {(!mapOpen || mobileQuality) &&
+            MAP_DESTINATIONS.map((d) => (
+              <g
+                key={d.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelectLocation(d.id);
+                }}
+                style={{ cursor: "pointer" }}
+              >
+                <circle cx={d.x} cy={d.z} r={55} fill="#2563a6" />
+                {mapOpen && (
+                  <text
+                    x={d.x + 70}
+                    y={d.z}
+                    fontSize={65}
+                    fill="#173d35"
+                  >
+                    {d.label}
+                  </text>
+                )}
+              </g>
+            ))}
+          <circle
+            cx={pos.x}
+            cy={pos.z}
+            r={mapOpen ? "35" : "120"}
+            fill="#fff4b3"
+            stroke="#173d35"
+            strokeWidth={mapOpen ? "8" : "24"}
+          />
+        </svg>
+        <small>
+          {ward.currentArea} · သာစည် · ချင်းဆိုင် · ဇင်းကလင်း · ထိုမာ ·
+          သာယာကုန်း · ထောက်ကြန့် · ကြာအင်း
+        </small>
+        {mapOpen && (
+          <p className="map-help">
+            မြေပုံပေါ်ရှိ သက်ဆိုင်ရာ ရပ်ကွက် / ရွာကို တိုက်ရိုက်နှိပ်၍ 3D
+            မြင်ကွင်းသို့ သွားနိုင်ပါသည် · Esc ပိတ်ရန်
+          </p>
+        )}
+      </aside>
       <footer>
         {/* <span><span className="footer-location">📍 {currentLoc.subArea ?? currentLoc.label} · </span>{topDown ? 'ကောင်းကင်တည့်တည့်' : first ? 'ပထမလူ မြင်ကွင်း' : 'တတိယလူ မြင်ကွင်း'} · Zoom {Math.round(zoom)} မီတာ · {pos.x.toFixed(1)}, {pos.z.toFixed(1)} မီတာ</span> */}
       </footer>

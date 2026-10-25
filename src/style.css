@@ -336,19 +336,22 @@ header p {
 .map {
 	position: absolute;
 	top: 24px;
-	right: 74px;
+	right: 172px;
 	bottom: auto;
 	width: 150px;
 	padding: 10px 12px;
 	background: #f6f1e5ed;
-	border-radius: 10px;
+	border: 1px solid #dcd4be;
+	border-radius: 12px;
 	pointer-events: auto;
 	cursor: pointer;
 	box-shadow: 0 6px 24px #163e361c;
 	transition:
 		transform 0.15s,
 		box-shadow 0.15s;
-	z-index: 9;
+	z-index: 10;
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
 }
 
 .map:not(.map-expanded):hover {
@@ -460,16 +463,21 @@ kbd {
 }
 
 .map-expanded {
-	z-index: 20;
+	position: fixed;
+	z-index: 100;
 	inset: 20px 20px 80px;
 	width: auto;
+	max-width: 920px;
+	margin: auto;
+	border-radius: 16px;
 	padding: 16px;
 	cursor: default;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	box-shadow: 0 0 0 100vmax #143d3670;
+	box-shadow: 0 0 0 100vmax rgba(20, 61, 54, 0.65), 0 20px 50px rgba(0, 0, 0, 0.4);
 	background: #f6f1e5;
+	border: 1.5px solid #dcd4be;
 }
 
 .map-expanded .map-toggle {
@@ -1827,9 +1835,10 @@ main.night-mode .home-guidance-pill {
 	}
 
 	.map-expanded {
-		inset: 12px 12px 72px;
-		width: auto;
+		inset: 12px 12px 64px;
+		width: calc(100% - 24px);
 		padding: 12px;
+		border-radius: 14px;
 	}
 
 	.map-expanded .map-toggle {
