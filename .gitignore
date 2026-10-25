@@ -2,7 +2,7 @@ node_modules/
 dist/
 *.tsbuildinfo
 map/
-.agents/
+.agents/**/SKILL.md
 .env
 .env.*
 !.env.example
