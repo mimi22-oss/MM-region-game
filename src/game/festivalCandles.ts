@@ -26,6 +26,7 @@ export function decorateFestivalRegion(root:Group){
   const batch=(name:string,geometry:BufferGeometry,material:Material,points:Item[],height:(p:Item)=>number,scaleFn:(p:Item)=>[number,number,number]=()=>[1,1,1])=>{
    if(!points.length)return;
    const mesh=new InstancedMesh(geometry,material,points.length);mesh.name=name;mesh.raycast=noRaycast;
+   if(name==='festival-glows')mesh.frustumCulled=false; // Billboard size is expanded in the GPU shader.
    points.forEach((p,i)=>{const [sx,sy,sz]=scaleFn(p);matrix.makeScale(sx,sy,sz);matrix.setPosition(p.x,p.y+height(p),p.z);mesh.setMatrixAt(i,matrix);});
    mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();if(mesh.boundingSphere)mesh.boundingSphere.radius+=.1;
    tile.add(mesh);
@@ -42,11 +43,27 @@ export function decorateFestivalRegion(root:Group){
 }
 
 /** Distant candles keep their flames and radiant glows; nearby cups and wax retain full detail. */
-export function updateFestivalVisibility(root:Object3D,x:number,z:number,mobile=false){
+export function updateFestivalVisibility(root:Object3D,x:number,z:number,mobile=false,height=0){
  const festival=root.children.find(child=>child.name==='festival-candles');if(!festival)return;
  for(const tile of festival.children){
   const distance=Math.hypot(tile.position.x+32-x,tile.position.z+32-z);
-  tile.visible=distance<(mobile?300:600);
+  tile.visible=distance<Math.max(mobile?300:600,height*1.8+100);
   for(const child of tile.children)child.visible=child.name==='festival-flames'||child.name==='festival-glows'||distance<(mobile?80:130);
  }
+}
+
+/** Small light markers accompany simplified houses when full regions are detached for aerial views. */
+export function createFestivalOverview(root:Group){
+ const result=new Group();result.name='festival-overview';
+ const festival=root.children.find(c=>c.name==='festival-candles');if(!festival)return result;
+ const positions=new Map<string,Vector3>(),matrix=new Matrix4(),p=new Vector3();
+ for(const tile of festival.children){
+  const cups=tile.children.find(c=>c.name==='festival-holders') as InstancedMesh|undefined;if(!cups)continue;
+  for(let i=0;i<cups.count;i++){cups.getMatrixAt(i,matrix);p.setFromMatrixPosition(matrix).add(tile.position);
+   // Overview boxes have a 5m roof: these are light markers on that representation, not extra 3D candles.
+   p.y=Math.max(5.2,p.y+.35);positions.set(`${Math.floor(p.x/3)},${Math.floor(p.z/3)}`,p.clone());}
+ }
+ if(positions.size){const mesh=new InstancedMesh(candleGlowGeometry,candleGlowMaterial,positions.size);mesh.name='festival-overview-glows';mesh.raycast=noRaycast;mesh.frustumCulled=false;
+  let i=0;for(const p of positions.values()){matrix.makeTranslation(p.x,p.y,p.z);mesh.setMatrixAt(i++,matrix);}mesh.instanceMatrix.needsUpdate=true;result.add(mesh);}
+ return result;
 }

@@ -31,6 +31,8 @@ try{
  const evaluate=async expression=>{const r=await page.call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw new Error(r.exceptionDetails.text);return r.result.value;};
  const until=async(expression,timeout=180000)=>{const end=Date.now()+timeout;while(Date.now()<end){if(errors.length)throw new Error(errors.join('\n'));if(await evaluate(expression))return;await sleep(500);}throw new Error('Timed out: '+await evaluate('document.body.innerText'));};
  const screenshot=async name=>{const r=await page.call('Page.captureScreenshot',{format:'png'});await writeFile(join(artifacts,name+'.png'),Buffer.from(r.data,'base64'));};
+ await page.call('Page.navigate',{url:'http://127.0.0.1:5176/tests/fixtures/candleAngles.html'});await until('!!window.candleAnglesResult');
+ const angles=await evaluate('window.candleAnglesResult');console.log(JSON.stringify(angles));assert.equal(angles.passed,true,'Flames must produce visible pixels from all sides and 1200m overhead, with logarithmic depth enabled');
  await page.call('Page.navigate',{url:'http://127.0.0.1:5176/candle-preview.html'});await until('!!document.querySelector("canvas")');await sleep(2500);assert.equal(errors.length,0,errors.join('\n'));await screenshot('candles-night');
  await evaluate('document.querySelector("button").click()');await sleep(800);await screenshot('candles-day');
  console.log('Preview rendered without WebGL/React errors. Screenshots: '+artifacts);

@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import { ward } from '../data/ward';
 import { kalayVillages } from '../data/villages';
+import { myotharCenterBuildings } from '../data/wards/myothar/center/index.ts';
 import { RegionDownloadQueue } from '../game/regionLoading';
 import kalaySignFace from '../assets/kalay_sign_face.png';
 import burmeseLionEmblem from '../assets/burmese_lion_emblem.png';
@@ -34,7 +35,26 @@ const loaders: Record<string, () => Promise<ComponentType>> = {
 };
 
 export const worldRegions = [
-  { id: 'myothar', name: ward.name, houses: ward.houses, roads: ward.roads, fields: ward.fields },
+  {
+    id: 'myothar',
+    name: ward.name,
+    houses: [
+      ...ward.houses,
+      ...myotharCenterBuildings.map((b) => ({
+        id: b.id,
+        name: b.name,
+        x: b.x,
+        z: b.z,
+        width: b.width,
+        depth: b.depth,
+        color: b.wallColor,
+        rotation: b.rotation,
+        roof: b.roofColor,
+      })),
+    ],
+    roads: ward.roads,
+    fields: ward.fields,
+  },
   ...kalayVillages,
 ];
 

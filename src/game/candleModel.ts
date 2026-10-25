@@ -1,4 +1,4 @@
-import {BufferGeometry,Float32BufferAttribute,CylinderGeometry,TorusGeometry,SphereGeometry,LatheGeometry,Vector2,Color,MeshStandardMaterial,ShaderMaterial,AdditiveBlending,DoubleSide} from 'three';
+import {BufferGeometry,Float32BufferAttribute,CylinderGeometry,TorusGeometry,SphereGeometry,PlaneGeometry,LatheGeometry,Vector2,Color,MeshStandardMaterial,ShaderMaterial,AdditiveBlending,DoubleSide} from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 function colored(g:BufferGeometry,color:string){
@@ -31,19 +31,24 @@ export const flameGeometry=(()=>{
  const p=g.attributes.position;for(let i=0;i<p.count;i++){const t=p.getY(i)/.19;p.setX(i,p.getX(i)+.018*t*t*t);}
  g.computeVertexNormals();g.userData.shared=true;return g;
 })();
-export const candleGlowGeometry=new SphereGeometry(.48,12,8);candleGlowGeometry.userData.shared=true;
+export const candleGlowGeometry=new PlaneGeometry(1,1);candleGlowGeometry.userData.shared=true;
 export const candleSolidMaterial=new MeshStandardMaterial({vertexColors:true,roughness:.6,metalness:.08});candleSolidMaterial.userData.shared=true;
 
 const vertexShader=`
+#include <common>
+#include <logdepthbuf_pars_vertex>
 uniform float time;
+uniform float viewportHeight;
 varying vec3 normalView;
 varying vec3 eye;
 varying float height;
 varying float pulse;
 varying vec3 localPos;
+varying vec2 glowUv;
 void main(){
  vec3 p=position;
  localPos=position;
+ glowUv=uv;
  vec4 origin=vec4(0.,0.,0.,1.);
  #ifdef USE_INSTANCING
  origin=instanceMatrix*origin;
@@ -62,10 +67,19 @@ void main(){
  world=instanceMatrix*world;
  #endif
  vec4 view=modelViewMatrix*world;
+ #ifdef HALO
+ // Screen-facing glow also works from directly overhead. Preserve a tiny light at aerial distances.
+ view=viewMatrix*origin;
+ float worldPerPixel=2.*max(1.,-view.z)/(max(1.,viewportHeight)*projectionMatrix[1][1]);
+ float diameter=max(.72,6.*worldPerPixel);
+ view.xy+=position.xy*diameter;
+ #endif
  eye=-view.xyz;normalView=normalMatrix*normal;
  gl_Position=projectionMatrix*view;
+ #include <logdepthbuf_vertex>
 }`;
-export const candleFlameMaterial=new ShaderMaterial({uniforms:{time:{value:0}},vertexShader,fragmentShader:`
+export const candleFlameMaterial=new ShaderMaterial({uniforms:{time:{value:0},viewportHeight:{value:900}},vertexShader,fragmentShader:`
+#include <logdepthbuf_pars_fragment>
 varying vec3 normalView;varying vec3 eye;varying float height;varying float pulse;varying vec3 localPos;
 void main(){
  float r=length(localPos.xz)/.054;
@@ -76,18 +90,20 @@ void main(){
  vec3 fire=mix(base,vec3(5.5,5.0,3.4),core*.88+.35);
  float alpha=clamp((1.-smoothstep(.8,1.1,r))*(1.-smoothstep(.92,1.,height))+.4,0.,1.);
  gl_FragColor=vec4(fire*pulse,alpha);
+ #include <logdepthbuf_fragment>
 }`,side:DoubleSide,transparent:true,depthWrite:false,blending:AdditiveBlending,toneMapped:false});
 export const candleGlowMaterial=new ShaderMaterial({uniforms:candleFlameMaterial.uniforms,defines:{HALO:1},vertexShader,fragmentShader:`
-varying vec3 normalView;varying vec3 eye;varying float pulse;
+#include <logdepthbuf_pars_fragment>
+varying float pulse;varying vec2 glowUv;
 void main(){
- vec3 n=normalize(normalView);
- vec3 v=normalize(eye);
- float facing=abs(dot(n,v));
- float a=(pow(facing,1.8)*.7+facing*.2)*pulse;
- vec3 glow=vec3(2.6,1.35,.35)*a;
- gl_FragColor=vec4(glow,a);
+ float r=length(glowUv-.5)*2.;if(r>1.)discard;
+ float core=exp(-r*r*32.);
+ float halo=pow(1.-r,3.);
+ float a=(core*.8+halo*.23)*pulse;
+ gl_FragColor=vec4(mix(vec3(2.6,1.1,.18),vec3(3.2,2.5,1.1),core),a);
+ #include <logdepthbuf_fragment>
 }`,side:DoubleSide,transparent:true,depthWrite:false,blending:AdditiveBlending,toneMapped:false});
 candleFlameMaterial.userData.shared=true;candleGlowMaterial.userData.shared=true;
-export function animateCandleFlames(time:number){candleFlameMaterial.uniforms.time.value=time;}
+export function animateCandleFlames(time:number,viewportHeight?:number){candleFlameMaterial.uniforms.time.value=time;if(viewportHeight)candleFlameMaterial.uniforms.viewportHeight.value=viewportHeight;}
 
 

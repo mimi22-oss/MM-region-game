@@ -1,5 +1,5 @@
 import { CarBots } from './CarBots';
-import {decorateFestivalRegion,updateFestivalVisibility} from '../game/festivalCandles';
+import {decorateFestivalRegion,updateFestivalVisibility,createFestivalOverview} from '../game/festivalCandles';
 import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect, useSyncExternalStore, memo, type ComponentType } from 'react';
 import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import { BoxGeometry, MeshLambertMaterial, InstancedMesh, Matrix4, Quaternion, Vector3, Color, Group, type Object3D } from 'three';
@@ -63,7 +63,7 @@ export type StreamedWorldProps = {
 };
 
 const preparationOrder = [...spawnRegions, ...selectOverviewRegions(bounds, ward.spawn.x, ward.spawn.z, mobileQuality).filter(id => !spawnRegions.includes(id))];
-type CachedRegion = { root: Group; flows: Object3D[] };
+type CachedRegion = { root: Group; flows: Object3D[]; festivalOverview:Group };
 
 export function StreamedWorld({ destination, paused = false, onLoadingChange, onSceneError }: StreamedWorldProps) {
  const { gl, scene, invalidate } = useThree();
@@ -78,7 +78,7 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
  const building = preparationOrder[prepared.length];
  const onBuilt = useCallback((id: string, root: Group) => {
   if (cache.current.has(id)) return;
-  cache.current.set(id, { root, flows: id === 'myothar' ? [] : regionFlows(root) });
+  cache.current.set(id, { root, flows: id === 'myothar' ? [] : regionFlows(root),festivalOverview:createFestivalOverview(root) });
   setWarming({ id, root });
  }, []);
 
@@ -110,9 +110,9 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
  }, [destination, started]);
  useLayoutEffect(() => {
   for (const id of prepared) {
-   const { root } = cache.current.get(id)!;
-   if (active.includes(id)) { if (root.parent !== scene) scene.add(root); }
-   else root.removeFromParent();
+   const { root,festivalOverview } = cache.current.get(id)!;
+   if (active.includes(id)) { if (root.parent !== scene) scene.add(root);festivalOverview.removeFromParent(); }
+   else {root.removeFromParent();if(festivalOverview.parent!==scene)scene.add(festivalOverview);}
   }
   invalidate();
  }, [prepared, active, scene, invalidate]);
@@ -125,7 +125,7 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
   return () => { queueMicrotask(() => {
    if (lifetime.current !== generation) return;
    releaseGroundRegions(scene);
-   for (const { root } of entries.values()) disposePreparedRegion(root);
+   for (const { root,festivalOverview } of entries.values()){disposePreparedRegion(root);disposePreparedRegion(festivalOverview);}
    entries.clear();
   }); };
  }, [scene]);
@@ -153,7 +153,7 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
   elapsed.current += dt;
   if (elapsed.current < .2) return;
   elapsed.current = 0;
-  for(const id of active){const root=cache.current.get(id)?.root;if(root)updateFestivalVisibility(root,focus.x,focus.z,mobileQuality);}
+  for(const id of active){const root=cache.current.get(id)?.root;if(root)updateFestivalVisibility(root,focus.x,focus.z,mobileQuality,camera.position.y);}
   const next = selectRegions(bounds, focus.x, focus.z, camera.position.y, active, mobileQuality);
   // No heavy tree replacement remains: switching cached regions is safe in motion.
   if (next.join() !== active.join()) setActive(next);

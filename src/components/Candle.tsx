@@ -33,4 +33,4 @@ export function CandleInHolder({position=[0,0,0],scale=1,lit=true}:{lit?:boolean
 }
 
 /** Mount one clock per Canvas; all candle instances share its GPU animation. */
-export function CandleAnimation(){useFrame(({clock})=>animateCandleFlames(clock.elapsedTime));return null;}
+export function CandleAnimation(){useFrame(({clock,gl,size})=>animateCandleFlames(clock.elapsedTime,size.height*gl.getPixelRatio()));return null;}
