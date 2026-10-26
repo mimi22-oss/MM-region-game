@@ -1,3 +1,5 @@
+import {BalloonControls} from './components/BalloonControls';
+import {emptyBalloonStatus,clearBalloonInput,type BalloonStatus} from './game/balloonRide';
 import {LifeMeter} from './components/LifeMeter';
 import {AppearanceSettings} from './components/AppearanceSettings';
 import { RideControls } from './components/RideControls';
@@ -101,14 +103,16 @@ function App() {
   const sceneError = useCallback(() => setSceneFailed(true), []);
   const loading = sceneLoading.blocking || sceneFailed;
   const [rideStatus,setRideStatus]=useState<RideStatus>({riding:false,near:false,kmh:0,notice:'',lives:3,crashed:false});
-  const [carStatus,setCarStatus]=useState<CarStatus>({driving:false,near:false,kmh:0,gear:0,rpm:850,clutch:false,notice:'',steering:0,canSummon:false,summonStatus:'idle',first:false});
-  const carUpdate=useCallback((next:CarStatus)=>setCarStatus(old=>old.driving===next.driving&&old.near===next.near&&old.kmh===next.kmh&&old.gear===next.gear&&old.rpm===next.rpm&&old.clutch===next.clutch&&old.steering===next.steering&&old.notice===next.notice&&old.canSummon===next.canSummon&&old.summonStatus===next.summonStatus&&old.first===next.first&&old.transmission===next.transmission&&old.automaticRange===next.automaticRange?old:next),[]);
+  const [balloonStatus,setBalloonStatus]=useState<BalloonStatus>(emptyBalloonStatus);
+  const balloonUpdate=useCallback((next:BalloonStatus)=>setBalloonStatus(old=>old.riding===next.riding&&old.near===next.near&&old.altitude===next.altitude&&old.kmh===next.kmh&&old.grounded===next.grounded&&old.blocked===next.blocked?old:next),[]);
+  const [carStatus,setCarStatus]=useState<CarStatus>({driving:false,near:false,kmh:0,gear:0,rpm:850,clutch:false,notice:'',steering:0,canSummon:false,summonStatus:'idle',first:false,lives:3});
+  const carUpdate=useCallback((next:CarStatus)=>setCarStatus(old=>old.driving===next.driving&&old.near===next.near&&old.kmh===next.kmh&&old.gear===next.gear&&old.rpm===next.rpm&&old.clutch===next.clutch&&old.steering===next.steering&&old.notice===next.notice&&old.canSummon===next.canSummon&&old.summonStatus===next.summonStatus&&old.first===next.first&&old.transmission===next.transmission&&old.automaticRange===next.automaticRange&&old.lives===next.lives?old:next),[]);
   const [rideLimit,setRideLimit]=useState(60),[braking,setBraking]=useState(false),[accelerating,setAccelerating]=useState(false),[dismountRequest,setDismountRequest]=useState(0);
   const rideUpdate=useCallback((next:RideStatus)=>setRideStatus(old=>old.riding===next.riding&&old.near===next.near&&old.kmh===next.kmh&&old.notice===next.notice&&old.lives===next.lives&&old.crashed===next.crashed&&old.impactMode===next.impactMode&&old.damage===next.damage?old:next),[]);
 
   const [character, setCharacter] = useState<CharacterKind>(savedCharacter);
   const chooseCharacter = (kind: CharacterKind) => {
-    if(rideStatus.riding||carStatus.driving)return;
+    if(rideStatus.riding||carStatus.driving||balloonStatus.riding)return;
     setCharacter(kind);
     try {
       localStorage.setItem(CHARACTER_STORAGE_KEY, kind);
@@ -118,7 +122,7 @@ function App() {
   useEffect(() => {
     if (!loading) return;
     if (document.pointerLockElement) document.exitPointerLock();
-    resetMobileInput(mobileInput.current);
+    resetMobileInput(mobileInput.current);clearBalloonInput();
     setBraking(false);
     setAccelerating(false);
   }, [loading]);
@@ -310,7 +314,7 @@ function App() {
       if (next) {
         setFirst(false);
         setZoom((z) => Math.max(z, 260));
-      } else setZoom(6);
+      } else setZoom(balloonStatus.riding?24:6);
       return next;
     });
   };
@@ -359,6 +363,7 @@ function App() {
             <Player
               speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || selectionOpen} loading={loading}
               onCarStatus={carUpdate}
+              onBalloonStatus={balloonUpdate}
               character={character}
               navigationRequest={navigationRequest}
               onNavigationResult={navigationResult}
@@ -381,7 +386,7 @@ function App() {
         </SceneError>
         <MapLabelsOverlay host={mapLabelsHost} hidden={loading || mapOpen || first} />
       </div>
-      {!loading&&<div className="player-life"><LifeMeter lives={rideStatus.lives}/></div>}
+      {!loading && !rideStatus.riding && !carStatus.driving && <div className="player-life"><LifeMeter lives={rideStatus.lives}/></div>}
       {rideStatus.crashed && (rideStatus.damage??1)>0 && (
         <div className="ride-crash-banner" role="alert">
           <span className="ride-crash-icon">💥</span>
@@ -395,12 +400,14 @@ function App() {
           </div>
         </div>
       )}
-      {!mapOpen&&!settingsOpen&&<RideControls status={rideStatus} limit={rideLimit} onLimit={setRideLimit} onBrake={setBraking} onAccelerate={setAccelerating} onDismount={()=>{setBraking(false);setAccelerating(false);setDismountRequest(n=>n+1)}}/>}
-      {!mapOpen&&!settingsOpen&&!loading&&<CarControls status={carStatus}/>}
+      {!balloonStatus.riding&&!mapOpen&&!settingsOpen&&<RideControls status={rideStatus} limit={rideLimit} onLimit={setRideLimit} onBrake={setBraking} onAccelerate={setAccelerating} onDismount={()=>{setBraking(false);setAccelerating(false);setDismountRequest(n=>n+1)}}/>}
+      {!balloonStatus.riding&&!mapOpen&&!settingsOpen&&!loading&&<CarControls status={carStatus}/>}
+      <BalloonControls status={balloonStatus} paused={mapOpen||settingsOpen||loading} onTopView={toggleTopDown} onZoom={direction=>setZoom(v=>Math.max(6,Math.min(3600,v*(direction>0?1.4:1/1.4))))}/>
       <MobileControls
         key={navigationRequest?.seq ?? 0}
         input={mobileInput}
-        canJump={character === "cartoon" && !rideStatus.riding && !carStatus.driving && !rideStatus.crashed}
+        flying={balloonStatus.riding}
+        canJump={!balloonStatus.riding && character === "cartoon" && !rideStatus.riding && !carStatus.driving && !rideStatus.crashed}
         disabled={mapOpen || settingsOpen || loading || carStatus.driving}
         onInteract={activateMobile}
       />
@@ -516,8 +523,8 @@ function App() {
             className="settings-menu"
             aria-label="အသုံးပြုနည်း လမ်းညွှန်"
           >
-            <CharacterPicker value={character} onChange={chooseCharacter} disabled={rideStatus.riding||carStatus.driving}/>
-            <AppearanceSettings kind={character} onKindChange={chooseCharacter} characterLocked={rideStatus.riding||carStatus.driving} carLocked={carStatus.driving}/>
+            <CharacterPicker value={character} onChange={chooseCharacter} disabled={rideStatus.riding||carStatus.driving||balloonStatus.riding}/>
+            <AppearanceSettings kind={character} onKindChange={chooseCharacter} characterLocked={rideStatus.riding||carStatus.driving||balloonStatus.riding} carLocked={carStatus.driving}/>
             <RobotLocationPanel
               x={pos.x}
               z={pos.z}

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, type ReactNode } from 'react';
+import { LifeMeter } from './LifeMeter';
 import { carInput, clearCarInput, gearLabel, shiftCar, selectAutomaticRange, MAX_STEERING, STEERING_RATIO, type CarGear, type CarStatus } from '../game/carRide';
 import { startCarSummon } from '../game/carSummon';
 
@@ -237,6 +238,7 @@ export function CarControls({ status }: { status: CarStatus }) {
 						<span className="car-rpm-badge">
 							{status.rpm.toLocaleString()} <small>RPM</small>
 						</span>
+						<span className="ride-orbit-lives"><LifeMeter lives={status.lives ?? 3}/></span>
 					</div>
 
 					{/* ၃။ မျက်နှာပြင် အလယ်အောက် လမ်းညွှန်ချက် (Center-Bottom Instruction Floating Pill) */}

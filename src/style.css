@@ -4573,6 +4573,12 @@ main.night-mode .appearance-saved {
 	pointer-events: none
 }
 
+/* Hide player-life HUD when driving car or riding motorcycle */
+body:has(.car-controls-driving) .player-life,
+body:has(.ride-orbit-speedo) .player-life {
+	display: none !important;
+}
+
 .life-meter {
 	display: inline-flex;
 	align-items: center;
@@ -4624,3 +4630,10 @@ main.night-mode .appearance-saved {
 	outline: 3px solid #b5f7db;
 	outline-offset: 3px;
 }
+.balloon-controls { position:absolute;top:100px;right:16px;z-index:26;display:flex;flex-direction:column;gap:8px;width:290px;padding:14px;border:1px solid #dab56c;border-radius:16px;background:rgba(22,42,48,.94);color:#fff4d6;box-shadow:0 8px 30px #0004; }
+.balloon-controls small {font-size:11px;line-height:1.7;color:#e0d4b7;}
+.balloon-controls button {min-height:36px;border:1px solid #cfb37d;border-radius:8px;padding:5px 9px;background:#314c50;color:#fff4d6;cursor:pointer;touch-action:none;}
+.balloon-controls button[aria-pressed="true"] {background:#806232;}
+.balloon-controls button:disabled {opacity:.45;cursor:default;}
+.balloon-buttons {display:flex;flex-wrap:wrap;gap:6px;}
+@media(max-width:700px){.balloon-controls {top:90px;right:8px;width:230px;padding:10px;gap:5px;font-size:12px;}.balloon-controls small{font-size:10px;}.balloon-controls button{min-height:32px;}}

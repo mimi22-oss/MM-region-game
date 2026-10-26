@@ -1,3 +1,5 @@
+import {PassengerBalloon} from './PassengerBalloon';
+import {balloonRide,balloonInput,BALLOON_DECK,BALLOON_LAUNCH,clearBalloonInput,resetBalloon,balloonFlightFloor,balloonLanding,stepBalloon,balloonExitSpot,type BalloonStatus} from '../game/balloonRide';
 import {createJumpPose,prepareJump,stepJumpPose,jumpKneeBend} from '../game/humanJumpPose';
 import {createHumanJump,rememberJumpMomentum,startHumanJump,stepHumanJump,steerHumanJump} from '../game/humanJump';
 import {walkWithContacts,createWalkingRecoil,stepWalkingRecoil} from '../game/walkingCollision';
@@ -43,6 +45,7 @@ export function Player({
  character='robot',
  speedLimit=20,braking=false,accelerating=false,controlsBlocked=false,loading=false,dismountRequest=0,onRideStatus,
  onCarStatus,
+ onBalloonStatus,
  navigationRequest,
  onNavigationResult,
  mobileInput,
@@ -63,6 +66,7 @@ export function Player({
  speedLimit?:number;braking?:boolean;accelerating?:boolean;controlsBlocked?:boolean;dismountRequest?:number;onRideStatus?:(s:RideStatus)=>void;
  loading?:boolean;
  onCarStatus?:(status:CarStatus)=>void;
+ onBalloonStatus?:(status:BalloonStatus)=>void;
  navigationRequest?:{action:"locate"|"teleport";seq:number}|null;
  onNavigationResult?:(success:boolean)=>void;
  mobileInput?:RefObject<MobileInput>;
@@ -138,13 +142,14 @@ export function Player({
    }
    onZoom(next);
  };
- useEffect(()=>{if(!jump.current.airborne)jumpPose.current=createJumpPose();if(!jump.current.airborne){jump.current.vx=0;jump.current.vz=0;}state.current.jumpRequested=false;if(mobileInput?.current)mobileInput.current.jump=false;state.current.keys.clear();motorcycleRide.speed=0;const car=currentCar();if(car)car.speed=0;clearCarInput();},[mapOpen,controlsBlocked]);
+ useEffect(()=>{clearBalloonInput();if(!jump.current.airborne)jumpPose.current=createJumpPose();if(!jump.current.airborne){jump.current.vx=0;jump.current.vz=0;}state.current.jumpRequested=false;if(mobileInput?.current)mobileInput.current.jump=false;state.current.keys.clear();motorcycleRide.speed=0;const car=currentCar();if(car)car.speed=0;clearCarInput();},[mapOpen,controlsBlocked]);
  useEffect(()=>{
   const j=jump.current,s=state.current;
+  if(balloonRide.riding&&character!=='cartoon'){resetBalloon();s.x=BALLOON_LAUNCH.x+3.1;s.z=BALLOON_LAUNCH.z;}
   if(j.airborne){s.x=j.safeX;s.z=j.safeZ;}
   jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;
  },[character]);
- useEffect(()=>()=>{parkCar();},[]);
+ useEffect(()=>()=>{parkCar();resetBalloon();},[]);
  useEffect(()=>{motorcycleRide.maxKmh=speedLimit},[speedLimit]);
  useEffect(()=>{
   if(!dismountRequest||!motorcycleRide.riding||rideLife.crashTime>0)return;
@@ -172,6 +177,7 @@ export function Player({
  },[topDown]);
  useEffect(()=>{
   if(!teleportTarget||rideLife.crashTime>0)return;
+  if(balloonRide.riding)resetBalloon();
   if(currentCar())parkCar();
   const s=state.current;
   jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;
@@ -211,6 +217,7 @@ export function Player({
   if(navigationRequest.action==='teleport'){
    const spot=findTeleportSpot(s.camX,s.camZ,canStand);
    if(!spot){onNavigationResult?.(false);return}
+   if(balloonRide.riding)resetBalloon();
    if(motorcycleRide.riding){parkMotorcycle();setRiding(false);}
    if(currentCar())parkCar();
    jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;
@@ -226,15 +233,16 @@ export function Player({
  },[teleportMode,gl]);
  useEffect(()=>{
   const s=state.current;
-  const clear=()=>{if(!jump.current.airborne)jumpPose.current=createJumpPose();if(!jump.current.airborne){jump.current.vx=0;jump.current.vz=0;}s.jumpRequested=false;if(mobileInput?.current)mobileInput.current.jump=false;motorcycleRide.speed=0;const car=currentCar();if(car)car.speed=0;clearCarInput();s.keys.clear();s.dragging=false;s.shiftDrag=false;gl.domElement.style.cursor=''};
+  const clear=()=>{clearBalloonInput();balloonRide.vx=0;balloonRide.vz=0;balloonRide.vy=0;if(!jump.current.airborne)jumpPose.current=createJumpPose();if(!jump.current.airborne){jump.current.vx=0;jump.current.vz=0;}s.jumpRequested=false;if(mobileInput?.current)mobileInput.current.jump=false;motorcycleRide.speed=0;const car=currentCar();if(car)car.speed=0;clearCarInput();s.keys.clear();s.dragging=false;s.shiftDrag=false;gl.domElement.style.cursor=''};
   const lock=()=>{s.locked=document.pointerLockElement===gl.domElement;clear();onLock(s.locked)};
   const key=(e:KeyboardEvent)=>{
    if(controlsBlocked)return;
    const carKey=!!currentCar()&&['KeyC','KeyP','Space','KeyE','KeyN','Digit0','Digit1','Digit2','Digit3','Digit4','KeyV'].includes(e.code);
-   const movement=e.code==='Space'||carKey||["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD","ShiftLeft","ShiftRight","KeyR","KeyT","KeyM"].includes(e.code);
+   const balloonKey=balloonRide.riding&&['KeyE','KeyV','PageUp','PageDown'].includes(e.code);
+   const movement=balloonKey||e.code==='Space'||carKey||["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD","ShiftLeft","ShiftRight","KeyR","KeyT","KeyM"].includes(e.code);
    if(!s.locked&&!mapOpen&&!movement&&e.type!=="keyup")return;
    if(e.target instanceof HTMLElement&&(e.target.closest("input,textarea,select,[contenteditable=true]")||(e.code==='Space'&&e.target.closest("button"))))return;
-   if(carKey||e.code==='Space')e.preventDefault();
+   if(balloonKey||carKey||e.code==='Space')e.preventDefault();
    if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight','KeyV','KeyR','KeyT','KeyM'].includes(e.code))e.preventDefault();
    if(e.type==='keyup'){
     s.keys.delete(e.code);
@@ -247,7 +255,8 @@ export function Player({
     }
    }else{
     s.keys.add(e.code);
-    if(e.code==='Space'&&!e.repeat&&!mapOpen&&!motorcycleRide.riding&&!currentCar())s.jumpRequested=true;
+    if(balloonRide.riding&&e.code==='KeyE'){if(!e.repeat)balloonInput.exit=true;return;}
+    if(!balloonRide.riding&&e.code==='Space'&&!e.repeat&&!mapOpen&&!motorcycleRide.riding&&!currentCar())s.jumpRequested=true;
     if(currentCar()&&!mapOpen){
      if(!e.repeat&&e.code==='KeyP'&&currentCar()?.transmission==='automatic'){selectAutomaticRange('P',s.keys.has('Space')||s.keys.has('KeyS')||carInput.brake);return;}
      if(!e.repeat&&(e.code==='KeyR'||e.code==='KeyN'||/^Digit[0-4]$/.test(e.code))){
@@ -258,7 +267,7 @@ export function Player({
      if(e.code==='KeyR')return;
     }
     if(e.code==='ShiftLeft'||e.code==='ShiftRight'){
-     if(!motorcycleRide.riding&&!currentCar()){
+     if(!balloonRide.riding&&!motorcycleRide.riding&&!currentCar()){
       const walkKeyHeld=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'].some(k=>s.keys.has(k));
       if(!walkKeyHeld&&document.pointerLockElement===gl.domElement){
        document.exitPointerLock();
@@ -279,11 +288,11 @@ export function Player({
       s.pitch=SKY_PITCH;
       if(s.targetDistance<80){s.targetDistance=260;onZoom(260);}
      }else{
-      s.pitch=-0.12;s.targetDistance=6;s.panning=false;s.camX=s.x;s.camZ=s.z;onZoom(6);
+      s.pitch=-0.12;s.targetDistance=balloonRide.riding?24:6;s.panning=false;s.camX=s.x;s.camZ=s.z;onZoom(s.targetDistance);
      }
      onTopDown(nextTop);
     }
-    if(!e.repeat&&e.code==='KeyM'&&!motorcycleRide.riding&&!currentCar()&&rideLife.crashTime<=0){
+    if(!e.repeat&&e.code==='KeyM'&&!balloonRide.riding&&!motorcycleRide.riding&&!currentCar()&&rideLife.crashTime<=0){
      motorcycleRide.x=s.x+Math.cos(s.yaw)*1.5;
      motorcycleRide.z=s.z+Math.sin(s.yaw)*1.5;
      motorcycleRide.yaw=s.yaw;
@@ -292,6 +301,7 @@ export function Player({
      rideNotice.current='Motorcycle summoned nearby';
     }
     if(e.code==='KeyR'&&rideLife.crashTime<=0){
+     if(balloonRide.riding)resetBalloon();
      if(currentCar())parkCar();
      if(motorcycleRide.riding){parkMotorcycle();setRiding(false);}
      jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;
@@ -360,6 +370,7 @@ export function Player({
   const height=(x:number,z:number)=>ground.height(x,z);
   const clear=(x:number,z:number)=>canStand(x,z)&&height(x,z)-height(motorcycleRide.riding?motorcycleRide.x:s.x,motorcycleRide.riding?motorcycleRide.z:s.z)<.5;
   if(tickRideLife(mapOpen||controlsBlocked?0:dt)){
+   if(balloonRide.riding)resetBalloon();
    jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;
    parkCar();clearCarInput();
    parkMotorcycle();setRiding(false);
@@ -368,7 +379,7 @@ export function Player({
    s.keys.clear();if(mobileInput?.current)resetMobileInput(mobileInput.current);
    onMode(false);onTopDown(false);onZoom(ward.spawnZoom);rideNotice.current='';
   }
-  updateHomeAccess(s.x,s.z,dt);stepCarSummon(dt,height,s.x,s.z,!!currentCar(),motorcycleRide.riding);
+  updateHomeAccess(balloonRide.riding?Infinity:s.x,balloonRide.riding?Infinity:s.z,dt);stepCarSummon(dt,height,s.x,s.z,!!currentCar()||balloonRide.riding,motorcycleRide.riding);
   let oldX=s.x,oldZ=s.z;
   const touch=mobileInput?.current;
   const wantsJump=s.jumpRequested||!!touch?.jump;s.jumpRequested=false;if(touch)touch.jump=false;
@@ -376,7 +387,7 @@ export function Player({
    if(touch.panX||touch.panY){panView(touch.panX,touch.panY);touch.panX=0;touch.panY=0;}
    if(touch.zoomFactor!==1){applyZoom(s.targetDistance*touch.zoomFactor);touch.zoomFactor=1;}
    if(touch.lookX||touch.lookY){s.yaw-=touch.lookX*0.004;s.pitch=Math.max(-1.35,Math.min(0.6,s.pitch-touch.lookY*0.004));if(s.topDown){s.topDown=false;onTopDown(false)}touch.lookX=0;touch.lookY=0;}
-   if(touch.active&&s.mobileSession!==touch.session){s.mobileSession=touch.session;s.first=false;s.panning=false;s.camX=s.x;s.camZ=s.z;onMode(false)}
+   if(touch.active&&!balloonRide.riding&&s.mobileSession!==touch.session){s.mobileSession=touch.session;s.first=false;s.panning=false;s.camX=s.x;s.camZ=s.z;onMode(false)}
   }
   s.distance+=(s.targetDistance-s.distance)*Math.min(1,dt*12);
   let forward=Number(s.keys.has('KeyW')||s.keys.has('ArrowUp'))-Number(s.keys.has('KeyS')||s.keys.has('ArrowDown'));
@@ -387,18 +398,33 @@ export function Player({
   const fast=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight')||!!touch?.sprint;
   const yaw=mapOpen?0:s.yaw;
   if(len>0&&s.distance<=20&&!s.topDown)s.panning=false;
-  if(wantsJump&&character==='cartoon'&&!currentCar()&&!motorcycleRide.riding&&!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0&&(s.distance>20||s.topDown||s.panning)){
+  if(wantsJump&&!balloonRide.riding&&character==='cartoon'&&!currentCar()&&!motorcycleRide.riding&&!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0&&(s.distance>20||s.topDown||s.panning)){
    s.first=false;s.topDown=false;s.panning=false;s.pitch=-.12;s.distance=6;s.targetDistance=6;
    onMode(false);onTopDown(false);onZoom(6);
   }
-  const aerial=!currentCar()&&!touch?.active&&!s.first&&(s.distance>20||s.topDown||s.panning);
+  const aerial=!balloonRide.riding&&!currentCar()&&!touch?.active&&!s.first&&(s.distance>20||s.topDown||s.panning);
   const ride=motorcycleRide;
   if(carInput.exit&&currentCar()&&rideLife.crashTime<=0){
    carInput.exit=false;
    const car=currentCar()!,spot=carExitSpot((x,z)=>clear(x,z)&&!hitsTraffic(x,z,car.yaw,height(x,z),true,car.id));
    if(spot){parkCar();s.x=spot.x;s.z=spot.z;s.camX=s.x;s.camZ=s.z;s.first=false;s.panning=false;s.pitch=-.16;s.targetDistance=6;s.keys.clear();if(touch)resetMobileInput(touch);onMode(false);onZoom(6);}
   }
-  const nearCar=!jump.current.airborne&&jumpPose.current.prepare===0&&!wantsJump&&rideLife.crashTime<=0&&!ride.riding&&!currentCar()&&!aerial&&!controlsBlocked&&!mapOpen&&!loading?nearbyCar(s.x,s.z,clear):undefined;
+  const balloon=balloonRide;
+  if(!balloon.riding){balloon.y=height(balloon.x,balloon.z);balloon.grounded=true;}
+  const balloonDistance=Math.hypot(s.x-balloon.x,s.z-balloon.z);
+  if(balloon.mustLeave&&balloonDistance>5)balloon.mustLeave=false;
+  const nearBalloon=character==='cartoon'&&!currentCar()&&!ride.riding&&!balloon.riding&&!balloon.mustLeave&&!jump.current.airborne&&jumpPose.current.prepare===0&&balloonDistance<3.6;
+  if(nearBalloon&&!aerial&&!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0){
+   balloon.nearTime+=dt;
+   if(balloon.nearTime>.55){
+    balloon.riding=true;balloon.nearTime=0;balloon.vx=0;balloon.vz=0;balloon.vy=0;
+    jump.current=createHumanJump();jumpPose.current=createJumpPose();
+    s.x=balloon.x;s.z=balloon.z;oldX=s.x;oldZ=s.z;s.camX=s.x;s.camZ=s.z;s.bodyYaw=balloon.yaw;s.yaw=balloon.yaw;
+    s.first=false;s.topDown=false;s.panning=false;s.pitch=-.16;s.distance=24;s.targetDistance=24;s.keys.clear();
+    if(touch)resetMobileInput(touch);clearBalloonInput();onMode(false);onTopDown(false);onZoom(24);
+   }
+  }else if(!balloon.riding)balloon.nearTime=0;
+  const nearCar=!balloon.riding&&!nearBalloon&&!jump.current.airborne&&jumpPose.current.prepare===0&&!wantsJump&&rideLife.crashTime<=0&&!ride.riding&&!currentCar()&&!aerial&&!controlsBlocked&&!mapOpen&&!loading?nearbyCar(s.x,s.z,clear):undefined;
   if(nearCar){
    carRide.nearTime=carRide.nearId===nearCar.id?carRide.nearTime+dt:0;carRide.nearId=nearCar.id;
    if(carRide.nearTime>.65){carSummonState.status='idle';enterCar(nearCar);s.x=nearCar.x;s.z=nearCar.z;s.camX=s.x;s.camZ=s.z;s.yaw=nearCar.yaw;s.bodyYaw=s.yaw;s.first=true;s.topDown=false;s.panning=false;s.pitch=-.04;s.targetDistance=8;s.keys.clear();if(touch)resetMobileInput(touch);onMode(true);onTopDown(false);onZoom(8);oldX=s.x;oldZ=s.z;}
@@ -406,14 +432,39 @@ export function Player({
   ride.cooldown=Math.max(0,ride.cooldown-dt);
   const near=Math.hypot(s.x-ride.x,s.z-ride.z)<1.8;
   if(ride.mustLeave&&Math.hypot(s.x-ride.x,s.z-ride.z)>2.3)ride.mustLeave=false;
-  if(!jump.current.airborne&&jumpPose.current.prepare===0&&!wantsJump&&rideLife.crashTime<=0&&!currentCar()&&!nearCar&&!ride.riding&&!ride.mustLeave&&near&&!aerial&&!controlsBlocked&&!mapOpen&&!loading){
+  if(!balloon.riding&&!nearBalloon&&!jump.current.airborne&&jumpPose.current.prepare===0&&!wantsJump&&rideLife.crashTime<=0&&!currentCar()&&!nearCar&&!ride.riding&&!ride.mustLeave&&near&&!aerial&&!controlsBlocked&&!mapOpen&&!loading){
    ride.nearTime+=dt;
    if(ride.nearTime>.65&&tryMount(s.x,s.z,canStand)){
     setRiding(true);rideNotice.current='';s.x=ride.x;s.z=ride.z;s.bodyYaw=ride.yaw;s.yaw=ride.yaw;s.panning=false;
     oldX=s.x;oldZ=s.z;s.targetDistance=5;onZoom(5);
    }
   }else if(!ride.riding)ride.nearTime=0;
-  if(currentCar()){
+  if(balloon.riding){
+   const paused=mapOpen||controlsBlocked||loading||rideLife.crashTime>0;
+   if(balloonInput.toggleView){balloonInput.toggleView=false;if(!paused){s.first=!s.first;s.topDown=false;s.panning=false;onMode(s.first);onTopDown(false);}}
+   let lift=balloonInput.lift+Number(s.keys.has('ArrowUp')||s.keys.has('PageUp'))-Number(s.keys.has('ArrowDown')||s.keys.has('PageDown'));
+   let flightForward=Number(s.keys.has('KeyW'))-Number(s.keys.has('KeyS'));
+   let flightRight=Number(s.keys.has('KeyD')||s.keys.has('ArrowRight'))-Number(s.keys.has('KeyA')||s.keys.has('ArrowLeft'));
+   if(touch?.active){flightRight=touch.right;if(balloonInput.verticalJoystick)lift+=touch.forward;else flightForward=touch.forward;}
+   const landClear=(x:number,z:number)=>canStand(x,z)&&!hitsTraffic(x,z,0,height(x,z),true);
+   const floorCache=new Map<string,number>();
+   const flightFloor=(x:number,z:number)=>{
+    const key=x+','+z,cached=floorCache.get(key);if(cached!==undefined)return cached;
+    const floor=balloonFlightFloor(x,z,height,landClear,(ax,az)=>canStand(ax,az,0,true));
+    floorCache.set(key,floor);return floor;
+   };
+   if(!paused)stepBalloon(balloon,dt,{forward:flightForward,right:flightRight,lift,yaw:s.yaw,fast,brake:s.keys.has('Space')},height,flightFloor,ward.size/2-6);
+   s.x=balloon.x;s.z=balloon.z;s.bodyYaw=balloon.yaw;s.camX=s.x;s.camZ=s.z;
+   if(balloonInput.exit){
+    balloonInput.exit=false;
+    const spot=!paused&&balloonLanding(balloon.x,balloon.z,height,landClear)?balloonExitSpot(balloon,height,landClear):null;
+    if(spot){
+     balloon.riding=false;balloon.mustLeave=true;balloon.vx=0;balloon.vz=0;balloon.vy=0;clearBalloonInput();
+     s.x=spot.x;s.z=spot.z;s.camX=s.x;s.camZ=s.z;s.first=false;s.topDown=false;s.panning=false;s.pitch=-.12;s.targetDistance=6;
+     s.keys.clear();if(touch)resetMobileInput(touch);onMode(false);onTopDown(false);onZoom(6);oldX=s.x;oldZ=s.z;
+    }
+   }
+  }else if(currentCar()){
    const car=currentCar()!,paused=mapOpen||controlsBlocked||loading||rideLife.crashTime>0;
    const carClear=(x:number,z:number)=>canStand(x,z)&&!hitsTraffic(x,z,car.yaw,car.groundY,true,car.id);
    const impact=stepCar(dt,carInput.throttle?1:Math.max(0,forward),carInput.steer||right,carInput.brake||s.keys.has('Space')||forward<-.1,carInput.clutch||s.keys.has('KeyC'),paused,carClear);
@@ -515,10 +566,10 @@ export function Player({
   const travelled=Math.hypot(dx,dz);
   characterMotion.current.airborne=jump.current.airborne;
   characterMotion.current.jumpBend=jumpKneeBend(jumpPose.current);
-  characterMotion.current.speed=dt>0?travelled/dt:0;
-  characterMotion.current.distance+=isWalkingRecoil()?-travelled:travelled;
-  updateSummonStand(dt,s.x,s.z,travelled>0.02,!!currentCar(),ride.riding);
-  if(!currentCar()&&!ride.riding&&!isWalkingRecoil()&&(!aerial||mapOpen))s.bodyYaw=avatarHeading(s.bodyYaw,dx,dz);
+  characterMotion.current.speed=balloon.riding?0:dt>0?travelled/dt:0;
+  characterMotion.current.distance+=balloon.riding?0:isWalkingRecoil()?-travelled:travelled;
+  updateSummonStand(dt,s.x,s.z,travelled>0.02,!!currentCar()||balloon.riding,ride.riding);
+  if(!balloon.riding&&!currentCar()&&!ride.riding&&!isWalkingRecoil()&&(!aerial||mapOpen))s.bodyYaw=avatarHeading(s.bodyYaw,dx,dz);
   if(wheels.current&&(!aerial||mapOpen)){
    const travel=-Math.sin(s.bodyYaw)*dx-Math.cos(s.bodyYaw)*dz;
    wheels.current.rotation.x-=Math.hypot(dx,dz)*(travel<0?-1:1)/(0.24*0.95);
@@ -531,11 +582,11 @@ export function Player({
   const left=height(s.x-footWidth*c,s.z+footWidth*sn),rightHeight=height(s.x+footWidth*c,s.z-footWidth*sn);
   const car=currentCar();
   carRide.interior=s.first;
-  const groundY=car?car.groundY:ride.riding?bikePose.y:jump.current.airborne?jump.current.y+.012:Math.max(center,left,rightHeight)+.012;
+  const groundY=balloon.riding?balloon.y+BALLOON_DECK:car?car.groundY:ride.riding?bikePose.y:jump.current.airborne?jump.current.y+.012:Math.max(center,left,rightHeight)+.012;
   characterMotion.current.leftFoot=(left-groundY+.012)/bodyScale;
   characterMotion.current.rightFoot=(rightHeight-groundY+.012)/bodyScale;
   characterMotion.current.stepLift=Math.min(.32,Math.abs(height(s.x-sn*.4,s.z-c*.4)-center)+.04);
-  if(jump.current.airborne){characterMotion.current.leftFoot=0;characterMotion.current.rightFoot=0;characterMotion.current.stepLift=0;}
+  if(jump.current.airborne||balloon.riding){characterMotion.current.leftFoot=0;characterMotion.current.rightFoot=0;characterMotion.current.stepLift=0;}
   const fall=!car?actorFallProgress():0;
   const isBlinking=!car&&rideLife.damage>0&&rideLife.invulnerable>0&&Math.floor(clock.elapsedTime*12)%2===0;
   if(avatar.current){avatar.current.position.set(s.x,groundY+fall*(ride.riding?.18:.28*bodyScale),s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:fall*Math.PI/2,fall&&!ride.riding?fallYaw.current:s.bodyYaw,ride.riding?fall*1.42:0,'YXZ');avatar.current.visible=!car&&!s.first&&!isBlinking;}
@@ -551,15 +602,15 @@ export function Player({
     const offset=desired.current.clone().sub(target.current);const distance=offset.length();
     ray.current.set(target.current,offset.normalize());ray.current.far=distance;
     // Ignore the player's own meshes when shortening the chase camera near scenery.
-    const isAvatar=(o:Object3D):boolean=>o===avatar.current || (!!car&&o.userData.carId===car.id) || (!!o.parent&&isAvatar(o.parent));
+    const isAvatar=(o:Object3D):boolean=>o===avatar.current || (!!balloon.riding&&o.userData.passengerBalloon===true) || (!!car&&o.userData.carId===car.id) || (!!o.parent&&isAvatar(o.parent));
     const isHidden=(o:Object3D):boolean=>!o.visible|| (!!o.parent&&isHidden(o.parent));
     const hit=ray.current.intersectObjects(scene.children,true).find(h=>!isAvatar(h.object)&&!isHidden(h.object));
     if(hit)desired.current.copy(target.current).addScaledVector(offset,Math.max(0.15,hit.distance-0.3));
    }
    camera.position.copy(desired.current);camera.lookAt(target.current);
   }
-  s.time+=dt;if(s.time>0.08){s.time=0;onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car,ride.riding),summonStatus:carSummonState.status});onRideStatus?.({riding:ride.riding,near:!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0,impactMode:rideLife.mode,damage:rideLife.damage});onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
+  s.time+=dt;if(s.time>0.08){s.time=0;onBalloonStatus?.({riding:balloon.riding,near:nearBalloon,altitude:Math.max(0,Math.round(balloon.y-height(balloon.x,balloon.z))),kmh:Math.round(Math.hypot(balloon.vx,balloon.vz)*3.6),grounded:balloon.grounded,blocked:balloon.blocked});onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car||balloon.riding,ride.riding),summonStatus:carSummonState.status,lives:rideLife.lives});onRideStatus?.({riding:ride.riding,near:!balloon.riding&&!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0,impactMode:rideLife.mode,damage:rideLife.damage});onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
  },-1);
- return <><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar">{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter appearance={appearance.human} motion={characterMotion} riding/></group></>:character==='cartoon'?<CartoonCharacter appearance={appearance.human} motion={characterMotion}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
+ return <><PassengerBalloon/><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar">{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter appearance={appearance.human} motion={characterMotion} riding/></group></>:character==='cartoon'?<CartoonCharacter appearance={appearance.human} motion={characterMotion}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
 
 }
