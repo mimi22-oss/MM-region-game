@@ -41,7 +41,7 @@ const nearbyAreca = spatialIndex(estatePalms, (p) => ({
 }));
 const villageHouses = kalayVillages
   .flatMap((v) => v.houses)
-  .filter((h) => h.id !== "way/403027623");
+  .filter((h) => h.id !== "way/403027623" && h.id !== "way/403030614");
 const villageTrees = kalayVillages.flatMap((v) => [
   ...v.trees,
   ...v.largeTrees,
@@ -172,6 +172,39 @@ export function canStandToilet(x: number, z: number): boolean {
     lz = dx * tS + dz * tC;
   if (Math.abs(lx) > 3 || Math.abs(lz) > 3) return true;
   for (const obs of toiletObstacles) {
+    const nx = Math.max(obs.minX, Math.min(lx, obs.maxX));
+    const nz = Math.max(obs.minZ, Math.min(lz, obs.maxZ));
+    if (Math.hypot(lx - nx, lz - nz) < PLAYER_RADIUS) return false;
+  }
+  return true;
+}
+
+// Kanbale School (ကံပုလဲကျောင်း) classroom halls and goalpost obstacles
+const schoolPos = { x: 451.73, z: -569.03 };
+const schoolRot = 2.4226;
+const scC = Math.cos(schoolRot);
+const scS = Math.sin(schoolRot);
+const schoolObstacles = [
+  // ၁။ ပင်မ စာသင်ဆောင်ကြီး (Main Classroom Hall)
+  { minX: -12.5, maxX: 12.5, minZ: -4.2, maxZ: 4.2 },
+  // ၂။ လက်ဝဲဘက် စာသင်ဆောင် (Left Classroom Wing)
+  { minX: -11.9, maxX: -5.1, minZ: -12.0, maxZ: -2.0 },
+  // ၃။ လက်ယာဘက် စာသင်ဆောင် (Right Classroom Wing)
+  { minX: 10.6, maxX: 17.4, minZ: -12.0, maxZ: -2.0 },
+  // ၄။ အလံတိုင် အဆင့်ဆင့်ခုံ (Flagpole Plinth)
+  { minX: 0.9, maxX: 4.1, minZ: -12.1, maxZ: -8.9 },
+  // ၅။ ဘောလုံးဂိုးတိုင်များ (Goalposts)
+  { minX: 13.3, maxX: 16.7, minZ: -15.8, maxZ: -14.8 },
+  { minX: 13.3, maxX: 16.7, minZ: -37.2, maxZ: -36.2 },
+];
+
+export function canStandKanbaleSchool(x: number, z: number): boolean {
+  const dx = x - schoolPos.x;
+  const dz = z - schoolPos.z;
+  const lx = dx * scC - dz * scS;
+  const lz = dx * scS + dz * scC;
+  if (Math.abs(lx) > 30 || Math.abs(lz) > 45) return true;
+  for (const obs of schoolObstacles) {
     const nx = Math.max(obs.minX, Math.min(lx, obs.maxX));
     const nz = Math.max(obs.minZ, Math.min(lz, obs.maxZ));
     if (Math.hypot(lx - nx, lz - nz) < PLAYER_RADIUS) return false;
@@ -406,6 +439,7 @@ export function canStand(x: number, z: number): boolean {
   if (!canStandToilet(x, z)) return false;
   if (!canStandUShweHouse(x, z)) return false;
   if (!canStandMountainVillage(x, z)) return false;
+  if (!canStandKanbaleSchool(x, z)) return false;
   if (Math.hypot(x - 295.571, z - 261.63) < 2.4 + PLAYER_RADIUS) return false;
   if (Math.hypot(x - 109.721, z - 284.313) < 0.42 + PLAYER_RADIUS) return false;
   if (

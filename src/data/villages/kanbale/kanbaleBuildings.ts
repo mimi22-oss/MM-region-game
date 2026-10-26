@@ -1,6 +1,4 @@
-import type { House } from '../../types.ts';
-
-export type KanbaleBuildingData = {
+export interface KanbaleBuildingData {
   id: string;
   osmId: number;
   osmType: string;
@@ -17,17 +15,30 @@ export type KanbaleBuildingData = {
   area: number;
   wallColor: string;
   roofColor: string;
+  polygonPoints: [number, number][];
+  relativePoints: [number, number][];
   rotation: number;
   houseLength: number;
   houseWidth: number;
   wallHeight: number;
   roofHeight: number;
-  polygonPoints: [number, number][];
-  relativePoints: [number, number][];
-};
+}
+
+export interface KanbaleBuilding {
+  id: string;
+  name: string;
+  x: number;
+  z: number;
+  width: number;
+  depth: number;
+  color: string;
+  rotation: number;
+  roof: string;
+}
 
 export const KANBALE_CUSTOM_BUILDINGS: Record<string, string> = {
   'way/403027623': 'KanbaleFarmhouse',
+  'way/403030614': 'KanbaleSchool',
 };
 
 export const kanbaleBuildings: KanbaleBuildingData[] = [
@@ -112,7 +123,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 8.53,
     "depth": 5.86,
     "height": 3.2,
-    "area": 27.0,
+    "area": 27,
     "wallColor": "#c2b089",
     "roofColor": "#8b5a43",
     "polygonPoints": [
@@ -161,143 +172,9 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     ],
     "rotation": 2.8012,
     "houseLength": 7.84,
-    "houseWidth": 4.0,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
-  },
-  {
-    "id": "way/403027628",
-    "osmId": 403027628,
-    "osmType": "way",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027628",
-    "lon": 94.0653864,
-    "lat": 23.1643288,
-    "u": 256.66,
-    "v": -303.3,
-    "x": -32.98,
-    "z": -395.95,
-    "width": 8.54,
-    "depth": 8.21,
-    "height": 3.2,
-    "area": 47.1,
-    "wallColor": "#bfa87e",
-    "roofColor": "#5a6d7c",
-    "polygonPoints": [
-      [
-        -37.246,
-        -398.261
-      ],
-      [
-        -30.383,
-        -400.054
-      ],
-      [
-        -28.711,
-        -393.634
-      ],
-      [
-        -35.573,
-        -391.841
-      ],
-      [
-        -37.246,
-        -398.261
-      ]
-    ],
-    "relativePoints": [
-      [
-        -4.268,
-        -2.314
-      ],
-      [
-        2.595,
-        -4.107
-      ],
-      [
-        4.267,
-        2.313
-      ],
-      [
-        -2.595,
-        4.106
-      ],
-      [
-        -4.268,
-        -2.314
-      ]
-    ],
-    "rotation": -0.2555,
-    "houseLength": 7.1,
-    "houseWidth": 6.63,
-    "wallHeight": 2.8,
-    "roofHeight": 1.8
-  },
-  {
-    "id": "way/403027630",
-    "osmId": 403027630,
-    "osmType": "way",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027630",
-    "lon": 94.0652301,
-    "lat": 23.1643833,
-    "u": 240.66,
-    "v": -309.36,
-    "x": -48.58,
-    "z": -388.92,
-    "width": 17.47,
-    "depth": 14.8,
-    "height": 4.5,
-    "area": 173.9,
-    "wallColor": "#cfbe9b",
-    "roofColor": "#4a6274",
-    "polygonPoints": [
-      [
-        -57.311,
-        -392.663
-      ],
-      [
-        -42.616,
-        -396.322
-      ],
-      [
-        -39.841,
-        -385.18
-      ],
-      [
-        -54.536,
-        -381.522
-      ],
-      [
-        -57.311,
-        -392.663
-      ]
-    ],
-    "relativePoints": [
-      [
-        -8.735,
-        -3.741
-      ],
-      [
-        5.96,
-        -7.4
-      ],
-      [
-        8.735,
-        3.742
-      ],
-      [
-        -5.96,
-        7.4
-      ],
-      [
-        -8.735,
-        -3.741
-      ]
-    ],
-    "rotation": -0.244,
-    "houseLength": 15.14,
-    "houseWidth": 11.48,
-    "wallHeight": 3.6,
-    "roofHeight": 1.8
   },
   {
     "id": "way/403027632",
@@ -313,7 +190,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 10.56,
     "depth": 13.34,
     "height": 3.8,
-    "area": 75.0,
+    "area": 75,
     "wallColor": "#a8b3a7",
     "roofColor": "#687a6c",
     "polygonPoints": [
@@ -365,73 +242,6 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "houseWidth": 6.37,
     "wallHeight": 3.2,
     "roofHeight": 1.8
-  },
-  {
-    "id": "way/403027633",
-    "osmId": 403027633,
-    "osmType": "way",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027633",
-    "lon": 94.065104,
-    "lat": 23.1643006,
-    "u": 227.75,
-    "v": -300.15,
-    "x": -51.2,
-    "z": -373.28,
-    "width": 10.73,
-    "depth": 6.41,
-    "height": 3.8,
-    "area": 56.0,
-    "wallColor": "#b5a995",
-    "roofColor": "#9c5b41",
-    "polygonPoints": [
-      [
-        -56.561,
-        -375.514
-      ],
-      [
-        -46.346,
-        -376.487
-      ],
-      [
-        -45.831,
-        -371.051
-      ],
-      [
-        -56.046,
-        -370.078
-      ],
-      [
-        -56.561,
-        -375.514
-      ]
-    ],
-    "relativePoints": [
-      [
-        -5.365,
-        -2.232
-      ],
-      [
-        4.85,
-        -3.205
-      ],
-      [
-        5.365,
-        2.231
-      ],
-      [
-        -4.85,
-        3.204
-      ],
-      [
-        -5.365,
-        -2.232
-      ]
-    ],
-    "rotation": -0.095,
-    "houseLength": 10.26,
-    "houseWidth": 5.46,
-    "wallHeight": 2.8,
-    "roofHeight": 1.3
   },
   {
     "id": "way/403027635",
@@ -501,73 +311,6 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "roofHeight": 1.8
   },
   {
-    "id": "way/403027636",
-    "osmId": 403027636,
-    "osmType": "way",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027636",
-    "lon": 94.0650616,
-    "lat": 23.1642315,
-    "u": 223.42,
-    "v": -292.46,
-    "x": -48.82,
-    "z": -364.79,
-    "width": 17.13,
-    "depth": 9.23,
-    "height": 3.8,
-    "area": 97.5,
-    "wallColor": "#9b8e7b",
-    "roofColor": "#826554",
-    "polygonPoints": [
-      [
-        -57.385,
-        -366.047
-      ],
-      [
-        -41.501,
-        -369.399
-      ],
-      [
-        -40.259,
-        -363.525
-      ],
-      [
-        -56.143,
-        -360.173
-      ],
-      [
-        -57.385,
-        -366.047
-      ]
-    ],
-    "relativePoints": [
-      [
-        -8.563,
-        -1.261
-      ],
-      [
-        7.321,
-        -4.613
-      ],
-      [
-        8.563,
-        1.261
-      ],
-      [
-        -7.321,
-        4.613
-      ],
-      [
-        -8.563,
-        -1.261
-      ]
-    ],
-    "rotation": -0.208,
-    "houseLength": 16.24,
-    "houseWidth": 6.0,
-    "wallHeight": 3.2,
-    "roofHeight": 1.8
-  },
-  {
     "id": "way/403027638",
     "osmId": 403027638,
     "osmType": "way",
@@ -581,7 +324,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 14.08,
     "depth": 12.29,
     "height": 3.8,
-    "area": 83.0,
+    "area": 83,
     "wallColor": "#d6c5a0",
     "roofColor": "#7d4f3b",
     "polygonPoints": [
@@ -635,73 +378,6 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "roofHeight": 1.8
   },
   {
-    "id": "way/403027639",
-    "osmId": 403027639,
-    "osmType": "way",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027639",
-    "lon": 94.0650106,
-    "lat": 23.1641778,
-    "u": 218.2,
-    "v": -286.48,
-    "x": -48.29,
-    "z": -356.86,
-    "width": 16.11,
-    "depth": 9.13,
-    "height": 3.8,
-    "area": 60.6,
-    "wallColor": "#c2b089",
-    "roofColor": "#8b5a43",
-    "polygonPoints": [
-      [
-        -56.34,
-        -355.898
-      ],
-      [
-        -41.573,
-        -361.424
-      ],
-      [
-        -40.231,
-        -357.823
-      ],
-      [
-        -54.998,
-        -352.297
-      ],
-      [
-        -56.34,
-        -355.898
-      ]
-    ],
-    "relativePoints": [
-      [
-        -8.054,
-        0.962
-      ],
-      [
-        6.713,
-        -4.564
-      ],
-      [
-        8.055,
-        -0.963
-      ],
-      [
-        -6.712,
-        4.563
-      ],
-      [
-        -8.054,
-        0.962
-      ]
-    ],
-    "rotation": -0.3581,
-    "houseLength": 15.77,
-    "houseWidth": 4.0,
-    "wallHeight": 3.2,
-    "roofHeight": 1.3
-  },
-  {
     "id": "way/403027642",
     "osmId": 403027642,
     "osmType": "way",
@@ -715,7 +391,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 11.73,
     "depth": 11.7,
     "height": 3.8,
-    "area": 73.0,
+    "area": 73,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -766,140 +442,6 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "houseLength": 8.6,
     "houseWidth": 8.5,
     "wallHeight": 3.2,
-    "roofHeight": 1.8
-  },
-  {
-    "id": "way/403027643",
-    "osmId": 403027643,
-    "osmType": "way",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027643",
-    "lon": 94.0649173,
-    "lat": 23.1640693,
-    "u": 208.64,
-    "v": -274.4,
-    "x": -46.5,
-    "z": -341.56,
-    "width": 10.01,
-    "depth": 8.0,
-    "height": 3.8,
-    "area": 71.1,
-    "wallColor": "#cfbe9b",
-    "roofColor": "#4a6274",
-    "polygonPoints": [
-      [
-        -51.046,
-        -337.562
-      ],
-      [
-        -51.508,
-        -344.972
-      ],
-      [
-        -41.956,
-        -345.566
-      ],
-      [
-        -41.494,
-        -338.156
-      ],
-      [
-        -51.046,
-        -337.562
-      ]
-    ],
-    "relativePoints": [
-      [
-        -4.545,
-        4.002
-      ],
-      [
-        -5.007,
-        -3.408
-      ],
-      [
-        4.545,
-        -4.002
-      ],
-      [
-        5.007,
-        3.408
-      ],
-      [
-        -4.545,
-        4.002
-      ]
-    ],
-    "rotation": -0.0621,
-    "houseLength": 9.57,
-    "houseWidth": 7.42,
-    "wallHeight": 3.2,
-    "roofHeight": 1.8
-  },
-  {
-    "id": "way/403027646",
-    "osmId": 403027646,
-    "osmType": "way",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027646",
-    "lon": 94.0648768,
-    "lat": 23.1638954,
-    "u": 204.5,
-    "v": -255.06,
-    "x": -35.75,
-    "z": -324.95,
-    "width": 24.47,
-    "depth": 13.13,
-    "height": 4.5,
-    "area": 192.0,
-    "wallColor": "#a8b3a7",
-    "roofColor": "#687a6c",
-    "polygonPoints": [
-      [
-        -47.985,
-        -326.454
-      ],
-      [
-        -25.319,
-        -331.52
-      ],
-      [
-        -23.51,
-        -323.458
-      ],
-      [
-        -46.184,
-        -318.385
-      ],
-      [
-        -47.985,
-        -326.454
-      ]
-    ],
-    "relativePoints": [
-      [
-        -12.236,
-        -1.5
-      ],
-      [
-        10.43,
-        -6.566
-      ],
-      [
-        12.239,
-        1.496
-      ],
-      [
-        -10.435,
-        6.569
-      ],
-      [
-        -12.236,
-        -1.5
-      ]
-    ],
-    "rotation": 2.9215,
-    "houseLength": 23.23,
-    "houseWidth": 8.27,
-    "wallHeight": 3.6,
     "roofHeight": 1.8
   },
   {
@@ -1050,7 +592,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 10.22,
     "depth": 10.2,
     "height": 3.8,
-    "area": 54.0,
+    "area": 54,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -1366,7 +908,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.2088,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.63,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -1435,207 +977,6 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "rotation": -0.6413,
     "houseLength": 8.3,
     "houseWidth": 6.9,
-    "wallHeight": 2.8,
-    "roofHeight": 1.8
-  },
-  {
-    "id": "way/403027678",
-    "osmId": 403027678,
-    "osmType": "way",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027678",
-    "lon": 94.0656716,
-    "lat": 23.164402,
-    "u": 285.85,
-    "v": -311.44,
-    "x": -18.1,
-    "z": -422.35,
-    "width": 17.49,
-    "depth": 12.54,
-    "height": 4.5,
-    "area": 146.6,
-    "wallColor": "#b5a995",
-    "roofColor": "#9c5b41",
-    "polygonPoints": [
-      [
-        -24.79,
-        -416.085
-      ],
-      [
-        -26.843,
-        -425.115
-      ],
-      [
-        -11.403,
-        -428.622
-      ],
-      [
-        -9.35,
-        -419.592
-      ],
-      [
-        -24.79,
-        -416.085
-      ]
-    ],
-    "relativePoints": [
-      [
-        -6.694,
-        6.268
-      ],
-      [
-        -8.747,
-        -2.762
-      ],
-      [
-        6.693,
-        -6.269
-      ],
-      [
-        8.746,
-        2.761
-      ],
-      [
-        -6.694,
-        6.268
-      ]
-    ],
-    "rotation": -0.2233,
-    "houseLength": 15.84,
-    "houseWidth": 9.26,
-    "wallHeight": 3.6,
-    "roofHeight": 1.8
-  },
-  {
-    "id": "way/403027679",
-    "osmId": 403027679,
-    "osmType": "way",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027679",
-    "lon": 94.065455,
-    "lat": 23.1644828,
-    "u": 263.68,
-    "v": -320.44,
-    "x": -40.13,
-    "z": -413.04,
-    "width": 14.52,
-    "depth": 12.51,
-    "height": 3.8,
-    "area": 121.0,
-    "wallColor": "#c8ba9d",
-    "roofColor": "#3b556e",
-    "polygonPoints": [
-      [
-        -47.394,
-        -416.167
-      ],
-      [
-        -35.308,
-        -419.294
-      ],
-      [
-        -32.879,
-        -409.917
-      ],
-      [
-        -44.956,
-        -406.781
-      ],
-      [
-        -47.394,
-        -416.167
-      ]
-    ],
-    "relativePoints": [
-      [
-        -7.26,
-        -3.127
-      ],
-      [
-        4.826,
-        -6.254
-      ],
-      [
-        7.255,
-        3.123
-      ],
-      [
-        -4.822,
-        6.259
-      ],
-      [
-        -7.26,
-        -3.127
-      ]
-    ],
-    "rotation": -0.2532,
-    "houseLength": 12.49,
-    "houseWidth": 9.7,
-    "wallHeight": 3.2,
-    "roofHeight": 1.8
-  },
-  {
-    "id": "way/403027681",
-    "osmId": 403027681,
-    "osmType": "way",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027681",
-    "lon": 94.0653324,
-    "lat": 23.1645212,
-    "u": 251.14,
-    "v": -324.72,
-    "x": -52.03,
-    "z": -407.19,
-    "width": 7.88,
-    "depth": 7.79,
-    "height": 3.2,
-    "area": 39.2,
-    "wallColor": "#9b8e7b",
-    "roofColor": "#826554",
-    "polygonPoints": [
-      [
-        -55.97,
-        -409.227
-      ],
-      [
-        -49.925,
-        -411.085
-      ],
-      [
-        -48.093,
-        -405.156
-      ],
-      [
-        -54.138,
-        -403.298
-      ],
-      [
-        -55.97,
-        -409.227
-      ]
-    ],
-    "relativePoints": [
-      [
-        -3.939,
-        -2.035
-      ],
-      [
-        2.106,
-        -3.893
-      ],
-      [
-        3.938,
-        2.036
-      ],
-      [
-        -2.107,
-        3.894
-      ],
-      [
-        -3.939,
-        -2.035
-      ]
-    ],
-    "rotation": -0.2982,
-    "houseLength": 6.33,
-    "houseWidth": 6.21,
     "wallHeight": 2.8,
     "roofHeight": 1.8
   },
@@ -1854,7 +1195,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 17.09,
     "depth": 20.25,
     "height": 4.5,
-    "area": 176.0,
+    "area": 176,
     "wallColor": "#cfbe9b",
     "roofColor": "#4a6274",
     "polygonPoints": [
@@ -2040,105 +1381,6 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "houseWidth": 5.63,
     "wallHeight": 2.8,
     "roofHeight": 1.3
-  },
-  {
-    "id": "way/403027697",
-    "osmId": 403027697,
-    "osmType": "way",
-    "name": "ဆန်စက်",
-    "lon": 94.0655284,
-    "lat": 23.1638403,
-    "u": 271.19,
-    "v": -248.92,
-    "x": 15.75,
-    "z": -367.77,
-    "width": 28.2,
-    "depth": 26.86,
-    "height": 4.5,
-    "area": 505.3,
-    "wallColor": "#c8ba9d",
-    "roofColor": "#3b556e",
-    "polygonPoints": [
-      [
-        14.777,
-        -373.536
-      ],
-      [
-        28.446,
-        -377.193
-      ],
-      [
-        34.124,
-        -356.013
-      ],
-      [
-        12.924,
-        -350.335
-      ],
-      [
-        8.236,
-        -367.876
-      ],
-      [
-        7.204,
-        -367.663
-      ],
-      [
-        5.924,
-        -373.908
-      ],
-      [
-        14.35,
-        -375.628
-      ],
-      [
-        14.777,
-        -373.536
-      ]
-    ],
-    "relativePoints": [
-      [
-        -0.971,
-        -5.767
-      ],
-      [
-        12.698,
-        -9.424
-      ],
-      [
-        18.376,
-        11.756
-      ],
-      [
-        -2.824,
-        17.434
-      ],
-      [
-        -7.512,
-        -0.107
-      ],
-      [
-        -8.544,
-        0.106
-      ],
-      [
-        -9.824,
-        -6.139
-      ],
-      [
-        -1.398,
-        -7.859
-      ],
-      [
-        -0.971,
-        -5.767
-      ]
-    ],
-    "rotation": 2.8799,
-    "houseLength": 22.99,
-    "houseWidth": 24.58,
-    "wallHeight": 3.6,
-    "roofHeight": 1.8
   },
   {
     "id": "way/403027698",
@@ -2368,7 +1610,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -1.9894,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.08,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -2387,7 +1629,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 11.46,
     "depth": 10.67,
     "height": 3.8,
-    "area": 61.0,
+    "area": 61,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -2715,7 +1957,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403030424",
     "lon": 94.0713303,
     "lat": 23.1627815,
-    "u": 865.0,
+    "u": 865,
     "v": -131.05,
     "x": 518.98,
     "z": -704.32,
@@ -2770,7 +2012,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.7563,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.32,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -3641,7 +2883,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.8045,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.33,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -3725,9 +2967,9 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "x": 665.88,
     "z": -585.42,
     "width": 14.12,
-    "depth": 14.0,
+    "depth": 14,
     "height": 3.8,
-    "area": 100.0,
+    "area": 100,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -4129,7 +3371,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 10.66,
     "depth": 11.05,
     "height": 3.8,
-    "area": 52.0,
+    "area": 52,
     "wallColor": "#a8b3a7",
     "roofColor": "#687a6c",
     "polygonPoints": [
@@ -5333,7 +4575,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "x": 384.7,
     "z": -668.99,
     "width": 14.19,
-    "depth": 14.0,
+    "depth": 14,
     "height": 3.8,
     "area": 82.3,
     "wallColor": "#c8ba9d",
@@ -5603,7 +4845,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 10.25,
     "depth": 10.5,
     "height": 3.8,
-    "area": 53.0,
+    "area": 53,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -5919,7 +5161,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 0.9315,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.81,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -5931,7 +5173,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403030555",
     "lon": 94.0706365,
     "lat": 23.1623099,
-    "u": 794.0,
+    "u": 794,
     "v": -78.55,
     "x": 505.9,
     "z": -616.98,
@@ -6005,7 +5247,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 13.34,
     "depth": 12.5,
     "height": 3.8,
-    "area": 78.0,
+    "area": 78,
     "wallColor": "#d6c5a0",
     "roofColor": "#7d4f3b",
     "polygonPoints": [
@@ -6139,7 +5381,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 14.17,
     "depth": 15.14,
     "height": 3.8,
-    "area": 117.0,
+    "area": 117,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -6474,7 +5716,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 9.55,
     "depth": 12.96,
     "height": 3.8,
-    "area": 63.0,
+    "area": 63,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -6724,7 +5966,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     ],
     "rotation": 2.554,
     "houseLength": 6.46,
-    "houseWidth": 4.0,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -7144,7 +6386,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 26.13,
     "depth": 25.62,
     "height": 4.5,
-    "area": 324.0,
+    "area": 324,
     "wallColor": "#c2b089",
     "roofColor": "#8b5a43",
     "polygonPoints": [
@@ -7662,7 +6904,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     ],
     "rotation": 2.2972,
     "houseLength": 8.88,
-    "houseWidth": 4.0,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -7680,7 +6922,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 24.13,
     "depth": 23.58,
     "height": 4.5,
-    "area": 274.0,
+    "area": 274,
     "wallColor": "#c2b089",
     "roofColor": "#8b5a43",
     "polygonPoints": [
@@ -7871,7 +7113,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "id": "way/403030614",
     "osmId": 403030614,
     "osmType": "way",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403030614",
+    "name": "ကံပုလဲကျောင်း",
     "lon": 94.069931,
     "lat": 23.1623493,
     "u": 721.79,
@@ -7996,7 +7238,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.4143,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.09,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -8146,7 +7388,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "v": -24.99,
     "x": 502.68,
     "z": -538.02,
-    "width": 12.0,
+    "width": 12,
     "depth": 14.05,
     "height": 3.8,
     "area": 72.8,
@@ -8184,7 +7426,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
         -7.023
       ],
       [
-        6.0,
+        6,
         3.938
       ],
       [
@@ -8211,12 +7453,12 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lat": 23.1607589,
     "u": 925.54,
     "v": 94.11,
-    "x": 721.0,
+    "x": 721,
     "z": -587.91,
     "width": 9.33,
     "depth": 9.22,
     "height": 3.2,
-    "area": 46.0,
+    "area": 46,
     "wallColor": "#c2b089",
     "roofColor": "#8b5a43",
     "polygonPoints": [
@@ -8532,8 +7774,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.448,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -8551,7 +7793,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 12.99,
     "depth": 12.8,
     "height": 3.8,
-    "area": 84.0,
+    "area": 84,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -8819,7 +8061,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 7.05,
     "depth": 7.19,
     "height": 3.2,
-    "area": 26.0,
+    "area": 26,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -8867,7 +8109,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 0.9625,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.82,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -8899,7 +8141,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
         -538.514
       ],
       [
-        538.0,
+        538,
         -534.323
       ],
       [
@@ -9288,7 +8530,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 11.41,
     "depth": 8.57,
     "height": 3.2,
-    "area": 48.0,
+    "area": 48,
     "wallColor": "#c2b089",
     "roofColor": "#8b5a43",
     "polygonPoints": [
@@ -9403,7 +8645,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -2.2515,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.01,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -9569,7 +8811,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
         -616.267
       ],
       [
-        526.0,
+        526,
         -609.996
       ],
       [
@@ -9690,7 +8932,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 12.53,
     "depth": 12.55,
     "height": 3.8,
-    "area": 80.0,
+    "area": 80,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -9872,8 +9114,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 0.8418,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -10007,7 +9249,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     ],
     "rotation": -2.1154,
     "houseLength": 6.91,
-    "houseWidth": 4.0,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -10623,7 +9865,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lat": 23.1625596,
     "u": 799.31,
     "v": -106.34,
-    "x": 490.0,
+    "x": 490,
     "z": -640.4,
     "width": 9.19,
     "depth": 9.33,
@@ -10877,7 +10119,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.9128,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.14,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -11209,7 +10451,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 0.8398,
-    "houseLength": 12.0,
+    "houseLength": 12,
     "houseWidth": 10.5,
     "wallHeight": 3.2,
     "roofHeight": 1.8
@@ -11790,7 +11032,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lon": 94.072296,
     "lat": 23.1599334,
     "u": 963.84,
-    "v": 186.0,
+    "v": 186,
     "x": 813.06,
     "z": -550.02,
     "width": 7.94,
@@ -11844,7 +11086,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.7128,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -11863,7 +11105,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 11.74,
     "depth": 11.64,
     "height": 3.8,
-    "area": 65.0,
+    "area": 65,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -11930,7 +11172,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 8.83,
     "depth": 8.91,
     "height": 3.2,
-    "area": 48.0,
+    "area": 48,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -12392,7 +11634,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403037728",
     "lon": 94.0745447,
     "lat": 23.158506,
-    "u": 1194.0,
+    "u": 1194,
     "v": 344.9,
     "x": 1088.16,
     "z": -600.41,
@@ -13184,7 +12426,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.4681,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.78,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -13471,7 +12713,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 8.25,
     "depth": 8.46,
     "height": 3.2,
-    "area": 35.0,
+    "area": 35,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -14409,7 +13651,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 10.48,
     "depth": 10.11,
     "height": 3.8,
-    "area": 56.0,
+    "area": 56,
     "wallColor": "#a8b3a7",
     "roofColor": "#687a6c",
     "polygonPoints": [
@@ -14811,7 +14053,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 13.23,
     "depth": 10.88,
     "height": 3.8,
-    "area": 77.0,
+    "area": 77,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -14878,7 +14120,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 8.54,
     "depth": 7.9,
     "height": 3.2,
-    "area": 43.0,
+    "area": 43,
     "wallColor": "#cfbe9b",
     "roofColor": "#4a6274",
     "polygonPoints": [
@@ -15079,7 +14321,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 8.45,
     "depth": 8.53,
     "height": 3.2,
-    "area": 36.0,
+    "area": 36,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -15328,7 +14570,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.9043,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.49,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -15347,7 +14589,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 11.87,
     "depth": 11.83,
     "height": 3.8,
-    "area": 73.0,
+    "area": 73,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -15610,12 +14852,12 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lat": 23.1595693,
     "u": 957.16,
     "v": 226.53,
-    "x": 837.0,
+    "x": 837,
     "z": -516.63,
     "width": 13.04,
     "depth": 12.64,
     "height": 3.8,
-    "area": 85.0,
+    "area": 85,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -15663,7 +14905,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.5938,
-    "houseLength": 10.0,
+    "houseLength": 10,
     "houseWidth": 8.51,
     "wallHeight": 3.2,
     "roofHeight": 1.8
@@ -15682,7 +14924,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 10.02,
     "depth": 11.64,
     "height": 3.8,
-    "area": 66.0,
+    "area": 66,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -15883,7 +15125,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 12.2,
     "depth": 12.15,
     "height": 3.8,
-    "area": 75.0,
+    "area": 75,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -16151,7 +15393,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 9.02,
     "depth": 8.12,
     "height": 3.2,
-    "area": 47.0,
+    "area": 47,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -17353,7 +16595,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "u": 946.79,
     "v": 197.26,
     "x": 808.96,
-    "z": -530.0,
+    "z": -530,
     "width": 8.54,
     "depth": 8.54,
     "height": 3.2,
@@ -17692,7 +16934,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 12.31,
     "depth": 12.29,
     "height": 3.8,
-    "area": 76.0,
+    "area": 76,
     "wallColor": "#b5a995",
     "roofColor": "#9c5b41",
     "polygonPoints": [
@@ -17893,7 +17135,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 7.72,
     "depth": 7.75,
     "height": 3.2,
-    "area": 30.0,
+    "area": 30,
     "wallColor": "#d6c5a0",
     "roofColor": "#7d4f3b",
     "polygonPoints": [
@@ -17941,7 +17183,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -2.2973,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.38,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -18027,7 +17269,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 10.35,
     "depth": 10.87,
     "height": 3.8,
-    "area": 56.0,
+    "area": 56,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -18155,7 +17397,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lon": 94.0740577,
     "lat": 23.1595381,
     "u": 1144.15,
-    "v": 230.0,
+    "v": 230,
     "x": 971.67,
     "z": -646.4,
     "width": 12.69,
@@ -18179,7 +17421,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ],
       [
         968.102,
-        -641.0
+        -641
       ],
       [
         965.324,
@@ -18228,7 +17470,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 12.39,
     "depth": 12.19,
     "height": 3.8,
-    "area": 78.0,
+    "area": 78,
     "wallColor": "#b5a995",
     "roofColor": "#9c5b41",
     "polygonPoints": [
@@ -18745,7 +17987,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -2.3114,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.65,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -19112,8 +18354,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -2.1404,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -19581,7 +18823,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.7727,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.79,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -19667,7 +18909,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 11.94,
     "depth": 10.96,
     "height": 3.8,
-    "area": 71.0,
+    "area": 71,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -19676,7 +18918,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
         -814.881
       ],
       [
-        1178.0,
+        1178,
         -819.287
       ],
       [
@@ -19850,7 +19092,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     ],
     "rotation": -1.9008,
     "houseLength": 8.14,
-    "houseWidth": 4.0,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -19995,14 +19237,14 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403038143",
     "lon": 94.075727,
     "lat": 23.1588405,
-    "u": 1315.0,
+    "u": 1315,
     "v": 307.66,
     "x": 1147.39,
     "z": -712.29,
     "width": 10.15,
     "depth": 11.46,
     "height": 3.8,
-    "area": 58.0,
+    "area": 58,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -20203,7 +19445,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 12.24,
     "depth": 11.99,
     "height": 3.8,
-    "area": 85.0,
+    "area": 85,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -20330,7 +19572,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403038148",
     "lon": 94.0766943,
     "lat": 23.1590494,
-    "u": 1414.0,
+    "u": 1414,
     "v": 284.41,
     "x": 1200.96,
     "z": -798.74,
@@ -20404,7 +19646,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 12.28,
     "depth": 12.22,
     "height": 3.8,
-    "area": 79.0,
+    "area": 79,
     "wallColor": "#b5a995",
     "roofColor": "#9c5b41",
     "polygonPoints": [
@@ -20586,8 +19828,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.4499,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -20873,7 +20115,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 9.02,
     "depth": 8.98,
     "height": 3.2,
-    "area": 43.0,
+    "area": 43,
     "wallColor": "#a8b3a7",
     "roofColor": "#687a6c",
     "polygonPoints": [
@@ -21275,7 +20517,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 9.4,
     "depth": 9.3,
     "height": 3.2,
-    "area": 44.0,
+    "area": 44,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -21323,7 +20565,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.4471,
-    "houseLength": 7.0,
+    "houseLength": 7,
     "houseWidth": 6.29,
     "wallHeight": 2.8,
     "roofHeight": 1.8
@@ -21457,7 +20699,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 0.763,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.86,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -21677,7 +20919,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 11.51,
     "depth": 18.05,
     "height": 3.8,
-    "area": 104.0,
+    "area": 104,
     "wallColor": "#d6c5a0",
     "roofColor": "#7d4f3b",
     "polygonPoints": [
@@ -21955,7 +21197,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 0.9723,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.09,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -22242,7 +21484,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 6.45,
     "depth": 6.83,
     "height": 3.2,
-    "area": 25.0,
+    "area": 25,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -22290,7 +21532,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 1.1448,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.62,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -22304,7 +21546,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lat": 23.157054,
     "u": 1283.86,
     "v": 506.54,
-    "x": 1266.0,
+    "x": 1266,
     "z": -549.65,
     "width": 11.47,
     "depth": 11.79,
@@ -22443,7 +21685,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 11.41,
     "depth": 11.45,
     "height": 3.8,
-    "area": 65.0,
+    "area": 65,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -22778,7 +22020,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 11.1,
     "depth": 9.99,
     "height": 3.8,
-    "area": 53.0,
+    "area": 53,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -22893,7 +22135,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 1.2082,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.74,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -22960,7 +22202,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.5876,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.97,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -23295,7 +22537,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -2.1716,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.61,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -23314,7 +22556,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 12.7,
     "depth": 12.7,
     "height": 3.8,
-    "area": 81.0,
+    "area": 81,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -23381,7 +22623,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 8.92,
     "depth": 9.12,
     "height": 3.2,
-    "area": 42.0,
+    "area": 42,
     "wallColor": "#d6c5a0",
     "roofColor": "#7d4f3b",
     "polygonPoints": [
@@ -23744,23 +22986,23 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "relativePoints": [
       [
         -5.298,
-        -0.0
+        0
       ],
       [
-        0.0,
+        0,
         -5.298
       ],
       [
         5.297,
-        -0.0
+        0
       ],
       [
-        0.0,
+        0,
         5.298
       ],
       [
         -5.298,
-        -0.0
+        0
       ]
     ],
     "rotation": -0.7854,
@@ -23965,7 +23207,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 0.9733,
-    "houseLength": 12.0,
+    "houseLength": 12,
     "houseWidth": 8.04,
     "wallHeight": 3.2,
     "roofHeight": 1.8
@@ -24032,7 +23274,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.4118,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.78,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -24166,8 +23408,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.4965,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -24252,7 +23494,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 11.51,
     "depth": 11.03,
     "height": 3.8,
-    "area": 62.0,
+    "area": 62,
     "wallColor": "#b5a995",
     "roofColor": "#9c5b41",
     "polygonPoints": [
@@ -24319,7 +23561,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 13.93,
     "depth": 12.95,
     "height": 3.8,
-    "area": 89.0,
+    "area": 89,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -24434,7 +23676,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.4776,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.96,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -24788,7 +24030,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 8.8,
     "depth": 8.56,
     "height": 3.2,
-    "area": 41.0,
+    "area": 41,
     "wallColor": "#b5a995",
     "roofColor": "#9c5b41",
     "polygonPoints": [
@@ -24855,7 +24097,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 10.88,
     "depth": 10.04,
     "height": 3.8,
-    "area": 58.0,
+    "area": 58,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -24970,7 +24212,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 1.199,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.82,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -24989,7 +24231,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 12.57,
     "depth": 11.74,
     "height": 3.8,
-    "area": 75.0,
+    "area": 75,
     "wallColor": "#d6c5a0",
     "roofColor": "#7d4f3b",
     "polygonPoints": [
@@ -25104,7 +24346,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.4771,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.35,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -25136,7 +24378,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
         -536.967
       ],
       [
-        1185.0,
+        1185,
         -531.892
       ],
       [
@@ -25171,7 +24413,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 1.1699,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.35,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -25238,7 +24480,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.6733,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.02,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -25452,7 +24694,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lon": 94.0752179,
     "lat": 23.1575529,
     "u": 1262.9,
-    "v": 451.0,
+    "v": 451,
     "x": 1211.91,
     "z": -574.1,
     "width": 9.04,
@@ -25908,8 +25150,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 0.8962,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -26061,7 +25303,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 20.42,
     "depth": 18.96,
     "height": 4.5,
-    "area": 164.0,
+    "area": 164,
     "wallColor": "#d6c5a0",
     "roofColor": "#7d4f3b",
     "polygonPoints": [
@@ -26176,7 +25418,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 0.9111,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.1,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -26195,7 +25437,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 10.19,
     "depth": 9.13,
     "height": 3.2,
-    "area": 48.0,
+    "area": 48,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -26255,7 +25497,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040795",
     "lon": 94.0755316,
     "lat": 23.1581314,
-    "u": 1295.0,
+    "u": 1295,
     "v": 386.6,
     "x": 1189.07,
     "z": -642.34,
@@ -26444,7 +25686,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -1.9453,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.06,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -26980,7 +26222,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 1.0425,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.52,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -27066,7 +26308,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 16.07,
     "depth": 14.7,
     "height": 3.8,
-    "area": 120.0,
+    "area": 120,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -27248,7 +26490,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.696,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.39,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -27327,12 +26569,12 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040811",
     "lon": 94.0763132,
     "lat": 23.158542,
-    "u": 1375.0,
+    "u": 1375,
     "v": 340.89,
     "x": 1213.32,
     "z": -731.22,
     "width": 7.29,
-    "depth": 9.0,
+    "depth": 9,
     "height": 3.2,
     "area": 32.9,
     "wallColor": "#cfbe9b",
@@ -27717,7 +26959,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.3722,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.11,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -27851,7 +27093,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.401,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.74,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -27867,8 +27109,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "v": 425.53,
     "x": 1347.69,
     "z": -745.9,
-    "width": 7.0,
-    "depth": 7.0,
+    "width": 7,
+    "depth": 7,
     "height": 3.2,
     "area": 24.7,
     "wallColor": "#cfbe9b",
@@ -27918,7 +27160,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.4413,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.96,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -27965,27 +27207,27 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "relativePoints": [
       [
         -3.951,
-        -0.0
+        0
       ],
       [
-        -0.0,
+        0,
         -3.951
       ],
       [
         3.952,
-        -0.0
+        0
       ],
       [
-        -0.0,
+        0,
         3.952
       ],
       [
         -3.951,
-        -0.0
+        0
       ]
     ],
     "rotation": 2.3562,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.59,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -28375,7 +27617,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ],
       [
         5.801,
-        0.0
+        0
       ],
       [
         -0.836,
@@ -28588,7 +27830,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -1.9897,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.31,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -28802,7 +28044,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lon": 94.0772267,
     "lat": 23.1577864,
     "u": 1468.5,
-    "v": 425.0,
+    "v": 425,
     "x": 1338.91,
     "z": -737.87,
     "width": 8.91,
@@ -28942,7 +28184,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 4.85,
     "depth": 4.43,
     "height": 3.2,
-    "area": 11.0,
+    "area": 11,
     "wallColor": "#cfbe9b",
     "roofColor": "#4a6274",
     "polygonPoints": [
@@ -28990,8 +28232,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.5965,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -29258,7 +28500,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.4306,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.6,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -29392,7 +28634,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -1.9853,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.65,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -29478,7 +28720,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 9.58,
     "depth": 9.46,
     "height": 3.2,
-    "area": 50.0,
+    "area": 50,
     "wallColor": "#cfbe9b",
     "roofColor": "#4a6274",
     "polygonPoints": [
@@ -29545,7 +28787,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 14.88,
     "depth": 15.41,
     "height": 3.8,
-    "area": 119.0,
+    "area": 119,
     "wallColor": "#a8b3a7",
     "roofColor": "#687a6c",
     "polygonPoints": [
@@ -29612,7 +28854,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 14.85,
     "depth": 13.72,
     "height": 3.8,
-    "area": 112.0,
+    "area": 112,
     "wallColor": "#b5a995",
     "roofColor": "#9c5b41",
     "polygonPoints": [
@@ -30464,8 +29706,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -2.1112,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -30665,8 +29907,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.4973,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -30850,7 +30092,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 9.18,
     "depth": 9.18,
     "height": 3.2,
-    "area": 42.0,
+    "area": 42,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -30965,8 +30207,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -1.9374,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -31319,7 +30561,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 16.49,
     "depth": 16.05,
     "height": 3.8,
-    "area": 124.0,
+    "area": 124,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -31383,7 +30625,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "v": 504.9,
     "x": 1461.4,
     "z": -747.36,
-    "width": 11.0,
+    "width": 11,
     "depth": 11.05,
     "height": 3.8,
     "area": 60.8,
@@ -31451,7 +30693,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "x": 1433.25,
     "z": -980.04,
     "width": 12.01,
-    "depth": 12.0,
+    "depth": 12,
     "height": 3.8,
     "area": 72.5,
     "wallColor": "#d6c5a0",
@@ -31493,7 +30735,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ],
       [
         -0.478,
-        6.0
+        6
       ],
       [
         -6.003,
@@ -32171,7 +31413,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 0.8634,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.39,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -32305,8 +31547,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.5906,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -32391,7 +31633,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 18.64,
     "depth": 19.66,
     "height": 4.5,
-    "area": 188.0,
+    "area": 188,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -32506,7 +31748,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.8275,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.97,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -32659,7 +31901,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 14.63,
     "depth": 14.34,
     "height": 3.8,
-    "area": 93.0,
+    "area": 93,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -32720,7 +31962,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lon": 94.0789753,
     "lat": 23.1571037,
     "u": 1647.46,
-    "v": 501.0,
+    "v": 501,
     "x": 1519.19,
     "z": -810.67,
     "width": 14.23,
@@ -33061,7 +32303,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 10.06,
     "depth": 10.63,
     "height": 3.8,
-    "area": 56.0,
+    "area": 56,
     "wallColor": "#d6c5a0",
     "roofColor": "#7d4f3b",
     "polygonPoints": [
@@ -33712,7 +32954,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -2.0467,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.54,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -33798,7 +33040,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 10.32,
     "depth": 10.41,
     "height": 3.8,
-    "area": 52.0,
+    "area": 52,
     "wallColor": "#cfbe9b",
     "roofColor": "#4a6274",
     "polygonPoints": [
@@ -33863,7 +33105,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "x": 1412.87,
     "z": -906.08,
     "width": 11.02,
-    "depth": 11.0,
+    "depth": 11,
     "height": 3.8,
     "area": 61.1,
     "wallColor": "#a8b3a7",
@@ -33994,7 +33236,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lat": 23.1567377,
     "u": 1609.28,
     "v": 541.74,
-    "x": 1521.0,
+    "x": 1521,
     "z": -754.86,
     "width": 14.51,
     "depth": 13.58,
@@ -35336,7 +34578,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "v": 421.49,
     "x": 1397.56,
     "z": -801.49,
-    "width": 13.0,
+    "width": 13,
     "depth": 12.14,
     "height": 3.8,
     "area": 71.9,
@@ -35856,8 +35098,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -2.3378,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -35936,7 +35178,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lon": 94.0804494,
     "lat": 23.1577505,
     "u": 1798.33,
-    "v": 429.0,
+    "v": 429,
     "x": 1574.96,
     "z": -968.26,
     "width": 8.14,
@@ -36004,12 +35246,12 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lat": 23.1568648,
     "u": 1518.78,
     "v": 527.59,
-    "x": 1447.0,
+    "x": 1447,
     "z": -700.88,
     "width": 12.25,
     "depth": 13.01,
     "height": 3.8,
-    "area": 78.0,
+    "area": 78,
     "wallColor": "#a8b3a7",
     "roofColor": "#687a6c",
     "polygonPoints": [
@@ -36143,7 +35385,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 9.61,
     "depth": 9.69,
     "height": 3.2,
-    "area": 46.0,
+    "area": 46,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -36392,7 +35634,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.6983,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.56,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -36679,7 +35921,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 9.67,
     "depth": 9.7,
     "height": 3.2,
-    "area": 46.0,
+    "area": 46,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -36876,7 +36118,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "u": 1703.82,
     "v": 525.78,
     "x": 1576.57,
-    "z": -833.0,
+    "z": -833,
     "width": 10.28,
     "depth": 8.99,
     "height": 3.2,
@@ -37196,8 +36438,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.475,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -37531,7 +36773,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 0.9266,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.85,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -37598,7 +36840,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.5043,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.82,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -37799,8 +37041,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.534,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -38019,7 +37261,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 14.78,
     "depth": 13.86,
     "height": 3.8,
-    "area": 98.0,
+    "area": 98,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -38201,8 +37443,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.6864,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -38287,7 +37529,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 13.89,
     "depth": 13.27,
     "height": 3.8,
-    "area": 91.0,
+    "area": 91,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -38555,7 +37797,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 5.52,
     "depth": 5.52,
     "height": 3.2,
-    "area": 15.0,
+    "area": 15,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -38603,8 +37845,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.3562,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -38689,7 +37931,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 13.04,
     "depth": 12.79,
     "height": 3.8,
-    "area": 85.0,
+    "area": 85,
     "wallColor": "#a8b3a7",
     "roofColor": "#687a6c",
     "polygonPoints": [
@@ -39292,7 +38534,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 7.87,
     "depth": 7.87,
     "height": 3.2,
-    "area": 31.0,
+    "area": 31,
     "wallColor": "#b5a995",
     "roofColor": "#9c5b41",
     "polygonPoints": [
@@ -39340,7 +38582,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 2.3935,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.45,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -39359,7 +38601,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 20.79,
     "depth": 22.3,
     "height": 4.5,
-    "area": 184.0,
+    "area": 184,
     "wallColor": "#c8ba9d",
     "roofColor": "#3b556e",
     "polygonPoints": [
@@ -39758,7 +39000,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "v": 259.28,
     "x": 1492.17,
     "z": -1125.5,
-    "width": 8.0,
+    "width": 8,
     "depth": 7.96,
     "height": 3.2,
     "area": 31.8,
@@ -40560,10 +39802,10 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lat": 23.1587381,
     "u": 1897.01,
     "v": 319.06,
-    "x": 1567.0,
+    "x": 1567,
     "z": -1115.78,
     "width": 8.07,
-    "depth": 8.0,
+    "depth": 8,
     "height": 3.2,
     "area": 33.2,
     "wallColor": "#d6c5a0",
@@ -40605,7 +39847,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ],
       [
         -0.762,
-        4.0
+        4
       ],
       [
         -4.038,
@@ -40613,7 +39855,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.6185,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.63,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -40699,7 +39941,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 7.7,
     "depth": 7.81,
     "height": 3.2,
-    "area": 31.0,
+    "area": 31,
     "wallColor": "#bfa87e",
     "roofColor": "#5a6d7c",
     "polygonPoints": [
@@ -40747,7 +39989,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": 0.9682,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.36,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -40881,8 +40123,8 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -2.2424,
-    "houseLength": 6.0,
-    "houseWidth": 4.0,
+    "houseLength": 6,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -41149,7 +40391,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -2.2111,
-    "houseLength": 8.0,
+    "houseLength": 8,
     "houseWidth": 4.72,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -41418,7 +40660,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     ],
     "rotation": 2.5448,
     "houseLength": 7.3,
-    "houseWidth": 4.0,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -41570,7 +40812,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 11.1,
     "depth": 10.79,
     "height": 3.8,
-    "area": 60.0,
+    "area": 60,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -41766,7 +41008,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lat": 23.1566393,
     "u": 1813.28,
     "v": 552.7,
-    "x": 1673.0,
+    "x": 1673,
     "z": -891.36,
     "width": 10.54,
     "depth": 11.53,
@@ -41886,7 +41128,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.5169,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.12,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -42106,7 +41348,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 12.39,
     "depth": 13.28,
     "height": 3.8,
-    "area": 83.0,
+    "area": 83,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -42238,7 +41480,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "x": 1636.93,
     "z": -896.02,
     "width": 13.88,
-    "depth": 14.0,
+    "depth": 14,
     "height": 3.8,
     "area": 91.6,
     "wallColor": "#c2b089",
@@ -42910,7 +42152,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 7.49,
     "depth": 7.53,
     "height": 3.2,
-    "area": 28.0,
+    "area": 28,
     "wallColor": "#cfbe9b",
     "roofColor": "#4a6274",
     "polygonPoints": [
@@ -42958,7 +42200,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.8218,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.82,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -43226,7 +42468,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -0.8149,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 5.14,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -43494,7 +42736,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
       ]
     ],
     "rotation": -2.0424,
-    "houseLength": 6.0,
+    "houseLength": 6,
     "houseWidth": 4.77,
     "wallHeight": 2.8,
     "roofHeight": 1.3
@@ -43629,7 +42871,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     ],
     "rotation": -0.814,
     "houseLength": 7.39,
-    "houseWidth": 4.0,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -43708,7 +42950,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lon": 94.0805737,
     "lat": 23.1597268,
     "u": 1811.06,
-    "v": 209.0,
+    "v": 209,
     "x": 1428.4,
     "z": -1132.82,
     "width": 11.26,
@@ -44232,7 +43474,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     ],
     "rotation": -0.6461,
     "houseLength": 10.66,
-    "houseWidth": 9.0,
+    "houseWidth": 9,
     "wallHeight": 3.2,
     "roofHeight": 1.8
   },
@@ -44250,7 +43492,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 9.82,
     "depth": 10.52,
     "height": 3.8,
-    "area": 51.0,
+    "area": 51,
     "wallColor": "#9b8e7b",
     "roofColor": "#826554",
     "polygonPoints": [
@@ -44433,7 +43675,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     ],
     "rotation": -1.963,
     "houseLength": 6.06,
-    "houseWidth": 4.0,
+    "houseWidth": 4,
     "wallHeight": 2.8,
     "roofHeight": 1.3
   },
@@ -44511,7 +43753,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043693",
     "lon": 94.078492,
     "lat": 23.1576214,
-    "u": 1598.0,
+    "u": 1598,
     "v": 443.37,
     "x": 1443.46,
     "z": -816.45,
@@ -44647,7 +43889,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lat": 23.1593324,
     "u": 1796.29,
     "v": 252.9,
-    "x": 1449.0,
+    "x": 1449,
     "z": -1091.34,
     "width": 7.72,
     "depth": 7.97,
@@ -44981,7 +44223,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "lon": 94.078598,
     "lat": 23.1578942,
     "u": 1608.85,
-    "v": 413.0,
+    "v": 413,
     "x": 1429.66,
     "z": -845.59,
     "width": 14.56,
@@ -45389,7 +44631,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "width": 11.64,
     "depth": 11.31,
     "height": 3.8,
-    "area": 64.0,
+    "area": 64,
     "wallColor": "#d6c5a0",
     "roofColor": "#7d4f3b",
     "polygonPoints": [
@@ -45469,7 +44711,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
         -783.94
       ],
       [
-        1560.0,
+        1560,
         -778.807
       ],
       [
@@ -45777,7 +45019,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "v": 583.04,
     "x": 1670.73,
     "z": -846.19,
-    "width": 17.0,
+    "width": 17,
     "depth": 13.69,
     "height": 3.8,
     "area": 99.4,
@@ -46033,7 +45275,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
   }
 ];
 
-export const kanbaleHouses: House[] = [
+export const kanbaleHouses: KanbaleBuilding[] = [
   {
     "id": "way/403027623",
     "name": "ကံပုလဲ အဆောက်အအုံ 403027623",
@@ -46051,32 +45293,10 @@ export const kanbaleHouses: House[] = [
     "x": 282.67,
     "z": -486.96,
     "width": 7.84,
-    "depth": 4.0,
+    "depth": 4,
     "color": "#c2b089",
     "rotation": 2.8012,
     "roof": "#8b5a43"
-  },
-  {
-    "id": "way/403027628",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027628",
-    "x": -32.98,
-    "z": -395.95,
-    "width": 7.1,
-    "depth": 6.63,
-    "color": "#bfa87e",
-    "rotation": -0.2555,
-    "roof": "#5a6d7c"
-  },
-  {
-    "id": "way/403027630",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027630",
-    "x": -48.58,
-    "z": -388.92,
-    "width": 15.14,
-    "depth": 11.48,
-    "color": "#cfbe9b",
-    "rotation": -0.244,
-    "roof": "#4a6274"
   },
   {
     "id": "way/403027632",
@@ -46090,17 +45310,6 @@ export const kanbaleHouses: House[] = [
     "roof": "#687a6c"
   },
   {
-    "id": "way/403027633",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027633",
-    "x": -51.2,
-    "z": -373.28,
-    "width": 10.26,
-    "depth": 5.46,
-    "color": "#b5a995",
-    "rotation": -0.095,
-    "roof": "#9c5b41"
-  },
-  {
     "id": "way/403027635",
     "name": "ကံပုလဲ အဆောက်အအုံ 403027635",
     "x": 314.22,
@@ -46110,17 +45319,6 @@ export const kanbaleHouses: House[] = [
     "color": "#c8ba9d",
     "rotation": 2.7058,
     "roof": "#3b556e"
-  },
-  {
-    "id": "way/403027636",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027636",
-    "x": -48.82,
-    "z": -364.79,
-    "width": 16.24,
-    "depth": 6.0,
-    "color": "#9b8e7b",
-    "rotation": -0.208,
-    "roof": "#826554"
   },
   {
     "id": "way/403027638",
@@ -46134,17 +45332,6 @@ export const kanbaleHouses: House[] = [
     "roof": "#7d4f3b"
   },
   {
-    "id": "way/403027639",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027639",
-    "x": -48.29,
-    "z": -356.86,
-    "width": 15.77,
-    "depth": 4.0,
-    "color": "#c2b089",
-    "rotation": -0.3581,
-    "roof": "#8b5a43"
-  },
-  {
     "id": "way/403027642",
     "name": "ကံပုလဲ အဆောက်အအုံ 403027642",
     "x": 347.17,
@@ -46154,28 +45341,6 @@ export const kanbaleHouses: House[] = [
     "color": "#bfa87e",
     "rotation": 2.6049,
     "roof": "#5a6d7c"
-  },
-  {
-    "id": "way/403027643",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027643",
-    "x": -46.5,
-    "z": -341.56,
-    "width": 9.57,
-    "depth": 7.42,
-    "color": "#cfbe9b",
-    "rotation": -0.0621,
-    "roof": "#4a6274"
-  },
-  {
-    "id": "way/403027646",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027646",
-    "x": -35.75,
-    "z": -324.95,
-    "width": 23.23,
-    "depth": 8.27,
-    "color": "#a8b3a7",
-    "rotation": 2.9215,
-    "roof": "#687a6c"
   },
   {
     "id": "way/403027656",
@@ -46248,7 +45413,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403027667",
     "x": 428.24,
     "z": -424.91,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.63,
     "color": "#cfbe9b",
     "rotation": 2.2088,
@@ -46264,39 +45429,6 @@ export const kanbaleHouses: House[] = [
     "color": "#a8b3a7",
     "rotation": -0.6413,
     "roof": "#687a6c"
-  },
-  {
-    "id": "way/403027678",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027678",
-    "x": -18.1,
-    "z": -422.35,
-    "width": 15.84,
-    "depth": 9.26,
-    "color": "#b5a995",
-    "rotation": -0.2233,
-    "roof": "#9c5b41"
-  },
-  {
-    "id": "way/403027679",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027679",
-    "x": -40.13,
-    "z": -413.04,
-    "width": 12.49,
-    "depth": 9.7,
-    "color": "#c8ba9d",
-    "rotation": -0.2532,
-    "roof": "#3b556e"
-  },
-  {
-    "id": "way/403027681",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027681",
-    "x": -52.03,
-    "z": -407.19,
-    "width": 6.33,
-    "depth": 6.21,
-    "color": "#9b8e7b",
-    "rotation": -0.2982,
-    "roof": "#826554"
   },
   {
     "id": "way/403027682",
@@ -46365,17 +45497,6 @@ export const kanbaleHouses: House[] = [
     "roof": "#9c5b41"
   },
   {
-    "id": "way/403027697",
-    "name": "ဆန်စက်",
-    "x": 15.75,
-    "z": -367.77,
-    "width": 22.99,
-    "depth": 24.58,
-    "color": "#c8ba9d",
-    "rotation": 2.8799,
-    "roof": "#3b556e"
-  },
-  {
     "id": "way/403027698",
     "name": "ကံပုလဲ အဆောက်အအုံ 403027698",
     "x": 432.61,
@@ -46402,7 +45523,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403030405",
     "x": 632.34,
     "z": -765.87,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.08,
     "color": "#c2b089",
     "rotation": -1.9894,
@@ -46468,7 +45589,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403030424",
     "x": 518.98,
     "z": -704.32,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.32,
     "color": "#9b8e7b",
     "rotation": -0.7563,
@@ -46611,7 +45732,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403030459",
     "x": 441.94,
     "z": -699.12,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.33,
     "color": "#a8b3a7",
     "rotation": -0.8045,
@@ -46985,7 +46106,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403030553",
     "x": 582.85,
     "z": -678.33,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.81,
     "color": "#c8ba9d",
     "rotation": 0.9315,
@@ -47118,7 +46239,7 @@ export const kanbaleHouses: House[] = [
     "x": 594.03,
     "z": -692.61,
     "width": 6.46,
-    "depth": 4.0,
+    "depth": 4,
     "color": "#bfa87e",
     "rotation": 2.554,
     "roof": "#5a6d7c"
@@ -47272,7 +46393,7 @@ export const kanbaleHouses: House[] = [
     "x": 582.97,
     "z": -769.9,
     "width": 8.88,
-    "depth": 4.0,
+    "depth": 4,
     "color": "#d6c5a0",
     "rotation": 2.2972,
     "roof": "#7d4f3b"
@@ -47312,7 +46433,7 @@ export const kanbaleHouses: House[] = [
   },
   {
     "id": "way/403030614",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403030614",
+    "name": "ကံပုလဲကျောင်း",
     "x": 451.73,
     "z": -569.03,
     "width": 31.72,
@@ -47326,7 +46447,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403030615",
     "x": 726.72,
     "z": -592.15,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.09,
     "color": "#b5a995",
     "rotation": -0.4143,
@@ -47368,7 +46489,7 @@ export const kanbaleHouses: House[] = [
   {
     "id": "way/403030620",
     "name": "ကံပုလဲ အဆောက်အအုံ 403030620",
-    "x": 721.0,
+    "x": 721,
     "z": -587.91,
     "width": 6.94,
     "depth": 6.64,
@@ -47414,8 +46535,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403030624",
     "x": 479.78,
     "z": -525.16,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#b5a995",
     "rotation": 2.448,
     "roof": "#9c5b41"
@@ -47469,7 +46590,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403030629",
     "x": 486.99,
     "z": -521.86,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.82,
     "color": "#bfa87e",
     "rotation": 0.9625,
@@ -47557,7 +46678,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403030637",
     "x": 618.41,
     "z": -558.6,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.01,
     "color": "#bfa87e",
     "rotation": -2.2515,
@@ -47634,8 +46755,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403030645",
     "x": 508.93,
     "z": -604.69,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#c2b089",
     "rotation": 0.8418,
     "roof": "#8b5a43"
@@ -47657,7 +46778,7 @@ export const kanbaleHouses: House[] = [
     "x": 609.05,
     "z": -669.32,
     "width": 6.91,
-    "depth": 4.0,
+    "depth": 4,
     "color": "#cfbe9b",
     "rotation": -2.1154,
     "roof": "#4a6274"
@@ -47764,7 +46885,7 @@ export const kanbaleHouses: House[] = [
   {
     "id": "way/403030658",
     "name": "ကံပုလဲ အဆောက်အအုံ 403030658",
-    "x": 490.0,
+    "x": 490,
     "z": -640.4,
     "width": 7.48,
     "depth": 5.65,
@@ -47799,7 +46920,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403030661",
     "x": 682.17,
     "z": -798.56,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.14,
     "color": "#d6c5a0",
     "rotation": -0.9128,
@@ -47843,7 +46964,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403030665",
     "x": 524.06,
     "z": -638.41,
-    "width": 12.0,
+    "width": 12,
     "depth": 10.5,
     "color": "#a8b3a7",
     "rotation": 0.8398,
@@ -47942,7 +47063,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403037719",
     "x": 813.06,
     "z": -550.02,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.4,
     "color": "#b5a995",
     "rotation": -0.7128,
@@ -48162,7 +47283,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403037739",
     "x": 796.31,
     "z": -489.03,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.78,
     "color": "#c2b089",
     "rotation": 2.4681,
@@ -48514,7 +47635,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403037771",
     "x": 1052.13,
     "z": -497.64,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.49,
     "color": "#c2b089",
     "rotation": 2.9043,
@@ -48567,9 +47688,9 @@ export const kanbaleHouses: House[] = [
   {
     "id": "way/403037776",
     "name": "ကံပုလဲ အဆောက်အအုံ 403037776",
-    "x": 837.0,
+    "x": 837,
     "z": -516.63,
-    "width": 10.0,
+    "width": 10,
     "depth": 8.51,
     "color": "#c8ba9d",
     "rotation": -0.5938,
@@ -48854,7 +47975,7 @@ export const kanbaleHouses: House[] = [
     "id": "way/403037802",
     "name": "ကံပုလဲ အဆောက်အအုံ 403037802",
     "x": 808.96,
-    "z": -530.0,
+    "z": -530,
     "width": 6.1,
     "depth": 6.03,
     "color": "#d6c5a0",
@@ -48943,7 +48064,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403037810",
     "x": 925.75,
     "z": -589.36,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.38,
     "color": "#d6c5a0",
     "rotation": -2.2973,
@@ -49075,7 +48196,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403037822",
     "x": 889.54,
     "z": -461.99,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.65,
     "color": "#a8b3a7",
     "rotation": -2.3114,
@@ -49130,8 +48251,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403038129",
     "x": 1155.69,
     "z": -721.13,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#c2b089",
     "rotation": -2.1404,
     "roof": "#8b5a43"
@@ -49207,7 +48328,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403038136",
     "x": 1142.83,
     "z": -811.18,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.79,
     "color": "#d6c5a0",
     "rotation": 2.7727,
@@ -49252,7 +48373,7 @@ export const kanbaleHouses: House[] = [
     "x": 1165.31,
     "z": -761.95,
     "width": 8.14,
-    "depth": 4.0,
+    "depth": 4,
     "color": "#a8b3a7",
     "rotation": -1.9008,
     "roof": "#687a6c"
@@ -49372,8 +48493,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403038151",
     "x": 1136.29,
     "z": -768.02,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#9b8e7b",
     "rotation": -0.4499,
     "roof": "#826554"
@@ -49493,7 +48614,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403038162",
     "x": 1052.62,
     "z": -774.35,
-    "width": 7.0,
+    "width": 7,
     "depth": 6.29,
     "color": "#bfa87e",
     "rotation": 2.4471,
@@ -49515,7 +48636,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403038164",
     "x": 1019.65,
     "z": -716.97,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.86,
     "color": "#a8b3a7",
     "rotation": 0.763,
@@ -49581,7 +48702,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040730",
     "x": 1130.09,
     "z": -532.53,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.09,
     "color": "#bfa87e",
     "rotation": 0.9723,
@@ -49636,7 +48757,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040735",
     "x": 1061.01,
     "z": -564.81,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.62,
     "color": "#9b8e7b",
     "rotation": 1.1448,
@@ -49645,7 +48766,7 @@ export const kanbaleHouses: House[] = [
   {
     "id": "way/403040736",
     "name": "ကံပုလဲ အဆောက်အအုံ 403040736",
-    "x": 1266.0,
+    "x": 1266,
     "z": -549.65,
     "width": 10.05,
     "depth": 6.44,
@@ -49735,7 +48856,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040744",
     "x": 1091.82,
     "z": -571.74,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.74,
     "color": "#d6c5a0",
     "rotation": 1.2082,
@@ -49746,7 +48867,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040745",
     "x": 1213.09,
     "z": -550.64,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.97,
     "color": "#c2b089",
     "rotation": -0.5876,
@@ -49801,7 +48922,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040750",
     "x": 1218.92,
     "z": -514.46,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.61,
     "color": "#c8ba9d",
     "rotation": -2.1716,
@@ -49911,7 +49032,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040760",
     "x": 1211.78,
     "z": -641.67,
-    "width": 12.0,
+    "width": 12,
     "depth": 8.04,
     "color": "#d6c5a0",
     "rotation": 0.9733,
@@ -49922,7 +49043,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040761",
     "x": 1292.28,
     "z": -660.63,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.78,
     "color": "#c2b089",
     "rotation": 2.4118,
@@ -49944,8 +49065,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040763",
     "x": 1239.56,
     "z": -540.48,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#cfbe9b",
     "rotation": -0.4965,
     "roof": "#4a6274"
@@ -49988,7 +49109,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040767",
     "x": 1212.6,
     "z": -624.64,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.96,
     "color": "#9b8e7b",
     "rotation": 2.4776,
@@ -50076,7 +49197,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040775",
     "x": 1162.11,
     "z": -522.91,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.82,
     "color": "#9b8e7b",
     "rotation": 1.199,
@@ -50098,7 +49219,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040777",
     "x": 1343.81,
     "z": -655.23,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.35,
     "color": "#c2b089",
     "rotation": 2.4771,
@@ -50109,7 +49230,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040778",
     "x": 1181.46,
     "z": -533.39,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.35,
     "color": "#bfa87e",
     "rotation": 1.1699,
@@ -50120,7 +49241,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040779",
     "x": 1351.94,
     "z": -659.32,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.02,
     "color": "#cfbe9b",
     "rotation": -0.6733,
@@ -50230,8 +49351,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040789",
     "x": 1263.46,
     "z": -660.71,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#b5a995",
     "rotation": 0.8962,
     "roof": "#9c5b41"
@@ -50274,7 +49395,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040793",
     "x": 1111.98,
     "z": -558.53,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.1,
     "color": "#c2b089",
     "rotation": 0.9111,
@@ -50318,7 +49439,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040797",
     "x": 1124.19,
     "z": -575.58,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.06,
     "color": "#b5a995",
     "rotation": -1.9453,
@@ -50406,7 +49527,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040805",
     "x": 1146.08,
     "z": -581.83,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.52,
     "color": "#b5a995",
     "rotation": 1.0425,
@@ -50450,7 +49571,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040809",
     "x": 1119.23,
     "z": -625.88,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.39,
     "color": "#c2b089",
     "rotation": 2.696,
@@ -50527,7 +49648,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040816",
     "x": 1222.46,
     "z": -757.81,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.11,
     "color": "#d6c5a0",
     "rotation": -0.3722,
@@ -50549,7 +49670,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040818",
     "x": 1184.41,
     "z": -516.85,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.74,
     "color": "#bfa87e",
     "rotation": -0.401,
@@ -50560,7 +49681,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040819",
     "x": 1347.69,
     "z": -745.9,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.96,
     "color": "#cfbe9b",
     "rotation": 2.4413,
@@ -50571,7 +49692,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040820",
     "x": 1288.73,
     "z": -761.98,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.59,
     "color": "#a8b3a7",
     "rotation": 2.3562,
@@ -50670,7 +49791,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040829",
     "x": 1194.74,
     "z": -528.23,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.31,
     "color": "#b5a995",
     "rotation": -1.9897,
@@ -50736,8 +49857,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040835",
     "x": 1187.36,
     "z": -525.23,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#cfbe9b",
     "rotation": 2.5965,
     "roof": "#4a6274"
@@ -50780,7 +49901,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040839",
     "x": 1206.65,
     "z": -534.16,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.6,
     "color": "#9b8e7b",
     "rotation": 2.4306,
@@ -50802,7 +49923,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040841",
     "x": 1352.28,
     "z": -779.76,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.65,
     "color": "#c2b089",
     "rotation": -1.9853,
@@ -50978,8 +50099,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040857",
     "x": 1134.02,
     "z": -524.74,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#c2b089",
     "rotation": -2.1112,
     "roof": "#8b5a43"
@@ -51011,8 +50132,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403040860",
     "x": 1378.5,
     "z": -601.35,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#a8b3a7",
     "rotation": 2.4973,
     "roof": "#687a6c"
@@ -51055,8 +50176,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043482",
     "x": 1488.85,
     "z": -911.46,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#d6c5a0",
     "rotation": -1.9374,
     "roof": "#7d4f3b"
@@ -51253,7 +50374,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043500",
     "x": 1530.12,
     "z": -1083.69,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.39,
     "color": "#bfa87e",
     "rotation": 0.8634,
@@ -51275,8 +50396,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043502",
     "x": 1503.04,
     "z": -976.2,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#a8b3a7",
     "rotation": 2.5906,
     "roof": "#687a6c"
@@ -51308,7 +50429,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043505",
     "x": 1514.4,
     "z": -1055.17,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.97,
     "color": "#9b8e7b",
     "rotation": -0.8275,
@@ -51506,7 +50627,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043523",
     "x": 1585.54,
     "z": -1012.08,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.54,
     "color": "#c2b089",
     "rotation": -2.0467,
@@ -51559,7 +50680,7 @@ export const kanbaleHouses: House[] = [
   {
     "id": "way/403043528",
     "name": "ကံပုလဲ အဆောက်အအုံ 403043528",
-    "x": 1521.0,
+    "x": 1521,
     "z": -754.86,
     "width": 11.68,
     "depth": 8.68,
@@ -51858,8 +50979,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043556",
     "x": 1483.84,
     "z": -1123.72,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#c2b089",
     "rotation": -2.3378,
     "roof": "#8b5a43"
@@ -51889,7 +51010,7 @@ export const kanbaleHouses: House[] = [
   {
     "id": "way/403043560",
     "name": "ကံပုလဲ အဆောက်အအုံ 403043560",
-    "x": 1447.0,
+    "x": 1447,
     "z": -700.88,
     "width": 10.88,
     "depth": 7.17,
@@ -51946,7 +51067,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043565",
     "x": 1558.58,
     "z": -826.62,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.56,
     "color": "#c2b089",
     "rotation": -0.6983,
@@ -52033,7 +51154,7 @@ export const kanbaleHouses: House[] = [
     "id": "way/403043573",
     "name": "ကံပုလဲ အဆောက်အအုံ 403043573",
     "x": 1576.57,
-    "z": -833.0,
+    "z": -833,
     "width": 8.76,
     "depth": 5.41,
     "color": "#c2b089",
@@ -52078,8 +51199,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043577",
     "x": 1510.31,
     "z": -885.38,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#b5a995",
     "rotation": 2.475,
     "roof": "#9c5b41"
@@ -52133,7 +51254,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043582",
     "x": 1461.2,
     "z": -680.31,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.85,
     "color": "#bfa87e",
     "rotation": 0.9266,
@@ -52144,7 +51265,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043583",
     "x": 1501.57,
     "z": -878.95,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.82,
     "color": "#cfbe9b",
     "rotation": 2.5043,
@@ -52177,8 +51298,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043586",
     "x": 1600.81,
     "z": -838.17,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#c8ba9d",
     "rotation": 2.534,
     "roof": "#3b556e"
@@ -52243,8 +51364,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043592",
     "x": 1405.41,
     "z": -1059.96,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#a8b3a7",
     "rotation": -0.6864,
     "roof": "#687a6c"
@@ -52309,8 +51430,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043598",
     "x": 1412.77,
     "z": -1060.59,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#bfa87e",
     "rotation": 2.3562,
     "roof": "#5a6d7c"
@@ -52430,7 +51551,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043609",
     "x": 1553.57,
     "z": -732.73,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.45,
     "color": "#b5a995",
     "rotation": 2.3935,
@@ -52637,9 +51758,9 @@ export const kanbaleHouses: House[] = [
   {
     "id": "way/403043628",
     "name": "ကံပုလဲ အဆောက်အအုံ 403043628",
-    "x": 1567.0,
+    "x": 1567,
     "z": -1115.78,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.63,
     "color": "#d6c5a0",
     "rotation": -0.6185,
@@ -52661,7 +51782,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043630",
     "x": 1416.54,
     "z": -953.4,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.36,
     "color": "#bfa87e",
     "rotation": 0.9682,
@@ -52683,8 +51804,8 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043632",
     "x": 1451.62,
     "z": -792.22,
-    "width": 6.0,
-    "depth": 4.0,
+    "width": 6,
+    "depth": 4,
     "color": "#a8b3a7",
     "rotation": -2.2424,
     "roof": "#687a6c"
@@ -52727,7 +51848,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043638",
     "x": 1577.35,
     "z": -858.04,
-    "width": 8.0,
+    "width": 8,
     "depth": 4.72,
     "color": "#d6c5a0",
     "rotation": -2.2111,
@@ -52772,7 +51893,7 @@ export const kanbaleHouses: House[] = [
     "x": 1455.62,
     "z": -787.71,
     "width": 7.3,
-    "depth": 4.0,
+    "depth": 4,
     "color": "#a8b3a7",
     "rotation": 2.5448,
     "roof": "#687a6c"
@@ -52835,7 +51956,7 @@ export const kanbaleHouses: House[] = [
   {
     "id": "way/403043650",
     "name": "ကံပုလဲ အဆောက်အအုံ 403043650",
-    "x": 1673.0,
+    "x": 1673,
     "z": -891.36,
     "width": 9.44,
     "depth": 7.79,
@@ -52848,7 +51969,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043652",
     "x": 1586.7,
     "z": -1063.07,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.12,
     "color": "#cfbe9b",
     "rotation": -0.5169,
@@ -53024,7 +52145,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043668",
     "x": 1498.62,
     "z": -720.14,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.82,
     "color": "#cfbe9b",
     "rotation": -0.8218,
@@ -53068,7 +52189,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043673",
     "x": 1392.84,
     "z": -1108.44,
-    "width": 6.0,
+    "width": 6,
     "depth": 5.14,
     "color": "#9b8e7b",
     "rotation": -0.8149,
@@ -53112,7 +52233,7 @@ export const kanbaleHouses: House[] = [
     "name": "ကံပုလဲ အဆောက်အအုံ 403043677",
     "x": 1612.77,
     "z": -1054.6,
-    "width": 6.0,
+    "width": 6,
     "depth": 4.77,
     "color": "#cfbe9b",
     "rotation": -2.0424,
@@ -53135,7 +52256,7 @@ export const kanbaleHouses: House[] = [
     "x": 1481.18,
     "z": -810.21,
     "width": 7.39,
-    "depth": 4.0,
+    "depth": 4,
     "color": "#b5a995",
     "rotation": -0.814,
     "roof": "#9c5b41"
@@ -53234,7 +52355,7 @@ export const kanbaleHouses: House[] = [
     "x": 1632.45,
     "z": -815.89,
     "width": 10.66,
-    "depth": 9.0,
+    "depth": 9,
     "color": "#c8ba9d",
     "rotation": -0.6461,
     "roof": "#3b556e"
@@ -53267,7 +52388,7 @@ export const kanbaleHouses: House[] = [
     "x": 1660.89,
     "z": -952.47,
     "width": 6.06,
-    "depth": 4.0,
+    "depth": 4,
     "color": "#c2b089",
     "rotation": -1.963,
     "roof": "#8b5a43"
@@ -53308,7 +52429,7 @@ export const kanbaleHouses: House[] = [
   {
     "id": "way/403043695",
     "name": "ကံပုလဲ အဆောက်အအုံ 403043695",
-    "x": 1449.0,
+    "x": 1449,
     "z": -1091.34,
     "width": 6.12,
     "depth": 5.54,

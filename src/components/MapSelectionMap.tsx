@@ -13,7 +13,7 @@ function rectanglePath(r: Rectangle) {
 }
 // Static, batched SVG paths keep dragging a large map inexpensive, including on phones.
 const houses = [...ward.houses, ...kalayVillages.flatMap(v => v.houses)].map(rectanglePath).join('') +
- myotharCenterBuildings.map(b => rectanglePath({ ...b, width: b.houseWidth, depth: b.houseLength })).join('');
+ myotharCenterBuildings.map(b => rectanglePath({ ...b, width: b.houseWidth ?? b.width, depth: b.houseLength ?? b.depth })).join('');
 const roads = [...ward.roads, ...kalayVillages.filter(v => v.id !== 'kanbale' && v.id !== 'natmyaung').flatMap(v => v.roads)].map(rectanglePath).join('');
 const polylines = [...myotharCenterRoads, ...kanbaleRoads, ...natmyaungRoads];
 const trees = [...ward.trees, ...kalayVillages.flatMap(v => v.trees)].map(t => `M${t.x-1.5},${t.z}a1.5,1.5 0 1,0 3,0a1.5,1.5 0 1,0 -3,0`).join('');

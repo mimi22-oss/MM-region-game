@@ -4,6 +4,7 @@ import {
   myotharCenterBuildings,
   myotharCenterRoads,
   myotharCenterPOIs,
+  myotharCenterTrees,
   type MyotharCenterBuildingData,
   type MyotharCenterRoad,
   type MyotharCenterPOI,
@@ -194,6 +195,14 @@ export const MyotharCenter = memo(function MyotharCenter({
               z: poi.z + 6 * (idx % 3 === 0 ? 1 : -1),
               radius: 4,
             }}
+            i={idx}
+            variant="large"
+          />
+        ))}
+        {myotharCenterTrees.map((tree, idx: number) => (
+          <Tree
+            key={tree.id}
+            t={tree}
             i={idx}
             variant="large"
           />

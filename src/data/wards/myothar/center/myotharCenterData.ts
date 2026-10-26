@@ -107,3 +107,19 @@ export const myotharCenterMeta = {
     maxZ: 127.1,
   },
 };
+
+/**
+ * ကံပုလဲ source polygon မှ မြို့သာရပ်ကွက် အလယ်ခေါင်သို့ ပြောင်းရွှေ့ထားသော သစ်ပင်များ
+ */
+export const myotharCenterTrees = [
+  { id: 'mc-moved-tree-1', x: -199.485, z: -341.044, radius: 0.8 },
+  { id: 'mc-moved-tree-2', x: -231.690, z: -318.909, radius: 0.8 },
+  { id: 'mc-moved-tree-3', x: -230.940, z: -317.474, radius: 0.8 },
+  { id: 'mc-moved-tree-4', x: -231.760, z: -310.394, radius: 0.8 },
+  { id: 'mc-moved-tree-5', x: -230.720, z: -289.684, radius: 0.8 },
+  { id: 'mc-moved-tree-6', x: -225.880, z: -286.549, radius: 0.8 },
+  { id: 'mc-moved-tree-7', x: -201.220, z: -353.469, radius: 0.8 },
+  { id: 'mc-moved-tree-8', x: -203.645, z: -360.284, radius: 0.8 },
+  { id: 'mc-moved-tree-9', x: -230.345, z: -352.074, radius: 0.8 },
+];
+

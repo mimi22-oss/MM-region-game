@@ -21,7 +21,7 @@ export const GEO_REFERENCES: Record<GeoReference, string> = { 'myothar-center': 
 
 export function suggestGeoReference(point: MapPoint): GeoReference {
  const place = detectLocation(point.x, point.z), { u, v } = toLocalUV(point.x, point.z);
- if (place.id === 'kanbale' || place.id === 'kanbale-rice-mill') return 'kanbale';
+ if (place.id === 'kanbale' || place.id === 'kanbale-rice-mill' || place.id === 'kanbale-school') return 'kanbale';
  if (place.id === 'natmyaung' || (v >= 4120 && v <= 4350)) return 'natmyaung';
  if (v < -270 && v >= -1800 && u >= -1000 && u <= 650) return 'myothar-center';
  return 'scene';

@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import type { KanbaleBuildingData } from '../../../data/villages/kanbale';
 import { KanbaleFarmhouse } from './KanbaleFarmhouse';
 import { KanbaleRiceMill } from './KanbaleRiceMill';
+import { KanbaleSchool } from './KanbaleSchool';
 
 export interface CustomBuildingProps {
   building: KanbaleBuildingData;
@@ -19,7 +20,7 @@ export interface CustomBuildingProps {
  */
 export const customBuildings: Record<string, ComponentType<CustomBuildingProps>> = {
   'way/403027623': KanbaleFarmhouse,
-  'way/403027697': KanbaleRiceMill,
+  'way/403030614': KanbaleSchool,
 };
 
 /**

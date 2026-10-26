@@ -245,28 +245,30 @@ export function KanbalePlan({
         )}
       </g>
 
-      {/* ဆန်စက် (Rice Mill) အထူးအမှတ်အသား */}
+      {/* ======================================================== */}
+      {/* ၄.၁။ Custom Model ကံပုလဲကျောင်း အထူးအမှတ်အသား (School Landmark Star Marker) */}
+      {/* ======================================================== */}
       <g
-        transform="translate(15.75 -367.77)"
+        transform="translate(451.73 -569.03)"
         style={{ cursor: 'pointer' }}
         onClick={(e) => {
           e.stopPropagation();
-          setSelectedBuildingId('way/403027697');
+          setSelectedBuildingId('way/403030614');
         }}
       >
-        <circle r="6" fill="#38bdf8" opacity="0.35" />
-        <circle r="3.5" fill="#0284c7" stroke="#ffffff" strokeWidth="0.8" />
+        <circle r="7" fill="#10b981" opacity="0.35" />
+        <circle r="4" fill="#059669" stroke="#ffffff" strokeWidth="0.8" />
         {labels && (
           <text
-            x="7"
+            x="8"
             y="2.5"
             fontSize="4.8"
-            fill="#7dd3fc"
-            stroke="#0f172a"
+            fill="#a7f3d0"
+            stroke="#1e293b"
             strokeWidth="0.6"
             fontWeight="bold"
           >
-            ★ ဆန်စက် (Rice Mill)
+            ★ ကံပုလဲကျောင်း (School & Football Field)
           </text>
         )}
       </g>
@@ -299,11 +301,13 @@ export function KanbalePlan({
             fill="#38bdf8"
             fontWeight="bold"
           >
-            {selectedBuilding.id === 'way/403027697'
-              ? '★ ဆန်စက် (Rice Mill)'
-              : hasCustomBuilding(selectedBuilding.id)
-              ? '★ Kanbale Farmhouse (Custom)'
-              : 'OSM အဆောက်အအုံ'}
+            {selectedBuilding.id === 'way/403030614'
+              ? '★ ကံပုလဲကျောင်း (School & Football Field)'
+              : selectedBuilding.id === 'way/403027623'
+                ? '★ Kanbale Farmhouse (Custom)'
+                : hasCustomBuilding(selectedBuilding.id)
+                  ? '★ Custom အဆောက်အအုံ'
+                  : 'OSM အဆောက်အအုံ'}
           </text>
           {/* Details */}
           <text x="4" y="-3" fontSize="3.8" fill="#e2e8f0">

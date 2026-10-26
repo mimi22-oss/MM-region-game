@@ -30,8 +30,8 @@ export const MyotharCenterBuilding = memo(function MyotharCenterBuilding({
   const w = building.houseWidth || 5.0;
   const d = building.houseLength || 6.2;
   const isTwoStorey = building.area >= 70;
-  const wallH = building.wallHeight;
-  const pitchH = Math.min(building.roofHeight, w * .4);
+  const wallH = building.wallHeight ?? 3.2;
+  const pitchH = Math.min(building.roofHeight ?? 1.6, w * .4);
 
   // Compound & fence bounds (Area 5 style)
   const sideHalf = building.fenceSideHalf || (building.compoundWidth ? building.compoundWidth / 2 : w / 2 + 1.4);

@@ -1,6 +1,12 @@
 import { memo } from 'react';
 import { Block as Box } from '../../../Primitives.tsx';
-import { myotharCenterPOIs, type MyotharCenterPOI } from '../../../../data/wards/myothar/center/index.ts';
+import {
+  myotharCenterPOIs,
+  myotharCenterBuildings,
+  type MyotharCenterPOI,
+  type MyotharCenterBuildingData,
+} from '../../../../data/wards/myothar/center/index.ts';
+import { KanbaleRiceMill } from '../../../villages/kanbale/KanbaleRiceMill.tsx';
 
 /**
  * မြို့သာရပ်ကွက် အလယ်ခေါင် အထင်ကရနေရာများ 3D Custom Landmarks
@@ -15,6 +21,7 @@ import { myotharCenterPOIs, type MyotharCenterPOI } from '../../../../data/wards
  * ၈။ သိန်းထိုက်စံ ကုန်မာနှင့် အိမ်ဆောက်အရောင်းဆိုင် ဆိုင်ခွဲ (၂)
  * ၉။ နှင်းသဇင် - ကလေး ကုမ္ပဏီ လီမိတက်
  * ၁၀။ ရဲတံခွန် အရောင်းဆိုင်
+ * ၁၁။ ဆန်စက် (Rice Mill Complex & Chimney)
  */
 export const MyotharCenterLandmarks = memo(function MyotharCenterLandmarks() {
   // POI Lookups
@@ -29,6 +36,7 @@ export const MyotharCenterLandmarks = memo(function MyotharCenterLandmarks() {
   const companyLtd = myotharCenterPOIs.find((p: MyotharCenterPOI) => p.name.includes('နှင်းသဇင်'))!;
   const yeDagun = myotharCenterPOIs.find((p: MyotharCenterPOI) => p.name.includes('ရဲတံခွန်'))!;
   const zambuHein = myotharCenterPOIs.find((p: MyotharCenterPOI) => p.name.includes('ဇမ္ဗူဟိန်း'));
+  const riceMillBuilding = myotharCenterBuildings.find((b: MyotharCenterBuildingData) => b.id === 'way/403027697');
 
   return (
     <group name="myothar-center-landmarks">
@@ -350,6 +358,13 @@ export const MyotharCenterLandmarks = memo(function MyotharCenterLandmarks() {
           <Box x={0} y={1.6} z={4.55} w={8} h={2.2} d={0.1} color="#74c0fc" />
           <Box x={0} y={3.8} z={4.6} w={6.5} h={1.0} d={0.15} color="#d6336c" />
         </group>
+      )}
+
+      {/* ======================================================== */}
+      {/* ၁၁။ ဆန်စက် (Rice Mill Complex & Chimney) */}
+      {/* ======================================================== */}
+      {riceMillBuilding && (
+        <KanbaleRiceMill building={riceMillBuilding as any} />
       )}
     </group>
   );

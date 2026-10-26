@@ -143,5 +143,18 @@ export const myotharCenterPOIs: MyotharCenterPOI[] = [
     "x": -542.62,
     "z": -524.901,
     "buildingId": "way/403021243"
+  },
+  {
+    "id": "poi-myothar-center-rice-mill",
+    "name": "ဆန်စက်",
+    "kind": "industrial",
+    "lon": 94.06951,
+    "lat": 23.1648,
+    "u": 106.16,
+    "v": -327.95,
+    "x": -156.825,
+    "z": -306.959,
+    "buildingId": "way/403027697"
   }
 ];
+

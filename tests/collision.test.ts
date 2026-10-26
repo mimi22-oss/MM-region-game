@@ -786,7 +786,7 @@ test('Kanbale village is integrated with real OSM data, boundary, custom farmhou
   // 1. Metadata & Entity Counts
   assert.equal(kanbaleVillage.id, 'kanbale');
   assert.equal(kanbaleVillage.name, 'ကံပုလဲရွာ');
-  assert.equal(kanbaleBuildings.length, 680, 'Exactly 680 OSM buildings inside boundary');
+  assert.equal(kanbaleBuildings.length, 669, '669 OSM buildings inside boundary (11 buildings moved to Myothar Center)');
   assert.equal(kanbaleRoads.length, 46, 'Exactly 46 OSM road paths inside boundary');
 
   // 2. Custom Building Override for target house way/403027623
@@ -812,6 +812,20 @@ test('Kanbale village is integrated with real OSM data, boundary, custom farmhou
   assert.equal(loc.id, 'kanbale');
   assert.equal(loc.label, 'ကံပုလဲရွာ');
   assert.equal(loc.subArea, 'ကံပုလဲ စံပြစိုက်ခင်းအိမ် (Kanbale Farmhouse)');
+
+  // 6. Kanbale School (ကံပုလဲကျောင်း way/403030614) Custom Override & Collision
+  assert.equal(KANBALE_CUSTOM_BUILDINGS['way/403030614'], 'KanbaleSchool');
+  const school = kanbaleBuildings.find(b => b.id === 'way/403030614');
+  assert.ok(school, 'Kanbale School way/403030614 exists in buildings list');
+  assert.equal(school?.name, 'ကံပုလဲကျောင်း');
+
+  // Main classroom hall blocks collision
+  assert.equal(canStand(school!.x, school!.z), false, 'Main classroom hall blocks collision');
+
+  // School location detection
+  const schoolLoc = detectLocation(433.02, -563.76);
+  assert.equal(schoolLoc.id, 'kanbale-school');
+  assert.equal(schoolLoc.title, 'ကံပုလဲကျောင်း · ကံပုလဲရွာ');
 });
 
 test('Nat Myaung village is integrated between Kyar Inn and Weipula with boundary, roads, landmarks and detection', async () => {

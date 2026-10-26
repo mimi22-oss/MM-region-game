@@ -52,12 +52,23 @@ export const MAP_DESTINATIONS: MapDestination[] = [
     distance: 14,
   },
   {
+    id: "kanbale-school",
+    label: "ကံပုလဲကျောင်း",
+    title: "ကံပုလဲကျောင်း · ကံပုလဲရွာ",
+    subtitle: "ကံပုလဲ အခြေခံပညာကျောင်းနှင့် ဘောလုံးကွင်း · ကံပုလဲရွာ · ကလေးမြို့နယ်",
+    x: 433.02,
+    z: -563.76,
+    yaw: 2.42,
+    pitch: -0.16,
+    distance: 14,
+  },
+  {
     id: "kanbale-rice-mill",
     label: "ဆန်စက်",
-    title: "ဆန်စက် · ကံပုလဲရွာ",
-    subtitle: "ဆန်စက်နှင့် စပါးသိုလှောင်ရုံဝင်း · ကံပုလဲရွာတွင်း ရပ်ကွက် · ကလေးမြို့နယ်",
-    x: 2.491,
-    z: -370.784,
+    title: "ဆန်စက် · မြို့သာရပ်ကွက်",
+    subtitle: "ဆန်စက်နှင့် စပါးသိုလှောင်ရုံဝင်း · မြို့သာ အလယ်ခေါင် · ကလေးမြို့နယ်",
+    x: -170.0,
+    z: -307.0,
     yaw: -0.735,
     pitch: -0.15,
     distance: 12,
@@ -352,17 +363,17 @@ export function detectLocation(x: number, z: number): DetectedLocation {
 
   // ၀။ ကံပုလဲရွာ (Kanbale Village) — မြို့သာရပ်ကွက် နယ်မြေ (၅) အရှေ့တောင်ဘက်
   if (isPointInsideKanbale(x, z) || (u >= 170 && u <= 2150 && v >= -252 && v <= 630)) {
-    const isFarmhouse = Math.hypot(x - 458.67, z - (-464.24)) < 30;
-    const isRiceMill = Math.hypot(x - 15.75, z - (-367.77)) < 32 || Math.hypot(x - 2.491, z - (-370.784)) < 25;
-    if (isRiceMill) {
+    const isSchool = Math.hypot(x - 433.02, z - (-563.76)) < 35;
+    if (isSchool) {
       return {
-        id: "kanbale-rice-mill",
-        label: "ဆန်စက်",
-        title: "ဆန်စက် · ကံပုလဲရွာ",
-        subtitle: "ဆန်စက်နှင့် စပါးသိုလှောင်ရုံဝင်း · ကံပုလဲရွာတွင်း ရပ်ကွက် · ကလေးမြို့နယ်",
-        subArea: "ဆန်စက် (ကံပုလဲ)",
+        id: "kanbale-school",
+        label: "ကံပုလဲကျောင်း",
+        title: "ကံပုလဲကျောင်း · ကံပုလဲရွာ",
+        subtitle: "ကံပုလဲ အခြေခံပညာကျောင်းနှင့် ဘောလုံးကွင်း · ကံပုလဲရွာ · ကလေးမြို့နယ်",
+        subArea: "ကံပုလဲ အခြေခံပညာကျောင်းနှင့် ဘောလုံးကွင်း",
       };
     }
+    const isFarmhouse = Math.hypot(x - 458.67, z - (-464.24)) < 30;
     return {
       id: "kanbale",
       label: "ကံပုလဲရွာ",
@@ -388,6 +399,7 @@ export function detectLocation(x: number, z: number): DetectedLocation {
 
     // အထင်ကရနေရာများ အနီးသို့ ရောက်ရှိမှု စစ်ဆေးခြင်း (အနီးဆုံး အထင်ကရနေရာကို ဦးစားပေး တွက်ချက်ခြင်း)
     const landmarks = [
+      { id: "kanbale-rice-mill", u: 106.16, v: -327.95, r: 35, subArea: "ဆန်စက်နှင့် စပါးသိုလှောင်ရုံဝင်း", title: "ဆန်စက် · မြို့သာရပ်ကွက်", subtitle: "ဆန်စက်နှင့် စပါးသိုလှောင်ရုံဝင်း · မြို့သာ အလယ်ခေါင် · ကလေးမြို့" },
       { id: "myothar-monastery", u: 368.1, v: -905.1, r: 35, subArea: "မြို့သာကျောင်းတိုက် (ဘုန်းတော်ကြီးကျောင်း)", title: "မြို့သာကျောင်းတိုက် · မြို့သာရပ်ကွက်", subtitle: "မြို့သာကျောင်းတိုက် · မြို့သာရပ်ကွက် အလယ်ခေါင် · ကလေးမြို့" },
       { id: "ppk-petrol", u: -14.3, v: -902.9, r: 25, subArea: "Pyae Phyo Kyaw (PPK) စက်သုံးဆီဆိုင်", title: "PPK Petrol Station · မြို့သာရပ်ကွက်", subtitle: "Pyae Phyo Kyaw (PPK) စက်သုံးဆီအရောင်းဆိုင် · AH1 အာရှလမ်းမကြီးဘေး · ကလေးမြို့" },
       { id: "ko-lwin-oo", u: 67.5, v: -801.2, r: 25, subArea: "ကိုလွင်ဦး (ကားလုပ်ငန်းနှင့် ဝပ်ရှော့)", title: "ကိုလွင်ဦး (ကားလုပ်ငန်း) · မြို့သာရပ်ကွက်", subtitle: "ကိုလွင်ဦး ကားပြင်လုပ်ငန်းနှင့် ဝပ်ရှော့ရုံ · မြို့သာ အလယ်ခေါင် · ကလေးမြို့" },

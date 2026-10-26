@@ -1,10 +1,10 @@
-import { area5 } from './src/data/wards/myothar/area5.ts';
-import { kanbaleBuildings, kanbaleHouses } from './src/data/villages/kanbale/kanbaleBuildings.ts';
-import { kanbaleVillage } from './src/data/villages/kanbale/index.ts';
-import { myotharCenterBuildings } from './src/data/wards/myothar/center/myotharCenterBuildings.ts';
-import { myotharCenterPOIs } from './src/data/wards/myothar/center/myotharCenterPOIs.ts';
-import { MAP_DESTINATIONS } from './src/game/locationDetect.ts';
-import { insideSelection } from './src/game/mapSelection.ts';
+import { area5 } from '../src/data/wards/myothar/area5.ts';
+import { kanbaleBuildings, kanbaleHouses } from '../src/data/villages/kanbale/kanbaleBuildings.ts';
+import { kanbaleVillage } from '../src/data/villages/kanbale/index.ts';
+import { myotharCenterBuildings } from '../src/data/wards/myothar/center/myotharCenterBuildings.ts';
+import { myotharCenterPOIs } from '../src/data/wards/myothar/center/myotharCenterPOIs.ts';
+import { MAP_DESTINATIONS } from '../src/game/locationDetect.ts';
+import { insideSelection } from '../src/game/mapSelection.ts';
 
 const sourceBoundary = [
   [-71.09459304312583, -428.8307778507101],

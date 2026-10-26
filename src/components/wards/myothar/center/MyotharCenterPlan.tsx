@@ -3,6 +3,7 @@ import {
   myotharCenterBuildings,
   myotharCenterRoads,
   myotharCenterPOIs,
+  myotharCenterTrees,
   type MyotharCenterBuildingData,
   type MyotharCenterRoad,
   type MyotharCenterPOI,
@@ -144,6 +145,22 @@ export const MyotharCenterPlan = memo(function MyotharCenterPlan({
         })}
       </g>
 
+      {/* ၂.၅။ သစ်ပင်များ (Moved Compound Trees) */}
+      <g id="mc-trees">
+        {myotharCenterTrees.map((t) => (
+          <circle
+            key={t.id}
+            cx={t.x}
+            cy={t.z}
+            r={2.5}
+            fill="#22c55e"
+            stroke="#15803d"
+            strokeWidth={0.5}
+            opacity={0.8}
+          />
+        ))}
+      </g>
+
       {/* ၃။ အထင်ကရနေရာများ အညွှန်းနှင့် အမှတ်အသားများ (Landmark Pins & Labels) */}
       <g id="mc-landmarks">
         {myotharCenterPOIs.map((poi: MyotharCenterPOI) => (
@@ -163,7 +180,7 @@ export const MyotharCenterPlan = memo(function MyotharCenterPlan({
             {/* Pin Badge Circle */}
             <circle
               r={7}
-              fill={poi.kind === 'place_of_worship' ? '#d97706' : '#2563eb'}
+              fill={poi.kind === 'place_of_worship' ? '#d97706' : poi.kind === 'industrial' ? '#0284c7' : '#2563eb'}
               stroke="#ffffff"
               strokeWidth={1.5}
             />
