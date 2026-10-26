@@ -98,12 +98,11 @@ export function FireBalloonSky({
   maxNearLOD = 8,
   maxMidLOD = 120,
 }: FireBalloonSkyProps) {
-  if (!active) return null;
-
   const totalBalloons = count ?? balloonsPerVillage * VILLAGE_LAUNCH_HUBS.length;
 
   return (
     <FireBalloonSkyScene
+      active={active}
       totalCount={totalBalloons}
       ceiling={ceiling}
       minAltitude={minAltitude}
@@ -114,12 +113,14 @@ export function FireBalloonSky({
 }
 
 function FireBalloonSkyScene({
+  active = true,
   totalCount,
   ceiling,
   minAltitude,
   maxNearLOD,
   maxMidLOD,
 }: {
+  active?: boolean;
   totalCount: number;
   ceiling: number;
   minAltitude: number;
@@ -300,6 +301,43 @@ function FireBalloonSkyScene({
 
   // 4. Main Simulation & 3-Tier LOD Loop (60 FPS in useFrame)
   useFrame(({ clock, camera }, delta) => {
+    if (!active) {
+      if (heroLightRef.current && heroLightRef.current.intensity > 0) heroLightRef.current.intensity = 0;
+      if (farMeshRef.current && farMeshRef.current.count > 0) {
+        farMeshRef.current.count = 0;
+        farMeshRef.current.instanceMatrix.needsUpdate = true;
+      }
+      if (midEnvelopeRef.current && midEnvelopeRef.current.count > 0) {
+        midEnvelopeRef.current.count = 0;
+        midEnvelopeRef.current.instanceMatrix.needsUpdate = true;
+      }
+      if (midPlatformRef.current && midPlatformRef.current.count > 0) {
+        midPlatformRef.current.count = 0;
+        midPlatformRef.current.instanceMatrix.needsUpdate = true;
+      }
+      if (midCupRef.current && midCupRef.current.count > 0) {
+        midCupRef.current.count = 0;
+        midCupRef.current.instanceMatrix.needsUpdate = true;
+      }
+      if (midPoolRef.current && midPoolRef.current.count > 0) {
+        midPoolRef.current.count = 0;
+        midPoolRef.current.instanceMatrix.needsUpdate = true;
+      }
+      if (flameRef.current && flameRef.current.count > 0) {
+        flameRef.current.count = 0;
+        flameRef.current.instanceMatrix.needsUpdate = true;
+      }
+      if (glowRef.current && glowRef.current.count > 0) {
+        glowRef.current.count = 0;
+        glowRef.current.instanceMatrix.needsUpdate = true;
+      }
+      for (let i = 0; i < maxNearLOD; i++) {
+        const group = nearRefs.current[i];
+        if (group && group.visible) group.visible = false;
+      }
+      return;
+    }
+
     const dt = Math.min(delta, 0.1);
     const t = clock.elapsedTime;
 
@@ -491,7 +529,7 @@ function FireBalloonSkyScene({
   });
 
   return (
-    <group name="fire-balloon-sky" raycast={() => null}>
+    <group name="fire-balloon-sky" visible={active} raycast={() => null}>
       {/* 1. Single Shared Soft Warm Light for Nearest Hero Balloon (< 32m) */}
       <pointLight
         ref={heroLightRef}

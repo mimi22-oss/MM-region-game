@@ -1,8 +1,8 @@
 import {LifeMeter} from './LifeMeter';
-import { useState, useEffect, type PointerEvent } from 'react';
+import { useState, useEffect, memo, type PointerEvent } from 'react';
 import { setRideAccelerate, setRideBrake, type RideStatus } from '../game/motorcycleRide';
 
-export function RideControls({
+export const RideControls = memo(function RideControls({
 	status,
 	limit,
 	onLimit,
@@ -230,4 +230,4 @@ export function RideControls({
 				)}
 		</section>
 	);
-}
+});

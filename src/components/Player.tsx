@@ -21,7 +21,8 @@ import { avatarHeading } from '../game/avatarHeading';
 import { RobotCharacter } from './RobotCharacter';
 import { CartoonCharacter } from './CartoonCharacter';
 import type { CharacterKind } from './CharacterPicker';
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, memo, type RefObject } from 'react';
+const balloonFloorCache = new Map<string, number>();
 import type { MobileInput } from '../game/mobileInput';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Group, Vector3, Raycaster, Object3D, Euler } from 'three';
@@ -41,7 +42,7 @@ export type TeleportTarget = {
  seq:number;
 };
 
-export function Player({
+export const Player = memo(function Player({
  character='robot',
  speedLimit=20,braking=false,accelerating=false,controlsBlocked=false,loading=false,dismountRequest=0,onRideStatus,
  onCarStatus,
@@ -458,7 +459,8 @@ export function Player({
    let flightRight=Number(s.keys.has('KeyD')||s.keys.has('ArrowRight'))-Number(s.keys.has('KeyA')||s.keys.has('ArrowLeft'));
    if(touch?.active){flightRight=touch.right;lift+=touch.forward;}
    const landClear=(x:number,z:number)=>canStand(x,z)&&!hitsTraffic(x,z,0,height(x,z),true);
-   const floorCache=new Map<string,number>();
+   balloonFloorCache.clear();
+   const floorCache=balloonFloorCache;
    const flightFloor=(x:number,z:number)=>{
     const key=x+','+z,cached=floorCache.get(key);if(cached!==undefined)return cached;
     const floor=balloonFlightFloor(x,z,height,landClear,(ax,az)=>canStand(ax,az,0,true));
@@ -628,4 +630,4 @@ export function Player({
  },-1);
  return <><PassengerBalloon/><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar">{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter appearance={appearance.human} motion={characterMotion} riding/></group></>:character==='cartoon'?<CartoonCharacter appearance={appearance.human} motion={characterMotion}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
 
-}
+});

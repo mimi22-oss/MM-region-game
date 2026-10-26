@@ -1,4 +1,5 @@
 import { mobileQuality } from '../game/sceneBudget';
+import { StaticBatch } from './StaticBatch';
 import { useEffect, useMemo, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Group } from 'three';
@@ -89,22 +90,22 @@ function MountainPine({ x, y, z, scale = 1, i = 0 }: { x: number; y: number; z: 
 	return (
 		<group position={[x, y, z]} scale={[scale, scale, scale]}>
 			{/* ပင်စည် (Pine Trunk) */}
-			<mesh position={[0, 4.5, 0]} castShadow>
+			<mesh position={[0, 4.5, 0]}>
 				<cylinderGeometry args={[0.22, 0.45, 9, 7]} />
 				<meshStandardMaterial color="#634832" roughness={0.9} />
 			</mesh>
 			{/* အောက်ဆင့် ထင်းရှူးရွက်အုံ (Bottom Cone Layer) */}
-			<mesh position={[0, 6.8, 0]} castShadow>
+			<mesh position={[0, 6.8, 0]}>
 				<coneGeometry args={[3.2, 5.0, mobileQuality ? 5 : 7]} />
 				<meshStandardMaterial color={col} roughness={0.85} />
 			</mesh>
 			{/* အလယ်ဆင့် ထင်းရှူးရွက်အုံ (Middle Cone Layer) */}
-			<mesh position={[0, 9.6, 0]} castShadow>
+			<mesh position={[0, 9.6, 0]}>
 				<coneGeometry args={[2.4, 4.4, mobileQuality ? 5 : 7]} />
 				<meshStandardMaterial color={foliageColors[(i + 1) % foliageColors.length]} roughness={0.85} />
 			</mesh>
 			{/* ထိပ်ဖူး ထင်းရှူးရွက်အုံ (Top Peak Cone Layer) */}
-			<mesh position={[0, 12.2, 0]} castShadow>
+			<mesh position={[0, 12.2, 0]}>
 				<coneGeometry args={[1.5, 3.8, mobileQuality ? 5 : 7]} />
 				<meshStandardMaterial color="#3a6747" roughness={0.8} />
 			</mesh>
@@ -118,15 +119,15 @@ function MountainPine({ x, y, z, scale = 1, i = 0 }: { x: number; y: number; z: 
 function MountainBroadTree({ x, y, z, scale = 1, i = 0 }: { x: number; y: number; z: number; scale?: number; i?: number }) {
 	return (
 		<group position={[x, y, z]} scale={[scale, scale, scale]}>
-			<mesh position={[0, 3.8, 0]} castShadow>
+			<mesh position={[0, 3.8, 0]}>
 				<cylinderGeometry args={[0.3, 0.55, 7.6, 7]} />
 				<meshStandardMaterial color="#5a422e" roughness={0.9} />
 			</mesh>
-			<mesh position={[0, 8.2, 0]} castShadow>
+			<mesh position={[0, 8.2, 0]}>
 				<icosahedronGeometry args={[3.8, mobileQuality ? 0 : 1]} />
 				<meshStandardMaterial color={i % 2 ? '#447248' : '#3a623e'} roughness={0.85} />
 			</mesh>
-			<mesh position={[1.4, 7.5, -0.8]} castShadow>
+			<mesh position={[1.4, 7.5, -0.8]}>
 				<icosahedronGeometry args={[2.5, 0]} />
 				<meshStandardMaterial color="#517e4e" roughness={0.85} />
 			</mesh>
@@ -1304,17 +1305,17 @@ export function Mountains() {
 				</group>
 			</group>
 
-			{/* ၅။ တောင်ပေါ်ပေါက် သစ်ပင်များ (Highland Mountain Trees across Plateau & Slopes) */}
-			{mountainTrees.map((tree, i) =>
-				tree.kind === 'pine' ? (
-					<MountainPine key={tree.id} x={tree.x} y={tree.y} z={tree.z} scale={tree.scale} i={i} />
-				) : (
-					<MountainBroadTree key={tree.id} x={tree.x} y={tree.y} z={tree.z} scale={tree.scale} i={i} />
-				)
-			)}
-
-			{/* ၆။ ဝေပုလ္လ လှေကားထစ်ရွာ (Weipula Terraced Mountain Village) */}
-			<WeipulaVillage />
+			{/* ၅။ တောင်ပေါ်ပေါက် သစ်ပင်များနှင့် ရွာ (Static Batched Highland Trees & Terraced Mountain Village) */}
+			<StaticBatch>
+				{mountainTrees.map((tree, i) =>
+					tree.kind === 'pine' ? (
+						<MountainPine key={tree.id} x={tree.x} y={tree.y} z={tree.z} scale={tree.scale} i={i} />
+					) : (
+						<MountainBroadTree key={tree.id} x={tree.x} y={tree.y} z={tree.z} scale={tree.scale} i={i} />
+					)
+				)}
+				<WeipulaVillage />
+			</StaticBatch>
 		</group>
 	);
 }

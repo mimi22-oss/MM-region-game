@@ -1,3 +1,5 @@
+import {EnvironmentSettings,useEnvironmentTime} from './components/EnvironmentSettings';
+import {EnvironmentAudio} from './components/EnvironmentAudio';
 import {BalloonControls} from './components/BalloonControls';
 import {emptyBalloonStatus,clearBalloonInput,type BalloonStatus} from './game/balloonRide';
 import {LifeMeter} from './components/LifeMeter';
@@ -138,20 +140,38 @@ function App() {
   const [pos, setPos] = useState(ward.spawn);
   const [robotYaw, setRobotYaw] = useState(ward.spawnYaw);
   const [viewPos, setViewPos] = useState(ward.spawn);
+  const robotYawRef = useRef(ward.spawnYaw);
+  const posRef = useRef(ward.spawn);
+  const viewPosRef = useRef(ward.spawn);
+  const settingsOpenRef = useRef(false);
+  const mapOpenRef = useRef(false);
+  const [mapOpen, setMapOpen] = useState(false);
+  mapOpenRef.current = mapOpen;
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  settingsOpenRef.current = settingsOpen;
   const viewPosition = useCallback(
-    (x: number, z: number) =>
-      setViewPos((p) => (p.x === x && p.z === z ? p : { x, z })),
+    (x: number, z: number) => {
+      viewPosRef.current.x = x;
+      viewPosRef.current.z = z;
+      setViewPos((p) => {
+        const dx = p.x - x;
+        const dz = p.z - z;
+        if (dx * dx + dz * dz > 1.44) {
+          return { x, z };
+        }
+        return p;
+      });
+    },
     [],
   );
-  const [mapOpen, setMapOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectionOpen, setSelectionOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [sceneActive, setSceneActive] = useState(false);
   const [topDown, setTopDown] = useState(false);
   const [zoom, setZoom] = useState(ward.spawnZoom);
-  const [night, setNight] = useState(false);
+  const environment=useEnvironmentTime();
+  const night=environment.period==='night'||environment.period==='evening';
   const [navigationRequest, setNavigationRequest] = useState<{
     action: "locate" | "teleport";
     seq: number;
@@ -286,18 +306,31 @@ function App() {
         setTeleportPin(null);
         setTeleportScreenPos(null);
       }
-      if (e.code === "KeyN" && !e.repeat) {
-        setNight((v) => !v);
+      if (e.code === "KeyN" && !e.repeat && !(e.target instanceof HTMLElement && e.target.closest('input,select,textarea,[contenteditable="true"]'))) {
+        environment.cycle();
       }
     };
     document.addEventListener("keydown", close);
     return () => document.removeEventListener("keydown", close);
-  }, [loading, selectionOpen]);
+  }, [loading, selectionOpen,environment.cycle]);
   const position = useCallback((x: number, z: number, yaw?: number) => {
-    setPos((previous) =>
-      previous.x === x && previous.z === z ? previous : { x, z },
-    );
-    if (yaw !== undefined) setRobotYaw(yaw);
+    posRef.current.x = x;
+    posRef.current.z = z;
+    if (yaw !== undefined) {
+      robotYawRef.current = yaw;
+      if (settingsOpenRef.current) setRobotYaw(yaw);
+    }
+    setPos((previous) => {
+      if (settingsOpenRef.current || mapOpenRef.current) {
+        return previous.x === x && previous.z === z ? previous : { x, z };
+      }
+      const dx = previous.x - x;
+      const dz = previous.z - z;
+      if (dx * dx + dz * dz > 1.44) {
+        return { x, z };
+      }
+      return previous;
+    });
   }, []);
   const handleLock = useCallback((isLocked: boolean) => {
     setLocked(isLocked);
@@ -328,7 +361,8 @@ function App() {
   };
   const hideHud = locked || sceneActive;
   return (
-    <main className={night ? "night-mode" : ""}>
+    <main className={night ? "night-mode" : ""} data-time-period={environment.period}>
+      <EnvironmentAudio period={environment.period} volume={environment.preferences.volume} enabled={environment.preferences.sound} active={visible&&!loading}/>
       <div className="game-content" inert={loading}>
       <div
         className="scene-wrap"
@@ -352,7 +386,7 @@ function App() {
             dpr={mobileQuality ? 1 : [1, 1.25]}
           >
             <FrameBudget />
-            <Town night={night} destination={teleportTarget} paused={loading} onLoadingChange={setSceneLoading} onSceneError={sceneError} />
+            <Town minute={environment.minute} destination={teleportTarget} paused={loading} onLoadingChange={setSceneLoading} onSceneError={sceneError} />
             <TeleportPicker
               active={teleportMode}
               pin={teleportPin}
@@ -513,7 +547,14 @@ function App() {
           title="အသုံးပြုနည်း လမ်းညွှန်နှင့် ဆက်တင်"
           onClick={() => {
             if (document.pointerLockElement) document.exitPointerLock();
-            setSettingsOpen((v) => !v);
+            setSettingsOpen((v) => {
+              const next = !v;
+              if (next) {
+                setRobotYaw(robotYawRef.current);
+                setPos({ x: posRef.current.x, z: posRef.current.z });
+              }
+              return next;
+            });
           }}
         >
           ⚙
@@ -549,39 +590,7 @@ function App() {
                   </b>
                 </div>
               </div>
-              <div
-                className="time-controls"
-                aria-label="နေ့ခင်းနှင့် ညချမ်း အလင်းရောင် ထိန်းချုပ်မှုများ"
-              >
-                <div className="time-header">
-                  <span className="time-title">
-                    အချိန်ကာလ ရွေးချယ်မှု
-                  </span>
-                  <span className="time-status-pill">
-                    {night ? "🌙 ညချမ်း" : "☀️ နေ့ခင်း"}
-                  </span>
-                </div>
-                <div className="time-btn-row">
-                  <button
-                    type="button"
-                    className={!night ? "time-btn time-btn-active" : "time-btn"}
-                    onClick={() => setNight(false)}
-                    title="နေ့ခင်း အလင်းရောင်"
-                  >
-                    <span className="time-icon">☀️</span>
-                    <span>နေ့ခင်း</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={night ? "time-btn time-btn-active" : "time-btn"}
-                    onClick={() => setNight(true)}
-                    title="ညချမ်း လရောင်နှင့် မီးရောင်များ"
-                  >
-                    <span className="time-icon">🌙</span>
-                    <span>ညချမ်း</span>
-                  </button>
-                </div>
-              </div>
+              <EnvironmentSettings value={environment.preferences} onChange={environment.setPreferences} onChoose={environment.choose} now={environment.now} period={environment.period}/>
               <div className="cam-controls" aria-label="3D ကင်မရာ ထိန်းချုပ်မှုများ">
                 <button
                   type="button"
@@ -600,6 +609,7 @@ function App() {
                   onClick={() => {
                     if (document.pointerLockElement) document.exitPointerLock();
                     setSettingsOpen(false);
+                    setPos({ x: posRef.current.x, z: posRef.current.z });
                     setMapOpen(true);
                   }}
                 >
@@ -729,6 +739,7 @@ function App() {
           if (!mapOpen) {
             if (document.pointerLockElement) document.exitPointerLock();
             setSettingsOpen(false);
+            setPos({ x: posRef.current.x, z: posRef.current.z });
             setMapOpen(true);
           }
         }}
@@ -741,7 +752,11 @@ function App() {
             e.stopPropagation();
             if (document.pointerLockElement) document.exitPointerLock();
             setSettingsOpen(false);
-            setMapOpen((v) => !v);
+            setMapOpen((v) => {
+              const next = !v;
+              if (next) setPos({ x: posRef.current.x, z: posRef.current.z });
+              return next;
+            });
           }}
         >
           {mapOpen ? (

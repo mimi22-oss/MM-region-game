@@ -2,10 +2,19 @@ import {useMemo,useRef} from 'react';
 import {useFrame} from '@react-three/fiber';
 import {PointLight} from 'three';
 import {CANDLE_LIGHT_COLOR} from '../game/candleModel';
+
 /** Dynamic pool of lights distributing radiant illumination across nearby candles and surroundings. */
 export function FestivalLighting({night}:{night:boolean}){
  const lights=useMemo(()=>Array.from({length:8},()=>new PointLight(CANDLE_LIGHT_COLOR,0,16,1.5)),[]),elapsed=useRef(1),lit=useRef(0);
  useFrame(({scene,camera,clock},dt)=>{
+  const lamps = scene.userData.environmentLamps ?? (night ? 1 : 0);
+  if (!night && lamps < 0.05) {
+   if (lit.current > 0) {
+    lit.current = 0;
+    lights.forEach(light => { light.intensity = 0; });
+   }
+   return;
+  }
   elapsed.current+=dt;
   if(elapsed.current>.2){
    elapsed.current=0;
@@ -22,9 +31,8 @@ export function FestivalLighting({night}:{night:boolean}){
    for(const candidate of candidates){if(selected.every(s=>Math.hypot(s.p[0]-candidate.p[0],s.p[2]-candidate.p[2])>2.0))selected.push(candidate);if(selected.length===lights.length)break;}
    lit.current=selected.length;selected.forEach(({p},i)=>lights[i].position.set(p[0],p[1]+.15,p[2]));
   }
-  const baseIntensity=night?3.6:1.8;
+  const baseIntensity=1.8+1.8*lamps;
   lights.forEach((light,i)=>{light.intensity=i<lit.current?baseIntensity*(1+.08*Math.sin(clock.elapsedTime*7.5+i*2.3)):0;});
  });
  return <>{lights.map((light,i)=><primitive key={i} object={light}/>)}</>;
 }
-

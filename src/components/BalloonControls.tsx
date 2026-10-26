@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { balloonInput, clearBalloonInput, type BalloonStatus } from '../game/balloonRide';
 
-export function BalloonControls({
+export const BalloonControls = memo(function BalloonControls({
 	status,
 	paused,
 	onTopView,
@@ -39,7 +39,7 @@ export function BalloonControls({
 		e.stopPropagation();
 		try {
 			e.currentTarget.setPointerCapture(e.pointerId);
-		} catch {}
+		} catch { }
 		balloonInput.lift = lift;
 		setLiftActive(lift);
 	};
@@ -48,7 +48,7 @@ export function BalloonControls({
 		if (e) {
 			try {
 				e.currentTarget.releasePointerCapture(e.pointerId);
-			} catch {}
+			} catch { }
 		}
 		balloonInput.lift = 0;
 		setLiftActive(0);
@@ -90,11 +90,12 @@ export function BalloonControls({
 				</span>
 			</div>
 
-			{/* အတားအဆီး သတိပေးချက် Notice pill */}
+			{/* အတားအဆီး သတိပေးချက် Chat Ribbon (Character Head Chat Bubble) */}
 			{status.blocked && (
-				<div className="balloon-notice-pill" role="status">
-					<span className="balloon-notice-dot" />
-					<span>ရှေ့တွင် အတားအဆီးရှိသည် — အမြင့်တင်ပြီး ကျော်ပါ</span>
+				<div className="balloon-notice-pill balloon-chat-ribbon" role="status">
+					<span className="balloon-notice-dot" aria-hidden="true" />
+					<span className="balloon-chat-ribbon-badge">သတိပေးချက်</span>
+					<span className="balloon-chat-ribbon-text">ရှေ့တွင် အတားအဆီးရှိသည် — အမြင့်တင်ပြီး ကျော်ပါ</span>
 				</div>
 			)}
 
@@ -114,8 +115,8 @@ export function BalloonControls({
 					title="ဘောလုံးကွင်းဆီ ၂ဆအမြန်နှုန်းဖြင့် Auto Return (R)"
 				>
 					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-						<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-						<path d="M3 3v5h5"/>
+						<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+						<path d="M3 3v5h5" />
 					</svg>
 					<span className="balloon-orbit-tag">{status.autoReturn ? `${status.returnDist}m` : 'Auto Ret'}</span>
 				</button>
@@ -132,7 +133,7 @@ export function BalloonControls({
 					title="အပေါ်တက်ရန် ဖိထားပါ (↑)"
 				>
 					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-						<polyline points="18 15 12 9 6 15"/>
+						<polyline points="18 15 12 9 6 15" />
 					</svg>
 					<span className="balloon-orbit-tag">တက်</span>
 				</button>
@@ -149,13 +150,13 @@ export function BalloonControls({
 					title="အောက်ဆင်းရန် ဖိထားပါ (↓)"
 				>
 					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-						<polyline points="6 9 12 15 18 9"/>
+						<polyline points="6 9 12 15 18 9" />
 					</svg>
 					<span className="balloon-orbit-tag">ဆင်း</span>
 				</button>
 			</div>
 
-			{/* ၃။ မျက်နှာပြင် ညာဘက်အောက်ရှိ Orbital Cluster (Center: ဆင်းမည်, Orbit: View, Top, Zoom-In, Zoom-Out, Stop) */}
+			{/* ၃။ မျက်နှာပြင် ညာဘက်အောက်ရှိ Orbital Cluster (Center: ဆင်းမည်, Orbit: Zoom-Out, Zoom-In, Top, View, Stop) */}
 			<div className="balloon-right-ring-cluster" aria-label="Balloon ညာဘက်လက် Orbital Cluster">
 				{/* အလှဆင် Orbital Ring Track Arc */}
 				<div className="balloon-right-ring-track" aria-hidden="true" />
@@ -171,15 +172,55 @@ export function BalloonControls({
 					title={canExit ? "Balloon မှဆင်းမည် (E)" : "မြေပြင်ပေါ်သို့ ရောက်မှ ဆင်းနိုင်ပါမည်"}
 				>
 					<div className="balloon-orbit-inner">
-						<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-							<path d="M9 14L4 9l5-5"/>
-							<path d="M4 9h11a5 5 0 0 1 5 5v2"/>
+						<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+							<path d="M9 14L4 9l5-5" />
+							<path d="M4 9h11a5 5 0 0 1 5 5v2" />
 						</svg>
-						<span className="balloon-orbit-tag">ဆင်းမည်</span>
+						<span className="balloon-orbit-tag">ထွက်</span>
 					</div>
 				</button>
 
-				{/* အတွင်း/အပြင် မြင်ကွင်း (Cockpit/Exterior view toggle - 90°) */}
+				{/* + အဝေး (Zoom Out) */}
+				<button
+					type="button"
+					className="balloon-orbit-btn balloon-btn-zoom-out"
+					onClick={() => onZoom(1)}
+					aria-label="Zoom အဝေးကြည့်ရန် (+)"
+					title="Zoom အဝေး (+)"
+				>
+					<span style={{ fontSize: '15px', fontWeight: 'bold', lineHeight: 1 }}>+</span>
+					<span className="balloon-orbit-tag">အဝေး</span>
+				</button>
+
+				{/* − အနီး (Zoom In) */}
+				<button
+					type="button"
+					className="balloon-orbit-btn balloon-btn-zoom-in"
+					onClick={() => onZoom(-1)}
+					aria-label="Zoom အနီးကပ်ကြည့်ရန် (−)"
+					title="Zoom အနီးကပ် (−)"
+				>
+					<span style={{ fontSize: '15px', fontWeight: 'bold', lineHeight: 1 }}>−</span>
+					<span className="balloon-orbit-tag">အနီး</span>
+				</button>
+
+				{/* အပေါ်မှကြည့် (Top-down aerial view toggle) */}
+				<button
+					type="button"
+					className="balloon-orbit-btn balloon-btn-top"
+					onClick={onTopView}
+					aria-label="အပေါ်တည့်တည့်မှ ကြည့်ရန် (T)"
+					title="အပေါ်တည့်တည့် မြင်ကွင်း (T)"
+				>
+					<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+						<polygon points="12 2 2 7 12 12 22 7 12 2" />
+						<polyline points="2 17 12 22 22 17" />
+						<polyline points="2 12 12 17 22 12" />
+					</svg>
+					<span className="balloon-orbit-tag">အပေါ်</span>
+				</button>
+
+				{/* အတွင်း/အပြင် မြင်ကွင်း (Cockpit/Exterior view toggle) */}
 				<button
 					type="button"
 					className="balloon-orbit-btn balloon-btn-view"
@@ -189,72 +230,30 @@ export function BalloonControls({
 					aria-label="အတွင်း/အပြင် မြင်ကွင်း (V)"
 					title="အတွင်း/အပြင် မြင်ကွင်း ပြောင်းရန် (V)"
 				>
-					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-						<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-						<circle cx="12" cy="12" r="3"/>
+					<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+						<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+						<circle cx="12" cy="12" r="3" />
 					</svg>
 					<span className="balloon-orbit-tag">အတွင်း</span>
 				</button>
 
-				{/* အပေါ်မှကြည့် (Top-down aerial view toggle - 120°) */}
+				{/* ⏸ ရပ် (Hover / Pause cruise / Stop) */}
 				<button
 					type="button"
-					className="balloon-orbit-btn balloon-btn-top"
-					onClick={onTopView}
-					aria-label="အပေါ်တည့်တည့်မှ ကြည့်ရန် (T)"
-					title="အပေါ်တည့်တည့် မြင်ကွင်း (T)"
+					className={`balloon-orbit-btn balloon-btn-stop${status.autoCruise || status.autoReturn ? ' balloon-orbit-active' : ''}`}
+					onClick={() => {
+						balloonInput.stopCruise = true;
+					}}
+					aria-label="ခေတ္တရပ်မည် (Space)"
+					title="ခေတ္တရပ်မည် (Space)"
 				>
-					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-						<polygon points="12 2 2 7 12 12 22 7 12 2"/>
-						<polyline points="2 17 12 22 22 17"/>
-						<polyline points="2 12 12 17 22 12"/>
+					<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+						<rect x="6" y="5" width="4" height="14" rx="1" />
+						<rect x="14" y="5" width="4" height="14" rx="1" />
 					</svg>
-					<span className="balloon-orbit-tag">အပေါ်</span>
+					<span className="balloon-orbit-tag">ရပ်</span>
 				</button>
-
-				{/* − အနီး (Zoom In - 150°) */}
-				<button
-					type="button"
-					className="balloon-orbit-btn balloon-btn-zoom-in"
-					onClick={() => onZoom(-1)}
-					aria-label="Zoom အနီးကပ်ကြည့်ရန် (−)"
-					title="Zoom အနီးကပ် (−)"
-				>
-					<span style={{ fontSize: '16px', fontWeight: 'bold', lineHeight: 1 }}>−</span>
-					<span className="balloon-orbit-tag">အနီး</span>
-				</button>
-
-				{/* + အဝေး (Zoom Out - 180°) */}
-				<button
-					type="button"
-					className="balloon-orbit-btn balloon-btn-zoom-out"
-					onClick={() => onZoom(1)}
-					aria-label="Zoom အဝေးကြည့်ရန် (+)"
-					title="Zoom အဝေး (+)"
-				>
-					<span style={{ fontSize: '16px', fontWeight: 'bold', lineHeight: 1 }}>+</span>
-					<span className="balloon-orbit-tag">အဝေး</span>
-				</button>
-
-				{/* ⏸ ရပ် (Hover / Pause cruise) */}
-				{status.autoCruise && !status.autoReturn && (
-					<button
-						type="button"
-						className="balloon-orbit-btn balloon-btn-stop"
-						onClick={() => {
-							balloonInput.stopCruise = true;
-						}}
-						aria-label="ခေတ္တရပ်မည် (Space)"
-						title="ခေတ္တရပ်မည် (Space)"
-					>
-						<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-							<rect x="6" y="5" width="4" height="14" rx="1"/>
-							<rect x="14" y="5" width="4" height="14" rx="1"/>
-						</svg>
-						<span className="balloon-orbit-tag">ရပ်</span>
-					</button>
-				)}
 			</div>
 		</section>
 	);
-}
+});

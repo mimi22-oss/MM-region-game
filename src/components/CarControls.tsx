@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, type ReactNode } from 'react';
+import { useEffect, useState, useRef, memo, type ReactNode } from 'react';
 import { LifeMeter } from './LifeMeter';
 import { carInput, clearCarInput, gearLabel, shiftCar, selectAutomaticRange, MAX_STEERING, STEERING_RATIO, type CarGear, type CarStatus } from '../game/carRide';
 import { startCarSummon } from '../game/carSummon';
@@ -160,7 +160,7 @@ function Hold({
 	);
 }
 
-export function CarControls({ status }: { status: CarStatus }) {
+export const CarControls = memo(function CarControls({ status }: { status: CarStatus }) {
  const automatic=status.transmission==='automatic';
 	useEffect(() => {
 		const release = () => clearCarInput();
@@ -398,4 +398,4 @@ export function CarControls({ status }: { status: CarStatus }) {
 			)}
 		</section>
 	);
-}
+});

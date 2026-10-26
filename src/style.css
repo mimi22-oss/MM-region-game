@@ -1133,6 +1133,187 @@ main.night-mode .guide-list kbd {
 	color: #e6f0fa;
 }
 
+/* Settings Menu - Character Picker in Night Mode */
+main.night-mode .character-picker {
+	background: #111d2e;
+	border-color: #253c5a;
+	color: #dbe7f5;
+}
+
+main.night-mode .character-picker legend {
+	color: #eaf2fb;
+}
+
+main.night-mode .character-options button {
+	background: #162438;
+	border-color: #284163;
+	color: #dbe7f5;
+}
+
+main.night-mode .character-options button:hover {
+	background: #1e324c;
+	border-color: #395b8a;
+}
+
+main.night-mode .character-options button[aria-pressed="true"] {
+	border-color: #4b7bc2;
+	background: #253e68;
+	color: #ffffff;
+	box-shadow: 0 0 12px rgba(75, 123, 194, 0.4);
+}
+
+main.night-mode .character-options button:focus-visible {
+	outline-color: #5d93e0;
+}
+
+main.night-mode .character-options strong {
+	color: #eaf2fb;
+}
+
+main.night-mode .character-options small,
+main.night-mode .character-picker p {
+	color: #9ab4d0;
+}
+
+/* Settings Menu - Appearance Settings in Night Mode */
+main.night-mode .appearance-settings {
+	border-block-color: #20354e;
+	color: #dbe7f5;
+}
+
+main.night-mode .appearance-tabs button {
+	background: #14243a;
+	border-color: #294469;
+	color: #d8e6f5;
+}
+
+main.night-mode .appearance-tabs button:hover {
+	background: #1d3454;
+}
+
+main.night-mode .appearance-tabs button[aria-selected="true"] {
+	background: #3871b8;
+	color: #ffffff;
+	border-color: #3871b8;
+	box-shadow: 0 2px 10px rgba(56, 113, 184, 0.4);
+}
+
+main.night-mode .appearance-field {
+	color: #dbe7f5;
+}
+
+main.night-mode .appearance-field select {
+	background: #14243a;
+	border-color: #294469;
+	color: #d8e6f5;
+}
+
+main.night-mode .appearance-field select option {
+	background: #0f1c2e;
+	color: #d8e6f5;
+}
+
+main.night-mode .appearance-field input[type="color"] {
+	background: #14243a;
+	border-color: #294469;
+}
+
+main.night-mode .appearance-field input[type="range"] {
+	accent-color: #4b82c9;
+}
+
+main.night-mode .appearance-reset {
+	background: #182c46;
+	border-color: #2c4a73;
+	color: #cee0f5;
+}
+
+main.night-mode .appearance-reset:hover:not(:disabled) {
+	background: #223c5e;
+	color: #ffffff;
+}
+
+main.night-mode .appearance-settings p,
+main.night-mode .appearance-saved {
+	color: #9ab4d0;
+}
+
+/* Settings Menu - Robot Location & Map Selection Panels in Night Mode */
+main.night-mode .robot-location-panel {
+	background: #112033;
+	border-color: #233e60;
+	color: #dbe7f5;
+}
+
+main.night-mode .robot-location-panel strong {
+	color: #eaf2fb;
+}
+
+main.night-mode .robot-location-panel dt {
+	color: #9ab4d0;
+}
+
+main.night-mode .robot-location-panel dd {
+	color: #eaf2fb;
+}
+
+main.night-mode .robot-location-panel p,
+main.night-mode .robot-location-panel [role="status"] {
+	color: #9ab4d0;
+}
+
+main.night-mode .robot-location-toggle,
+main.night-mode .robot-copy {
+	background: #182c46;
+	border: 1px solid #2b4970;
+	color: #dbe7f5;
+}
+
+main.night-mode .robot-location-toggle:hover,
+main.night-mode .robot-copy:hover {
+	background: #223c5e;
+	color: #ffffff;
+}
+
+main.night-mode .robot-location-panel textarea {
+	background: #0c1827;
+	border-color: #243e60;
+	color: #dbe7f5;
+}
+
+/* Settings Menu - Environment Settings in Night Mode */
+main.night-mode .environment-clock {
+	color: #9ab4d0;
+}
+
+main.night-mode .environment-periods small {
+	color: #9ab4d0;
+}
+
+main.night-mode .environment-sound {
+	color: #dbe7f5;
+}
+
+main.night-mode .environment-sound input {
+	accent-color: #4b82c9;
+}
+
+main.night-mode .environment-volume {
+	color: #dbe7f5;
+}
+
+main.night-mode .environment-volume output {
+	color: #eaf2fb;
+}
+
+main.night-mode .environment-volume input {
+	accent-color: #4b82c9;
+}
+
+main.night-mode .environment-settings>small {
+	color: #9ab4d0;
+}
+
 main.night-mode .welcome {
 	background: rgba(11, 22, 39, 0.94);
 	border: 1.5px solid rgba(59, 130, 246, 0.35);
@@ -4551,12 +4732,12 @@ main.night-mode .guide-btn-secondary:hover {
 }
 
 main.night-mode .appearance-settings {
-	color: #e3eadb
+	color: #dbe7f5;
 }
 
 main.night-mode .appearance-settings p,
 main.night-mode .appearance-saved {
-	color: #bbcbbc
+	color: #9ab4d0;
 }
 
 .player-life {
@@ -4777,31 +4958,88 @@ body:has(.balloon-controls-layer) .player-life {
 /* Notice pill when blocked */
 .balloon-notice-pill {
 	position: absolute;
-	bottom: max(130px, calc(env(safe-area-inset-bottom) + 120px));
+	bottom: calc(50% + 55px);
 	left: 50%;
 	transform: translateX(-50%);
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
+	font-weight: 600;
+	white-space: nowrap;
 	padding: 6px 14px;
-	border-radius: 999px;
-	background: rgba(185, 28, 28, 0.9);
-	border: 1px solid rgba(254, 202, 202, 0.5);
-	color: #fee2e2;
+	border-radius: 12px;
+	background: linear-gradient(135deg, rgba(225, 29, 72, 0.95), rgba(159, 18, 57, 0.95));
+	border: 1.5px solid rgba(254, 205, 211, 0.85);
+	color: #ffffff;
 	font-size: 12px;
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(244, 63, 94, 0.4);
 	backdrop-filter: blur(8px);
 	z-index: 36;
 	pointer-events: none;
-	animation: toastIn 0.2s ease-out;
+	animation: balloonChatFloat 2.4s ease-in-out infinite, balloonNoticeIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .balloon-notice-dot {
 	width: 6px;
 	height: 6px;
 	border-radius: 50%;
-	background: #f87171;
+	background: #fef08a;
+	box-shadow: 0 0 8px #fef08a;
 	animation: pulse 1s infinite alternate;
+}
+
+/* Chat Speech Bubble Pointer Tail pointing directly to Character Head */
+.balloon-notice-pill::after {
+	content: '';
+	position: absolute;
+	bottom: -7px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 0;
+	height: 0;
+	border-left: 7px solid transparent;
+	border-right: 7px solid transparent;
+	border-top: 7px solid rgba(159, 18, 57, 0.95);
+	filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+}
+
+.balloon-chat-ribbon-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 7px;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.22);
+	border: 1px solid rgba(255, 255, 255, 0.4);
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.4px;
+	color: #ffe4e6;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.balloon-chat-ribbon-text {
+	letter-spacing: 0.2px;
+	text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes balloonChatFloat {
+	0%, 100% {
+		transform: translate(-50%, 0);
+	}
+	50% {
+		transform: translate(-50%, -5px);
+	}
+}
+
+@keyframes balloonNoticeIn {
+	from {
+		opacity: 0;
+		transform: translate(-50%, 8px) scale(0.92);
+	}
+	to {
+		opacity: 1;
+		transform: translate(-50%, 0) scale(1);
+	}
 }
 
 /* 2. Bottom-Right Curved Balloon Controls Arc */
@@ -4915,25 +5153,25 @@ body:has(.balloon-controls-layer) .player-life {
 /* Orbital ring guide track arc around balloon-return-btn */
 .balloon-right-ring-track {
 	position: absolute;
-	right: -50px;
-	bottom: -50px;
-	width: 164px;
-	height: 164px;
+	right: -20px;
+	bottom: -20px;
+	width: 128px;
+	height: 128px;
 	border-radius: 50%;
 	border: 1.5px dashed rgba(255, 255, 255, 0.22);
 	pointer-events: none;
-	clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+	clip-path: polygon(0 0, 100% 0, 100% 82%, 18% 100%, 0 100%);
 }
 
 /* Exit Button in center of Right Cluster (Balloon မှဆင်းမည်) */
 .balloon-return-btn {
 	position: absolute;
-	right: 6px;
-	bottom: 6px;
+	right: 19px;
+	bottom: 19px;
 	left: auto;
 	top: auto;
-	width: 52px;
-	height: 52px;
+	width: 50px;
+	height: 50px;
 	background: radial-gradient(circle at 35% 32%, rgb(225 29 72 / 0%) 0%, rgb(159 18 57 / 2%) 70%, rgb(136 19 55 / 38%) 100%);
 	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 0 14px rgba(244, 63, 94, 0.45);
 }
@@ -4947,20 +5185,6 @@ body:has(.balloon-controls-layer) .player-life {
 	opacity: 0.45;
 	filter: grayscale(0.5);
 	cursor: not-allowed;
-}
-
-/* ⏸ Stop / Hover Button */
-.balloon-btn-stop {
-	position: absolute;
-	right: 144px;
-	bottom: 10px;
-	left: auto;
-	top: auto;
-	width: 44px;
-	height: 44px;
-	background: radial-gradient(circle at 35% 32%, rgba(239, 68, 68, 0.85) 0%, rgba(185, 28, 28, 0.95) 100%);
-	border: 1.5px solid rgba(254, 202, 202, 0.7);
-	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 /* Lift Up Pedal (↑ တက်) on Joystick Ring (60° Top-Right) */
@@ -5012,56 +5236,70 @@ body:has(.balloon-controls-layer) .player-life {
 	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
-/* View Inside/Outside on Orbit (90° Top) */
-.balloon-btn-view {
+/* Orbit Satellite 1: Zoom Out on Orbit (115°) */
+.balloon-btn-zoom-out {
 	position: absolute;
-	right: 12px;
-	bottom: 94px;
+	right: 0px;
+	bottom: 85px;
 	left: auto;
 	top: auto;
-	width: 40px;
-	height: 40px;
-	background: radial-gradient(circle at 35% 32%, rgb(30 58 138 / 6%) 0%, rgb(30 64 175 / 40%) 70%, rgba(23, 37, 84, 0.98) 100%);
-	border: 1.5px solid rgba(191, 219, 254, 0.6);
+	width: 34px;
+	height: 34px;
+	background: radial-gradient(circle at 35% 32%, rgb(51 65 85 / 26%) 0%, rgb(30 41 59 / 0%) 100%);
+	border: 1.5px solid rgba(203, 213, 225, 0.5);
 }
 
-/* Top-down View on Orbit (120° Top-Left) */
-.balloon-btn-top {
+/* Orbit Satellite 2: Zoom In on Orbit (80°) */
+.balloon-btn-zoom-in {
 	position: absolute;
-	right: 53px;
-	bottom: 83px;
+	right: 38px;
+	bottom: 90px;
 	left: auto;
 	top: auto;
-	width: 40px;
-	height: 40px;
+	width: 34px;
+	height: 34px;
+	background: radial-gradient(circle at 35% 32%, rgb(51 65 85 / 26%) 0%, rgb(30 41 59 / 0%) 100%);
+	border: 1.5px solid rgba(203, 213, 225, 0.5);
+}
+
+/* Orbit Satellite 3: Top-down View on Orbit (45° Diagonal) */
+.balloon-btn-top {
+	position: absolute;
+	right: 72px;
+	bottom: 72px;
+	left: auto;
+	top: auto;
+	width: 34px;
+	height: 34px;
 	background: radial-gradient(circle at 35% 32%, rgb(91 33 182 / 7%) 0%, rgb(109 40 217 / 19%) 70%, rgb(76 29 149 / 2%) 100%);
 	border: 1.5px solid rgba(221, 214, 254, 0.6);
 }
 
-/* Zoom In on Orbit (150° Left-Top) */
-.balloon-btn-zoom-in {
+/* Orbit Satellite 4: View Inside/Outside on Orbit (10°) */
+.balloon-btn-view {
 	position: absolute;
-	right: 83px;
-	bottom: 53px;
+	right: 90px;
+	bottom: 38px;
 	left: auto;
 	top: auto;
-	width: 40px;
-	height: 40px;
-	background: radial-gradient(circle at 35% 32%, rgb(51 65 85 / 26%) 0%, rgb(30 41 59 / 0%) 100%);
-	border: 1.5px solid rgba(203, 213, 225, 0.5);
+	width: 34px;
+	height: 34px;
+	background: radial-gradient(circle at 35% 32%, rgb(30 58 138 / 6%) 0%, rgb(30 64 175 / 40%) 70%, rgba(23, 37, 84, 0.98) 100%);
+	border: 1.5px solid rgba(191, 219, 254, 0.6);
 }
 
-/* Zoom Out on Orbit (180° Left) */
-.balloon-btn-zoom-out {
+/* Orbit Satellite 5: Stop / Hover Button on Orbit (-25°) */
+.balloon-btn-stop {
 	position: absolute;
-	right: 94px;
-	bottom: 12px;
+	right: 85px;
+	bottom: 0px;
 	left: auto;
 	top: auto;
-	width: 40px;
-	height: 40px;
-	background: radial-gradient(circle at 35% 32%, rgb(51 65 85 / 26%) 0%, rgb(30 41 59 / 0%) 100%);
-	border: 1.5px solid rgba(203, 213, 225, 0.5);
+	width: 34px;
+	height: 34px;
+	background: radial-gradient(circle at 35% 32%, rgba(239, 68, 68, 0.85) 0%, rgb(185 28 28 / 12%) 100%);
+	border: 1.5px solid rgba(254, 202, 202, 0.7);
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 @media (max-width: 600px) {
@@ -5082,6 +5320,15 @@ body:has(.balloon-controls-layer) .player-life {
 	.balloon-orbit-btn {
 		transform: scale(0.92);
 	}
+	.balloon-notice-pill {
+		bottom: calc(50% + 45px);
+		max-width: calc(100vw - 36px);
+		white-space: normal;
+		text-align: center;
+		font-size: 11px;
+		padding: 5px 11px;
+		gap: 6px;
+	}
 }
 
 /* Direction ticks are touch buttons; only deliberate holds enable auto movement. */
@@ -5094,3 +5341,15 @@ body:has(.balloon-controls-layer) .player-life {
 .mobile-auto-status {position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);white-space:nowrap;padding:5px 10px;border-radius:10px;background:#183b31ed;color:#ffdf75;font:600 12px sans-serif;pointer-events:none;}
 .mobile-auto-stop {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:36px;height:36px;z-index:4;border:1px solid #ffe3a0;border-radius:50%;background:#17382f;color:#ffdc77;touch-action:none;cursor:pointer;}
 .mobile-controls .mobile-joystick-tick:focus-visible,.mobile-auto-stop:focus-visible {outline:2px solid #ffe3a0;outline-offset:-2px;}
+
+.environment-settings {gap:10px;}
+.environment-clock {margin:0;font-size:11px;line-height:1.8;opacity:.85;}
+.environment-periods {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.environment-periods .time-btn {flex-direction:column;gap:3px;}
+.environment-periods small {font-size:10px;opacity:.8;}
+.environment-sound {display:flex;gap:8px;align-items:center;font-size:12px;cursor:pointer;}
+.environment-sound input {accent-color:#267865;}
+.environment-volume {display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:11px;}
+.environment-volume output {margin-left:auto;}
+.environment-volume input {width:100%;accent-color:#267865;cursor:pointer;}
+.environment-settings>small {font-size:10px;line-height:1.8;opacity:.8;}
