@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject, type PointerEvent } from 'react';
-import { MobileGesture, type MobileInput } from '../game/mobileInput';
+import { MobileGesture, type MobileInput, type MobileDirection } from '../game/mobileInput';
 
 export function MobileControls({
 	input,
@@ -18,6 +18,7 @@ export function MobileControls({
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const [held, setHeld] = useState(false);
 	const [sprinting, setSprinting] = useState(false);
+	const [autoMove,setAutoMove]=useState<{direction:MobileDirection|null;speed:number}>({direction:null,speed:1});
 
 	const baseRef = useRef<HTMLDivElement | null>(null);
 	const knobRef = useRef<HTMLDivElement | null>(null);
@@ -40,6 +41,20 @@ export function MobileControls({
 		knobRef.current.style.transform = `translate(${kx.toFixed(1)}px, ${ky.toFixed(1)}px)`;
 	}, []);
 
+	const syncAuto = useCallback(() => {
+        const current=input.current;
+        setAutoMove(old=>old.direction===current.autoDirection&&old.speed===current.moveScale?old:{direction:current.autoDirection,speed:current.moveScale});
+        setHeld(current.active||gesture.current.pinching);
+        if(current.autoDirection)updateKnob(current.right*30,-current.forward*30,true);
+        else if(!current.active)updateKnob(0,0,false);
+    },[input,updateKnob]);
+    useEffect(()=>{
+        if(disabled||(!held&&!autoMove.direction))return;
+        let last=performance.now();
+        const interval=setInterval(()=>{const now=performance.now();gesture.current.advanceTick(now-last);last=now;syncAuto();},50);
+        return ()=>clearInterval(interval);
+    },[disabled,held,autoMove.direction,syncAuto]);
+
 	const clear = useCallback(() => {
 		if (timer.current) clearTimeout(timer.current);
 		timer.current = null;
@@ -50,7 +65,8 @@ export function MobileControls({
 		if (input.current) input.current.sprint = false;
 		setHeld(false);
 		setSprinting(false);
-	}, [input, updateKnob]);
+        syncAuto();
+	}, [input, updateKnob,syncAuto]);
 
 	useEffect(() => {
 		clear();
@@ -80,6 +96,7 @@ export function MobileControls({
 		let startX = e.clientX;
 		let startY = e.clientY;
 		let direction = 'up';
+        const tick=(e.target as HTMLElement).closest<HTMLElement>('[data-direction]')?.dataset.direction as MobileDirection|undefined;
 
 		if (side === 'left') {
 			activePointerId.current = e.pointerId;
@@ -112,11 +129,12 @@ export function MobileControls({
 			}
 		}
 
-		gesture.current.down(e.pointerId, side, startX, startY, direction);
+        if(side==='left'&&tick)gesture.current.downTick(e.pointerId,tick,e.clientX,e.clientY,startX,startY);
+        else gesture.current.down(e.pointerId, side, startX, startY, direction);
 		e.currentTarget.setPointerCapture(e.pointerId);
 		onInteract();
 
-		if (side === 'left') {
+		if (side === 'left'&&!tick) {
 			const dx = e.clientX - startX;
 			const dy = e.clientY - startY;
 			updateKnob(dx, dy, true);
@@ -131,6 +149,7 @@ export function MobileControls({
 			}
 		}
 		setHeld(input.current.active);
+        syncAuto();
 	};
 
 	const move = (e: PointerEvent<HTMLDivElement>) => {
@@ -142,10 +161,13 @@ export function MobileControls({
 			updateKnob(dx, dy, true);
 		}
 		setHeld(input.current.active || gesture.current.pinching);
+        syncAuto();
 	};
 
 	const release = (e: PointerEvent<HTMLDivElement>) => {
-		gesture.current.up(e.pointerId);
+        if((e.type==='pointercancel'||e.type==='lostpointercapture')&&gesture.current.fingers.has(e.pointerId)){
+            gesture.current.stop();
+        }else gesture.current.up(e.pointerId);
 		if (e.pointerId === activePointerId.current) {
 			activePointerId.current = null;
 			joystickAnchor.current = null;
@@ -156,6 +178,7 @@ export function MobileControls({
 			timer.current = null;
 		}
 		setHeld(input.current.active || gesture.current.pinching);
+        syncAuto();
 	};
 
 	if (disabled) return null;
@@ -178,26 +201,25 @@ export function MobileControls({
 					className={`mobile-joystick mobile-direction-pad${held ? ' mobile-joystick-active' : ''}`}
 					aria-label="360 ဒီဂရီ လမ်းကြောင်း ထိန်းချုပ် Joystick"
 				>
-					<div className="mobile-joystick-ring" aria-hidden="true">
-						<div className="mobile-joystick-crosshair mobile-joystick-crosshair-v" />
-						<div className="mobile-joystick-crosshair mobile-joystick-crosshair-h" />
-						<div className="mobile-joystick-inner-ring" />
-						<span className="mobile-joystick-tick mobile-joystick-tick-up" data-direction="up">
-							▲
-						</span>
-						<span
-							className="mobile-joystick-tick mobile-joystick-tick-right"
-							data-direction="right"
-						>
-							▶
-						</span>
-						<span className="mobile-joystick-tick mobile-joystick-tick-down" data-direction="down">
-							▼
-						</span>
-						<span className="mobile-joystick-tick mobile-joystick-tick-left" data-direction="left">
-							◀
-						</span>
-					</div>
+                    <div className="mobile-joystick-ring">
+                        <div className="mobile-joystick-crosshair mobile-joystick-crosshair-v" />
+                        <div className="mobile-joystick-crosshair mobile-joystick-crosshair-h" />
+                        <div className="mobile-joystick-inner-ring" />
+                        {(['up','right','down','left'] as const).map((direction,i)=><button
+                            key={direction} type="button" data-direction={direction}
+                            className={`mobile-joystick-tick mobile-joystick-tick-${direction}`}
+                            aria-label={`${['ရှေ့ / အပေါ်','ညာ','နောက် / အောက်','ဘယ်'][i]} · ဖိထားလျှင် Auto`}
+                            aria-pressed={autoMove.direction===direction}
+                            title="ဖိထားရန်: Auto · ထပ်ဖိထားရန်: အရှိန်တိုး · တစ်ချက်နှိပ်ရန်: ပုံမှန်အရှိန်"
+                            onClick={e=>{if(e.detail===0){gesture.current.activateTick(direction);onInteract();syncAuto();}}}
+                        >{['▲','▶','▼','◀'][i]}</button>)}
+                    </div>
+                    {autoMove.direction&&<>
+                        <div className="mobile-auto-status" role="status">Auto · {autoMove.speed}×</div>
+                        <button type="button" className="mobile-auto-stop" aria-label="Auto ရပ်မည်"
+                            onPointerDown={e=>{e.preventDefault();e.stopPropagation();clear();gesture.current.stop();syncAuto();onInteract();}}
+                            onClick={e=>{if(e.detail===0){clear();gesture.current.stop();syncAuto();onInteract();}}}>■</button>
+                    </>}
 
 					<div ref={knobRef} className="mobile-joystick-knob" aria-hidden="true">
 						<div className="mobile-joystick-knob-core" />

@@ -11,6 +11,7 @@ import {
 } from '../../../../data/wards/myothar/center/index.ts';
 import { MyotharCenterBuilding } from './MyotharCenterBuilding';
 import { MyotharCenterLandmarks } from './MyotharCenterLandmarks';
+import { Cemetery } from '../../../Cemetery.tsx';
 import { Tree } from '../../../Tree.tsx';
 
 export interface MyotharCenterProps {
@@ -161,6 +162,11 @@ export const MyotharCenter = memo(function MyotharCenter({
 			{/* ၃။ အထင်ကရနေရာများ (Custom 3D POI Landmarks) */}
 			{/* ======================================================== */}
 			<MyotharCenterLandmarks />
+
+			{/* ======================================================== */}
+			{/* ၃.၅။ သင်္ချိုင်း / သုသာန်ဝင်း (10,000 Multicolored Graves Reusable Cemetery) */}
+			{/* ======================================================== */}
+			<Cemetery name="သင်္ချိုင်း" township="မြို့သာရပ်ကွက်" graveCount={10000} />
 
 			{/* ======================================================== */}
 			{/* ၄။ လူနေအိမ်နှင့် အဆောက်အအုံများ (Buildings) */}

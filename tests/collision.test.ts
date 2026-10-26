@@ -787,7 +787,7 @@ test('Kanbale village is integrated with real OSM data, boundary, custom farmhou
   assert.equal(kanbaleVillage.id, 'kanbale');
   assert.equal(kanbaleVillage.name, 'ကံပုလဲရွာ');
   assert.equal(kanbaleBuildings.length, 669, '669 OSM buildings inside boundary (11 buildings moved to Myothar Center)');
-  assert.equal(kanbaleRoads.length, 46, 'Exactly 46 OSM road paths inside boundary');
+  assert.equal(kanbaleRoads.length, 45, 'Exactly 45 OSM road paths inside boundary (removed intersecting road across cemetery)');
 
   // 2. Custom Building Override for target house way/403027623
   assert.equal(KANBALE_CUSTOM_BUILDINGS['way/403027623'], 'KanbaleFarmhouse');

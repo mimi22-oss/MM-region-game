@@ -386,7 +386,7 @@ function App() {
         </SceneError>
         <MapLabelsOverlay host={mapLabelsHost} hidden={loading || mapOpen || first} />
       </div>
-      {!loading && !rideStatus.riding && !carStatus.driving && <div className="player-life"><LifeMeter lives={rideStatus.lives}/></div>}
+      {!loading && !rideStatus.riding && !carStatus.driving && !balloonStatus.riding && <div className="player-life"><LifeMeter lives={rideStatus.lives}/></div>}
       {rideStatus.crashed && (rideStatus.damage??1)>0 && (
         <div className="ride-crash-banner" role="alert">
           <span className="ride-crash-icon">💥</span>

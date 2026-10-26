@@ -155,6 +155,19 @@ export const myotharCenterPOIs: MyotharCenterPOI[] = [
     "x": -156.825,
     "z": -306.959,
     "buildingId": "way/403027697"
+  },
+  {
+    "id": "poi-myothar-center-cemetery",
+    "name": "သင်္ချိုင်း",
+    "kind": "cemetery",
+    "lon": 94.071731,
+    "lat": 23.164069,
+    "u": 332.64,
+    "v": -247.32,
+    "x": 61.5,
+    "z": -410.37,
+    "buildingId": "cemetery-myothar-center"
   }
 ];
+
 

@@ -326,6 +326,44 @@ export function canStandNankaleinTeaShop(x: number, z: number): boolean {
   return true;
 }
 
+// Cemetery (သုသာန် / သင်္ချိုင်း) collision setup at Myothar Center
+const cemeteryCx = 60.32856;
+const cemeteryCz = -410.0967;
+const cemeteryRot = -0.39889;
+const cmtC = Math.cos(-cemeteryRot);
+const cmtS = Math.sin(-cemeteryRot);
+
+export function canStandCemetery(x: number, z: number, clearance = 0): boolean {
+  const dx = x - cemeteryCx;
+  const dz = z - cemeteryCz;
+  if (Math.hypot(dx, dz) > 120) return true;
+
+  const lx = dx * cmtC - dz * cmtS;
+  const lz = dx * cmtS + dz * cmtC;
+
+  const halfLen = 87.5;
+  const halfW = 27.0;
+
+  // Boundary walls (jumpable if clearance > 1.35m)
+  if (clearance <= 1.35) {
+    // North wall
+    if (Math.abs(lz - (-halfW)) < 0.45 && Math.abs(lx) <= halfLen + 0.45) return false;
+    // South wall
+    if (Math.abs(lz - halfW) < 0.45 && Math.abs(lx) <= halfLen + 0.45) return false;
+    // East wall
+    if (Math.abs(lx - halfLen) < 0.45 && Math.abs(lz) <= halfW + 0.45) return false;
+    // West wall with 6.4m entrance gate opening
+    if (Math.abs(lx - (-halfLen)) < 0.45 && Math.abs(lz) <= halfW + 0.45) {
+      if (Math.abs(lz) > 3.0) return false;
+    }
+  }
+
+  // Gate arch pillars
+  if (Math.hypot(lx - (-halfLen), Math.abs(lz) - 3.2) < 0.6) return false;
+
+  return true;
+}
+
 const cosA = Math.cos(angle);
 const sinA = Math.sin(angle);
 const mountainVillageHouses = [
@@ -510,6 +548,7 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
   if (!canStandMountainVillage(x, z)) return false;
   if (!canStandKanbaleSchool(x, z)) return false;
   if (!canStandNankaleinTeaShop(x, z)) return false;
+  if (!canStandCemetery(x, z, clearance)) return false;
   if (Math.hypot(x - 295.571, z - 261.63) < 2.4 + PLAYER_RADIUS) return false;
   if (Math.hypot(x - 109.721, z - 284.313) < 0.42 + PLAYER_RADIUS) return false;
   if (

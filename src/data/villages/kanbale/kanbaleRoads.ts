@@ -4114,42 +4114,6 @@ export const kanbaleRoads: KanbaleRoad[] = [
       ]
     ],
     "width": 5.5
-  },
-  {
-    "id": "way/1390432549-seg45",
-    "highway": "residential",
-    "name": "ကံပုလဲ ရွာတွင်းလမ်း",
-    "geoPoints": [
-      [
-        94.065392,
-        23.164414
-      ],
-      [
-        94.0659486,
-        23.1641587
-      ]
-    ],
-    "uvPoints": [
-      [
-        257.23,
-        -312.78
-      ],
-      [
-        314.2,
-        -284.36
-      ]
-    ],
-    "worldPoints": [
-      [
-        -39.28,
-        -403.06
-      ],
-      [
-        21.1,
-        -423.25
-      ]
-    ],
-    "width": 5.5
   }
 ];
 
@@ -4602,16 +4566,6 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 84.47,
     "depth": 5.5,
     "rotation": -0.5759,
-    "main": true
-  },
-  {
-    "id": "kanbale-rp-46",
-    "name": "ကံပုလဲ ရွာတွင်းလမ်း",
-    "x": 21.1,
-    "z": -423.25,
-    "width": 63.67,
-    "depth": 5.5,
-    "rotation": -0.3227,
     "main": true
   },
   {

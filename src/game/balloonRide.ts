@@ -50,7 +50,7 @@ export function balloonFlightFloor(x:number,z:number,height:Height,canLand:Clear
 export function stepBalloon(
  b:BalloonRide,
  dt:number,
- input:{forward:number;right:number;lift:number;yaw:number;fast?:boolean;brake?:boolean;steer?:number;stop?:boolean;autoCruise?:boolean;toggleAutoReturn?:boolean},
+ input:{forward:number;right:number;lift:number;yaw:number;fast?:boolean;speedScale?:number;brake?:boolean;steer?:number;stop?:boolean;autoCruise?:boolean;toggleAutoReturn?:boolean},
  height:Height,
  flightFloor:Height,
  edge:number
@@ -68,6 +68,7 @@ export function stepBalloon(
   b.cruiseVz=0;
  }
 
+ const speedScale=Math.max(1,Math.min(2,input.speedScale??1));
  const steerInput=(input.right||0)+(input.steer||0);
  const forwardInput=input.forward||0;
 
@@ -144,7 +145,7 @@ export function stepBalloon(
    }
 
    const length=Math.max(1,Math.hypot(forwardInput,steerInput));
-   const speed=input.fast?34:18;
+   const speed=input.fast?34:Math.min(34,18*speedScale);
    const moving=isAirborne&&!input.brake&&!input.stop;
 
    if(moving&&(Math.abs(forwardInput)>0.01||Math.abs(steerInput)>0.01)){
@@ -162,7 +163,7 @@ export function stepBalloon(
    }
 
    const lift=Math.max(-1,Math.min(1,input.lift));
-   targetVy=input.brake?0:lift>0?lift*7:lift*Math.min(3,Math.max(.4,altitude*.7));
+   targetVy=input.brake?0:lift>0?lift*Math.min(10,7*speedScale):lift*Math.min(4.5,Math.min(3,Math.max(.4,altitude*.7))*speedScale);
   }
 
   const blend=1-Math.exp(-h*2.8);

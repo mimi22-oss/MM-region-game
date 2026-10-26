@@ -23,7 +23,7 @@ export function dismountSpot(clear:(x:number,z:number)=>boolean){
  return null;
 }
 /** Swept three-point motorcycle footprint, with bounded steps to prevent tunnelling. */
-export function stepMotorcycle(dt:number,throttle:number,steer:number,brake:boolean,paused:boolean,clear:(x:number,z:number)=>boolean,boost=false){
+export function stepMotorcycle(dt:number,throttle:number,steer:number,brake:boolean,paused:boolean,clear:(x:number,z:number)=>boolean,boost=false,cruiseScale=1){
  const r=motorcycleRide;if(!r.riding)return;
  dt=Math.min(.05,Math.max(0,dt));
  if(paused){r.speed=0;return;}
@@ -31,7 +31,7 @@ export function stepMotorcycle(dt:number,throttle:number,steer:number,brake:bool
  const isBoosting=boost||r.accelerating;
  const effectiveThrottle=isBraking?0:(isBoosting?Math.max(throttle,1):throttle);
  const topMax=Math.min(80,Math.max(5,r.maxKmh))/3.6;
- const cruiseMax=Math.min(topMax,20/3.6);
+ const cruiseMax=Math.min(topMax,20/3.6*Math.max(1,Math.min(2,cruiseScale)));
  const targetMax=isBoosting?topMax:cruiseMax;
  if(isBraking){r.speed=Math.sign(r.speed)*Math.max(0,Math.abs(r.speed)-9.5*dt);r.reverseWait=0;}
  else if(effectiveThrottle<-.1){

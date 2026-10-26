@@ -74,6 +74,17 @@ export const MAP_DESTINATIONS: MapDestination[] = [
 		distance: 12,
 	},
 	{
+		id: "myothar-cemetery",
+		label: "သင်္ချိုင်း (သုသာန်)",
+		title: "သင်္ချိုင်း · မြို့သာရပ်ကွက်",
+		subtitle: "မြို့သာရပ်ကွက် အလယ် သင်္ချိုင်းနှင့် သုသာန်ဝင်း · ကလေးမြို့",
+		x: 61.5,
+		z: -410.37,
+		yaw: -0.399,
+		pitch: -0.15,
+		distance: 14,
+	},
+	{
 		id: "shwe-myanmar-fuel",
 		label: "ရွှေမြန်မာ စက်သုံးဆီ",
 		title: "ရွှေမြန်မာ စက်သုံးဆီဆိုင် · မြို့သာရပ်ကွက်",
@@ -401,6 +412,17 @@ export type DetectedLocation = {
 export function detectLocation(x: number, z: number): DetectedLocation {
 	const { u, v } = toLocalUV(x, z);
 
+	// ၀.၀။ သင်္ချိုင်း (Cemetery / သုသာန်) — မြို့သာ အလယ်
+	if (Math.hypot(x - 61.5, z - (-410.37)) < 75) {
+		return {
+			id: "myothar-cemetery",
+			label: "သင်္ချိုင်း (သုသာန်)",
+			title: "သင်္ချိုင်း · မြို့သာရပ်ကွက်",
+			subtitle: "မြို့သာရပ်ကွက် အလယ် သင်္ချိုင်းနှင့် သုသာန်ဝင်း · ကလေးမြို့",
+			subArea: "သင်္ချိုင်း (မြို့သာ)",
+		};
+	}
+
 	// ၀။ ကံပုလဲရွာ (Kanbale Village) — မြို့သာရပ်ကွက် နယ်မြေ (၅) အရှေ့တောင်ဘက်
 	if (isPointInsideKanbale(x, z) || (u >= 170 && u <= 2150 && v >= -252 && v <= 630)) {
 		const isSchool = Math.hypot(x - 433.02, z - (-563.76)) < 35;
@@ -489,6 +511,7 @@ export function detectLocation(x: number, z: number): DetectedLocation {
 			{ id: "zambu-hein", u: -18.495, v: -698.379, r: 16, subArea: "ဇမ္ဗူဟိန်း လယ်ယာသုံးစက်နှင့်အပိုပစ္စည်း", title: "ဇမ္ဗူဟိန်း လယ်ယာသုံးစက် · မြို့သာရပ်ကွက်", subtitle: "ဇမ္ဗူဟိန်း လယ်ယာသုံးစက်နှင့်အပိုပစ္စည်းအရောင်းဆိုင် · AH1 ဘေး · ကလေးမြို့" },
 			{ id: "hnin-thazin", u: 17.531, v: -734.748, r: 20, subArea: "နှင်းသဇင် - ကလေး ကုမ္ပဏီ လီမိတက်", title: "နှင်းသဇင် ကုမ္ပဏီ · မြို့သာရပ်ကွက်", subtitle: "နှင်းသဇင် - ကလေး ကုမ္ပဏီ လီမိတက် · မြို့သာ အလယ် · ကလေးမြို့" },
 			{ id: "ye-dagun", u: -12.529, v: -754.852, r: 20, subArea: "ရဲတံခွန် အရောင်းဆိုင်", title: "ရဲတံခွန် အရောင်းဆိုင် · မြို့သာရပ်ကွက်", subtitle: "ရဲတံခွန် အရောင်းဆိုင် · မြို့သာ အလယ် · ကလေးမြို့" },
+			{ id: "myothar-cemetery", u: 332.64, v: -247.32, r: 65, subArea: "သင်္ချိုင်း (မြို့သာ)", title: "သင်္ချိုင်း · မြို့သာရပ်ကွက်", subtitle: "မြို့သာရပ်ကွက် သင်္ချိုင်းနှင့် သုသာန်ဝင်း · ကလေးမြို့" },
 		];
 
 		let closestDist = Infinity;

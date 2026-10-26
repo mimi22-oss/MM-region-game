@@ -102,6 +102,8 @@ export function Player({
   yaw:ward.spawnYaw,
   bodyYaw:ward.spawnYaw,
   mobileSession:-1,
+  autoHeadingSession:-1,
+  autoHeadingYaw:ward.spawnYaw,
   pitch:-0.12,
   distance:ward.spawnZoom,
   targetDistance:ward.spawnZoom,
@@ -382,6 +384,11 @@ export function Player({
   updateHomeAccess(balloonRide.riding?Infinity:s.x,balloonRide.riding?Infinity:s.z,dt);stepCarSummon(dt,height,s.x,s.z,!!currentCar()||balloonRide.riding,motorcycleRide.riding);
   let oldX=s.x,oldZ=s.z;
   const touch=mobileInput?.current;
+  if(touch?.stopRequested){
+   touch.stopRequested=false;motorcycleRide.speed=0;
+   balloonRide.autoCruise=false;balloonRide.autoReturn=false;balloonRide.vx=0;balloonRide.vz=0;balloonRide.vy=0;balloonRide.cruiseVx=0;balloonRide.cruiseVz=0;
+   balloonInput.stopCruise=true;
+  }
   const wantsJump=s.jumpRequested||!!touch?.jump;s.jumpRequested=false;if(touch)touch.jump=false;
   if(touch){
    if(touch.panX||touch.panY){panView(touch.panX,touch.panY);touch.panX=0;touch.panY=0;}
@@ -396,7 +403,9 @@ export function Player({
   if(controlsBlocked||mapOpen||rideLife.crashTime>0){forward=0;right=0;}
   const len=Math.hypot(forward,right);if(len){forward/=len;right/=len;}
   const fast=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight')||!!touch?.sprint;
-  const yaw=mapOpen?0:s.yaw;
+  const mobileScale=touch?.active?touch.moveScale:1;
+  if(touch?.autoDirection&&s.autoHeadingSession!==touch.session){s.autoHeadingSession=touch.session;s.autoHeadingYaw=s.yaw;}
+  const yaw=mapOpen?0:touch?.autoDirection?s.autoHeadingYaw:s.yaw;
   if(len>0&&s.distance<=20&&!s.topDown)s.panning=false;
   if(wantsJump&&!balloonRide.riding&&character==='cartoon'&&!currentCar()&&!motorcycleRide.riding&&!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0&&(s.distance>20||s.topDown||s.panning)){
    s.first=false;s.topDown=false;s.panning=false;s.pitch=-.12;s.distance=6;s.targetDistance=6;
@@ -443,10 +452,11 @@ export function Player({
    const paused=mapOpen||controlsBlocked||loading||rideLife.crashTime>0;
    if(balloonInput.toggleView){balloonInput.toggleView=false;if(!paused){s.first=!s.first;s.topDown=false;s.panning=false;onMode(s.first);onTopDown(false);}}
    if(s.keys.has('KeyR')||s.keys.has('KeyH')){s.keys.delete('KeyR');s.keys.delete('KeyH');if(!paused)balloonInput.toggleAutoReturn=true;}
+   if(touch?.autoDirection&&(s.keys.has('Space')||balloonInput.stopCruise||balloonInput.toggleAutoReturn))resetMobileInput(touch);
    let lift=balloonInput.lift+Number(s.keys.has('ArrowUp')||s.keys.has('PageUp'))-Number(s.keys.has('ArrowDown')||s.keys.has('PageDown'));
    let flightForward=Number(s.keys.has('KeyW'))-Number(s.keys.has('KeyS'));
    let flightRight=Number(s.keys.has('KeyD')||s.keys.has('ArrowRight'))-Number(s.keys.has('KeyA')||s.keys.has('ArrowLeft'));
-   if(touch?.active){flightRight=touch.right;if(balloonInput.verticalJoystick)lift+=touch.forward;else flightForward=touch.forward;}
+   if(touch?.active){flightRight=touch.right;lift+=touch.forward;}
    const landClear=(x:number,z:number)=>canStand(x,z)&&!hitsTraffic(x,z,0,height(x,z),true);
    const floorCache=new Map<string,number>();
    const flightFloor=(x:number,z:number)=>{
@@ -456,7 +466,7 @@ export function Player({
    };
    if(Math.abs(flightRight)>0.01||Math.abs(balloonInput.steer)>0.01||Math.abs(flightForward)>0.01){balloon.autoCruise=true;}
    if(s.keys.has('Space')||balloonInput.stopCruise||balloon.grounded){balloon.autoCruise=false;}
-   if(!paused)stepBalloon(balloon,dt,{forward:flightForward+balloonInput.forward,right:flightRight,steer:balloonInput.steer,lift,yaw:s.yaw,fast,brake:s.keys.has('Space'),stop:balloonInput.stopCruise,autoCruise:balloon.autoCruise,toggleAutoReturn:balloonInput.toggleAutoReturn},height,flightFloor,ward.size/2-6);
+   if(!paused)stepBalloon(balloon,dt,{forward:flightForward+balloonInput.forward,right:flightRight,steer:balloonInput.steer,lift,yaw,speedScale:mobileScale,fast,brake:s.keys.has('Space'),stop:balloonInput.stopCruise,autoCruise:balloon.autoCruise,toggleAutoReturn:balloonInput.toggleAutoReturn},height,flightFloor,ward.size/2-6);
    balloonInput.toggleAutoReturn=false;
    balloonInput.stopCruise=false;
    s.x=balloon.x;s.z=balloon.z;s.bodyYaw=balloon.yaw;s.camX=s.x;s.camZ=s.z;
@@ -516,7 +526,7 @@ export function Player({
     if(!paused&&hitsTraffic(x,z,ride.yaw,height(x,z),true))crash();
     return rideLife.crashTime<=0&&clear(x,z);
    };
-   stepMotorcycle(dt,throttle,steer,isBrk,paused||rideLife.crashTime>0,trafficClear,isBoosting);
+   stepMotorcycle(dt,throttle,steer,isBrk,paused||rideLife.crashTime>0,trafficClear,isBoosting,mobileScale);
    s.x=ride.x;s.z=ride.z;s.bodyYaw=ride.yaw;
    if(!paused){s.camX=s.x;s.camZ=s.z;}
   }else if(isWalkingRecoil()){
@@ -529,7 +539,7 @@ export function Player({
     panCamera(s,right*panSpeed,forward*panSpeed,edge);
    }
   }else{
-   const speed=fast?9.5:touch?.active?5.5:4;
+   const speed=fast?9.5:touch?.active?Math.min(9.5,5.5*mobileScale):4;
    const vx=(-Math.sin(yaw)*forward+Math.cos(yaw)*right)*speed,vz=(-Math.cos(yaw)*forward-Math.sin(yaw)*right)*speed;
    const mx=vx*dt,mz=vz*dt;
    if(!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0){

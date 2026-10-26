@@ -406,9 +406,8 @@ header p {
 	-webkit-backdrop-filter: blur(8px);
 }
 
-.map:not(.map-expanded):hover {
-	transform: translateY(-1px);
-	box-shadow: 0 10px 28px #163e362b;
+.map:not(.map-expanded) {
+	display: none;
 }
 
 .map>span {
@@ -4573,9 +4572,10 @@ main.night-mode .appearance-saved {
 	pointer-events: none
 }
 
-/* Hide player-life HUD when driving car or riding motorcycle */
+/* Hide player-life HUD when driving car, riding motorcycle, or riding balloon */
 body:has(.car-controls-driving) .player-life,
-body:has(.ride-orbit-speedo) .player-life {
+body:has(.ride-orbit-speedo) .player-life,
+body:has(.balloon-controls-layer) .player-life {
 	display: none !important;
 }
 
@@ -4698,7 +4698,10 @@ body:has(.ride-orbit-speedo) .player-life {
 }
 
 .balloon-grounded-badge {
-	padding: 2px 7px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2px 6px;
 	border-radius: 12px;
 	font-size: 9.5px;
 	font-weight: 700;
@@ -4854,12 +4857,83 @@ body:has(.ride-orbit-speedo) .player-life {
 	margin-top: 1px;
 }
 
-/* Exit Button in place of mobile sprint btn */
-.balloon-return-btn {
+/* Joystick Orbital Ring Cluster (Concentric with .mobile-joystick 128x128) */
+.balloon-joystick-ring-cluster {
+	position: absolute;
+	left: max(20px, env(safe-area-inset-left));
+	bottom: max(28px, calc(env(safe-area-inset-bottom) + 16px));
+	width: 128px;
+	height: 128px;
+	pointer-events: none;
+	z-index: 36;
+}
+
+/* Semi-transparent orbital ring guide arc */
+.balloon-joystick-ring-track {
+	position: absolute;
+	left: -32px;
+	bottom: -32px;
+	width: 192px;
+	height: 192px;
+	border-radius: 50%;
+	border: 1.5px dashed rgba(255, 255, 255, 0.22);
+	pointer-events: none;
+	clip-path: polygon(0 0, 100% 0, 100% 100%, 35% 100%);
+}
+
+/* Auto Return Button on Joystick Ring (110° Top-Left) */
+.balloon-btn-autoreturn {
+	position: absolute;
+	left: 7px;
+	bottom: 130px;
+	right: auto;
+	top: auto;
+	width: 48px;
+	height: 48px;
+	background: radial-gradient(circle at 35% 32%, rgb(14 116 144 / 11%) 0%, rgb(3 105 161 / 32%) 70%, rgb(2 44 70 / 18%) 100%);
+	border: 2px solid rgba(125, 211, 252, 0.7);
+	box-shadow: 0 5px 16px rgba(0, 0, 0, 0.45), inset 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.balloon-autoreturn-pulse {
+	background: radial-gradient(circle at 35% 32%, rgba(225, 29, 72, 0.92) 0%, rgba(190, 24, 93, 0.96) 70%, rgba(136, 19, 55, 1) 100%) !important;
+	border-color: #fde047 !important;
+	box-shadow: 0 0 18px rgba(253, 224, 71, 0.75) !important;
+}
+
+/* Right-side Orbital Cluster (Center: balloon-return-btn) */
+.balloon-right-ring-cluster {
+	position: absolute;
 	right: max(22px, env(safe-area-inset-right));
 	bottom: max(28px, calc(env(safe-area-inset-bottom) + 16px));
-	width: 50px;
-	height: 50px;
+	width: 140px;
+	height: 140px;
+	pointer-events: none;
+	z-index: 35;
+}
+
+/* Orbital ring guide track arc around balloon-return-btn */
+.balloon-right-ring-track {
+	position: absolute;
+	right: -50px;
+	bottom: -50px;
+	width: 164px;
+	height: 164px;
+	border-radius: 50%;
+	border: 1.5px dashed rgba(255, 255, 255, 0.22);
+	pointer-events: none;
+	clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+}
+
+/* Exit Button in center of Right Cluster (Balloon မှဆင်းမည်) */
+.balloon-return-btn {
+	position: absolute;
+	right: 6px;
+	bottom: 6px;
+	left: auto;
+	top: auto;
+	width: 52px;
+	height: 52px;
 	background: radial-gradient(circle at 35% 32%, rgb(225 29 72 / 0%) 0%, rgb(159 18 57 / 2%) 70%, rgb(136 19 55 / 38%) 100%);
 	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), inset 0 0 14px rgba(244, 63, 94, 0.45);
 }
@@ -4875,51 +4949,43 @@ body:has(.ride-orbit-speedo) .player-life {
 	cursor: not-allowed;
 }
 
-/* Auto Return Button in Mobile Cluster */
-.balloon-btn-autoreturn {
-	right: calc(max(22px, env(safe-area-inset-right)) + 80px);
-	bottom: max(28px, calc(env(safe-area-inset-bottom) + 16px));
-	width: 54px;
-	height: 54px;
-	background: radial-gradient(circle at 35% 32%, rgb(14 116 144 / 11%) 0%, rgb(3 105 161 / 32%) 70%, rgb(2 44 70 / 18%) 100%);
-	border: 2px solid rgba(125, 211, 252, 0.7);
-	box-shadow: 0 5px 16px rgba(0, 0, 0, 0.45), inset 0 0 10px rgba(56, 189, 248, 0.4);
-}
-
-.balloon-autoreturn-pulse {
-	background: radial-gradient(circle at 35% 32%, rgba(225, 29, 72, 0.92) 0%, rgba(190, 24, 93, 0.96) 70%, rgba(136, 19, 55, 1) 100%) !important;
-	border-color: #fde047 !important;
-	box-shadow: 0 0 18px rgba(253, 224, 71, 0.75) !important;
-}
-
 /* ⏸ Stop / Hover Button */
 .balloon-btn-stop {
-	right: calc(max(22px, env(safe-area-inset-right)) + 144px);
-	bottom: max(28px, calc(env(safe-area-inset-bottom) + 16px));
-	width: 46px;
-	height: 46px;
+	position: absolute;
+	right: 144px;
+	bottom: 10px;
+	left: auto;
+	top: auto;
+	width: 44px;
+	height: 44px;
 	background: radial-gradient(circle at 35% 32%, rgba(239, 68, 68, 0.85) 0%, rgba(185, 28, 28, 0.95) 100%);
 	border: 1.5px solid rgba(254, 202, 202, 0.7);
 	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
-/* Lift Up Pedal (↑ တက်) */
+/* Lift Up Pedal (↑ တက်) on Joystick Ring (60° Top-Right) */
 .balloon-btn-up {
-	right: max(22px, env(safe-area-inset-right));
-	bottom: calc(max(28px, env(safe-area-inset-bottom) + 16px) + 82px);
-	width: 52px;
-	height: 52px;
+	position: absolute;
+	left: 88px;
+	bottom: 123px;
+	right: auto;
+	top: auto;
+	width: 48px;
+	height: 48px;
 	background: radial-gradient(circle at 35% 32%, rgb(16 185 129 / 23%) 0%, rgb(5 150 105 / 18%) 70%, rgb(4 120 87 / 8%) 100%);
 	border: 2px solid rgba(167, 243, 208, 0.7);
 	box-shadow: 0 5px 16px rgba(0, 0, 0, 0.45), inset 0 0 10px rgba(52, 211, 153, 0.4);
 }
 
-/* Lift Down Pedal (↓ ဆင်း) */
+/* Lift Down Pedal (↓ ဆင်း) on Joystick Ring (10° Right) */
 .balloon-btn-down {
-	right: calc(max(22px, env(safe-area-inset-right)) + 64px);
-	bottom: calc(max(28px, env(safe-area-inset-bottom) + 16px) + 68px);
-	width: 52px;
-	height: 52px;
+	position: absolute;
+	left: 135px;
+	bottom: 57px;
+	right: auto;
+	top: auto;
+	width: 48px;
+	height: 48px;
 	background: radial-gradient(circle at 35% 32%, rgb(245 158 11 / 0%) 0%, rgb(217 119 6 / 16%) 70%, rgb(180 83 9 / 0%) 100%);
 	box-shadow: 0 5px 16px rgba(0, 0, 0, 0.45), inset 0 0 10px rgba(251, 191, 36, 0.4);
 }
@@ -4946,39 +5012,52 @@ body:has(.ride-orbit-speedo) .player-life {
 	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
-/* View Inside/Outside */
+/* View Inside/Outside on Orbit (90° Top) */
 .balloon-btn-view {
-	right: max(22px, env(safe-area-inset-right));
-	bottom: calc(max(28px, env(safe-area-inset-bottom) + 16px) + 144px);
-	width: 46px;
-	height: 46px;
+	position: absolute;
+	right: 12px;
+	bottom: 94px;
+	left: auto;
+	top: auto;
+	width: 40px;
+	height: 40px;
 	background: radial-gradient(circle at 35% 32%, rgb(30 58 138 / 6%) 0%, rgb(30 64 175 / 40%) 70%, rgba(23, 37, 84, 0.98) 100%);
 	border: 1.5px solid rgba(191, 219, 254, 0.6);
 }
 
-/* Top-down View */
+/* Top-down View on Orbit (120° Top-Left) */
 .balloon-btn-top {
-	right: calc(max(22px, env(safe-area-inset-right)) + 54px);
-	bottom: calc(max(28px, env(safe-area-inset-bottom) + 16px) + 128px);
-	width: 44px;
-	height: 44px;
+	position: absolute;
+	right: 53px;
+	bottom: 83px;
+	left: auto;
+	top: auto;
+	width: 40px;
+	height: 40px;
 	background: radial-gradient(circle at 35% 32%, rgb(91 33 182 / 7%) 0%, rgb(109 40 217 / 19%) 70%, rgb(76 29 149 / 2%) 100%);
 	border: 1.5px solid rgba(221, 214, 254, 0.6);
 }
 
-/* Zoom In / Out */
+/* Zoom In on Orbit (150° Left-Top) */
 .balloon-btn-zoom-in {
-	right: calc(max(22px, env(safe-area-inset-right)) + 104px);
-	bottom: calc(max(28px, env(safe-area-inset-bottom) + 16px) + 114px);
+	position: absolute;
+	right: 83px;
+	bottom: 53px;
+	left: auto;
+	top: auto;
 	width: 40px;
 	height: 40px;
 	background: radial-gradient(circle at 35% 32%, rgb(51 65 85 / 26%) 0%, rgb(30 41 59 / 0%) 100%);
 	border: 1.5px solid rgba(203, 213, 225, 0.5);
 }
 
+/* Zoom Out on Orbit (180° Left) */
 .balloon-btn-zoom-out {
-	right: calc(max(22px, env(safe-area-inset-right)) + 150px);
-	bottom: calc(max(28px, env(safe-area-inset-bottom) + 16px) + 104px);
+	position: absolute;
+	right: 94px;
+	bottom: 12px;
+	left: auto;
+	top: auto;
 	width: 40px;
 	height: 40px;
 	background: radial-gradient(circle at 35% 32%, rgb(51 65 85 / 26%) 0%, rgb(30 41 59 / 0%) 100%);
@@ -5004,3 +5083,14 @@ body:has(.ride-orbit-speedo) .player-life {
 		transform: scale(0.92);
 	}
 }
+
+/* Direction ticks are touch buttons; only deliberate holds enable auto movement. */
+.mobile-controls .mobile-joystick-tick {width:40px;height:40px;padding:0;border:0;border-radius:50%;background:transparent;pointer-events:auto;touch-action:none;cursor:pointer;font:inherit;font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3;}
+.mobile-controls .mobile-joystick-tick-up {top:0;}
+.mobile-controls .mobile-joystick-tick-right {right:0;}
+.mobile-controls .mobile-joystick-tick-down {bottom:0;}
+.mobile-controls .mobile-joystick-tick-left {left:0;}
+.mobile-controls .mobile-joystick-tick[aria-pressed="true"] {color:#ffdf75;background:#203e35c9;box-shadow:inset 0 0 0 1px #ffdf7599;}
+.mobile-auto-status {position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);white-space:nowrap;padding:5px 10px;border-radius:10px;background:#183b31ed;color:#ffdf75;font:600 12px sans-serif;pointer-events:none;}
+.mobile-auto-stop {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:36px;height:36px;z-index:4;border:1px solid #ffe3a0;border-radius:50%;background:#17382f;color:#ffdc77;touch-action:none;cursor:pointer;}
+.mobile-controls .mobile-joystick-tick:focus-visible,.mobile-auto-stop:focus-visible {outline:2px solid #ffe3a0;outline-offset:-2px;}

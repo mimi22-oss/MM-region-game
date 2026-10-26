@@ -53,6 +53,55 @@ export const MyotharCenterPlan = memo(function MyotharCenterPlan({
 				})}
 			</g>
 
+			{/* ၁.၅။ သင်္ချိုင်း / သုသာန်ဝင်း (Cemetery Plan Polygon & Pathways) */}
+			<g id="mc-cemetery-plan">
+				{/* မြေကွက် ဧရိယာ (Cemetery Compound Area) */}
+				<polygon
+					points="-30.5,-401.6 134.2,-471.0 155.2,-417.9 -17.6,-349.9"
+					fill="#e2e8f0"
+					fillOpacity={0.65}
+					stroke="#64748b"
+					strokeWidth={1.2}
+					strokeDasharray="2 1"
+				/>
+				{/* အလယ်ဗဟို လျှောက်လမ်း (Central Avenue) */}
+				<line
+					x1={-24.0}
+					y1={-375.7}
+					x2={144.7}
+					y2={-444.5}
+					stroke="#94a3b8"
+					strokeWidth={2.4}
+					strokeLinecap="round"
+				/>
+				{/* ကန့်လန့်ဖြတ် လျှောက်လမ်းများ (Cross Aisles) */}
+				<line x1={15.0} y1={-420.0} x2={35.0} y2={-370.0} stroke="#cbd5e1" strokeWidth={1.6} />
+				<line x1={55.0} y1={-437.0} x2={75.0} y2={-387.0} stroke="#cbd5e1" strokeWidth={1.6} />
+				<line x1={95.0} y1={-454.0} x2={115.0} y2={-404.0} stroke="#cbd5e1" strokeWidth={1.6} />
+				{/* သုသာန် ဇရပ် (Rest Pavilion Footprint) */}
+				<rect
+					x={-2.0}
+					y={-388.0}
+					width={9.4}
+					height={6.8}
+					transform="rotate(-22.8, 2.7, -384.6)"
+					fill="#166534"
+					stroke="#14532d"
+					strokeWidth={0.6}
+					rx={0.5}
+				/>
+				{/* အဝင်မုခ်ဦး အမှတ်အသား (Entrance Arch) */}
+				<line
+					x1={-27.0}
+					y1={-378.0}
+					x2={-21.0}
+					y2={-373.5}
+					stroke="#d97706"
+					strokeWidth={2.2}
+					strokeLinecap="round"
+				/>
+			</g>
+
 			{/* ၂။ နယ်မြေ (၅) စတိုင် ခြံဝန်းများနှင့် သီးခြားအိမ်ခြေများ (Compounds & Separated Houses) */}
 			<g id="mc-buildings">
 				{myotharCenterBuildings.map((b: MyotharCenterBuildingData) => {
@@ -180,7 +229,7 @@ export const MyotharCenterPlan = memo(function MyotharCenterPlan({
 						{/* Pin Badge Circle */}
 						<circle
 							r={7}
-							fill={poi.kind === 'place_of_worship' ? '#d97706' : poi.kind === 'industrial' ? '#0284c7' : '#2563eb'}
+							fill={poi.kind === 'place_of_worship' ? '#d97706' : poi.kind === 'industrial' ? '#0284c7' : poi.kind === 'cemetery' ? '#059669' : '#2563eb'}
 							stroke="#ffffff"
 							strokeWidth={1.5}
 						/>

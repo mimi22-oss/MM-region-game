@@ -1,6 +1,6 @@
 import React,{useCallback,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
-import {Canvas,useFrame} from '@react-three/fiber';
+import {Canvas,useFrame,useThree} from '@react-three/fiber';
 import {Player,type TeleportTarget} from '../../src/components/Player';
 import {MobileControls} from '../../src/components/MobileControls';
 import {HomeGate} from '../../src/components/HomeGate';
@@ -10,7 +10,7 @@ import {toWorld} from '../../src/data/ward';
 import '../../src/style.css';
 const origin=toWorld(0,-80),gate=homeGates.street;
 const api=window as any;
-function Inspect(){useFrame(({scene})=>{
+function Inspect(){api.jumpRenderLoop=useThree(s=>s.setFrameloop);useFrame(({scene})=>{
  const avatar=scene.getObjectByName('player-avatar');if(!avatar)return;
  api.jumpSample={x:avatar.position.x,y:avatar.position.y,z:avatar.position.z};
  api.jumpPeak=Math.max(api.jumpPeak??0,avatar.position.y);
