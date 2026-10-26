@@ -9,7 +9,51 @@ import { buildTrafficRoutes, trafficPose, carAppearance, type TrafficRoute } fro
 import { mobileQuality } from '../game/sceneBudget';
 import { Car } from './Car';
 
-const routes=buildTrafficRoutes([...ward.roads,...kalayVillages.flatMap(v=>v.roads)]);
+import { spatialIndex } from '../game/spatialIndex';
+import { myotharCenterRoads, myotharCenterBuildings } from '../data/wards/myothar/center/index.ts';
+
+// Extract Myothar Center road segments for traffic routes
+const myotharTrafficRoads = myotharCenterRoads.flatMap(r => {
+  const isMain = r.ref === 'NH41' || r.width >= 5.0;
+  const segs = [];
+  for (let i = 0; i < r.worldPoints.length - 1; i++) {
+    const p1 = r.worldPoints[i], p2 = r.worldPoints[i + 1];
+    const dx = p2[0] - p1[0], dz = p2[1] - p1[1];
+    const len = Math.hypot(dx, dz);
+    if (len < 1.0) continue;
+    segs.push({
+      id: `${r.id}-seg-${i}`,
+      x: (p1[0] + p2[0]) / 2,
+      z: (p1[1] + p2[1]) / 2,
+      width: len,
+      depth: r.width,
+      rotation: -Math.atan2(dz, dx),
+      main: isMain,
+    });
+  }
+  return segs;
+});
+
+// All buildings to protect from car bot collisions
+const buildingObstacles = spatialIndex(
+  [
+    ...ward.houses,
+    ...myotharCenterBuildings.map(b => ({ x: b.x, z: b.z, width: b.houseWidth || 5.6, depth: b.houseLength || 6.8 })),
+    ...kalayVillages.flatMap(v => v.houses),
+    ...ward.warehouses,
+    ...ward.riceMill.buildings,
+  ],
+  b => ({ x: b.x, z: b.z, radius: Math.hypot(b.width / 2, b.depth / 2) })
+);
+
+const isBlocked = (x: number, z: number, radius: number) => {
+  return buildingObstacles(x, z).some(b => Math.hypot(x - b.x, z - b.z) < (Math.hypot(b.width / 2, b.depth / 2) + radius + 1.2));
+};
+
+const routes = buildTrafficRoutes(
+  [...ward.roads, ...myotharTrafficRoads, ...kalayVillages.flatMap(v => v.roads)],
+  isBlocked
+);
 function TrafficCar({route,index,offset}:{route:TrafficRoute;index:number;offset:number}){
  const root=useRef<Group>(null),travel=useRef(offset),appearance=useMemo(()=>carAppearance(index),[index]);
  useTrafficCollider(root,1.9*appearance.size,3.7*appearance.size,'car');

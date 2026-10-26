@@ -1,7 +1,25 @@
 export type TrafficRoad={id:string;x:number;z:number;width:number;depth:number;rotation:number;main?:boolean};
 export type TrafficRoute={id:string;x:number;z:number;dx:number;dz:number;length:number;lane:number};
+export function isRouteClearOfObstacles(
+  r: TrafficRoute,
+  isBlocked?: (x: number, z: number, radius: number) => boolean
+): boolean {
+  if (!isBlocked) return true;
+  const arc = Math.PI * r.lane;
+  const period = 2 * r.length + 2 * arc;
+  const step = Math.min(4, Math.max(1.5, r.length / 30));
+  for (let s = 0; s < period; s += step) {
+    const p = trafficPose(r, s);
+    if (isBlocked(p.x, p.z, r.lane + 0.8)) return false;
+  }
+  return true;
+}
+
 /** Merge overlapping/adjacent collinear highway pieces, ignoring residential lanes. */
-export function buildTrafficRoutes(roads:TrafficRoad[]){
+export function buildTrafficRoutes(
+  roads: TrafficRoad[],
+  isBlocked?: (x: number, z: number, radius: number) => boolean
+){
  const groups=new Map<string,{dx:number;dz:number;offset:number;segments:{lo:number;hi:number;width:number}[]}>();
  for(const r of roads){
   if(!r.main)continue;
@@ -20,7 +38,10 @@ export function buildTrafficRoutes(roads:TrafficRoad[]){
   for(const [i,s] of merged.entries()){
    const lane=Math.min(2.2,s.width*.22),start=s.lo+lane+3,length=s.hi-s.lo-2*(lane+3);
    if(length<15)continue;
-   routes.push({id:key+':'+i,x:g.dx*start-g.dz*g.offset,z:g.dz*start+g.dx*g.offset,dx:g.dx,dz:g.dz,length,lane});
+   const route = {id:key+':'+i,x:g.dx*start-g.dz*g.offset,z:g.dz*start+g.dx*g.offset,dx:g.dx,dz:g.dz,length,lane};
+   if(isRouteClearOfObstacles(route, isBlocked)){
+    routes.push(route);
+   }
   }
  }
  return routes;

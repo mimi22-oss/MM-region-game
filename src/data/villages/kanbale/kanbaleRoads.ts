@@ -1325,6 +1325,14 @@ export const kanbaleRoads: KanbaleRoad[] = [
     "name": "ကံပုလဲ ရွာတွင်းလမ်း",
     "geoPoints": [
       [
+        94.0628788,
+        23.1642992
+      ],
+      [
+        94.0639535,
+        23.1638949
+      ],
+      [
         94.0650326,
         23.1636458
       ],
@@ -1375,6 +1383,14 @@ export const kanbaleRoads: KanbaleRoad[] = [
     ],
     "uvPoints": [
       [
+        0.0,
+        -300.0
+      ],
+      [
+        110.0,
+        -255.0
+      ],
+      [
         220.45,
         -227.26
       ],
@@ -1424,6 +1440,14 @@ export const kanbaleRoads: KanbaleRoad[] = [
       ]
     ],
     "worldPoints": [
+      [
+        -212.13,
+        -212.13
+      ],
+      [
+        -102.53,
+        -258.09
+      ],
       [
         -4.82,
         -316.58
@@ -4102,7 +4126,7 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 153.44,
     "depth": 5.5,
     "rotation": 0.4664,
-    "main": true
+    "main": false
   },
   {
     "id": "kanbale-rp-2",
@@ -4112,7 +4136,7 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 28.43,
     "depth": 5.5,
     "rotation": -2.3945,
-    "main": true
+    "main": false
   },
   {
     "id": "kanbale-rp-3",
@@ -4122,7 +4146,7 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 430.51,
     "depth": 5.5,
     "rotation": -0.6208,
-    "main": true
+    "main": false
   },
   {
     "id": "kanbale-rp-4",
@@ -4132,7 +4156,7 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 64.16,
     "depth": 5.5,
     "rotation": 0.8645,
-    "main": true
+    "main": false
   },
   {
     "id": "kanbale-rp-5",
@@ -4142,7 +4166,7 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 115.88,
     "depth": 5.5,
     "rotation": -0.7308,
-    "main": true
+    "main": false
   },
   {
     "id": "kanbale-rp-6",
@@ -4152,7 +4176,7 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 32.06,
     "depth": 5.5,
     "rotation": -2.2875,
-    "main": true
+    "main": false
   },
   {
     "id": "kanbale-rp-7",
@@ -4162,7 +4186,7 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 128.23,
     "depth": 5.5,
     "rotation": 0.4799,
-    "main": true
+    "main": false
   },
   {
     "id": "kanbale-rp-8",
@@ -4212,7 +4236,7 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 997.47,
     "depth": 5.5,
     "rotation": -0.109,
-    "main": true
+    "main": false
   },
   {
     "id": "kanbale-rp-13",
@@ -4242,7 +4266,7 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 72.81,
     "depth": 5.5,
     "rotation": 0.7118,
-    "main": true
+    "main": false
   },
   {
     "id": "kanbale-rp-16",
@@ -4292,7 +4316,7 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 94.48,
     "depth": 5.5,
     "rotation": 1.4808,
-    "main": true
+    "main": false
   },
   {
     "id": "kanbale-rp-21",
@@ -4302,7 +4326,7 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 684.15,
     "depth": 5.5,
     "rotation": -0.5089,
-    "main": true
+    "main": false
   },
   {
     "id": "kanbale-rp-22",
@@ -4322,7 +4346,7 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 65.15,
     "depth": 5.5,
     "rotation": 0.9484,
-    "main": true
+    "main": false
   },
   {
     "id": "kanbale-rp-24",
@@ -4552,6 +4576,26 @@ export const kanbaleRoadPlots: RoadPlot[] = [
     "width": 63.67,
     "depth": 5.5,
     "rotation": -0.3227,
+    "main": true
+  },
+  {
+    "id": "kanbale-rp-47",
+    "name": "ကံပုလဲ–မြို့သာ ဆက်သွယ်ရေးလမ်း (AH1 ဖြတ်လမ်း)",
+    "x": -157.33,
+    "z": -235.11,
+    "width": 118.84,
+    "depth": 5.5,
+    "rotation": 0.3971,
+    "main": true
+  },
+  {
+    "id": "kanbale-rp-48",
+    "name": "ကံပုလဲ–မြို့သာ ဆက်သွယ်ရေးလမ်း (AH1 ဖြတ်လမ်း)",
+    "x": -53.68,
+    "z": -287.34,
+    "width": 113.88,
+    "depth": 5.5,
+    "rotation": 0.5391,
     "main": true
   }
 ];

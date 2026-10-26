@@ -31,6 +31,7 @@ import React, {
 } from "react";
 import { createRoot } from "react-dom/client";
 import { Canvas } from "@react-three/fiber";
+import { MapLabelsOverlay, MapLabelsProjection } from './components/MapLabels';
 import { Town } from "./components/Town";
 import { WorldLoading } from "./components/WorldLoading";
 import type { WorldLoadingState } from "./game/regionLoading";
@@ -89,6 +90,7 @@ class SceneError extends Component<
   }
 }
 function App() {
+  const mapLabelsHost = useRef<HTMLDivElement>(null);
   const [sceneLoading, setSceneLoading] = useState<WorldLoadingState>({
     blocking: true,
     required: [{ id: "myothar", name: ward.name, phase: "queued" }],
@@ -371,8 +373,10 @@ function App() {
               onPosition={position}
               onViewPosition={viewPosition}
             />
+            <MapLabelsProjection host={mapLabelsHost} enabled={!loading && !mapOpen && !first} />
           </Canvas>
         </SceneError>
+        <MapLabelsOverlay host={mapLabelsHost} hidden={loading || mapOpen || first} />
       </div>
       {!loading&&<div className="player-life"><LifeMeter lives={rideStatus.lives}/></div>}
       {rideStatus.crashed && (rideStatus.damage??1)>0 && (

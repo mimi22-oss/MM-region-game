@@ -6,10 +6,10 @@ import sys
 sys.stdout.reconfigure(encoding='utf-8')
 
 # Coordinates and constants
-kanbale_lon = 94.064442
-kanbale_lat = 23.163868
-kanbale_u = 160.0
-kanbale_v = -252.0
+kanbale_lon = 94.068471
+kanbale_lat = 23.168500
+kanbale_u = 0.0
+kanbale_v = -740.0
 m_per_deg_lat = 111320.0
 m_per_deg_lon = 111320.0 * math.cos(23.160308 * math.pi / 180) # ~102354.72
 angle = math.pi / 4
@@ -112,36 +112,28 @@ for r_idx, r in enumerate(raw_roads):
         name = raw_name or f'မြို့သာ ရပ်ကွက်လယ်လမ်း ({r_idx+1})'
         width = 6.5
 
-    coords = r['geometry']['coordinates']
-    
     if ref == 'NH41':
-        # Area 5's existing AH1 centreline is u=0. The original OSM
-        # segment crosses it; filtering individual vertices by v previously
-        # deleted that connection and left a 124m sideways gap. Clip the
-        # original polyline at the crossing, without translating the map.
-        retained = []
-        started = False
-        for a, b in zip(coords, coords[1:]):
-            au, av = geo_to_uv(*a)
-            bu, bv = geo_to_uv(*b)
-            if not started and au <= 0 < bu:
-                t = -au / (bu - au)
-                retained.append([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])])
-                started = True
-            if not started:
-                continue
-            if bv < -1350 <= av:
-                t = (-1350 - av) / (bv - av)
-                retained.append([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])])
-                break
-            retained.append(b)
-        if len(retained) < 2:
-            raise ValueError('NH41 source no longer crosses the Area 5 AH1 anchor u=0; review alignment')
-        coords = retained
-
-    geo_points = [[round(pt[0], 7), round(pt[1], 7)] for pt in coords]
-    uv_points = [list(geo_to_uv(pt[0], pt[1])) for pt in coords]
-    world_points = [list(uv_to_world(uv[0], uv[1])) for uv in uv_points]
+        # Straight AH1 Asian Highway along u=0 connecting to Area 5 at v=-66.62
+        # passing through Shwe Myanmar gap (between Rice Mill and Vacant Lot at v=-210..-250)
+        # and continuing straight North through Myothar Center
+        ah1_vs = [-66.62] + list(range(-100, -1450, -50))
+        uv_points = [[0.0, float(v)] for v in ah1_vs]
+        geo_points = [[
+            round(kanbale_lon + (uv[0] - kanbale_u) / m_per_deg_lon, 7),
+            round(kanbale_lat - (uv[1] - kanbale_v) / m_per_deg_lat, 7)
+        ] for uv in uv_points]
+        world_points = [list(uv_to_world(uv[0], uv[1])) for uv in uv_points]
+    else:
+        coords = r['geometry']['coordinates']
+        uv_points = [list(geo_to_uv(pt[0], pt[1])) for pt in coords]
+        for end_i in (0, -1):
+            if abs(uv_points[end_i][0]) < 12.0:
+                uv_points[end_i][0] = 0.0
+        geo_points = [[
+            round(kanbale_lon + (uv[0] - kanbale_u) / m_per_deg_lon, 7),
+            round(kanbale_lat - (uv[1] - kanbale_v) / m_per_deg_lat, 7)
+        ] for uv in uv_points]
+        world_points = [list(uv_to_world(uv[0], uv[1])) for uv in uv_points]
 
     r_id = r.get('id') or props.get('id') or f'myothar-center-road-{r_idx+1}'
     roads.append({
@@ -540,8 +532,8 @@ export const myotharCenterMeta = {{
   township: 'ကလေးမြို့နယ်',
   region: 'စစ်ကိုင်းတိုင်းဒေသကြီး',
   description: 'ကလေးမြို့နယ်၊ မြို့သာရပ်ကွက် နယ်မြေ (၅) ရွှေမြန်မာစက်သုံးဆီဆိုင် တောင်ဘက်နှင့် ကံပုလဲရွာ အနောက်ဘက်ခြမ်းတွင် ဆက်စပ်တည်ရှိသော မြို့သာရပ်ကွက် အလယ်ခေါင် (နယ်မြေ ၁ မှ ၇ အထိ) ခြံဝန်းနှင့် အဆောက်အအုံ {len(buildings)} လုံးနှင့် လမ်းကွန်ရက်',
-  coordinates: {{ lat: 23.167062, lng: 94.067266 }},
-  spawn: toWorld(449.0, -607.6),
+  coordinates: {{ lat: 23.168500, lng: 94.068471 }},
+  spawn: toWorld(0.0, -740.0),
   bounds: {{
     minU: {round(min(bounds_u), 1)},
     maxU: {round(max(bounds_u), 1)},

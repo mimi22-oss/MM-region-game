@@ -120,20 +120,39 @@ export const MyotharCenter = memo(function MyotharCenter({
       {/* ======================================================== */}
       <group name="myothar-center-roads">
         {roadSegments.map((s) => (
-          <mesh
-            key={s.key}
-            position={[s.mx, 0.04, s.mz]}
-            rotation={[-Math.PI / 2, 0, s.rot]}
-            receiveShadow
-            userData={{ walkable: true }}
-          >
-            <planeGeometry args={[s.length, s.width]} />
-            <meshStandardMaterial
-              color={s.isAh1 ? '#3d4443' : '#5a6663'}
-              roughness={0.85}
-              metalness={0.06}
-            />
-          </mesh>
+          <group key={s.key} position={[s.mx, 0, s.mz]} rotation={[0, s.rot, 0]}>
+            {/* Gravel / Shoulder sub-base */}
+            <mesh
+              position={[0, 0.04, 0]}
+              rotation={[-Math.PI / 2, 0, 0]}
+              receiveShadow
+              userData={{ walkable: true }}
+            >
+              <planeGeometry args={[s.length, s.width + (s.isAh1 ? 1.6 : 0.8)]} />
+              <meshStandardMaterial color="#c5b18d" roughness={0.92} />
+            </mesh>
+            {/* Paved road surface */}
+            <mesh
+              position={[0, s.isAh1 ? 0.18 : 0.08, 0]}
+              rotation={[-Math.PI / 2, 0, 0]}
+              receiveShadow
+              userData={{ walkable: true }}
+            >
+              <planeGeometry args={[s.length, s.width]} />
+              <meshStandardMaterial
+                color={s.isAh1 ? '#697574' : '#5a6663'}
+                roughness={0.82}
+                metalness={0.06}
+              />
+            </mesh>
+            {/* AH1 Center Dashed Yellow Stripe */}
+            {s.isAh1 && s.length >= 6 && (
+              <mesh position={[0, 0.22, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[Math.min(s.length - 2, 3.2), 0.16]} />
+                <meshStandardMaterial color="#e9d9a2" roughness={0.6} />
+              </mesh>
+            )}
+          </group>
         ))}
       </group>
 

@@ -32,6 +32,7 @@ import {
   shweMyanmarResidential,
   shweMyanmarVacantLot,
 } from "../data/wards/myothar/shweMyanmarArea.ts";
+import { myotharCenterBuildings } from "../data/wards/myothar/center/myotharCenterBuildings.ts";
 export const PLAYER_RADIUS = 0.4;
 const nearbyAreca = spatialIndex(estatePalms, (p) => ({
   x: p.x,
@@ -61,6 +62,14 @@ const shweMyanmarBuildings = [
   shweMyanmarResidential.store,
   ...shweMyanmarResidential.houses,
 ];
+const myotharCenterObstacles = myotharCenterBuildings.map((b) => ({
+  id: b.id,
+  x: b.x,
+  z: b.z,
+  width: b.houseWidth || b.width || 5.0,
+  depth: b.houseLength || b.depth || 6.2,
+  rotation: b.rotation,
+}));
 const privateHomeIds = new Set(
   [...solidWardHouses, ...villageHouses].map((h) => h.id),
 );
@@ -71,6 +80,7 @@ const nearbyBuildings = spatialIndex(
     ...ward.riceMill.buildings,
     ...villageHouses,
     ...shweMyanmarBuildings,
+    ...myotharCenterObstacles,
   ],
   (h) => ({
     x: h.x,

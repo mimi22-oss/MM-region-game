@@ -96,7 +96,7 @@ export const MAP_DESTINATIONS: MapDestination[] = [
     label: "မြို့သာ အလယ်ခေါင်",
     title: "မြို့သာရပ်ကွက် အလယ်ခေါင် (နယ်မြေ ၁ မှ ၇)",
     subtitle: "AH1 လမ်းမကြီး · မြို့သာရပ်ကွက် အလယ်ခေါင် (နယ်မြေ ၁ မှ ၇) · ကလေးမြို့",
-    ...toWorld(400.0, -750.0),
+    ...toWorld(0.0, -740.0),
     yaw: Math.PI / 4,
     pitch: -0.15,
     distance: 12,
@@ -106,7 +106,7 @@ export const MAP_DESTINATIONS: MapDestination[] = [
     label: "မြို့သာကျောင်းတိုက်",
     title: "မြို့သာကျောင်းတိုက် · ဘုန်းတော်ကြီးကျောင်း",
     subtitle: "မြို့သာကျောင်းတိုက် · မြို့သာရပ်ကွက် အလယ်ခေါင် · ကလေးမြို့",
-    ...toWorld(940.5, -932.7),
+    ...toWorld(368.1, -905.1),
     yaw: 0,
     pitch: -0.16,
     distance: 14,
@@ -116,7 +116,7 @@ export const MAP_DESTINATIONS: MapDestination[] = [
     label: "PPK စက်သုံးဆီဆိုင်",
     title: "Pyae Phyo Kyaw (PPK) Petrol Station",
     subtitle: "PPK စက်သုံးဆီအရောင်းဆိုင် · AH1 အာရှလမ်းမကြီးဘေး · မြို့သာ အလယ်ခေါင်",
-    ...toWorld(558.1, -930.6),
+    ...toWorld(-14.3, -902.9),
     yaw: -Math.PI / 4,
     pitch: -0.15,
     distance: 12,
@@ -126,7 +126,7 @@ export const MAP_DESTINATIONS: MapDestination[] = [
     label: "OSO Energy စက်သုံးဆီ",
     title: "OSO ENERGY 4 - PETROL STATION",
     subtitle: "OSO Energy 4 စက်သုံးဆီဆိုင် · AH1 အာရှလမ်းမကြီးဘေး · မြို့သာ အလယ်ခေါင်",
-    ...toWorld(483.7, -602.7),
+    ...toWorld(-88.7, -575.0),
     yaw: -Math.PI / 4,
     pitch: -0.15,
     distance: 12,
@@ -136,7 +136,7 @@ export const MAP_DESTINATIONS: MapDestination[] = [
     label: "ကိုလွင်ဦး ကားလုပ်ငန်း",
     title: "ကိုလွင်ဦး (ကားလုပ်ငန်းနှင့် ဝပ်ရှော့)",
     subtitle: "ကိုလွင်ဦး ကားပြင်လုပ်ငန်းနှင့် ဝပ်ရှော့ရုံ · မြို့သာ အလယ်ခေါင် · ကလေးမြို့",
-    ...toWorld(639.9, -828.9),
+    ...toWorld(67.5, -801.2),
     yaw: Math.PI / 4,
     pitch: -0.15,
     distance: 12,
@@ -146,7 +146,7 @@ export const MAP_DESTINATIONS: MapDestination[] = [
     label: "မင်းကံကောင်း စားသောက်ဆိုင်",
     title: "Min Kan Kaung - Restaurant",
     subtitle: "မင်းကံကောင်း စားသောက်ဆိုင်နှင့် လက်ဖက်ရည်ဆိုင် · မြို့သာ အလယ်ခေါင်",
-    ...toWorld(301.2, -472.1),
+    ...toWorld(-271.2, -444.5),
     yaw: 0,
     pitch: -0.15,
     distance: 12,
@@ -156,7 +156,7 @@ export const MAP_DESTINATIONS: MapDestination[] = [
     label: "လရောင် Mobile",
     title: "လရောင် Mobile (ဖုန်းအရောင်းဆိုင်)",
     subtitle: "လရောင် Mobile နှင့် အီလက်ထရောနစ် အရောင်းဆိုင် · မြို့သာ အလယ်ခေါင်",
-    ...toWorld(449.0, -607.6),
+    ...toWorld(-123.4, -580.0),
     yaw: Math.PI / 4,
     pitch: -0.15,
     distance: 12,
@@ -166,7 +166,7 @@ export const MAP_DESTINATIONS: MapDestination[] = [
     label: "သိန်းထိုက်စံ ဆိုင်ခွဲ (၂)",
     title: "သိန်းထိုက်စံ ကုန်မာနှင့် အိမ်ဆောက်ပစ္စည်းဆိုင် (ဆိုင်ခွဲ ၂)",
     subtitle: "သိန်းထိုက်စံ ကုန်မာနှင့် အိမ်ဆောက်ပစ္စည်းအရောင်းဆိုင် ဆိုင်ခွဲ (၂) · မြို့သာ အလယ်ခေါင်",
-    ...toWorld(189.6, -303.4),
+    ...toWorld(-382.8, -275.8),
     yaw: -Math.PI / 4,
     pitch: -0.15,
     distance: 10,
@@ -316,7 +316,7 @@ export function detectLocation(x: number, z: number): DetectedLocation {
   // ၀.၅။ မြို့သာရပ်ကွက် အလယ်ခေါင် (နယ်မြေ ၁ မှ ၇)
   // တည်နေရာ: မြို့သာရပ်ကွက် နယ်မြေ (၅) ၏ ရွှေမြန်မာ စက်သုံးဆီဆိုင် တောင်ဘက်၊ ကံပုလဲရွာ ၏ အနောက်ဘက်ခြမ်း
   if (
-    v <= -270 && v >= -1350 && u >= -120 && u <= 1250 &&
+    v <= -270 && v >= -1450 && u >= -600 && u <= 650 &&
     !(u >= 0 && u <= 95 && v >= -305 && v < -250) &&
     !(u < 0 && u >= -95 && v >= -305 && v < -250)
   ) {
@@ -326,50 +326,50 @@ export function detectLocation(x: number, z: number): DetectedLocation {
     let locId = "myothar-center";
 
     // အထင်ကရနေရာ ၁၀ ခု အနီးသို့ ရောက်ရှိမှု စစ်ဆေးခြင်း
-    if (Math.hypot(u - 940.5, v - (-932.7)) < 35) {
+    if (Math.hypot(u - 368.1, v - (-905.1)) < 35) {
       locId = "myothar-monastery";
       subArea = "မြို့သာကျောင်းတိုက် (ဘုန်းတော်ကြီးကျောင်း)";
       title = "မြို့သာကျောင်းတိုက် · မြို့သာရပ်ကွက်";
       subtitle = "မြို့သာကျောင်းတိုက် · မြို့သာရပ်ကွက် အလယ်ခေါင် · ကလေးမြို့";
-    } else if (Math.hypot(u - 558.1, v - (-930.6)) < 30) {
+    } else if (Math.hypot(u - (-14.3), v - (-902.9)) < 30) {
       locId = "ppk-petrol";
       subArea = "Pyae Phyo Kyaw (PPK) စက်သုံးဆီဆိုင်";
       title = "PPK Petrol Station · မြို့သာရပ်ကွက်";
       subtitle = "Pyae Phyo Kyaw (PPK) စက်သုံးဆီအရောင်းဆိုင် · AH1 အာရှလမ်းမကြီးဘေး · ကလေးမြို့";
-    } else if (Math.hypot(u - 483.7, v - (-602.7)) < 28) {
+    } else if (Math.hypot(u - (-88.7), v - (-575.0)) < 28) {
       locId = "oso-energy";
       subArea = "OSO ENERGY 4 စက်သုံးဆီဆိုင်";
       title = "OSO ENERGY 4 - PETROL STATION";
       subtitle = "OSO Energy 4 စက်သုံးဆီအရောင်းဆိုင် · AH1 အာရှလမ်းမကြီးဘေး · ကလေးမြို့";
-    } else if (Math.hypot(u - 639.9, v - (-828.9)) < 28) {
+    } else if (Math.hypot(u - 67.5, v - (-801.2)) < 28) {
       locId = "ko-lwin-oo";
       subArea = "ကိုလွင်ဦး (ကားလုပ်ငန်းနှင့် ဝပ်ရှော့)";
       title = "ကိုလွင်ဦး (ကားလုပ်ငန်း) · မြို့သာရပ်ကွက်";
       subtitle = "ကိုလွင်ဦး ကားပြင်လုပ်ငန်းနှင့် ဝပ်ရှော့ရုံ · မြို့သာ အလယ်ခေါင် · ကလေးမြို့";
-    } else if (Math.hypot(u - 443.4, v - (-642.5)) < 25) {
+    } else if (Math.hypot(u - (-129.0), v - (-614.8)) < 25) {
       locId = "gbs-kalay";
       subArea = "Good Brothers' (GBS) Kalay (လယ်ယာသုံး စက်ကိရိယာ အရောင်းပြခန်း)";
       title = "Good Brothers' (GBS) Kalay · မြို့သာရပ်ကွက်";
       subtitle = "Good Brothers' (GBS) လယ်ယာသုံး စက်ကိရိယာ အရောင်းပြခန်း · AH1 ဘေး · ကလေးမြို့";
-    } else if (Math.hypot(u - 301.2, v - (-472.1)) < 28) {
+    } else if (Math.hypot(u - (-271.2), v - (-444.5)) < 28) {
       locId = "min-kan-kaung";
       subArea = "မင်းကံကောင်း စားသောက်ဆိုင်နှင့် လက်ဖက်ရည်ဆိုင်";
       title = "Min Kan Kaung - Restaurant · မြို့သာရပ်ကွက်";
       subtitle = "မင်းကံကောင်း စားသောက်ဆိုင်နှင့် လက်ဖက်ရည်ဆိုင် · AH1 ဘေး · ကလေးမြို့";
-    } else if (Math.hypot(u - 449.0, v - (-607.6)) < 25) {
+    } else if (Math.hypot(u - (-123.4), v - (-580.0)) < 25) {
       locId = "layoung-mobile";
       subArea = "လရောင် Mobile (ဖုန်းအရောင်းဆိုင်)";
       title = "လရောင် Mobile · မြို့သာရပ်ကွက်";
       subtitle = "လရောင် Mobile နှင့် အီလက်ထရောနစ် အရောင်းဆိုင် · မြို့သာ အလယ်ခေါင် · ကလေးမြို့";
-    } else if (Math.hypot(u - 189.6, v - (-303.4)) < 25) {
+    } else if (Math.hypot(u - (-382.8), v - (-275.8)) < 25) {
       locId = "thein-htike-san-2";
       subArea = "သိန်းထိုက်စံ ကုန်မာနှင့် အိမ်ဆောက်အရောင်းဆိုင် ဆိုင်ခွဲ (၂)";
       title = "သိန်းထိုက်စံ ကုန်မာဆိုင် (ဆိုင်ခွဲ ၂) · မြို့သာရပ်ကွက်";
       subtitle = "သိန်းထိုက်စံ ကုန်မာနှင့် အိမ်ဆောက်ပစ္စည်းဆိုင်ခွဲ (၂) · AH1 ဘေး · ကလေးမြို့";
-    } else if (Math.hypot(u - 530.7, v - (-629.4)) < 25) {
+    } else if (Math.hypot(u - (-41.7), v - (-601.8)) < 25) {
       subArea = "နှင်းသဇင် - ကလေး ကုမ္ပဏီ လီမိတက်";
       subtitle = "နှင်းသဇင် - ကလေး ကုမ္ပဏီ လီမိတက် · မြို့သာ အလယ်ခေါင် · ကလေးမြို့";
-    } else if (Math.hypot(u - 529.3, v - (-706.8)) < 25) {
+    } else if (Math.hypot(u - (-43.1), v - (-679.2)) < 25) {
       subArea = "ရဲတံခွန် အရောင်းဆိုင်";
       subtitle = "ရဲတံခွန် အရောင်းဆိုင် · မြို့သာ အလယ်ခေါင် · ကလေးမြို့";
     }

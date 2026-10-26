@@ -18,10 +18,10 @@ export const myotharCenterPOIs: MyotharCenterPOI[] = [
     "kind": "place_of_worship",
     "lon": 94.07206803560257,
     "lat": 23.169983249728975,
-    "u": 940.51,
-    "v": -932.75,
-    "x": 5.49,
-    "z": -1324.59,
+    "u": 368.15,
+    "v": -905.12,
+    "x": -379.7,
+    "z": -900.34,
     "buildingId": "way/403025382"
   },
   {
@@ -30,10 +30,10 @@ export const myotharCenterPOIs: MyotharCenterPOI[] = [
     "kind": "shop",
     "lon": 94.06913101673126,
     "lat": 23.169049916074975,
-    "u": 639.91,
-    "v": -828.85,
-    "x": -133.6,
-    "z": -1038.57,
+    "u": 67.55,
+    "v": -801.22,
+    "x": -518.78,
+    "z": -614.31,
     "buildingId": "way/910000808"
   },
   {
@@ -42,11 +42,11 @@ export const myotharCenterPOIs: MyotharCenterPOI[] = [
     "kind": "shop",
     "lon": 94.06833171844482,
     "lat": 23.169963522796987,
-    "u": 558.11,
-    "v": -930.55,
-    "x": -263.35,
-    "z": -1052.64,
-    "buildingId": "way/910000472"
+    "u": -14.26,
+    "v": -902.92,
+    "x": -648.54,
+    "z": -628.38,
+    "buildingId": "way/910000474"
   },
   {
     "id": "custom-label-1792961071734-anamq",
@@ -54,10 +54,10 @@ export const myotharCenterPOIs: MyotharCenterPOI[] = [
     "kind": "shop",
     "lon": 94.06473085284233,
     "lat": 23.164330131855255,
-    "u": 189.56,
-    "v": -303.44,
-    "x": -80.53,
-    "z": -348.6,
+    "u": -382.8,
+    "v": -275.81,
+    "x": -465.71,
+    "z": 75.65,
     "buildingId": "way/910000484"
   },
   {
@@ -66,10 +66,10 @@ export const myotharCenterPOIs: MyotharCenterPOI[] = [
     "kind": "shop",
     "lon": 94.06582117080688,
     "lat": 23.165845462110504,
-    "u": 301.16,
-    "v": -472.13,
-    "x": -120.89,
-    "z": -546.8,
+    "u": -271.21,
+    "v": -444.5,
+    "x": -506.08,
+    "z": -122.53,
     "buildingId": "way/403021209"
   },
   {
@@ -78,10 +78,10 @@ export const myotharCenterPOIs: MyotharCenterPOI[] = [
     "kind": "shop",
     "lon": 94.0672655403614,
     "lat": 23.167062399216185,
-    "u": 448.99,
-    "v": -607.6,
-    "x": -112.15,
-    "z": -747.12,
+    "u": -123.38,
+    "v": -579.97,
+    "x": -497.34,
+    "z": -322.86,
     "buildingId": "way/910000534"
   },
   {
@@ -90,10 +90,10 @@ export const myotharCenterPOIs: MyotharCenterPOI[] = [
     "kind": "shop",
     "lon": 94.06760483980179,
     "lat": 23.1670180126468,
-    "u": 483.71,
-    "v": -602.66,
-    "x": -84.11,
-    "z": -768.18,
+    "u": -88.65,
+    "v": -575.03,
+    "x": -469.29,
+    "z": -343.92,
     "buildingId": "way/910000535"
   },
   {
@@ -102,10 +102,10 @@ export const myotharCenterPOIs: MyotharCenterPOI[] = [
     "kind": "shop",
     "lon": 94.0672105550766,
     "lat": 23.16737557070423,
-    "u": 443.36,
-    "v": -642.46,
-    "x": -140.78,
-    "z": -767.79,
+    "u": -129.0,
+    "v": -614.83,
+    "x": -525.97,
+    "z": -343.53,
     "buildingId": "way/910001005"
   },
   {
@@ -114,10 +114,10 @@ export const myotharCenterPOIs: MyotharCenterPOI[] = [
     "kind": "shop",
     "lon": 94.06806349754333,
     "lat": 23.167258439721614,
-    "u": 530.65,
-    "v": -629.42,
-    "x": -69.84,
-    "z": -820.29,
+    "u": -41.71,
+    "v": -601.79,
+    "x": -455.02,
+    "z": -396.04,
     "buildingId": "manual-1792961434584-10ec6"
   },
   {
@@ -126,10 +126,10 @@ export const myotharCenterPOIs: MyotharCenterPOI[] = [
     "kind": "shop",
     "lon": 94.06805008649826,
     "lat": 23.16795382636937,
-    "u": 529.28,
-    "v": -706.83,
-    "x": -125.55,
-    "z": -874.06,
+    "u": -43.08,
+    "v": -679.2,
+    "x": -510.73,
+    "z": -449.8,
     "buildingId": "way/910000546"
   }
 ];

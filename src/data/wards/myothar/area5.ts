@@ -82,7 +82,7 @@ export const area5={
    {id:'quarters',name:'ဘုန်းကြီးကျောင်းဆောင်',u:0,v:23,width:27,depth:14,color:'#bda382',roof:'#80564d'}],
   stupas:[{u:31,v:9,radius:5},{u:34,v:-10,radius:2.7},{u:23,v:-14,radius:2}],
  },
- roads:[{id:'farmhouse-access',name:'စိုက်ခင်းအိမ်ဝင်လမ်း',...toWorld(-31.5,270),width:63,depth:3,rotation:angle,main:false},{id:'ah1',name:'AH1',...toWorld(0,2100),width:12,depth:6200,rotation:angle,main:true},
+ roads:[{id:'farmhouse-access',name:'စိုက်ခင်းအိမ်ဝင်လမ်း',...toWorld(-31.5,270),width:63,depth:3,rotation:angle,main:false},{id:'ah1',name:'AH1',...toWorld(0,2566.69),width:12,depth:5266.62,rotation:angle,main:true},
  ...[-77,-99].map((u,i)=>({id:`lane${i}`,name:'ရပ်ကွက်လမ်း',...toWorld(u,0),width:5,depth:226,rotation:angle,main:false})),
  ...[-112,-47,40,112].map((v,i)=>({id:`cross${i}`,name:'လမ်းသွယ်',...toWorld(-57,v),width:114,depth:5,rotation:angle,main:false})),
  {id:'pitch-monastery-lane',name:'ကွင်းနှင့်ကျောင်းကြားလမ်း',...toWorld(150,68),width:5,depth:124,rotation:angle,main:false},
