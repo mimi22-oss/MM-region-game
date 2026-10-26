@@ -33,6 +33,9 @@ import {
   shweMyanmarVacantLot,
 } from "../data/wards/myothar/shweMyanmarArea.ts";
 import { myotharCenterBuildings } from "../data/wards/myothar/center/myotharCenterBuildings.ts";
+import { kalayArea1Buildings } from "../data/wards/kalayArea1/kalayArea1Buildings.ts";
+import { nankaleinCreek, nankaleinBridge } from "../data/wards/kalayArea1/kalayArea1Data.ts";
+import { nankaleinTeaShopData } from "../data/wards/kalayArea1/kalayArea1TeaShop.ts";
 export const PLAYER_RADIUS = 0.4;
 const nearbyAreca = spatialIndex(estatePalms, (p) => ({
   x: p.x,
@@ -70,6 +73,14 @@ const myotharCenterObstacles = myotharCenterBuildings.map((b) => ({
   depth: b.houseLength || b.depth || 6.2,
   rotation: b.rotation,
 }));
+const kalayArea1Obstacles = kalayArea1Buildings.map((b) => ({
+  id: b.id,
+  x: b.x,
+  z: b.z,
+  width: b.houseWidth || b.width || 5.0,
+  depth: b.houseLength || b.depth || 6.2,
+  rotation: b.rotation,
+}));
 const privateHomeIds = new Set(
   [...solidWardHouses, ...villageHouses].map((h) => h.id),
 );
@@ -81,6 +92,7 @@ const nearbyBuildings = spatialIndex(
     ...villageHouses,
     ...shweMyanmarBuildings,
     ...myotharCenterObstacles,
+    ...kalayArea1Obstacles,
   ],
   (h) => ({
     x: h.x,
@@ -138,11 +150,11 @@ const farmhouseObstacles = [
   { minX: 6.0, maxX: 15.0, minZ: -4.2, maxZ: -3.8 }, // Kitchen Back Outer Wall
   { minX: 6.0, maxX: 15.0, minZ: 3.8, maxZ: 4.2 }, // Kitchen Front Outer Wall
   // Compound Fences (Wire Mesh on sides and back, clear of kitchen annex)
-  { minX: 17.8, maxX: 18.2, minZ: -7.5, maxZ: 7.5 }, // Left Wire Mesh Fence (3m clear of kitchen!)
-  { minX: -9.2, maxX: -8.8, minZ: -7.5, maxZ: 7.5 }, // Right Wire Mesh Fence
-  { minX: -9.0, maxX: 18.0, minZ: -7.7, maxZ: -7.3 }, // Back Wire Mesh Fence
-  { minX: -9.0, maxX: -1.7, minZ: 7.3, maxZ: 7.7 }, // Front Fence Right Section
-  { minX: 1.7, maxX: 18.0, minZ: 7.3, maxZ: 7.7 }, // Front Fence Left Section
+  { minX: 17.8, maxX: 18.2, minZ: -7.5, maxZ: 7.5, jumpTop: 1.65 }, // Left Wire Mesh Fence (3m clear of kitchen!)
+  { minX: -9.2, maxX: -8.8, minZ: -7.5, maxZ: 7.5, jumpTop: 1.65 }, // Right Wire Mesh Fence
+  { minX: -9.0, maxX: 18.0, minZ: -7.7, maxZ: -7.3, jumpTop: 1.65 }, // Back Wire Mesh Fence
+  { minX: -9.0, maxX: -1.7, minZ: 7.3, maxZ: 7.7, jumpTop: 2.05 }, // Front Fence Right Section
+  { minX: 1.7, maxX: 18.0, minZ: 7.3, maxZ: 7.7, jumpTop: 2.05 }, // Front Fence Left Section
 ];
 
 // Two-room toilet block (၂ ခန်းတွဲ အိမ်သာ) collision setup at (130.464, 277.362)
@@ -212,13 +224,15 @@ export function canStandKanbaleSchool(x: number, z: number): boolean {
   return true;
 }
 
-function canStandFarmhouse(x: number, z: number): boolean {
+function canStandFarmhouse(x: number, z: number, clearance = 0): boolean {
   const dx = x - farmhouseData.x,
     dz = z - farmhouseData.z;
   const lx = dx * fhC - dz * fhS,
     lz = dx * fhS + dz * fhC;
   if (Math.abs(lx) > 22 || lz < -12 || lz > 12) return true;
   for (const obs of farmhouseObstacles) {
+    // Only explicit finite-height fences can be jumped; walls stay solid.
+    if (obs.jumpTop !== undefined && clearance > obs.jumpTop) continue;
     const nx = Math.max(obs.minX, Math.min(lx, obs.maxX));
     const nz = Math.max(obs.minZ, Math.min(lz, obs.maxZ));
     if (Math.hypot(lx - nx, lz - nz) < PLAYER_RADIUS) return false;
@@ -276,6 +290,42 @@ export function canStandUShweHouse(x: number, z: number): boolean {
   return true;
 }
 
+// Nankalein Tea Shop (Kalay Area 1) collision setup
+const tsC = Math.cos(nankaleinTeaShopData.rotation);
+const tsS = Math.sin(nankaleinTeaShopData.rotation);
+
+export function canStandNankaleinTeaShop(x: number, z: number): boolean {
+  const dx = x - nankaleinTeaShopData.x,
+    dz = z - nankaleinTeaShopData.z;
+  const du = dx * tsC - dz * tsS,
+    dv = dx * tsS + dz * tsC;
+
+  // Outer bounding box of tea shop compound
+  if (Math.abs(du) > 7.5 || Math.abs(dv) > 12.0) return true;
+
+  // 1. Rear wall (du: -6.1 to -5.7, dv: -9.2 to +9.2)
+  if (du < -5.6 && du > -6.2 - PLAYER_RADIUS && Math.abs(dv) < 9.2 + PLAYER_RADIUS)
+    return false;
+
+  // 2. North side wall (dv: +8.7 to +9.2, du: -6.0 to 0.0)
+  if (dv > 8.6 && dv < 9.2 + PLAYER_RADIUS && du < 0.2 && du > -6.2)
+    return false;
+
+  // 3. South side wall (dv: -9.2 to -8.7, du: -6.0 to 0.0)
+  if (dv < -8.6 && dv > -9.2 - PLAYER_RADIUS && du < 0.2 && du > -6.2)
+    return false;
+
+  // 4. Tea counter (du: -5.3 to -3.7, dv: -2.3 to +2.3)
+  if (
+    du > -5.3 - PLAYER_RADIUS &&
+    du < -3.7 + PLAYER_RADIUS &&
+    Math.abs(dv) < 2.3 + PLAYER_RADIUS
+  )
+    return false;
+
+  return true;
+}
+
 const cosA = Math.cos(angle);
 const sinA = Math.sin(angle);
 const mountainVillageHouses = [
@@ -316,16 +366,18 @@ export function treeBlocks(x: number, z: number): boolean {
     nearbyTrees(x, z).some((t) => Math.hypot(x - t.x, z - t.z) < t.radius + PLAYER_RADIUS);
 }
 
-export function canStand(x: number, z: number): boolean {
+/** clearance is sole height above local ground; airborne skips water, never solid buildings. */
+export function canStand(x: number, z: number, clearance = 0, airborne = false): boolean {
   if (
-    homeGateBlocks(x, z) ||
-    estateFenceBlocks(x, z)
+    homeGateBlocks(x, z, PLAYER_RADIUS, clearance) ||
+    estateFenceBlocks(x, z, PLAYER_RADIUS, clearance)
   )
     return false;
   const c = Math.cos(ward.canal.rotation),
     s = Math.sin(ward.canal.rotation);
   const u = x * c - z * s,
     v = x * s + z * c;
+  if (!airborne) {
   for (const water of [ward.canal, ...ward.drains]) {
     const centerV = water.x * s + water.z * c,
       localV = v - centerV;
@@ -358,6 +410,22 @@ export function canStand(x: number, z: number): boolean {
         )
           return false;
       }
+  }
+  // နန်းကလိန်ချောင်းနှင့် တံတားကြီး စစ်ဆေးခြင်း
+  const onNankaleinBridge =
+    Math.abs(u - nankaleinBridge.u) < nankaleinBridge.width / 2 - PLAYER_RADIUS &&
+    Math.abs(v - nankaleinBridge.v) < nankaleinBridge.length / 2 - PLAYER_RADIUS;
+  if (!onNankaleinBridge) {
+    for (let i = 1; i < nankaleinCreek.uvPoints.length; i++) {
+      const [a, b] = nankaleinCreek.uvPoints[i - 1];
+      const [d, e] = nankaleinCreek.uvPoints[i];
+      const du = d - a;
+      const dv = e - b;
+      const t = Math.max(0, Math.min(1, ((u - a) * du + (v - b) * dv) / (du * du + dv * dv)));
+      if (Math.hypot(u - a - t * du, v - b - t * dv) < nankaleinCreek.waterWidth / 2 + PLAYER_RADIUS) {
+        return false;
+      }
+    }
   }
   for (const village of kalayVillages) {
     const ew = village.canal;
@@ -394,6 +462,7 @@ export function canStand(x: number, z: number): boolean {
     Math.abs(px * s + pz * c) < pond.depth / 2 + PLAYER_RADIUS
   )
     return false;
+  }
   const m = ward.monastery,
     dx = x - m.x,
     dz = z - m.z;
@@ -435,11 +504,12 @@ export function canStand(x: number, z: number): boolean {
     Math.abs(z) > edge
   )
     return false;
-  if (!canStandFarmhouse(x, z)) return false;
+  if (!canStandFarmhouse(x, z, clearance)) return false;
   if (!canStandToilet(x, z)) return false;
   if (!canStandUShweHouse(x, z)) return false;
   if (!canStandMountainVillage(x, z)) return false;
   if (!canStandKanbaleSchool(x, z)) return false;
+  if (!canStandNankaleinTeaShop(x, z)) return false;
   if (Math.hypot(x - 295.571, z - 261.63) < 2.4 + PLAYER_RADIUS) return false;
   if (Math.hypot(x - 109.721, z - 284.313) < 0.42 + PLAYER_RADIUS) return false;
   if (

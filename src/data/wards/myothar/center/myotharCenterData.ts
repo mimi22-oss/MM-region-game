@@ -89,7 +89,7 @@ export function worldToGeo(x: number, z: number): { lon: number; lat: number } {
 export const myotharCenterMeta = {
 	id: 'myothar-center',
 	name: 'မြို့သာရပ်ကွက် အလယ် (နယ်မြေ ၁ မှ ၇)',
-	shortName: 'မြို့သာ အလယ်ခေါင်',
+	shortName: 'မြို့သာ အလယ်',
 	englishName: 'Myothar Ward Center (Areas 1-7)',
 	township: 'ကလေးမြို့နယ်',
 	region: 'စစ်ကိုင်းတိုင်းဒေသကြီး',

@@ -103,7 +103,7 @@ for r_idx, r in enumerate(raw_roads):
     raw_name = props.get('name', '')
     
     if ref == 'NH41':
-        name = 'AH1 / NH41 အာရှလမ်းမကြီး (မြို့သာ အလယ်ခေါင်)'
+        name = 'AH1 / NH41 အာရှလမ်းမကြီး (မြို့သာ အလယ်)'
         width = 12.0
     elif highway == 'service':
         name = raw_name or f'မြို့သာ ရပ်ကွက်တွင်း လမ်းသွယ် ({r_idx+1})'
@@ -527,7 +527,7 @@ export function worldToGeo(x: number, z: number): {{ lon: number; lat: number }}
 export const myotharCenterMeta = {{
   id: 'myothar-center',
   name: 'မြို့သာရပ်ကွက် အလယ် (နယ်မြေ ၁ မှ ၇)',
-  shortName: 'မြို့သာ အလယ်ခေါင်',
+  shortName: 'မြို့သာ အလယ်',
   englishName: 'Myothar Ward Center (Areas 1-7)',
   township: 'ကလေးမြို့နယ်',
   region: 'စစ်ကိုင်းတိုင်းဒေသကြီး',

@@ -15,7 +15,7 @@ export const worldMapLabels: MapLabel[] = uniqueMapLabels([
  ...kalayVillages.map(village => ({ id: `area:${village.id}`, name: village.name, ...village.labelPos, kind: 'area' as const, priority: 100 })),
  ...MAP_DESTINATIONS.filter(destination => !villages.has(destination.id) && !customDestinationIds.has(destination.id)).map(destination => ({
   id: `destination:${destination.id}`, name: destination.label, x: destination.x, z: destination.z,
-  kind: (destination.id.startsWith('myothar-area') || destination.id === 'myothar-center' ? 'area' : 'place') as MapLabel['kind'],
-  priority: destination.id.startsWith('myothar-area') || destination.id === 'myothar-center' ? 100 : 50,
+  kind: (destination.id.startsWith('myothar-area') || destination.id === 'myothar-center' || destination.id === 'kalay-area-1' ? 'area' : 'place') as MapLabel['kind'],
+  priority: destination.id.startsWith('myothar-area') || destination.id === 'myothar-center' || destination.id === 'kalay-area-1' ? 100 : (destination.id === 'nankalein-bridge' || destination.id === 'nankalein-chaung' || destination.id === 'kalay-area-1-tea-shop' ? 85 : 50),
  })),
 ]);

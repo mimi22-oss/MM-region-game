@@ -12,6 +12,10 @@ test('aerial labels preserve every custom POI at its rendered world coordinate',
  }
  assert.ok(worldMapLabels.some(label => label.id === 'area:kanbale'));
  assert.ok(worldMapLabels.some(label => label.id === 'poi:natmyaung-primary-school'));
+ assert.ok(worldMapLabels.some(label => label.id === 'destination:kalay-area-1'));
+ assert.ok(worldMapLabels.some(label => label.id === 'destination:nankalein-bridge'));
+ assert.ok(worldMapLabels.some(label => label.id === 'destination:nankalein-chaung'));
+ assert.ok(worldMapLabels.some(label => label.id === 'destination:kalay-area-1-tea-shop'));
  assert.equal(new Set(worldMapLabels.map(label => label.id)).size, worldMapLabels.length);
 });
 

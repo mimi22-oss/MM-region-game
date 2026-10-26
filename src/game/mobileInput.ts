@@ -3,6 +3,7 @@ export type MobileInput = {
   forward: number;
   right: number;
   sprint: boolean;
+  jump: boolean;
   lookX: number;
   lookY: number;
   panX: number;
@@ -15,6 +16,7 @@ export const createMobileInput = (): MobileInput => ({
   forward: 0,
   right: 0,
   sprint: false,
+  jump: false,
   lookX: 0,
   lookY: 0,
   panX: 0,
@@ -28,6 +30,7 @@ export function resetMobileInput(input: MobileInput) {
     forward: 0,
     right: 0,
     sprint: false,
+    jump: false,
     lookX: 0,
     lookY: 0,
     panX: 0,

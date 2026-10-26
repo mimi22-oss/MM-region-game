@@ -892,3 +892,35 @@ test('Nat Myaung village is integrated between Kyar Inn and Weipula with boundar
   assert.equal(locMonastery.subArea, 'နတ်မြောင်း ရွာလယ်ဓမ္မာရုံနှင့် ဘုန်းတော်ကြီးကျောင်း');
 });
 
+test('Nankalein tea shop in Kalay Area 1 has walkable dining areas and blocks walls and counter', async () => {
+  const { nankaleinTeaShopData } = await import('../src/data/wards/kalayArea1/kalayArea1TeaShop.ts');
+  const { detectLocation } = await import('../src/game/locationDetect.ts');
+  const shop = nankaleinTeaShopData;
+
+  assert.equal(shop.tables.length, 12, 'Has exactly 12 tables');
+  assert.equal(shop.tables.filter(t => !t.isOutdoor).length, 6, 'Has 6 indoor tables');
+  assert.equal(shop.tables.filter(t => t.isOutdoor).length, 6, 'Has 6 outdoor tables');
+  assert.equal(shop.tvs.length, 2, 'Has 2 TVs');
+  for (const t of shop.tables) {
+    assert.equal(t.cupCount, 4, 'Each table has 4 tea cups');
+  }
+
+  // Outdoor patio is walkable
+  const patioPt = toWorld(shop.outdoor.centerU, shop.outdoor.centerV);
+  assert.ok(canStand(patioPt.x, patioPt.z), 'Patio is walkable');
+
+  // Indoor dining hall walkway is walkable
+  const indoorPt = toWorld(shop.u - 2.5, shop.v);
+  assert.ok(canStand(indoorPt.x, indoorPt.z), 'Indoor walkway is walkable');
+
+  // Rear wall blocks walking
+  const wallPt = toWorld(shop.u - 5.9, shop.v);
+  assert.equal(canStand(wallPt.x, wallPt.z), false, 'Rear wall blocks walking');
+
+  // Location detect identifies tea shop
+  const loc = detectLocation(patioPt.x, patioPt.z);
+  assert.equal(loc.id, 'kalay-area-1-tea-shop');
+  assert.equal(loc.label, 'နန်းကလိန် လက်ဖက်ရည်ဆိုင်');
+});
+
+

@@ -4,10 +4,12 @@ import { MobileGesture, type MobileInput } from '../game/mobileInput';
 export function MobileControls({
 	input,
 	disabled,
+	canJump = false,
 	onInteract,
 }: {
 	input: RefObject<MobileInput>;
 	disabled: boolean;
+	canJump?: boolean;
 	onInteract: () => void;
 }) {
 	const gesture = useRef(new MobileGesture(input.current));
@@ -209,6 +211,16 @@ export function MobileControls({
 				onPointerCancel={release}
 				onLostPointerCapture={release}
 			/>
+			{canJump && <button type="button" className="mobile-sprint-btn mobile-jump-btn"
+                aria-label="ခုန်ရန် (Space)" title="ခုန်ရန် · Space"
+                onPointerDown={e => {e.preventDefault();e.stopPropagation();input.current.jump=true;onInteract();}}
+                onClick={e => {if(e.detail===0){input.current.jump=true;onInteract();}}}>
+                <div className="mobile-sprint-btn-inner">
+                    <svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M12 3v12M7 8l5-5 5 5M5 16v4h14v-4"/>
+                    </svg><span className="mobile-sprint-label">ခုန်</span>
+                </div>
+            </button>}
 			<button
 				type="button"
 				className={`mobile-sprint-btn${sprinting ? ' mobile-sprint-btn-active' : ''}`}

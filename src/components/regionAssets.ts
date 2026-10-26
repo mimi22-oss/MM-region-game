@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import { ward } from '../data/ward';
 import { kalayVillages } from '../data/villages';
 import { myotharCenterBuildings } from '../data/wards/myothar/center/index.ts';
+import { kalayArea1Buildings } from '../data/wards/kalayArea1/kalayArea1Buildings.ts';
 import { RegionDownloadQueue } from '../game/regionLoading';
 import kalaySignFace from '../assets/kalay_sign_face.png';
 import burmeseLionEmblem from '../assets/burmese_lion_emblem.png';
@@ -41,6 +42,17 @@ export const worldRegions = [
     houses: [
       ...ward.houses,
       ...myotharCenterBuildings.map((b) => ({
+        id: b.id,
+        name: b.name,
+        x: b.x,
+        z: b.z,
+        width: b.width,
+        depth: b.depth,
+        color: b.wallColor,
+        rotation: b.rotation,
+        roof: b.roofColor,
+      })),
+      ...kalayArea1Buildings.map((b) => ({
         id: b.id,
         name: b.name,
         x: b.x,

@@ -91,11 +91,12 @@ export function updateHomeAccess(
       Math.min(Math.abs(target - homeAccess.open[id]), dt * 1.8);
   }
 }
-export function homeGateBlocks(x: number, z: number, radius = 0.4) {
+export function homeGateBlocks(x: number, z: number, radius = 0.4, clearance = 0) {
   return (Object.keys(homeGates) as HomeGate[]).some((id) => {
     const g = homeGates[id],
       p = localPoint(x, z, g.x, g.z, g.rotation);
     return (
+      (id === "door" || clearance < 2.05) &&
       homeAccess.open[id] < 0.85 &&
       Math.abs(p.x) < g.width / 2 + radius &&
       Math.abs(p.z) < 0.12 + radius

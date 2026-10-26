@@ -1,18 +1,19 @@
+import {createJumpLegRig,skinJumpLeg,jumpLegPose} from '../game/humanJumpPose';
 import {garmentGeometry,closedSleeveGeometry,coveredStride} from '../game/characterClothing';
 import { CartoonFace } from './CartoonFace';
 import { CartoonHair } from './CartoonHair';
-import { createContext, useContext, useEffect, useMemo, useRef, type RefObject } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from 'react';
 import { HUMAN_PRESETS, type HumanAppearance } from '../data/appearance';
 import { useFrame } from '@react-three/fiber';
 import {
 	BufferGeometry, CatmullRomCurve3, Float32BufferAttribute, Group,
-	MeshStandardMaterial, SphereGeometry, Vector3, TubeGeometry, Quaternion, Mesh,
+	MeshStandardMaterial, SphereGeometry, Vector3, TubeGeometry, Quaternion, Mesh, SkinnedMesh,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { driverGrip, DRIVER_POSITION, DRIVER_SCALE, STEERING_TILT } from '../game/carCabin';
 
 type Point = [number, number, number];
-export type CharacterMotion = { speed: number; distance: number; stepLift?:number;leftFoot?:number;rightFoot?:number };
+export type CharacterMotion = { airborne?:boolean; jumpBend?:number; speed: number; distance: number; stepLift?:number;leftFoot?:number;rightFoot?:number };
 export type DrivingPose = {active:boolean;wheelAngle:number;interior:boolean;clutch:boolean;brake:boolean;throttle:boolean};
 
 // Shared resources keep switching characters inexpensive, including on phones.
@@ -73,6 +74,7 @@ const sleeve = loft([[.012, .055, .012], [.088, .018, .085], [.092, -.09, .09], 
 const cuff = loft([[.059, -.471, .06], [.064, -.458, .065], [.065, -.42, .064], [.062, -.41, .061]]);
 const pantsLeg = loft([[.01, .025, .01], [.093, 0, .102], [.099, -.13, .10], [.083, -.32, .081], [.079, -.46, .075], [.064, -.515, .06], [.012, -.53, .012]]);
 const ankle = loft([[.058, -.55, .057], [.061, -.548, .058], [.062, -.509, .06], [.059, -.502, .057]]);
+const jumpPantsLeg=skinJumpLeg(pantsLeg),jumpAnkle=skinJumpLeg(ankle);
 const shoe = loft([[.078, .031, .14], [.088, .055, .147], [.086, .092, .14], [.065, .133, .082], [.043, .143, .053], [.001, .144, .001]], [-.042, -.047, -.048, .003, .02, .02]);
 const sole = loft([[.078, .008, .14], [.087, .015, .148], [.089, .034, .15], [.085, .045, .145]], [-.045, -.045, -.045, -.045]);
 const soleStripe = loft([[.078, .007, .138], [.087, .012, .148], [.087, .021, .148]], [-.045, -.045, -.045]);
@@ -178,18 +180,32 @@ function Arm({ side, innerRef }: { side: number; innerRef: RefObject<Group | nul
 	</group>;
 }
 
-function Leg({ side, innerRef,covered=false }: { side: number; innerRef: RefObject<Group | null>;covered?:boolean }) {
- const materials=useHumanMaterials();
-	return <group ref={innerRef} position={[side * .104, .707, .016]}>
-		{!covered&&<><mesh geometry={pantsLeg} material={materials.trousers} castShadow />
-		<mesh geometry={ankle} material={materials.trouserSeam} castShadow />
-		<Ellipsoid position={[side * .078, -.19, .003]} scale={[.025, .083, .064]} material={materials.trouserSeam} />
-		<Ellipsoid position={[side * .085, -.139, .002]} scale={[.025, .019, .064]} material={materials.trousers} /></>}
-        {covered&&<Ellipsoid position={[0,-.61,0]} scale={[.052,.06,.052]} material={materials.skin}/>}
-		<group position={[0, -.7, -.015]}>
-			<HumanShoes/>
-		</group>
-	</group>;
+function Leg({ side, innerRef,covered=false,motion }: { side: number; innerRef: RefObject<Group | null>;covered?:boolean;motion:RefObject<CharacterMotion> }) {
+ const materials=useHumanMaterials(),rig=useMemo(createJumpLegRig,[]);
+ const trousers=useRef<SkinnedMesh>(null),cuffMesh=useRef<SkinnedMesh>(null),foot=useRef<Group>(null);
+ useLayoutEffect(()=>{
+  rig.hip.rotation.x=0;rig.knee.rotation.x=0;rig.ankle.rotation.x=0;
+  innerRef.current?.updateWorldMatrix(true,true);
+  trousers.current?.bind(rig.skeleton);cuffMesh.current?.bind(rig.skeleton);
+  return ()=>rig.skeleton.dispose();
+ },[rig,covered,innerRef]);
+ useFrame(()=>{
+  const {angle,drop}=jumpLegPose(motion.current.jumpBend??0,covered);
+  rig.hip.rotation.x=angle;rig.knee.rotation.x=-2*angle;rig.ankle.rotation.x=angle;
+  if(foot.current)foot.current.position.y=-.7+drop;
+ });
+ return <group ref={innerRef} name={side<0?'human-left-leg':'human-right-leg'} position={[side*.104,.707,.016]}>
+  <primitive object={rig.hip}>
+   {!covered&&<><Ellipsoid position={[side*.078,-.19,.003]} scale={[.025,.083,.064]} material={materials.trouserSeam}/>
+   <Ellipsoid position={[side*.085,-.139,.002]} scale={[.025,.019,.064]} material={materials.trousers}/></>}
+  </primitive>
+  {!covered&&<><skinnedMesh ref={trousers} geometry={jumpPantsLeg} material={materials.trousers} castShadow frustumCulled={false}/>
+  <skinnedMesh ref={cuffMesh} geometry={jumpAnkle} material={materials.trouserSeam} castShadow frustumCulled={false}/></>}
+  <group ref={foot} position={[0,-.7,-.015]}>
+   {covered&&<Ellipsoid position={[0,.09,.015]} scale={[.052,.06,.052]} material={materials.skin}/>}
+   <HumanShoes/>
+  </group>
+ </group>;
 }
 
 // Bent limbs keep both hands on the grips and both feet beside the footrests.
@@ -208,11 +224,17 @@ function HumanShoes(){
  return <group name={`human-${appearance.shoes}`}><mesh geometry={shoe} material={materials.white} castShadow/><mesh geometry={sole} material={materials.sole}/><mesh geometry={soleStripe} material={materials.rib}/>{appearance.shoes==='boots'?<mesh position={[0,.17,.01]} scale={[1,1,.92]} material={materials.white}><cylinderGeometry args={[.066,.075,.18,12]}/></mesh>:<mesh geometry={laces} material={materials.lace}/>}</group>;
 }
 const skirts={dress:garmentGeometry('dress'),longyi:garmentGeometry('longyi')};
-function HumanClothes({seated}:{seated:boolean}){
- const a=useContext(HumanContext),materials=useHumanMaterials();
+function HumanClothes({seated,motion}:{seated:boolean;motion:RefObject<CharacterMotion>}){
+ const a=useContext(HumanContext),materials=useHumanMaterials(),garment=useRef<Mesh>(null);
+ useFrame(()=>{
+  if(!garment.current)return;
+  const {drop}=jumpLegPose(seated?0:motion.current.jumpBend??0,true);
+  // Keep the hem above the shoes while the waist lowers with the crouch.
+  garment.current.scale.y=1-drop/.59;garment.current.position.y=.73*drop/.59;
+ });
  return <group name={`human-clothes-${a.clothes}`}>
   {a.clothes==='hoodie'?<><mesh geometry={pocket} material={materials.hoodie}/><mesh geometry={pocketStitch} material={materials.seam}/><mesh geometry={drawstrings} material={materials.lace}/><mesh geometry={hoodOuter} material={materials.hoodie}/><mesh geometry={hoodInner} material={materials.hoodInside}/><mesh geometry={hoodFrontFolds} material={materials.hoodie}/><mesh geometry={hoodRim} material={materials.hoodie}/></>:<>{[.84,.96,1.08,1.19].map(y=><Ellipsoid key={y} position={[0,y,-.142]} scale={[.009,.009,.006]} material={materials.lace}/>)}<mesh position={[0,1.15,-.13]} material={materials.white}><boxGeometry args={[.13,.06,.018]}/></mesh></>}
-  {(a.clothes==='dress'||a.clothes==='longyi')&&(seated?<mesh position={[0,.61,-.12]} scale={[.24,.12,.30]} geometry={ball} material={a.clothes==='dress'?materials.hoodie:materials.trousers}/>:<mesh name="opaque-garment" geometry={skirts[a.clothes]} material={a.clothes==='dress'?materials.hoodie:materials.trousers}/>)}
+  {(a.clothes==='dress'||a.clothes==='longyi')&&(seated?<mesh position={[0,.61,-.12]} scale={[.24,.12,.30]} geometry={ball} material={a.clothes==='dress'?materials.hoodie:materials.trousers}/>:<mesh ref={garment} name="opaque-garment" geometry={skirts[a.clothes]} material={a.clothes==='dress'?materials.hoodie:materials.trousers}/>)}
  </group>;
 }
 
@@ -282,18 +304,21 @@ function CharacterBody({ motion, riding=false, driving }: { motion: RefObject<Ch
 		if(driving&&!driving.current.active)return;
 		const dt = Math.min(delta, .06), a = animation.current;
 		a.time += dt;
-		const speed = riding||driving?0:Math.abs(motion.current.speed), active = Math.min(1, speed / .8);
+		const airborne=!!motion.current.airborne&&!riding&&!driving;
+        const bend=riding||driving?0:motion.current.jumpBend??0,{drop}=jumpLegPose(bend,covered),jumping=airborne||bend>0;
+		const speed = jumping||riding||driving?0:Math.abs(motion.current.speed), active = Math.min(1, speed / .8);
 		a.stride += (active - a.stride) * (1 - Math.exp(-dt * 11));
+        if(jumping)a.stride=0;
 		const run = Math.min(1, Math.max(0, (speed - 2.8) / 4));
 		const phase = motion.current.distance * (4.9 - run * .6);
 		const swing = covered?coveredStride(phase,a.stride):Math.sin(phase) * (.40 + run * .22) * a.stride;
-		if (leftLeg.current) {leftLeg.current.rotation.x = swing;leftLeg.current.position.y=.707+(motion.current.leftFoot??0)+Math.max(0,Math.sin(phase))*Math.min(covered?.05:1,motion.current.stepLift??0)*a.stride;}
-		if (rightLeg.current) {rightLeg.current.rotation.x = -swing;rightLeg.current.position.y=.707+(motion.current.rightFoot??0)+Math.max(0,-Math.sin(phase))*Math.min(covered?.05:1,motion.current.stepLift??0)*a.stride;}
-		if (leftArm.current) leftArm.current.rotation.x = -swing * .82;
-		if (rightArm.current) rightArm.current.rotation.x = swing * .82;
+		if (leftLeg.current) {leftLeg.current.rotation.x = jumping?0:swing;leftLeg.current.position.y=.707-drop+(motion.current.leftFoot??0)+Math.max(0,Math.sin(phase))*Math.min(covered?.05:1,motion.current.stepLift??0)*a.stride;}
+		if (rightLeg.current) {rightLeg.current.rotation.x = jumping?0:-swing;rightLeg.current.position.y=.707-drop+(motion.current.rightFoot??0)+Math.max(0,-Math.sin(phase))*Math.min(covered?.05:1,motion.current.stepLift??0)*a.stride;}
+		if (leftArm.current) leftArm.current.rotation.x = airborne?-.25:bend>0?.4*bend:-swing * .82;
+		if (rightArm.current) rightArm.current.rotation.x = airborne?-.25:bend>0?.4*bend:swing * .82;
 		if (body.current) {
-			body.current.position.y = driving?0:Math.abs(Math.sin(phase)) * .018 * a.stride + Math.sin(a.time * 1.8) * .0025 * (1 - a.stride);
-			body.current.rotation.z = Math.sin(phase) * .013 * a.stride;
+			body.current.position.y = jumping?-drop:driving?0:Math.abs(Math.sin(phase)) * .018 * a.stride + Math.sin(a.time * 1.8) * .0025 * (1 - a.stride);
+			body.current.rotation.z = jumping?0:Math.sin(phase) * .013 * a.stride;
 		}
 		if (headGroup.current) headGroup.current.rotation.y = Math.sin(a.time * .65) * .022 * (1 - a.stride);
 		if (headGroup.current&&driving) headGroup.current.visible=!driving.current.interior;
@@ -304,12 +329,12 @@ function CharacterBody({ motion, riding=false, driving }: { motion: RefObject<Ch
 		if (rightEye.current) rightEye.current.scale.y = Math.min(1, blinkScale);
 	});
 	return <group name="cartoon-boy-character" dispose={null}>
-		{driving?<><DrivingLeg side={-1} pose={driving}/><DrivingLeg side={1} pose={driving}/></>:riding?<><RidingLeg side={-1}/><RidingLeg side={1}/></>:<><Leg side={-1} innerRef={leftLeg} covered={covered}/><Leg side={1} innerRef={rightLeg} covered={covered}/></>}
+		{driving?<><DrivingLeg side={-1} pose={driving}/><DrivingLeg side={1} pose={driving}/></>:riding?<><RidingLeg side={-1}/><RidingLeg side={1}/></>:<><Leg side={-1} innerRef={leftLeg} covered={covered} motion={motion}/><Leg side={1} innerRef={rightLeg} covered={covered} motion={motion}/></>}
 		<group ref={body}>
 			<Ellipsoid position={[0, .72, .01]} scale={[.194, .106, .121]} material={materials.trousers} />
 			<mesh name="human-torso" geometry={torso} material={materials.hoodie} castShadow />
 			<mesh geometry={hem} material={materials.rib} castShadow />
-			<HumanClothes seated={riding||!!driving}/>
+			<HumanClothes seated={riding||!!driving} motion={motion}/>
 			<mesh geometry={shirtV} material={materials.white} />
 			<Ellipsoid position={[0, 1.273, .004]} scale={[.077, .111, .072]} material={materials.skin} />
 			{driving?<><DrivingArm side={-1} pose={driving}/><DrivingArm side={1} pose={driving}/></>:riding?<RidingArms/>:<><Arm side={-1} innerRef={leftArm}/><Arm side={1} innerRef={rightArm}/></>}

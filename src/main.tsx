@@ -400,6 +400,7 @@ function App() {
       <MobileControls
         key={navigationRequest?.seq ?? 0}
         input={mobileInput}
+        canJump={character === "cartoon" && !rideStatus.riding && !carStatus.driving && !rideStatus.crashed}
         disabled={mapOpen || settingsOpen || loading || carStatus.driving}
         onInteract={activateMobile}
       />
@@ -642,6 +643,10 @@ function App() {
                 <li>
                   <kbd>Shift</kbd>
                   <span>အမြန်ပြေးရန်</span>
+                </li>
+                <li>
+                  <kbd>Space</kbd>
+                  <span>လူဇာတ်ကောင် ခုန်ရန် · ပြေးရင်းခုန်လျှင် ပိုဝေးရောက်မည်</span>
                 </li>
                 <li>
                   <kbd>Scroll</kbd>

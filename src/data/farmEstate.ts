@@ -25,9 +25,9 @@ export function insideEstate(u:number,v:number){let inside=false;for(let i=0,j=e
  if(Math.hypot(u-a[0]-t*dx,v-a[1]-t*dz)<1e-6)return true;
  if((a[1]>v)!==(b[1]>v)&&u<(b[0]-a[0])*(v-a[1])/(b[1]-a[1])+a[0])inside=!inside;
 }return inside}
-export function estateFenceBlocks(x:number,z:number,r=.4){const u=x*Math.cos(angle)-z*Math.sin(angle),v=x*Math.sin(angle)+z*Math.cos(angle);
+export function estateFenceBlocks(x:number,z:number,r=.4,clearance=0){const u=x*Math.cos(angle)-z*Math.sin(angle),v=x*Math.sin(angle)+z*Math.cos(angle);
  if(u< -155||u> -9||v<195||v>295)return false;
- return estatePanels.some(p=>{const along=p.alongU?u-p.u:v-p.v,across=p.alongU?v-p.v:u-p.u;return Math.hypot(Math.max(0,Math.abs(along)-p.length/2),across)<r+.06});
+ return estatePanels.some(p=>{if(clearance>2.25+(p.raised?.9:0))return false;const along=p.alongU?u-p.u:v-p.v,across=p.alongU?v-p.v:u-p.u;return Math.hypot(Math.max(0,Math.abs(along)-p.length/2),across)<r+.06});
 }
 // Inset palms follow the perimeter, skipping the entrance, canal, house and cultivated center.
 export const estatePalms:{id:string;u:number;v:number;x:number;z:number}[]=[];
