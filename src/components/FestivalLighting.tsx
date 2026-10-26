@@ -1,9 +1,10 @@
 import {useMemo,useRef} from 'react';
 import {useFrame} from '@react-three/fiber';
 import {PointLight} from 'three';
+import {CANDLE_LIGHT_COLOR} from '../game/candleModel';
 /** Dynamic pool of lights distributing radiant illumination across nearby candles and surroundings. */
 export function FestivalLighting({night}:{night:boolean}){
- const lights=useMemo(()=>Array.from({length:8},()=>new PointLight('#ffa347',0,16,1.5)),[]),elapsed=useRef(1),lit=useRef(0);
+ const lights=useMemo(()=>Array.from({length:8},()=>new PointLight(CANDLE_LIGHT_COLOR,0,16,1.5)),[]),elapsed=useRef(1),lit=useRef(0);
  useFrame(({scene,camera,clock},dt)=>{
   elapsed.current+=dt;
   if(elapsed.current>.2){

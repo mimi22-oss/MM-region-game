@@ -11,28 +11,13 @@ export type MyanmarFireBalloonProps = {
   floating?: boolean;
   /** Display the existing candle-in-holder component on the wooden platform. */
   showCandle?: boolean;
+  /** Enable dynamic Three.js point lights (keep false for sky swarms to avoid GPU limits). Defaults to true. */
+  hasLight?: boolean;
 };
 
-// Envelope starts above the candle platform, and narrows to a small opening.
-// Each pair is [radius, height] in local metres.
-const PROFILE: [number, number][] = [
-  [0.37, 1.50], [0.53, 1.64], [0.78, 1.94], [1.05, 2.35],
-  [1.29, 2.83], [1.43, 3.31], [1.48, 3.81], [1.43, 4.24],
-  [1.23, 4.63], [0.88, 4.88], [0.45, 5.01], [0, 5.04],
-];
-
-function radiusAt(y: number) {
-  for (let i = 0; i < PROFILE.length - 1; i++) {
-    const [r0, y0] = PROFILE[i];
-    const [r1, y1] = PROFILE[i + 1];
-    if (y <= y1) {
-      const t = Math.max(0, Math.min(1, (y - y0) / (y1 - y0)));
-      const s = t * t * (3 - 2 * t);
-      return r0 + (r1 - r0) * s;
-    }
-  }
-  return 0;
-}
+import { BALLOON_PROFILE, radiusAt } from '../game/fireBalloonModel';
+export { BALLOON_PROFILE, radiusAt };
+const PROFILE = BALLOON_PROFILE;
 
 function LineTube({ points, radius = 0.009, color = '#8c391e' }: {
   points: Vec3[]; radius?: number; color?: string;
@@ -73,7 +58,7 @@ function ZigzagBand({ y, amplitude = 0.055, repeats = 30 }: {
   return <LineTube points={points} radius={0.013} color="#8c311b" />;
 }
 
-function Envelope() {
+function Envelope({ hasLight = true }: { hasLight?: boolean }) {
   const lathe = useMemo(() => {
     // Catmull-Rom interpolation makes a continuous, smooth paper envelope.
     const curve = new CatmullRomCurve3(PROFILE.map(([r, y]) => new Vector3(r, y, 0)));
@@ -122,7 +107,9 @@ function Envelope() {
         <torusGeometry args={[0.37, 0.025, 8, 48]} />
         <meshStandardMaterial color="#965021" />
       </mesh>
-      <pointLight position={[0, 2.4, 0]} color="#ffad45" intensity={3.0} distance={5} decay={2} />
+      {hasLight && (
+        <pointLight position={[0, 2.4, 0]} color="#ffad45" intensity={3.0} distance={5} decay={2} />
+      )}
     </group>
   );
 }
@@ -177,11 +164,11 @@ function WoodenPlatform() {
  * Import CandleAnimation once in the parent Canvas if not already mounted.
  */
 export function MyanmarFireBalloon({
-  position = [0, 0, 0], scale = 1, floating = true, showCandle = true,
+  position = [0, 0, 0], scale = 1, floating = true, showCandle = true, hasLight = true,
 }: MyanmarFireBalloonProps) {
   const root = useRef<Group>(null);
   useFrame(({ clock }) => {
-    if (!root.current) return;
+    if (!root.current || !floating) return;
     const t = clock.elapsedTime;
     root.current.position.y = position[1] + (floating ? 0.10 * Math.sin(t * 0.75) : 0);
     root.current.rotation.z = floating ? 0.018 * Math.sin(t * 0.46) : 0;
@@ -189,9 +176,11 @@ export function MyanmarFireBalloon({
   });
   return (
     <group ref={root} position={position} scale={scale} name="myanmar-fire-balloon">
-      <Envelope />
+      <Envelope hasLight={hasLight} />
       <WoodenPlatform />
-      {showCandle && <CandleInHolder position={[0, 0.27, 0]} scale={0.7} lit />}
+      {showCandle && (
+        <CandleInHolder position={[0, 0.27, 0]} scale={0.7} flameScale={2.2} lit hasLight={hasLight}/>
+      )}
     </group>
   );
 }

@@ -33,6 +33,9 @@ export const flameGeometry=(()=>{
 })();
 export const candleGlowGeometry=new PlaneGeometry(1,1);candleGlowGeometry.userData.shared=true;
 export const candleSolidMaterial=new MeshStandardMaterial({vertexColors:true,roughness:.6,metalness:.08});candleSolidMaterial.userData.shared=true;
+export const candleHolderLitMaterial=new MeshStandardMaterial({vertexColors:true,roughness:.5,metalness:.12,emissive:'#ffd52a',emissiveIntensity:.65});candleHolderLitMaterial.userData.shared=true;
+export const candlePoolLitMaterial=new MeshStandardMaterial({vertexColors:true,roughness:.4,metalness:.08,emissive:'#ffda32',emissiveIntensity:1.25});candlePoolLitMaterial.userData.shared=true;
+export const CANDLE_LIGHT_COLOR='#ffdc42';
 
 const vertexShader=`
 #include <common>
@@ -84,10 +87,10 @@ varying vec3 normalView;varying vec3 eye;varying float height;varying float puls
 void main(){
  float r=length(localPos.xz)/.054;
  float core=pow(clamp(1.-r,0.,1.),1.25);
- vec3 blueBase=vec3(.25,.55,2.2);
- vec3 flameColor=mix(vec3(3.8,2.2,.4),vec3(2.5,.85,.05),smoothstep(.12,.92,height));
- vec3 base=mix(blueBase,flameColor,smoothstep(0.,.18,height));
- vec3 fire=mix(base,vec3(5.5,5.0,3.4),core*.88+.35);
+ vec3 amberBase=vec3(2.6,1.2,.015);
+ vec3 flameColor=mix(vec3(4.2,3.5,.08),vec3(3.0,1.8,.025),smoothstep(.12,.92,height));
+ vec3 base=mix(amberBase,flameColor,smoothstep(0.,.18,height));
+ vec3 fire=mix(base,vec3(5.5,4.8,.42),clamp(core*.88+.35,0.,1.));
  float alpha=clamp((1.-smoothstep(.8,1.1,r))*(1.-smoothstep(.92,1.,height))+.4,0.,1.);
  gl_FragColor=vec4(fire*pulse,alpha);
  #include <logdepthbuf_fragment>
@@ -99,8 +102,8 @@ void main(){
  float r=length(glowUv-.5)*2.;if(r>1.)discard;
  float core=exp(-r*r*32.);
  float halo=pow(1.-r,3.);
- float a=(core*.8+halo*.23)*pulse;
- gl_FragColor=vec4(mix(vec3(2.6,1.1,.18),vec3(3.2,2.5,1.1),core),a);
+ float a=(core*.9+halo*.32)*pulse;
+ gl_FragColor=vec4(mix(vec3(3.0,2.0,.035),vec3(4.2,3.8,.22),core),a);
  #include <logdepthbuf_fragment>
 }`,side:DoubleSide,transparent:true,depthWrite:false,blending:AdditiveBlending,toneMapped:false});
 candleFlameMaterial.userData.shared=true;candleGlowMaterial.userData.shared=true;

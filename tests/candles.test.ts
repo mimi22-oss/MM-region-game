@@ -32,3 +32,21 @@ test('rotated fence and tabletop anchors survive batching and become shared inst
 test('one animation clock keeps all flame batches flickering after a cached region is restored',()=>{
  animateCandleFlames(12);assert.equal(candleFlameMaterial.uniforms.time.value,12);animateCandleFlames(15);assert.equal(candleFlameMaterial.uniforms.time.value,15);
 });
+
+test('Myanmar fire balloon profile has authentic dimensions and curves for sky swarms', async () => {
+  const { BALLOON_PROFILE, radiusAt, BALLOON_PALETTE, VILLAGE_LAUNCH_HUBS, MYOTHAR_CONVERGENCE_TARGET } = await import('../src/game/fireBalloonModel.ts');
+  assert.ok(Array.isArray(BALLOON_PROFILE));
+  assert.equal(BALLOON_PROFILE.length, 12);
+  const maxHeight = BALLOON_PROFILE[BALLOON_PROFILE.length - 1][1];
+  assert.ok(maxHeight > 5.0 && maxHeight < 5.2, 'Balloon height is approx 5 meters');
+  assert.ok(radiusAt(3.81) > 1.4, 'Max radius swells to approx 1.48m');
+  assert.ok(radiusAt(1.50) > 0.35, 'Base radius is approx 0.37m');
+  assert.equal(BALLOON_PALETTE.length, 7, 'Palette contains warm Shan paper colors');
+
+  assert.equal(VILLAGE_LAUNCH_HUBS.length, 9, 'Exactly 9 launch origins (Kanbale, 7 southern villages, Weipula)');
+  assert.ok(VILLAGE_LAUNCH_HUBS.some(h => h.id === 'kanbale'));
+  assert.ok(VILLAGE_LAUNCH_HUBS.some(h => h.id === 'tharsi'));
+  assert.ok(VILLAGE_LAUNCH_HUBS.some(h => h.id === 'weipula' && h.groundY === 120));
+  assert.ok(MYOTHAR_CONVERGENCE_TARGET.x < 0 && MYOTHAR_CONVERGENCE_TARGET.z < 0);
+});
+

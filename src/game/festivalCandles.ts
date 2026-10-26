@@ -1,5 +1,5 @@
 import {Group,InstancedMesh,Matrix4,Vector3,type Object3D,type BufferGeometry,type Material} from 'three';
-import {candleGeometry,candleHolderGeometry,candlePoolGeometry,flameGeometry,candleGlowGeometry,candleSolidMaterial,candleFlameMaterial,candleGlowMaterial,CANDLE_WICK_TOP,HOLDER_CANDLE_BASE,HOLDER_CANDLE_SCALE} from './candleModel.ts';
+import {candleGeometry,candleHolderGeometry,candlePoolGeometry,flameGeometry,candleGlowGeometry,candleSolidMaterial,candleHolderLitMaterial,candlePoolLitMaterial,candleFlameMaterial,candleGlowMaterial,CANDLE_WICK_TOP,HOLDER_CANDLE_BASE,HOLDER_CANDLE_SCALE} from './candleModel.ts';
 type Item={x:number;y:number;z:number;holder?:boolean};
 const noRaycast=()=>{};
 /** One batch per part and 64m tile; no React trees or per-flame frame callbacks. */
@@ -32,8 +32,8 @@ export function decorateFestivalRegion(root:Group){
    tile.add(mesh);
   };
   batch('festival-wax',candleGeometry,candleSolidMaterial,local,p=>p.holder?HOLDER_CANDLE_BASE:0,p=>p.holder?[1.1,HOLDER_CANDLE_SCALE,1.1]:[1,1,1]);
-  batch('festival-holders',candleHolderGeometry,candleSolidMaterial,holders,()=>0);
-  batch('festival-pools',candlePoolGeometry,candleSolidMaterial,holders,()=>0);
+  batch('festival-holders',candleHolderGeometry,candleHolderLitMaterial,holders,()=>0);
+  batch('festival-pools',candlePoolGeometry,candlePoolLitMaterial,holders,()=>0);
   const tip=(p:Item)=>p.holder?HOLDER_CANDLE_BASE+CANDLE_WICK_TOP*HOLDER_CANDLE_SCALE:CANDLE_WICK_TOP;
   batch('festival-flames',flameGeometry,candleFlameMaterial,local,tip,p=>p.holder?[1.4,1.4,1.4]:[1,1,1]);
   batch('festival-glows',candleGlowGeometry,candleGlowMaterial,local,p=>tip(p)+.065,p=>p.holder?[1.4,1.4,1.4]:[1,1,1]);

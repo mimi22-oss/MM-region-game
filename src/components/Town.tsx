@@ -7,12 +7,14 @@ import { Box } from './Primitives';
 import { NightEnvironment } from './NightEnvironment';
 import {CandleAnimation} from './Candle';
 import {FestivalLighting} from './FestivalLighting';
+import {FireBalloonSky} from './FireBalloonSky';
 
 export const Town = memo(function Town({ night = false, ...streaming }: { night?: boolean } & StreamedWorldProps) {
 	return (
 		<>
             <CandleAnimation/>
             <FestivalLighting night={night}/>
+            <FireBalloonSky active={night} balloonsPerVillage={400} />
 			{night ? (
 				<>
 					{/* ညချမ်း ကောင်းကင်နှင့် မြူခိုး (Midnight Blue Atmosphere) */}
