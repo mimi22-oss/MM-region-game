@@ -238,11 +238,11 @@ export function MobileControls({
                     </svg><span className="mobile-sprint-label">ခုန်</span>
                 </div>
             </button>}
-			<button
+			{!flying && <button
 				type="button"
 				className={`mobile-sprint-btn${sprinting ? ' mobile-sprint-btn-active' : ''}`}
-				aria-label={flying?"Balloon အရှိန်တင်ရန်":"အမြန်ပြေးရန် ခလုတ် (ပြေး)"}
-				title={flying?"Balloon အရှိန်တင်ရန် ဖိထားပါ":"အမြန်ပြေးရန် ဖိထားပါ (ပြေး)"}
+				aria-label="အမြန်ပြေးရန် ခလုတ် (ပြေး)"
+				title="အမြန်ပြေးရန် ဖိထားပါ (ပြေး)"
 				onPointerDown={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
@@ -299,9 +299,9 @@ export function MobileControls({
 							<circle cx="3.8" cy="-5.6" r="0.65" />
 						</g>
 					</svg>
-					<span className="mobile-sprint-label">{flying?"အရှိန်":"ပြေး"}</span>
+					<span className="mobile-sprint-label">ပြေး</span>
 				</div>
-			</button>
+			</button>}
 		</div>
 	);
 }

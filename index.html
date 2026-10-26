@@ -1,52 +1,57 @@
 <!doctype html>
 <html lang="my">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#143d36" />
 
-    <!-- Favicon & Icons -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-    <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta name="theme-color" content="#143d36" />
 
-    <!-- Primary Meta Tags -->
-    <title>MM Region Game - မြန်မာဒေသ 3D ဂိမ်း | Myanmar Town 3D &amp; Villages Exploration</title>
-    <meta name="title" content="MM Region Game - မြန်မာဒေသ 3D ဂိမ်း | Myanmar Town 3D &amp; Villages Exploration" />
-    <meta name="description" content="MM Region Game (မြန်မာဒေသ 3D ဂိမ်း) - စစ်ကိုင်းတိုင်းဒေသကြီး ကလေးမြို့၊ မြို့သာရပ်ကွက်နှင့် ကံပုလဲ၊ နတ်ချောင်း၊ သာစည်၊ ချင်းဆိုင်၊ ဇင်းကလင်း၊ ထိုမာ၊ သာယာကုန်း၊ ထောက်ကြန့်၊ ကျားအင်း စသည့် ကျေးရွာများကို 3D Open World စနစ်ဖြင့် လွတ်လပ်စွာ လမ်းလျှောက်၊ ကားနှင့် ဆိုင်ကယ်မောင်းနှင် စူးစမ်းလေ့လာနိုင်သော Web 3D Application ဖြစ်ပါသည်။" />
-    <meta name="keywords" content="mm region game, MM Region Game, mm region, mm region 3d game, myanmar region game, myanmar town, myanmar town 3d, myanmar town prototype, ကလေးမြို့ 3D, ကလေးမြို့ ဂိမ်း, မြန်မာ 3D ဂိမ်း, မြန်မာဒေသ 3D ဂိမ်း, ကလေးမြို့နယ်, စစ်ကိုင်းတိုင်းဒေသကြီး, kalaymyo 3d, kalaymyo game, myothar, kanbale, natmyaung, tharsi, chinsai, zingalin, htomar, tharyargone, htaukkyant, kyarinn, weipula, myanmar open world game, threejs myanmar, webgl 3d myanmar, burma 3d, openstreetmap myanmar" />
-    <meta name="author" content="MM Region Game" />
-    <meta name="application-name" content="MM Region Game" />
-    <meta name="apple-mobile-web-app-title" content="MM Region Game" />
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <link rel="canonical" href="https://mm-region-game.vercel.app/" />
+	<!-- Favicon & Icons -->
+	<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+	<link rel="icon" type="image/jpeg" href="/favicon.jpg" />
+	<link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
 
-    <!-- Open Graph / Facebook / Telegram / Viber / Discord -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://mm-region-game.vercel.app/" />
-    <meta property="og:site_name" content="MM Region Game" />
-    <meta property="og:title" content="MM Region Game - မြန်မာဒေသ 3D ဂိမ်း | Myanmar Town 3D" />
-    <meta property="og:description" content="MM Region Game (မြန်မာဒေသ 3D ဂိမ်း) - စစ်ကိုင်းတိုင်းဒေသကြီး ကလေးမြို့နှင့် ရပ်ကွက်ကျေးရွာများကို 3D Open World စနစ်ဖြင့် လွတ်လပ်စွာ လမ်းလျှောက်၊ ကားနှင့် ဆိုင်ကယ်မောင်းနှင် စူးစမ်းလေ့လာနိုင်သော Web 3D Application။" />
-    <meta property="og:image" content="https://mm-region-game.vercel.app/ogp.png" />
-    <meta property="og:image:secure_url" content="https://mm-region-game.vercel.app/ogp.png" />
-    <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="1597" />
-    <meta property="og:image:height" content="909" />
-    <meta property="og:image:alt" content="MM Region Game 3D Preview - မြန်မာဒေသ 3D စူးစမ်းလေ့လာရေး မြင်ကွင်း" />
-    <meta property="og:locale" content="my_MM" />
-    <meta property="og:locale:alternate" content="en_US" />
+	<!-- Primary Meta Tags -->
+	<title>MM Region Game - မြန်မာဒေသ 3D ဂိမ်း | Myanmar Town 3D &amp; Villages Exploration</title>
+	<meta name="title" content="MM Region Game - မြန်မာဒေသ 3D ဂိမ်း | Myanmar Town 3D &amp; Villages Exploration" />
+	<meta name="description"
+		content="MM Region Game (မြန်မာဒေသ 3D ဂိမ်း) - စစ်ကိုင်းတိုင်းဒေသကြီး ကလေးမြို့၊ မြို့သာရပ်ကွက်နှင့် ကံပုလဲ၊ နတ်ချောင်း၊ သာစည်၊ ချင်းဆိုင်၊ ဇင်းကလင်း၊ ထိုမာ၊ သာယာကုန်း၊ ထောက်ကြန့်၊ ကျားအင်း စသည့် ကျေးရွာများကို 3D Open World စနစ်ဖြင့် လွတ်လပ်စွာ လမ်းလျှောက်၊ ကားနှင့် ဆိုင်ကယ်မောင်းနှင် စူးစမ်းလေ့လာနိုင်သော Web 3D Application ဖြစ်ပါသည်။" />
+	<meta name="keywords"
+		content="mm region game, MM Region Game, mm region, mm region 3d game, myanmar region game, myanmar town, myanmar town 3d, myanmar town prototype, ကလေးမြို့ 3D, ကလေးမြို့ ဂိမ်း, မြန်မာ 3D ဂိမ်း, မြန်မာဒေသ 3D ဂိမ်း, ကလေးမြို့နယ်, စစ်ကိုင်းတိုင်းဒေသကြီး, kalaymyo 3d, kalaymyo game, myothar, kanbale, natmyaung, tharsi, chinsai, zingalin, htomar, tharyargone, htaukkyant, kyarinn, weipula, myanmar open world game, threejs myanmar, webgl 3d myanmar, burma 3d, openstreetmap myanmar" />
+	<meta name="author" content="MM Region Game" />
+	<meta name="application-name" content="MM Region Game" />
+	<meta name="apple-mobile-web-app-title" content="MM Region Game" />
+	<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+	<link rel="canonical" href="https://mm-region-game.vercel.app/" />
 
-    <!-- Twitter / X -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://mm-region-game.vercel.app/" />
-    <meta name="twitter:title" content="MM Region Game - မြန်မာဒေသ 3D ဂိမ်း | Myanmar Town 3D" />
-    <meta name="twitter:description" content="MM Region Game (မြန်မာဒေသ 3D ဂိမ်း) - စစ်ကိုင်းတိုင်းဒေသကြီး ကလေးမြို့နှင့် ရပ်ကွက်ကျေးရွာများကို 3D Open World စနစ်ဖြင့် လွတ်လပ်စွာ လမ်းလျှောက်၊ ကားနှင့် ဆိုင်ကယ်မောင်းနှင် စူးစမ်းလေ့လာနိုင်သော Web 3D Application။" />
-    <meta name="twitter:image" content="https://mm-region-game.vercel.app/ogp.png" />
-    <meta name="twitter:image:alt" content="MM Region Game 3D Preview - မြန်မာဒေသ 3D စူးစမ်းလေ့လာရေး မြင်ကွင်း" />
+	<!-- Open Graph / Facebook / Telegram / Viber / Discord -->
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://mm-region-game.vercel.app/" />
+	<meta property="og:site_name" content="MM Region Game" />
+	<meta property="og:title" content="MM Region Game - မြန်မာဒေသ 3D ဂိမ်း | Myanmar Town 3D" />
+	<meta property="og:description"
+		content="MM Region Game (မြန်မာဒေသ 3D ဂိမ်း) - စစ်ကိုင်းတိုင်းဒေသကြီး ကလေးမြို့နှင့် ရပ်ကွက်ကျေးရွာများကို 3D Open World စနစ်ဖြင့် လွတ်လပ်စွာ လမ်းလျှောက်၊ ကားနှင့် ဆိုင်ကယ်မောင်းနှင် စူးစမ်းလေ့လာနိုင်သော Web 3D Application။" />
+	<meta property="og:image" content="https://mm-region-game.vercel.app/ogp.png" />
+	<meta property="og:image:secure_url" content="https://mm-region-game.vercel.app/ogp.png" />
+	<meta property="og:image:type" content="image/png" />
+	<meta property="og:image:width" content="1597" />
+	<meta property="og:image:height" content="909" />
+	<meta property="og:image:alt" content="MM Region Game 3D Preview - မြန်မာဒေသ 3D စူးစမ်းလေ့လာရေး မြင်ကွင်း" />
+	<meta property="og:locale" content="my_MM" />
+	<meta property="og:locale:alternate" content="en_US" />
 
-    <!-- Google Search Structured Data (JSON-LD) -->
-    <script type="application/ld+json">
+	<!-- Twitter / X -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:url" content="https://mm-region-game.vercel.app/" />
+	<meta name="twitter:title" content="MM Region Game - မြန်မာဒေသ 3D ဂိမ်း | Myanmar Town 3D" />
+	<meta name="twitter:description"
+		content="MM Region Game (မြန်မာဒေသ 3D ဂိမ်း) - စစ်ကိုင်းတိုင်းဒေသကြီး ကလေးမြို့နှင့် ရပ်ကွက်ကျေးရွာများကို 3D Open World စနစ်ဖြင့် လွတ်လပ်စွာ လမ်းလျှောက်၊ ကားနှင့် ဆိုင်ကယ်မောင်းနှင် စူးစမ်းလေ့လာနိုင်သော Web 3D Application။" />
+	<meta name="twitter:image" content="https://mm-region-game.vercel.app/ogp.png" />
+	<meta name="twitter:image:alt" content="MM Region Game 3D Preview - မြန်မာဒေသ 3D စူးစမ်းလေ့လာရေး မြင်ကွင်း" />
+
+	<!-- Google Search Structured Data (JSON-LD) -->
+	<script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@graph": [
@@ -92,31 +97,82 @@
       ]
     }
     </script>
-    <style>
-      #boot-loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 24px; background: #143d36; color: #fff7e7; font-family: system-ui, sans-serif; line-height: 2; }
-      .boot-dots { display: inline-flex; gap: 5px; }
-      .boot-dots i { width: 6px; height: 6px; border-radius: 50%; background: #efd89d; animation: boot-wave 1.2s ease-in-out infinite; }
-      .boot-dots i:nth-child(2) { animation-delay: .15s; }
-      .boot-dots i:nth-child(3) { animation-delay: .3s; }
-      @keyframes boot-wave { 0%,60%,100% { transform: translateY(0); opacity: .35; } 30% { transform: translateY(-6px); opacity: 1; } }
-      @media (prefers-reduced-motion: reduce) { .boot-dots i { animation: none; } }
-    </style>
-  </head>
-  <body>
-    <div id="root">
-      <div id="boot-loading" role="status" aria-live="polite">
-        <span className="boot-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span>MM Region Game • ကလေးမြို့ 3D</span>
-      </div>
-      <noscript>
-        <main style="padding:24px;background:#143d36;color:#fff;font-family:system-ui,sans-serif">
-          <h1>MM Region Game - မြန်မာဒေသ 3D ဂိမ်း</h1>
-          <p>စစ်ကိုင်းတိုင်းဒေသကြီး ကလေးမြို့၊ မြို့သာရပ်ကွက်နှင့် ကံပုလဲ၊ နတ်ချောင်း၊ သာစည်၊ ချင်းဆိုင်၊ ဇင်းကလင်း၊ ထိုမာ၊ သာယာကုန်း၊ ထောက်ကြန့်၊ ကျားအင်း စသည့် ကျေးရွာများကို 3D ဖြင့် လွတ်လပ်စွာ စူးစမ်းလေ့လာနိုင်သော Web 3D Game ဖြစ်ပါသည်။</p>
-          <p>ဂိမ်းကစားရန် JavaScript ဖွင့်ပေးရန် လိုအပ်ပါသည်။</p>
-        </main>
-      </noscript>
-    </div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+	<style>
+		#boot-loading {
+			position: fixed;
+			inset: 0;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 16px;
+			padding: 24px;
+			background: #143d36;
+			color: #fff7e7;
+			font-family: system-ui, sans-serif;
+			line-height: 2;
+		}
 
+		.boot-dots {
+			display: inline-flex;
+			gap: 5px;
+		}
+
+		.boot-dots i {
+			width: 6px;
+			height: 6px;
+			border-radius: 50%;
+			background: #efd89d;
+			animation: boot-wave 1.2s ease-in-out infinite;
+		}
+
+		.boot-dots i:nth-child(2) {
+			animation-delay: .15s;
+		}
+
+		.boot-dots i:nth-child(3) {
+			animation-delay: .3s;
+		}
+
+		@keyframes boot-wave {
+
+			0%,
+			60%,
+			100% {
+				transform: translateY(0);
+				opacity: .35;
+			}
+
+			30% {
+				transform: translateY(-6px);
+				opacity: 1;
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.boot-dots i {
+				animation: none;
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<div id="root">
+		<div id="boot-loading" role="status" aria-live="polite">
+			<span className="boot-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+			<span>MM Region Game 3D</span>
+		</div>
+		<noscript>
+			<main style="padding:24px;background:#143d36;color:#fff;font-family:system-ui,sans-serif">
+				<h1>MM Region Game - မြန်မာဒေသ 3D ဂိမ်း</h1>
+				<p>စစ်ကိုင်းတိုင်းဒေသကြီး ကလေးမြို့၊ မြို့သာရပ်ကွက်နှင့် ကံပုလဲ၊ နတ်ချောင်း၊ သာစည်၊ ချင်းဆိုင်၊
+					ဇင်းကလင်း၊ ထိုမာ၊ သာယာကုန်း၊ ထောက်ကြန့်၊ ကျားအင်း စသည့် ကျေးရွာများကို 3D ဖြင့် လွတ်လပ်စွာ
+					စူးစမ်းလေ့လာနိုင်သော Web 3D Game ဖြစ်ပါသည်။</p>
+				<p>ဂိမ်းကစားရန် JavaScript ဖွင့်ပေးရန် လိုအပ်ပါသည်။</p>
+			</main>
+		</noscript>
+	</div>
+	<script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>
