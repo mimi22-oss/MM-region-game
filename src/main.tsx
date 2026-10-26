@@ -104,7 +104,7 @@ function App() {
   const loading = sceneLoading.blocking || sceneFailed;
   const [rideStatus,setRideStatus]=useState<RideStatus>({riding:false,near:false,kmh:0,notice:'',lives:3,crashed:false});
   const [balloonStatus,setBalloonStatus]=useState<BalloonStatus>(emptyBalloonStatus);
-  const balloonUpdate=useCallback((next:BalloonStatus)=>setBalloonStatus(old=>old.riding===next.riding&&old.near===next.near&&old.altitude===next.altitude&&old.kmh===next.kmh&&old.grounded===next.grounded&&old.blocked===next.blocked?old:next),[]);
+  const balloonUpdate=useCallback((next:BalloonStatus)=>setBalloonStatus(old=>old.riding===next.riding&&old.near===next.near&&old.altitude===next.altitude&&old.kmh===next.kmh&&old.grounded===next.grounded&&old.blocked===next.blocked&&old.autoCruise===next.autoCruise&&old.autoReturn===next.autoReturn&&old.returnDist===next.returnDist?old:next),[]);
   const [carStatus,setCarStatus]=useState<CarStatus>({driving:false,near:false,kmh:0,gear:0,rpm:850,clutch:false,notice:'',steering:0,canSummon:false,summonStatus:'idle',first:false,lives:3});
   const carUpdate=useCallback((next:CarStatus)=>setCarStatus(old=>old.driving===next.driving&&old.near===next.near&&old.kmh===next.kmh&&old.gear===next.gear&&old.rpm===next.rpm&&old.clutch===next.clutch&&old.steering===next.steering&&old.notice===next.notice&&old.canSummon===next.canSummon&&old.summonStatus===next.summonStatus&&old.first===next.first&&old.transmission===next.transmission&&old.automaticRange===next.automaticRange&&old.lives===next.lives?old:next),[]);
   const [rideLimit,setRideLimit]=useState(60),[braking,setBraking]=useState(false),[accelerating,setAccelerating]=useState(false),[dismountRequest,setDismountRequest]=useState(0);

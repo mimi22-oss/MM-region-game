@@ -13,6 +13,7 @@ export function BalloonControls({
 	onZoom: (direction: number) => void;
 }) {
 	const [liftActive, setLiftActive] = useState<number>(0);
+	const [steerActive, setSteerActive] = useState<number>(0);
 
 	useEffect(() => {
 		clearBalloonInput();
@@ -23,6 +24,7 @@ export function BalloonControls({
 		const clear = () => {
 			clearBalloonInput();
 			setLiftActive(0);
+			setSteerActive(0);
 		};
 		window.addEventListener('blur', clear);
 		document.addEventListener('visibilitychange', clear);
@@ -54,11 +56,31 @@ export function BalloonControls({
 		setLiftActive(0);
 	};
 
+	const startSteer = (steer: number, e: React.PointerEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		try {
+			e.currentTarget.setPointerCapture(e.pointerId);
+		} catch {}
+		balloonInput.steer = steer;
+		setSteerActive(steer);
+	};
+
+	const stopSteer = (e?: React.PointerEvent) => {
+		if (e) {
+			try {
+				e.currentTarget.releasePointerCapture(e.pointerId);
+			} catch {}
+		}
+		balloonInput.steer = 0;
+		setSteerActive(0);
+	};
+
 	const canExit = status.grounded && status.kmh <= 2;
 
 	return (
 		<section className="balloon-controls-layer" aria-label="Balloon ထိန်းချုပ်မှု" onPointerDown={e => e.stopPropagation()}>
-			{/* ၁။ အပေါ်ညာဘက် floating HUD: အမြန်နှုန်း၊ အမြင့်နှင့် မြေပြင်အခြေအနေ (Top-Right Dashboard like car-dashboard / car-speedo-badge) */}
+			{/* ၁။ အပေါ်ညာဘက် floating HUD: အမြန်နှုန်း၊ အမြင့်၊ မြေပြင်အခြေအနေ နှင့် Auto Return (2x) */}
 			<div className="balloon-dashboard" aria-live="polite">
 				<span className="balloon-speedo-icon" aria-hidden="true">🎈</span>
 				<div className="balloon-speedo-badge">
@@ -73,6 +95,35 @@ export function BalloonControls({
 				<span className={`balloon-grounded-badge balloon-grounded-${status.grounded ? 'yes' : 'flight'}`}>
 					{status.grounded ? 'မြေပြင်ပေါ်' : 'လေထဲတွင်'}
 				</span>
+
+				{/* Auto Return Toggle Button in Top-Right Dashboard */}
+				<button
+					type="button"
+					className={`balloon-dash-return-btn${status.autoReturn ? ' balloon-dash-return-active' : ''}`}
+					onClick={() => {
+						balloonInput.toggleAutoReturn = true;
+					}}
+					title={status.autoReturn ? "Auto Return ရပ်တန့်မည် (R)" : "ဘောလုံးကွင်းဆီ ၂ဆအမြန်နှုန်းဖြင့် အလိုအလျောက် ပြန်မည် (R)"}
+					aria-label={status.autoReturn ? "Auto Return ရပ်တန့်မည်" : "ဘောလုံးကွင်းဆီ ၂ဆအမြန်နှုန်းဖြင့် အလိုအလျောက် ပြန်မည်"}
+				>
+					{status.autoReturn ? (
+						<>
+							<span className="balloon-dash-return-icon" aria-hidden="true">🔄</span>
+							<span className="balloon-dash-return-text">ဘောလုံးကွင်းဆီ (2x)</span>
+							<strong className="balloon-dash-return-dist">{status.returnDist || 0}m</strong>
+						</>
+					) : (
+						<>
+							<span className="balloon-dash-return-icon" aria-hidden="true">↩️</span>
+							<span className="balloon-dash-return-text">Auto Return (2x)</span>
+						</>
+					)}
+				</button>
+
+				{/* Auto-Cruise Pill when cruising */}
+				{status.autoCruise && !status.autoReturn && (
+					<span className="balloon-dash-cruise-pill">🧭 Auto Cruise</span>
+				)}
 			</div>
 
 			{/* အတားအဆီး သတိပေးချက် Notice pill */}
@@ -85,7 +136,7 @@ export function BalloonControls({
 
 			{/* ၂။ မျက်နှာပြင် ညာဘက်အောက်ရှိ အကွေးပုံ ထိန်းချုပ်ခလုတ်များ (Curved Orbit Pedals Cluster & Return Button) */}
 			<div className="balloon-mobile-controls" aria-label="Balloon ညာဘက်လက် ထိန်းချုပ်ခလုတ်များ">
-				{/* Return / Exit Button in place of mobile-sprint-btn */}
+				{/* Exit Button in place of mobile-sprint-btn */}
 				<button
 					type="button"
 					className={`balloon-orbit-btn balloon-return-btn${!canExit ? ' balloon-return-btn-disabled' : ''}`}
@@ -103,6 +154,42 @@ export function BalloonControls({
 						<span className="balloon-orbit-tag">ဆင်းမည်</span>
 					</div>
 				</button>
+
+				{/* Auto Return Button (ဘောလုံးကွင်းဆီ ၂ဆအမြန်နှုန်းဖြင့် အလိုအလျောက်ပြန်မည်) */}
+				<button
+					type="button"
+					className={`balloon-orbit-btn balloon-btn-autoreturn${status.autoReturn ? ' balloon-orbit-active balloon-autoreturn-pulse' : ''}`}
+					onClick={() => {
+						balloonInput.toggleAutoReturn = true;
+					}}
+					aria-label="ဘောလုံးကွင်းဆီ ၂ဆအမြန်နှုန်းဖြင့် Auto Return (R)"
+					title="ဘောလုံးကွင်းဆီ ၂ဆအမြန်နှုန်းဖြင့် Auto Return (R)"
+				>
+					<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+						<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+						<path d="M3 3v5h5"/>
+					</svg>
+					<span className="balloon-orbit-tag">{status.autoReturn ? `${status.returnDist}m` : 'Auto Ret'}</span>
+				</button>
+
+				{/* ⏸ ရပ် (Hover / Pause cruise) */}
+				{status.autoCruise && !status.autoReturn && (
+					<button
+						type="button"
+						className="balloon-orbit-btn balloon-btn-stop"
+						onClick={() => {
+							balloonInput.stopCruise = true;
+						}}
+						aria-label="ခေတ္တရပ်မည် (Space)"
+						title="ခေတ္တရပ်မည် (Space)"
+					>
+						<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+							<rect x="6" y="5" width="4" height="14" rx="1"/>
+							<rect x="14" y="5" width="4" height="14" rx="1"/>
+						</svg>
+						<span className="balloon-orbit-tag">ရပ်</span>
+					</button>
+				)}
 
 				{/* ↑ တက် (Ascend Pedal) */}
 				<button
@@ -136,6 +223,42 @@ export function BalloonControls({
 						<polyline points="6 9 12 15 18 9"/>
 					</svg>
 					<span className="balloon-orbit-tag">ဆင်း</span>
+				</button>
+
+				{/* ↶ ဘယ်ကွေ့ (Steer Left & Auto-Cruise) */}
+				<button
+					type="button"
+					className={`balloon-orbit-btn balloon-btn-steer-left${steerActive === -1 ? ' balloon-orbit-active' : ''}`}
+					onPointerDown={e => startSteer(-1, e)}
+					onPointerUp={stopSteer}
+					onPointerCancel={stopSteer}
+					onLostPointerCapture={stopSteer}
+					aria-label="ဘယ်ဘက်သို့ ကွေ့မည် (← / A)"
+					title="ဘယ်ဘက်သို့ ကွေ့မည် (← / A)"
+				>
+					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+						<polyline points="11 17 6 12 11 7"/>
+						<polyline points="18 17 13 12 18 7"/>
+					</svg>
+					<span className="balloon-orbit-tag">ဘယ်</span>
+				</button>
+
+				{/* ↷ ညာကွေ့ (Steer Right & Auto-Cruise) */}
+				<button
+					type="button"
+					className={`balloon-orbit-btn balloon-btn-steer-right${steerActive === 1 ? ' balloon-orbit-active' : ''}`}
+					onPointerDown={e => startSteer(1, e)}
+					onPointerUp={stopSteer}
+					onPointerCancel={stopSteer}
+					onLostPointerCapture={stopSteer}
+					aria-label="ညာဘက်သို့ ကွေ့မည် (→ / D)"
+					title="ညာဘက်သို့ ကွေ့မည် (→ / D)"
+				>
+					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+						<polyline points="13 17 18 12 13 7"/>
+						<polyline points="6 17 11 12 6 7"/>
+					</svg>
+					<span className="balloon-orbit-tag">ညာ</span>
 				</button>
 
 				{/* အတွင်း/အပြင် မြင်ကွင်း (Cockpit/Exterior view toggle) */}

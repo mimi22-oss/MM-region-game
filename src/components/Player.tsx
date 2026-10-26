@@ -442,6 +442,7 @@ export function Player({
   if(balloon.riding){
    const paused=mapOpen||controlsBlocked||loading||rideLife.crashTime>0;
    if(balloonInput.toggleView){balloonInput.toggleView=false;if(!paused){s.first=!s.first;s.topDown=false;s.panning=false;onMode(s.first);onTopDown(false);}}
+   if(s.keys.has('KeyR')||s.keys.has('KeyH')){s.keys.delete('KeyR');s.keys.delete('KeyH');if(!paused)balloonInput.toggleAutoReturn=true;}
    let lift=balloonInput.lift+Number(s.keys.has('ArrowUp')||s.keys.has('PageUp'))-Number(s.keys.has('ArrowDown')||s.keys.has('PageDown'));
    let flightForward=Number(s.keys.has('KeyW'))-Number(s.keys.has('KeyS'));
    let flightRight=Number(s.keys.has('KeyD')||s.keys.has('ArrowRight'))-Number(s.keys.has('KeyA')||s.keys.has('ArrowLeft'));
@@ -453,7 +454,11 @@ export function Player({
     const floor=balloonFlightFloor(x,z,height,landClear,(ax,az)=>canStand(ax,az,0,true));
     floorCache.set(key,floor);return floor;
    };
-   if(!paused)stepBalloon(balloon,dt,{forward:flightForward,right:flightRight,lift,yaw:s.yaw,fast,brake:s.keys.has('Space')},height,flightFloor,ward.size/2-6);
+   if(Math.abs(flightRight)>0.01||Math.abs(balloonInput.steer)>0.01||Math.abs(flightForward)>0.01){balloon.autoCruise=true;}
+   if(s.keys.has('Space')||balloonInput.stopCruise||balloon.grounded){balloon.autoCruise=false;}
+   if(!paused)stepBalloon(balloon,dt,{forward:flightForward+balloonInput.forward,right:flightRight,steer:balloonInput.steer,lift,yaw:s.yaw,fast,brake:s.keys.has('Space'),stop:balloonInput.stopCruise,autoCruise:balloon.autoCruise,toggleAutoReturn:balloonInput.toggleAutoReturn},height,flightFloor,ward.size/2-6);
+   balloonInput.toggleAutoReturn=false;
+   balloonInput.stopCruise=false;
    s.x=balloon.x;s.z=balloon.z;s.bodyYaw=balloon.yaw;s.camX=s.x;s.camZ=s.z;
    if(balloonInput.exit){
     balloonInput.exit=false;
@@ -609,7 +614,7 @@ export function Player({
    }
    camera.position.copy(desired.current);camera.lookAt(target.current);
   }
-  s.time+=dt;if(s.time>0.08){s.time=0;onBalloonStatus?.({riding:balloon.riding,near:nearBalloon,altitude:Math.max(0,Math.round(balloon.y-height(balloon.x,balloon.z))),kmh:Math.round(Math.hypot(balloon.vx,balloon.vz)*3.6),grounded:balloon.grounded,blocked:balloon.blocked});onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car||balloon.riding,ride.riding),summonStatus:carSummonState.status,lives:rideLife.lives});onRideStatus?.({riding:ride.riding,near:!balloon.riding&&!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0,impactMode:rideLife.mode,damage:rideLife.damage});onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
+  s.time+=dt;if(s.time>0.08){s.time=0;onBalloonStatus?.({riding:balloon.riding,near:nearBalloon,altitude:Math.max(0,Math.round(balloon.y-height(balloon.x,balloon.z))),kmh:Math.round(Math.hypot(balloon.vx,balloon.vz)*3.6),grounded:balloon.grounded,blocked:balloon.blocked,autoCruise:balloon.autoCruise,autoReturn:balloon.autoReturn,returnDist:balloon.returnDist});onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car||balloon.riding,ride.riding),summonStatus:carSummonState.status,lives:rideLife.lives});onRideStatus?.({riding:ride.riding,near:!balloon.riding&&!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0,impactMode:rideLife.mode,damage:rideLife.damage});onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
  },-1);
  return <><PassengerBalloon/><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar">{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter appearance={appearance.human} motion={characterMotion} riding/></group></>:character==='cartoon'?<CartoonCharacter appearance={appearance.human} motion={characterMotion}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
 
