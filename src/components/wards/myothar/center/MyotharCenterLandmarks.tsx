@@ -28,6 +28,7 @@ export const MyotharCenterLandmarks = memo(function MyotharCenterLandmarks() {
   const hardwareShop = myotharCenterPOIs.find((p: MyotharCenterPOI) => p.name.includes('သိန်းထိုက်စံ'))!;
   const companyLtd = myotharCenterPOIs.find((p: MyotharCenterPOI) => p.name.includes('နှင်းသဇင်'))!;
   const yeDagun = myotharCenterPOIs.find((p: MyotharCenterPOI) => p.name.includes('ရဲတံခွန်'))!;
+  const zambuHein = myotharCenterPOIs.find((p: MyotharCenterPOI) => p.name.includes('ဇမ္ဗူဟိန်း'));
 
   return (
     <group name="myothar-center-landmarks">
@@ -151,7 +152,7 @@ export const MyotharCenterLandmarks = memo(function MyotharCenterLandmarks() {
       {/* ၃။ OSO ENERGY 4 - PETROL STATION */}
       {/* ======================================================== */}
       {osoFuel && (
-        <group position={[osoFuel.x, 0, osoFuel.z]}>
+        <group position={[osoFuel.x, 0, osoFuel.z]} rotation={[0, 2.55, 0]}>
           {/* ကွန်ကရစ် အဝင်ကြမ်းခင်း */}
           <Box x={0} y={0.08} z={0} w={28} h={0.16} d={24} color="#dee2e6" />
 
@@ -215,7 +216,7 @@ export const MyotharCenterLandmarks = memo(function MyotharCenterLandmarks() {
       {/* ၅။ Good Brothers' (GBS) Kalay */}
       {/* ======================================================== */}
       {gbs && (
-        <group position={[gbs.x, 0, gbs.z]}>
+        <group position={[gbs.x, 0, gbs.z]} rotation={[0, 2.37, 0]}>
           {/* Showroom အဆောက်အအုံ */}
           <Box x={0} y={2.2} z={-3} w={20} h={4.4} d={12} color="#f8f9fa" />
           {/* Glass Facade */}
@@ -239,7 +240,7 @@ export const MyotharCenterLandmarks = memo(function MyotharCenterLandmarks() {
       {/* ၆။ Min Kan Kaung - Restaurant */}
       {/* ======================================================== */}
       {restaurant && (
-        <group position={[restaurant.x, 0, restaurant.z]}>
+        <group position={[restaurant.x, 0, restaurant.z]} rotation={[0, 0.75, 0]}>
           {/* စားသောက်ဆိုင် ပင်မအဆောက်အအုံ */}
           <Box x={0} y={2.0} z={-4} w={16} h={4.0} d={10} color="#d4a373" />
           {/* သစ်သား ဝရံတာ */}
@@ -261,10 +262,47 @@ export const MyotharCenterLandmarks = memo(function MyotharCenterLandmarks() {
       )}
 
       {/* ======================================================== */}
+      {/* ======================================================== */}
+      {/* ဇမ္ဗူဟိန်း လယ်ယာသုံးစက်နှင့်အပိုပစ္စည်း */}
+      {/* ======================================================== */}
+      {zambuHein && (
+        <group position={[zambuHein.x, 0, zambuHein.z]} rotation={[0, -1.01, 0]}>
+          {/* အရောင်းပြခန်း ကွန်ကရစ် အောက်ခံပြင် */}
+          <Box x={0} y={0.08} z={0} w={24} h={0.16} d={20} color="#cbd5e1" />
+
+          {/* ပင်မ အရောင်းပြခန်းနှင့် သိုလှောင်ရုံကြီး */}
+          <Box x={0} y={2.6} z={-4} w={20} h={5.0} d={10} color="#e2e8f0" />
+          <Box x={0} y={5.2} z={-4} w={21} h={0.4} d={11} color="#334155" />
+
+          {/* မှန်ပြတင်းပေါက်ကြီးများ (Glass Showroom Display) */}
+          <Box x={-4} y={1.8} z={1.05} w={10} h={2.6} d={0.1} color="#38bdf8" />
+
+          {/* ဆိုင်ဆိုင်းဘုတ် "ဇမ္ဗူဟိန်း လယ်ယာသုံးစက်နှင့်အပိုပစ္စည်း" */}
+          <Box x={-4} y={4.2} z={1.15} w={11} h={1.1} d={0.15} color="#b91c1c" />
+          <Box x={-4} y={3.8} z={1.25} w={10} h={0.2} d={0.08} color="#f59e0b" />
+
+          {/* လယ်ယာသုံး လက်တွန်းထွန်စက် (Power Tiller / Walk-behind Tractor) */}
+          <group position={[4.5, 0, 3]}>
+            <Box x={0} y={0.7} z={0.5} w={1.2} h={0.8} d={2.2} color="#dc2626" />
+            <Box x={0} y={1.2} z={-0.6} w={1.4} h={0.1} d={1.4} color="#1e293b" />
+            <Box x={-0.7} y={0.5} z={0.6} w={0.25} h={1.0} d={1.0} color="#0f172a" />
+            <Box x={0.7} y={0.5} z={0.6} w={0.25} h={1.0} d={1.0} color="#0f172a" />
+          </group>
+
+          {/* စက်အပိုပစ္စည်း စင်များနှင့် ဘီးတာယာများ (Spare Parts & Implement Attachments) */}
+          <group position={[7, 0, -2]}>
+            <Box x={0} y={0.8} z={0} w={1.8} h={1.6} d={3.0} color="#475569" />
+            <Box x={0} y={1.8} z={0} w={1.6} h={0.2} d={2.8} color="#94a3b8" />
+            <Box x={-0.2} y={2.2} z={0} w={0.8} h={0.6} d={2.2} color="#d97706" />
+          </group>
+        </group>
+      )}
+
+      {/* ======================================================== */}
       {/* ၇။ လရောင် Mobile */}
       {/* ======================================================== */}
       {mobileShop && (
-        <group position={[mobileShop.x, 0, mobileShop.z]}>
+        <group position={[mobileShop.x, 0, mobileShop.z]} rotation={[0, -0.69, 0]}>
           <Box x={0} y={2.4} z={0} w={12} h={4.8} d={10} color="#f1f3f5" />
           {/* Glass Storefront */}
           <Box x={0} y={1.8} z={5.05} w={9} h={2.6} d={0.1} color="#339af0" />
@@ -293,7 +331,7 @@ export const MyotharCenterLandmarks = memo(function MyotharCenterLandmarks() {
       {/* ၉။ နှင်းသဇင် - ကလေး ကုမ္ပဏီ လီမိတက် */}
       {/* ======================================================== */}
       {companyLtd && (
-        <group position={[companyLtd.x, 0, companyLtd.z]}>
+        <group position={[companyLtd.x, 0, companyLtd.z]} rotation={[0, 2.42, 0]}>
           <Box x={0} y={3.0} z={0} w={14} h={6.0} d={12} color="#f8f9fa" />
           {/* ပြတင်းပေါက်တန်း */}
           <Box x={0} y={2.0} z={6.05} w={10} h={1.8} d={0.1} color="#4dabf7" />
@@ -307,7 +345,7 @@ export const MyotharCenterLandmarks = memo(function MyotharCenterLandmarks() {
       {/* ၁၀။ ရဲတံခွန် */}
       {/* ======================================================== */}
       {yeDagun && (
-        <group position={[yeDagun.x, 0, yeDagun.z]}>
+        <group position={[yeDagun.x, 0, yeDagun.z]} rotation={[0, -0.83, 0]}>
           <Box x={0} y={2.2} z={0} w={11} h={4.4} d={9} color="#e9ecef" />
           <Box x={0} y={1.6} z={4.55} w={8} h={2.2} d={0.1} color="#74c0fc" />
           <Box x={0} y={3.8} z={4.6} w={6.5} h={1.0} d={0.15} color="#d6336c" />

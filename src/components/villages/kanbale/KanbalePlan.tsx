@@ -4,6 +4,8 @@ import {
   kanbaleBuildings,
   kanbaleRoads,
   kanbaleBoundarySvgPath,
+  kanbaleDrain,
+  kanbaleDrainSvgPath,
   type KanbaleBuildingData,
 } from '../../../data/villages/kanbale';
 import { hasCustomBuilding } from './KanbaleCustomBuildings';
@@ -80,6 +82,99 @@ export function KanbalePlan({
       </g>
 
       {/* ======================================================== */}
+      {/* ၂.၅။ ရေနုတ်မြောင်း (Waterway Drain Path & Bridges) */}
+      {/* ======================================================== */}
+      <g id="kanbale-plan-drain">
+        {/* မြောင်းဘောင် (Earthen/Concrete Trench Bank) */}
+        <path
+          d={kanbaleDrainSvgPath}
+          fill="none"
+          stroke="#736952"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.85"
+        />
+        {/* ရေပြင်အလွှာ (Water Channel Ribbon) */}
+        <path
+          d={kanbaleDrainSvgPath}
+          fill="none"
+          stroke="#4d9395"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.95"
+        />
+        {/* တံတားများ (Bridges & Culverts) */}
+        {kanbaleDrain.bridges.map((b, i) => {
+          const x = b.u * Math.cos(Math.PI / 4) + b.v * Math.sin(Math.PI / 4);
+          const z = -b.u * Math.sin(Math.PI / 4) + b.v * Math.cos(Math.PI / 4);
+          const isAh1 = i === 0;
+          return (
+            <g
+              key={`drain-bridge-${i}`}
+              transform={`translate(${x} ${z}) rotate(${-45})`}
+            >
+              <rect
+                x={-b.width / 2}
+                y={-b.depth / 2}
+                width={b.width}
+                height={b.depth}
+                fill={isAh1 ? '#596663' : '#b7ad95'}
+                stroke="#2d3748"
+                strokeWidth="0.4"
+              />
+              {isAh1 && (
+                <>
+                  <line
+                    x1={-b.width / 2}
+                    y1={-b.depth / 2}
+                    x2={b.width / 2}
+                    y2={-b.depth / 2}
+                    stroke="#eee8d5"
+                    strokeWidth="0.5"
+                  />
+                  <line
+                    x1={-b.width / 2}
+                    y1={b.depth / 2}
+                    x2={b.width / 2}
+                    y2={b.depth / 2}
+                    stroke="#eee8d5"
+                    strokeWidth="0.5"
+                  />
+                </>
+              )}
+            </g>
+          );
+        })}
+        {labels && (
+          <g transform="translate(101.96 -214.02)">
+            <rect
+              x="-24"
+              y="-7"
+              width="48"
+              height="14"
+              rx="3"
+              fill="#1e293b"
+              fillOpacity="0.85"
+              stroke="#4d9395"
+              strokeWidth="0.6"
+            />
+            <text
+              x="0"
+              y="3.5"
+              textAnchor="middle"
+              fontSize="5"
+              fill="#a5f3fc"
+              fontWeight="bold"
+            >
+              ရေနုတ်မြောင်း
+            </text>
+          </g>
+        )}
+      </g>
+
+      {/* ======================================================== */}
       {/* ၃။ အဆောက်အအုံများ (Building Footprint Polygons) */}
       {/* ======================================================== */}
       <g id="kanbale-plan-buildings">
@@ -150,6 +245,32 @@ export function KanbalePlan({
         )}
       </g>
 
+      {/* ဆန်စက် (Rice Mill) အထူးအမှတ်အသား */}
+      <g
+        transform="translate(15.75 -367.77)"
+        style={{ cursor: 'pointer' }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedBuildingId('way/403027697');
+        }}
+      >
+        <circle r="6" fill="#38bdf8" opacity="0.35" />
+        <circle r="3.5" fill="#0284c7" stroke="#ffffff" strokeWidth="0.8" />
+        {labels && (
+          <text
+            x="7"
+            y="2.5"
+            fontSize="4.8"
+            fill="#7dd3fc"
+            stroke="#0f172a"
+            strokeWidth="0.6"
+            fontWeight="bold"
+          >
+            ★ ဆန်စက် (Rice Mill)
+          </text>
+        )}
+      </g>
+
       {/* ======================================================== */}
       {/* ၅။ ရွေးချယ်ထားသော အဆောက်အအုံ အချက်အလက် Card Popup */}
       {/* ======================================================== */}
@@ -178,7 +299,9 @@ export function KanbalePlan({
             fill="#38bdf8"
             fontWeight="bold"
           >
-            {hasCustomBuilding(selectedBuilding.id)
+            {selectedBuilding.id === 'way/403027697'
+              ? '★ ဆန်စက် (Rice Mill)'
+              : hasCustomBuilding(selectedBuilding.id)
               ? '★ Kanbale Farmhouse (Custom)'
               : 'OSM အဆောက်အအုံ'}
           </text>

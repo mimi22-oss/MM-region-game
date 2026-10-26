@@ -58,10 +58,12 @@ import {
  kyarInnLakeIsland,
  kyarInnLakeStructures,
  natmyaungVillage,
+ kanbaleDrain,
 } from './villages/index.ts';
 
 export const ward = {
  ...myotharWard,
+ kanbaleDrain,
  name: 'မြို့သာရပ်ကွက် · ကလေးမြို့',
  villages: kalayVillages,
 };
@@ -112,6 +114,7 @@ export {
  kyarInnLakeIsland,
  kyarInnLakeStructures,
  natmyaungVillage,
+ kanbaleDrain,
  myotharWard,
  area5,
  angle,

@@ -61,6 +61,7 @@ import "./style.css";
 const KalayWardsPlan = lazy(() =>
   import("./components/wards").then((m) => ({ default: m.KalayWardsPlan })),
 );
+const MapSelectionTool = lazy(() => import('./components/MapSelectionTool'));
 const KalayVillagesPlan = lazy(() =>
   import("./components/villages").then((m) => ({
     default: m.KalayVillagesPlan,
@@ -140,6 +141,7 @@ function App() {
   );
   const [mapOpen, setMapOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [selectionOpen, setSelectionOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [sceneActive, setSceneActive] = useState(false);
@@ -270,6 +272,7 @@ function App() {
   }, []);
   useEffect(() => {
     const close = (e: KeyboardEvent) => {
+      if (selectionOpen) return;
       if (loading) return;
       if (e.code === "Escape") {
         setMapOpen(false);
@@ -285,7 +288,7 @@ function App() {
     };
     document.addEventListener("keydown", close);
     return () => document.removeEventListener("keydown", close);
-  }, [loading]);
+  }, [loading, selectionOpen]);
   const position = useCallback((x: number, z: number, yaw?: number) => {
     setPos((previous) =>
       previous.x === x && previous.z === z ? previous : { x, z },
@@ -354,7 +357,7 @@ function App() {
               onDraggingChange={setTeleportDragging}
             />
             <Player
-              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen} loading={loading}
+              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || selectionOpen} loading={loading}
               onCarStatus={carUpdate}
               character={character}
               navigationRequest={navigationRequest}
@@ -520,6 +523,14 @@ function App() {
               yaw={robotYaw}
               characterLabel={character === "robot" ? "စက်ရုပ်" : "ကာတွန်း"}
             />
+            <div className="robot-location-panel map-selection-launch">
+              <button type="button" className="robot-location-toggle" onClick={() => {
+                if (document.pointerLockElement) document.exitPointerLock();
+                setSceneActive(false);
+                setSelectionOpen(true);
+              }}>နယ်မြေဝိုက်ရွေး · GeoJSON ထုတ်ယူရန် ↗</button>
+              <p>အိမ်၊ အဆောက်အဦ၊ ဌာန၊ သစ်ပင် ဖြည့်လိုသည့်နေရာကို မြေပုံပေါ်မှာ ဝိုက်ရွေးပါ။</p>
+            </div>
             <div className="guide-item">
               <div className="guide-header">
                 <strong>အသုံးပြုနည်း လမ်းညွှန်</strong>
@@ -698,6 +709,7 @@ function App() {
         }}
       />
       {locked && <div className="crosshair">+</div>}
+      {selectionOpen && <Suspense fallback={<div className="selection-loading" role="status">မြေပုံဖွင့်နေသည်…</div>}><MapSelectionTool focus={viewPos} onClose={() => setSelectionOpen(false)} /></Suspense>}
       <aside
         className={mapOpen ? "map map-expanded" : "map"}
         aria-label="Ward plan"

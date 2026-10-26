@@ -37,6 +37,20 @@ const largeTrees: TreePlot[] = kanbaleRoads.slice(0, 30).map((r, i) => {
 
 const farmTrees: TreePlot[] = [];
 const fields: FieldPlot[] = [];
+import {
+  kanbaleDrain,
+  kanbaleDrainWorldPoints,
+  kanbaleDrainSvgPath,
+  type WaterwayDrainPlot,
+} from './kanbaleDrain.ts';
+
+export {
+  kanbaleDrain,
+  kanbaleDrainWorldPoints,
+  kanbaleDrainSvgPath,
+  type WaterwayDrainPlot,
+};
+
 const bundedFields: FieldPlot[] = [];
 
 /**
@@ -54,6 +68,7 @@ export const kanbaleVillage: VillageMeta = {
   z: kanbaleMeta.spawn.z,
   labelPos: toWorld(1000, 150),
   separationFields: [],
+  connectingCanal: kanbaleDrain,
   houses: kanbaleHouses,
   roads: kanbaleRoadPlots,
   fields,
@@ -62,3 +77,4 @@ export const kanbaleVillage: VillageMeta = {
   largeTrees,
   farmTrees,
 };
+

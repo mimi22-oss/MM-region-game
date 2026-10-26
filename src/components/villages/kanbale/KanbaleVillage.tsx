@@ -10,6 +10,7 @@ import {
 } from '../../../data/villages/kanbale';
 import { KanbaleBuilding } from './KanbaleBuilding';
 import { customBuildings } from './KanbaleCustomBuildings';
+import { KanbaleDrain } from './KanbaleDrain';
 import { Tree } from '../../Tree';
 
 export interface KanbaleVillageProps {
@@ -173,6 +174,11 @@ export const KanbaleVillage = memo(function KanbaleVillage({
           );
         })}
       </group>
+
+      {/* ======================================================== */}
+      {/* ၄.၅။ ရေနုတ်မြောင်း (Waterway Drain & Bridges) */}
+      {/* ======================================================== */}
+      <KanbaleDrain />
 
       {/* ======================================================== */}
       {/* ၅။ သစ်ပင်များ (Vegetation & Trees) */}

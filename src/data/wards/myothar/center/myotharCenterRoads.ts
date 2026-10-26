@@ -2666,7 +2666,7 @@ export const myotharCenterRoads: MyotharCenterRoad[] = [
       ],
       [
         94.068471,
-        23.1645474
+        23.1646193
       ]
     ],
     "uvPoints": [
@@ -2684,7 +2684,7 @@ export const myotharCenterRoads: MyotharCenterRoad[] = [
       ],
       [
         0.0,
-        -300.0
+        -308.0
       ]
     ],
     "worldPoints": [
@@ -2701,8 +2701,8 @@ export const myotharCenterRoads: MyotharCenterRoad[] = [
         -185.62
       ],
       [
-        -212.13,
-        -212.13
+        -217.79,
+        -217.79
       ]
     ]
   },

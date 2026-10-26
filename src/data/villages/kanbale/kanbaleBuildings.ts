@@ -2045,7 +2045,7 @@ export const kanbaleBuildings: KanbaleBuildingData[] = [
     "id": "way/403027697",
     "osmId": 403027697,
     "osmType": "way",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027697",
+    "name": "ဆန်စက်",
     "lon": 94.0655284,
     "lat": 23.1638403,
     "u": 271.19,
@@ -46366,7 +46366,7 @@ export const kanbaleHouses: House[] = [
   },
   {
     "id": "way/403027697",
-    "name": "ကံပုလဲ အဆောက်အအုံ 403027697",
+    "name": "ဆန်စက်",
     "x": 15.75,
     "z": -367.77,
     "width": 22.99,
