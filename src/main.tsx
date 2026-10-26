@@ -19,6 +19,8 @@ import {
 import { homeGuidance } from "./game/homeAccess";
 import { FrameBudget } from "./components/FrameBudget";
 import { mobileQuality } from "./game/sceneBudget";
+import { startupDiagnostics } from "./game/startupDiagnostics";
+import { diagnosticConfig } from "./game/diagnosticMode";
 import { MobileControls } from "./components/MobileControls";
 import { createMobileInput, resetMobileInput } from "./game/mobileInput";
 import React, {
@@ -80,7 +82,11 @@ class SceneError extends Component<
   static getDerivedStateFromError() {
     return { failed: true };
   }
-  componentDidCatch() {
+  componentDidCatch(error: any, errorInfo: any) {
+    startupDiagnostics.record('startup-error', {
+      error: String(error),
+      stack: errorInfo?.componentStack,
+    });
     this.props.onError();
   }
   render() {
@@ -375,8 +381,8 @@ function App() {
       >
         <SceneError onError={sceneError}>
           <Canvas
-            frameloop={visible ? loading ? "demand" : "always" : "never"}
-            shadows={!mobileQuality}
+            frameloop={visible ? "always" : "never"}
+            shadows={!mobileQuality && !diagnosticConfig.disableShadows}
             gl={{
               logarithmicDepthBuffer: true,
               antialias: !mobileQuality,
@@ -384,6 +390,25 @@ function App() {
             }}
             camera={{ position: [0, 5, 33], fov: 65, near: 0.1, far: 9000 }}
             dpr={mobileQuality ? 1 : [1, 1.25]}
+            onCreated={({ gl }) => {
+              startupDiagnostics.record('canvas-init');
+              startupDiagnostics.record('webgl-created', {
+                dpr: gl.getPixelRatio(),
+                maxAnisotropy: gl.capabilities.getMaxAnisotropy(),
+              });
+              const canvas = gl.domElement;
+              const handleContextLost = (e: Event) => {
+                e.preventDefault();
+                console.warn('[WebGL] Context lost!');
+                startupDiagnostics.record('webgl-context-lost');
+              };
+              const handleContextRestored = () => {
+                console.info('[WebGL] Context restored!');
+                startupDiagnostics.record('webgl-context-restored');
+              };
+              canvas.addEventListener('webglcontextlost', handleContextLost, false);
+              canvas.addEventListener('webglcontextrestored', handleContextRestored, false);
+            }}
           >
             <FrameBudget />
             <Town minute={environment.minute} destination={teleportTarget} paused={loading} onLoadingChange={setSceneLoading} onSceneError={sceneError} />

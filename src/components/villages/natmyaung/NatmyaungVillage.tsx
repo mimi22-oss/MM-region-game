@@ -11,6 +11,7 @@ import {
 } from '../../../data/villages/natmyaung';
 import { NatmyaungBuilding } from './NatmyaungBuilding';
 import { Tree } from '../../Tree';
+import { diagnosticConfig } from '../../../game/diagnosticMode';
 
 export interface NatmyaungVillageProps {
   onSelectBuilding?: (building: NatmyaungBuildingData) => void;
@@ -131,31 +132,35 @@ export const NatmyaungVillage = memo(function NatmyaungVillage({
       {/* ======================================================== */}
       {/* ၂။ ရွာနယ်နိမိတ်မျဉ်း (Village Boundary Line Loop) */}
       {/* ======================================================== */}
-      <lineLoop geometry={boundaryLineGeom}>
-        <lineBasicMaterial color="#eab308" linewidth={2} />
-      </lineLoop>
+      {!diagnosticConfig.disableOSM && (
+        <lineLoop geometry={boundaryLineGeom}>
+          <lineBasicMaterial color="#eab308" linewidth={2} />
+        </lineLoop>
+      )}
 
       {/* ======================================================== */}
       {/* ၃။ OSM လမ်းကြောင်းများ (Walkable Real OSM Roads) */}
       {/* ======================================================== */}
-      <group name="natmyaung-roads">
-        {roadSegments.map((s) => (
-          <mesh
-            key={s.key}
-            position={[s.mx, 0.04, s.mz]}
-            rotation={[-Math.PI / 2, 0, s.rot]}
-            receiveShadow
-            userData={{ walkable: true }}
-          >
-            <planeGeometry args={[s.length, s.width]} />
-            <meshStandardMaterial
-              color={s.isAh1 ? '#3a4443' : '#5f665e'}
-              roughness={0.88}
-              metalness={0.05}
-            />
-          </mesh>
-        ))}
-      </group>
+      {!diagnosticConfig.disableOSM && (
+        <group name="natmyaung-roads">
+          {roadSegments.map((s) => (
+            <mesh
+              key={s.key}
+              position={[s.mx, 0.04, s.mz]}
+              rotation={[-Math.PI / 2, 0, s.rot]}
+              receiveShadow
+              userData={{ walkable: true }}
+            >
+              <planeGeometry args={[s.length, s.width]} />
+              <meshStandardMaterial
+                color={s.isAh1 ? '#3a4443' : '#5f665e'}
+                roughness={0.88}
+                metalness={0.05}
+              />
+            </mesh>
+          ))}
+        </group>
+      )}
 
       {/* ======================================================== */}
       {/* ၄။ နတ်မြောင်း ရွာလယ်ရေကန် (Village Pond) */}
@@ -182,16 +187,18 @@ export const NatmyaungVillage = memo(function NatmyaungVillage({
       {/* ======================================================== */}
       {/* ၅။ အဆောက်အအုံများနှင့် လူနေအိမ်များ (Buildings) */}
       {/* ======================================================== */}
-      <group name="natmyaung-buildings">
-        {natmyaungBuildings.map((building) => (
-          <NatmyaungBuilding
-            key={building.id}
-            building={building}
-            selected={selectedId === building.id}
-            onSelect={handleSelect}
-          />
-        ))}
-      </group>
+      {!diagnosticConfig.disableBuildings && (
+        <group name="natmyaung-buildings">
+          {natmyaungBuildings.map((building) => (
+            <NatmyaungBuilding
+              key={building.id}
+              building={building}
+              selected={selectedId === building.id}
+              onSelect={handleSelect}
+            />
+          ))}
+        </group>
+      )}
 
       {/* ======================================================== */}
       {/* ၆။ သစ်ပင်များ (Vegetation & Trees) */}

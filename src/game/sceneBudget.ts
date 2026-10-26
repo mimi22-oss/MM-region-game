@@ -57,6 +57,20 @@ export function selectOverviewRegions(
     .map((r) => r.id);
 }
 
+/**
+ * Select the regions that MUST be prepared before gameplay starts.
+ * Distinguishes lightweight overview rendering from expensive detailed-region preparation.
+ * On mobile or constrained environments, only the spawn region blocks startup.
+ */
+export function selectInitialPreparationRegions(
+  spawnRegions: string[],
+  _regions: RegionBounds[],
+  _mobile: boolean,
+): string[] {
+  // Always prepare spawn region first so gameplay can start immediately
+  return [...spawnRegions];
+}
+
 /** Do not replace entire region trees while the camera is in motion. */
 export class ViewSettler {
   last: { x: number; z: number; height: number } | null = null;

@@ -1,6 +1,7 @@
 import { HomeGate } from './HomeGate';
 import {CandleRow,PorchCandles} from './FestivalAnchor';
 import { mobileQuality } from '../game/sceneBudget';
+import { diagnosticConfig } from '../game/diagnosticMode';
 import { angle, ward, type House as HouseData } from '../data/ward';
 import { Box } from './Primitives';
 export const FARMHOUSE_NAME='လမ်းသွယ် ၂ · စိုက်ခင်းအိမ်';
@@ -98,6 +99,7 @@ function HouseFence({h}:{h:HouseData}){
  </group>;
 }
 export function House({h}:{h:HouseData}){
+ if (diagnosticConfig.disableBuildings) return null;
  const front=h.depth/2;
  const balconyWidth=h.width*0.65;
  const rot=houseVisualRotation(h);

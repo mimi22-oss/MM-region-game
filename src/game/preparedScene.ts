@@ -1,5 +1,5 @@
 import { Group, InstancedMesh, Mesh, OrthographicCamera, Scene, WebGLRenderTarget, type WebGLRenderer, type BufferGeometry, type Material, type Object3D, Light } from 'three';
-import type { RegionBounds } from './sceneBudget';
+import { mobileQuality, type RegionBounds } from './sceneBudget.ts';
 
 /** Keep the batched render objects, allowing the much larger React source tree to be released. */
 export function snapshotRegion(source: Group) {
@@ -35,8 +35,12 @@ export function animateRegionFlows(flows: Object3D[], time: number) {
  }
 }
 
-/** Upload geometry and compile materials during the one startup wait. */
+/** Upload geometry and compile materials during the one startup wait. On mobile, safely bypass to save memory. */
 export async function warmRegion(renderer: WebGLRenderer, world: Scene, root: Group, bounds: RegionBounds) {
+ if (mobileQuality) {
+  // Mobile GPUs have strictly limited memory budgets; bypass offscreen render target to prevent context exhaustion
+  return;
+ }
  const staging = new Scene();
  staging.fog = world.fog;
  staging.environment = world.environment;

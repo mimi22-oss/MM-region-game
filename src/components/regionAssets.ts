@@ -7,17 +7,25 @@ import { RegionDownloadQueue } from '../game/regionLoading';
 import kalaySignFace from '../assets/kalay_sign_face.png';
 import burmeseLionEmblem from '../assets/burmese_lion_emblem.png';
 
+import { startupDiagnostics } from '../game/startupDiagnostics';
+import { diagnosticConfig } from '../game/diagnosticMode';
+
 const images = new Map<string, Promise<void>>();
 function preloadImage(url: string) {
   const existing = images.get(url);
   if (existing) return existing;
-  const pending = new Promise<void>((resolve, reject) => {
+  const pending = new Promise<void>((resolve) => {
     const image = new Image();
     image.crossOrigin = 'anonymous';
-    image.onload = () => { image.decode().then(resolve, reject); };
-    image.onerror = () => reject(new Error('Scene image could not be loaded'));
+    image.onload = () => {
+      image.decode().then(() => resolve()).catch(() => resolve());
+    };
+    image.onerror = () => {
+      console.warn('[regionAssets] Non-fatal texture preload failure for:', url);
+      resolve(); // Do not block game startup on image error
+    };
     image.src = url;
-  }).catch(error => { images.delete(url); throw error; });
+  });
   images.set(url, pending);
   return pending;
 }
@@ -74,10 +82,15 @@ export const regionAssets = new RegionDownloadQueue(worldRegions.map(region => (
   id: region.id,
   name: region.name,
   load: async () => {
+    startupDiagnostics.record('map-data-load', { regionId: region.id, name: region.name });
+    const shouldLoadTextures = !diagnosticConfig.disableTextures && region.id === 'myothar';
     const [Scene] = await Promise.all([
       loaders[region.id](),
-      ...(region.id === 'myothar' ? [preloadImage(kalaySignFace), preloadImage(burmeseLionEmblem)] : []),
+      ...(shouldLoadTextures ? [preloadImage(kalaySignFace), preloadImage(burmeseLionEmblem)] : []),
     ]);
+    if (shouldLoadTextures) {
+      startupDiagnostics.record('texture-load', { regionId: region.id });
+    }
     return Scene;
   },
 })));

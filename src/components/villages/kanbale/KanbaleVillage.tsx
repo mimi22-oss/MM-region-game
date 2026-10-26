@@ -12,6 +12,7 @@ import { KanbaleBuilding } from './KanbaleBuilding';
 import { customBuildings } from './KanbaleCustomBuildings';
 import { KanbaleDrain } from './KanbaleDrain';
 import { Tree } from '../../Tree';
+import { diagnosticConfig } from '../../../game/diagnosticMode';
 
 export interface KanbaleVillageProps {
   onSelectBuilding?: (building: KanbaleBuildingData) => void;
@@ -119,61 +120,67 @@ export const KanbaleVillage = memo(function KanbaleVillage({
       {/* ======================================================== */}
       {/* ၂။ ရွာနယ်နိမိတ်မျဉ်း (Village Boundary Line Loop) */}
       {/* ======================================================== */}
-      <lineLoop geometry={boundaryLineGeom}>
-        <lineBasicMaterial color="#eab308" linewidth={2} />
-      </lineLoop>
+      {!diagnosticConfig.disableOSM && (
+        <lineLoop geometry={boundaryLineGeom}>
+          <lineBasicMaterial color="#eab308" linewidth={2} />
+        </lineLoop>
+      )}
 
       {/* ======================================================== */}
       {/* ၃။ OSM လမ်းကြောင်းများ (Walkable Real OSM Roads) */}
       {/* ======================================================== */}
-      <group name="kanbale-roads">
-        {roadSegments.map((s) => (
-          <mesh
-            key={s.key}
-            position={[s.mx, 0.04, s.mz]}
-            rotation={[-Math.PI / 2, 0, s.rot]}
-            receiveShadow
-            userData={{ walkable: true }}
-          >
-            <planeGeometry args={[s.length, s.width]} />
-            <meshStandardMaterial
-              color="#596663"
-              roughness={0.88}
-              metalness={0.05}
-            />
-          </mesh>
-        ))}
-      </group>
+      {!diagnosticConfig.disableOSM && (
+        <group name="kanbale-roads">
+          {roadSegments.map((s) => (
+            <mesh
+              key={s.key}
+              position={[s.mx, 0.04, s.mz]}
+              rotation={[-Math.PI / 2, 0, s.rot]}
+              receiveShadow
+              userData={{ walkable: true }}
+            >
+              <planeGeometry args={[s.length, s.width]} />
+              <meshStandardMaterial
+                color="#596663"
+                roughness={0.88}
+                metalness={0.05}
+              />
+            </mesh>
+          ))}
+        </group>
+      )}
 
       {/* ======================================================== */}
       {/* ၄။ အဆောက်အအုံများ (Buildings with Custom Override System) */}
       {/* ======================================================== */}
-      <group name="kanbale-buildings">
-        {kanbaleBuildings.map((building) => {
-          const isSelected = selectedId === building.id;
-          const CustomComponent = customBuildings[building.id];
+      {!diagnosticConfig.disableBuildings && (
+        <group name="kanbale-buildings">
+          {kanbaleBuildings.map((building) => {
+            const isSelected = selectedId === building.id;
+            const CustomComponent = customBuildings[building.id];
 
-          if (CustomComponent) {
+            if (CustomComponent) {
+              return (
+                <CustomComponent
+                  key={building.id}
+                  building={building}
+                  selected={isSelected}
+                  onSelect={handleSelect}
+                />
+              );
+            }
+
             return (
-              <CustomComponent
+              <KanbaleBuilding
                 key={building.id}
                 building={building}
                 selected={isSelected}
                 onSelect={handleSelect}
               />
             );
-          }
-
-          return (
-            <KanbaleBuilding
-              key={building.id}
-              building={building}
-              selected={isSelected}
-              onSelect={handleSelect}
-            />
-          );
-        })}
-      </group>
+          })}
+        </group>
+      )}
 
       {/* ======================================================== */}
       {/* ၄.၅။ ရေနုတ်မြောင်း (Waterway Drain & Bridges) */}
