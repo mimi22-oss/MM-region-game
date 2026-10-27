@@ -457,7 +457,7 @@ export const Player = memo(function Player({
    let lift=balloonInput.lift+Number(s.keys.has('ArrowUp')||s.keys.has('PageUp'))-Number(s.keys.has('ArrowDown')||s.keys.has('PageDown'));
    let flightForward=Number(s.keys.has('KeyW'))-Number(s.keys.has('KeyS'));
    let flightRight=Number(s.keys.has('KeyD')||s.keys.has('ArrowRight'))-Number(s.keys.has('KeyA')||s.keys.has('ArrowLeft'));
-   if(touch?.active){flightRight=touch.right;lift+=touch.forward;}
+   if(touch?.active){flightRight=touch.right;flightForward=touch.forward;}
    const landClear=(x:number,z:number)=>canStand(x,z)&&!hitsTraffic(x,z,0,height(x,z),true);
    balloonFloorCache.clear();
    const floorCache=balloonFloorCache;

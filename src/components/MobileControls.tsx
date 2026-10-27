@@ -208,7 +208,7 @@ export function MobileControls({
                         {(['up','right','down','left'] as const).map((direction,i)=><button
                             key={direction} type="button" data-direction={direction}
                             className={`mobile-joystick-tick mobile-joystick-tick-${direction}`}
-                            aria-label={`${['ရှေ့ / အပေါ်','ညာ','နောက် / အောက်','ဘယ်'][i]} · ဖိထားလျှင် Auto`}
+                            aria-label={`${['ရှေ့','ညာ','နောက်','ဘယ်'][i]} · ဖိထားလျှင် Auto`}
                             aria-pressed={autoMove.direction===direction}
                             title="ဖိထားရန်: Auto · ထပ်ဖိထားရန်: အရှိန်တိုး · တစ်ချက်နှိပ်ရန်: ပုံမှန်အရှိန်"
                             onClick={e=>{if(e.detail===0){gesture.current.activateTick(direction);onInteract();syncAuto();}}}
