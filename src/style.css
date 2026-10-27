@@ -116,6 +116,7 @@ header p {
 	top: 24px;
 	right: 24px;
 	z-index: 15;
+	display: flex;
 }
 
 .settings-btn {
@@ -737,7 +738,7 @@ kbd {
 .location-actions {
 	position: absolute;
 	top: 24px;
-	right: 74px;
+	right: 120px;
 	bottom: auto;
 	left: auto;
 	z-index: 15;
@@ -1624,7 +1625,7 @@ main.night-mode .home-guidance-pill {
 	.location-actions {
 		position: absolute !important;
 		top: 14px !important;
-		right: 54px !important;
+		right: 95px !important;
 		bottom: auto !important;
 		left: auto !important;
 		flex-direction: row !important;
@@ -4796,7 +4797,7 @@ body:has(.balloon-controls-layer) .player-life {
 		right: 20px;
 		/* padding: 4px 8px */
 	}
-	
+
 
 	.life-heart {
 		font-size: 18px
@@ -4818,6 +4819,7 @@ body:has(.balloon-controls-layer) .player-life {
 	height: 36px;
 	filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
 }
+
 /* Balloon Speedometer & Altitude HUD at top-right (matches car-dashboard) */
 .balloon-dashboard {
 	position: absolute;
@@ -5024,9 +5026,12 @@ body:has(.balloon-controls-layer) .player-life {
 }
 
 @keyframes balloonChatFloat {
-	0%, 100% {
+
+	0%,
+	100% {
 		transform: translate(-50%, 0);
 	}
+
 	50% {
 		transform: translate(-50%, -5px);
 	}
@@ -5037,6 +5042,7 @@ body:has(.balloon-controls-layer) .player-life {
 		opacity: 0;
 		transform: translate(-50%, 8px) scale(0.92);
 	}
+
 	to {
 		opacity: 1;
 		transform: translate(-50%, 0) scale(1);
@@ -5310,17 +5316,21 @@ body:has(.balloon-controls-layer) .player-life {
 		padding: 3px 9px;
 		gap: 4px;
 	}
+
 	.balloon-speedo-kmh,
 	.balloon-alt-val {
 		font-size: 13.5px;
 	}
+
 	.balloon-dash-return-btn {
 		font-size: 10px;
 		padding: 2px 7px;
 	}
+
 	.balloon-orbit-btn {
 		transform: scale(0.92);
 	}
+
 	.balloon-notice-pill {
 		bottom: calc(50% + 45px);
 		max-width: calc(100vw - 36px);
@@ -5333,24 +5343,141 @@ body:has(.balloon-controls-layer) .player-life {
 }
 
 /* Direction ticks are touch buttons; only deliberate holds enable auto movement. */
-.mobile-controls .mobile-joystick-tick {width:40px;height:40px;padding:0;border:0;border-radius:50%;background:transparent;pointer-events:auto;touch-action:none;cursor:pointer;font:inherit;font-size:13px;display:flex;align-items:center;justify-content:center;z-index:3;}
-.mobile-controls .mobile-joystick-tick-up {top:0;}
-.mobile-controls .mobile-joystick-tick-right {right:0;}
-.mobile-controls .mobile-joystick-tick-down {bottom:0;}
-.mobile-controls .mobile-joystick-tick-left {left:0;}
-.mobile-controls .mobile-joystick-tick[aria-pressed="true"] {color:#ffdf75;background:#203e35c9;box-shadow:inset 0 0 0 1px #ffdf7599;}
-.mobile-auto-status {position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);white-space:nowrap;padding:5px 10px;border-radius:10px;background:#183b31ed;color:#ffdf75;font:600 12px sans-serif;pointer-events:none;}
-.mobile-auto-stop {position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:36px;height:36px;z-index:4;border:1px solid #ffe3a0;border-radius:50%;background:#17382f;color:#ffdc77;touch-action:none;cursor:pointer;}
-.mobile-controls .mobile-joystick-tick:focus-visible,.mobile-auto-stop:focus-visible {outline:2px solid #ffe3a0;outline-offset:-2px;}
+.mobile-controls .mobile-joystick-tick {
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	pointer-events: auto;
+	touch-action: none;
+	cursor: pointer;
+	font: inherit;
+	font-size: 13px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 3;
+}
 
-.environment-settings {gap:10px;}
-.environment-clock {margin:0;font-size:11px;line-height:1.8;opacity:.85;}
-.environment-periods {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
-.environment-periods .time-btn {flex-direction:column;gap:3px;}
-.environment-periods small {font-size:10px;opacity:.8;}
-.environment-sound {display:flex;gap:8px;align-items:center;font-size:12px;cursor:pointer;}
-.environment-sound input {accent-color:#267865;}
-.environment-volume {display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:11px;}
-.environment-volume output {margin-left:auto;}
-.environment-volume input {width:100%;accent-color:#267865;cursor:pointer;}
-.environment-settings>small {font-size:10px;line-height:1.8;opacity:.8;}
+.mobile-controls .mobile-joystick-tick-up {
+	top: 0;
+}
+
+.mobile-controls .mobile-joystick-tick-right {
+	right: 0;
+}
+
+.mobile-controls .mobile-joystick-tick-down {
+	bottom: 0;
+}
+
+.mobile-controls .mobile-joystick-tick-left {
+	left: 0;
+}
+
+.mobile-controls .mobile-joystick-tick[aria-pressed="true"] {
+	color: #ffdf75;
+	background: #203e35c9;
+	box-shadow: inset 0 0 0 1px #ffdf7599;
+}
+
+.mobile-auto-status {
+	position: absolute;
+	bottom: calc(100% + 9px);
+	left: 50%;
+	transform: translateX(-50%);
+	white-space: nowrap;
+	padding: 5px 10px;
+	border-radius: 10px;
+	background: #183b31ed;
+	color: #ffdf75;
+	font: 600 12px sans-serif;
+	pointer-events: none;
+}
+
+.mobile-auto-stop {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: 36px;
+	height: 36px;
+	z-index: 4;
+	border: 1px solid #ffe3a0;
+	border-radius: 50%;
+	background: #17382f;
+	color: #ffdc77;
+	touch-action: none;
+	cursor: pointer;
+}
+
+.mobile-controls .mobile-joystick-tick:focus-visible,
+.mobile-auto-stop:focus-visible {
+	outline: 2px solid #ffe3a0;
+	outline-offset: -2px;
+}
+
+.environment-settings {
+	gap: 10px;
+}
+
+.environment-clock {
+	margin: 0;
+	font-size: 11px;
+	line-height: 1.8;
+	opacity: .85;
+}
+
+.environment-periods {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+}
+
+.environment-periods .time-btn {
+	flex-direction: column;
+	gap: 3px;
+}
+
+.environment-periods small {
+	font-size: 10px;
+	opacity: .8;
+}
+
+.environment-sound {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.environment-sound input {
+	accent-color: #267865;
+}
+
+.environment-volume {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	font-size: 11px;
+}
+
+.environment-volume output {
+	margin-left: auto;
+}
+
+.environment-volume input {
+	width: 100%;
+	accent-color: #267865;
+	cursor: pointer;
+}
+
+.environment-settings>small {
+	font-size: 10px;
+	line-height: 1.8;
+	opacity: .8;
+}

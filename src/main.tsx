@@ -552,7 +552,7 @@ function App() {
         {/* <h1>{currentLoc.title}</h1> */}
         {/* <p>{currentLoc.subtitle}</p> */}
       </header>
-      {arrivalToast && !mapOpen && (
+      {arrivalToast && !mapOpen && !editorOpen && (
         <div className="location-toast" role="status" aria-live="polite">
           <span className="location-toast-icon">📍</span>
           <div className="location-toast-body">

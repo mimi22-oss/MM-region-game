@@ -365,6 +365,14 @@ export default function WardVillageEditor({
 	};
 
 	const down = (e: ReactPointerEvent<SVGSVGElement>) => {
+		// Right-click (2) or middle-click (1) pans freely in any mode
+		if (e.button === 1 || e.button === 2) {
+			e.preventDefault();
+			const p = pointAt(e);
+			drag.current = { pointer: e.pointerId, last: p, start: p, before: layoutRef.current };
+			svg.current?.setPointerCapture(e.pointerId);
+			return;
+		}
 		if (e.button !== 0) return;
 		e.preventDefault();
 		const p = pointAt(e);
@@ -417,8 +425,13 @@ export default function WardVillageEditor({
 				setSelection(moving);
 				begin({ ids: moving });
 			} else {
-				setSelectionBox({ start: p, end: p });
-				begin({ box: true, additive: e.ctrlKey || e.metaKey });
+				// On mobile touch on empty canvas, pan the map!
+				if (e.pointerType === 'touch') {
+					begin({});
+				} else {
+					setSelectionBox({ start: p, end: p });
+					begin({ box: true, additive: e.ctrlKey || e.metaKey });
+				}
 			}
 			return;
 		}
@@ -612,7 +625,8 @@ export default function WardVillageEditor({
 					<div className="wve-header-brand">
 						<span className="wve-brand-icon">🗺️</span>
 						<div className="wve-brand-text">
-							<span className="wve-title">Myanmar Town Editor</span>
+							<span className="wve-title wve-label-full">Myanmar Town Editor</span>
+							<span className="wve-title wve-label-short">MM Editor</span>
 							<span className="wve-subtitle">2D World & 3D Asset Studio</span>
 						</div>
 					</div>
@@ -668,18 +682,26 @@ export default function WardVillageEditor({
 						>
 							💾 Save{dirty ? ' *' : ''}
 						</button>
-						<button disabled={!dirty} onClick={() => {
-							if (!window.confirm('Unsaved edits အားလုံးကို ပယ်ဖျက်မလား?')) return;
-							cancelInteraction(); updateLayout(savedLayout); setHistory([]); setFuture([]); setSelected(null);
-							setMessage('Unsaved changes discarded.');
-						}}>Discard</button>
-						<button title="Export layout as JSON file" onClick={() => downloadLayout(layout)}>
+						<button
+							className="wve-btn-discard"
+							disabled={!dirty}
+							onClick={() => {
+								if (!window.confirm('Unsaved edits အားလုံးကို ပယ်ဖျက်မလား?')) return;
+								cancelInteraction(); updateLayout(savedLayout); setHistory([]); setFuture([]); setSelected(null);
+								setMessage('Unsaved changes discarded.');
+							}}
+						>
+							<span className="wve-label-full">Discard</span>
+							<span className="wve-label-short">↺</span>
+						</button>
+						<button className="wve-btn-export" title="Export layout as JSON file" onClick={() => downloadLayout(layout)}>
 							📤 Export
 						</button>
-						<button title="Import village layout JSON" onClick={() => file.current?.click()}>
+						<button className="wve-btn-import" title="Import village layout JSON" onClick={() => file.current?.click()}>
 							📥 Import
 						</button>
 						<button
+							className="wve-btn-ai"
 							title="Copy prompt for AI village recreation"
 							onClick={() =>
 								navigator.clipboard.writeText(aiLayoutPrompt(layout)).then(
@@ -698,7 +720,7 @@ export default function WardVillageEditor({
 								title="Save & Close Editor"
 								aria-label="Save & Close Editor"
 							>
-								✕ Close
+								✕<span className="wve-label-full"> Close</span>
 							</button>
 						)}
 					</div>
@@ -708,11 +730,39 @@ export default function WardVillageEditor({
 				<div className="wve-header-tools">
 					<div className="wve-tools-left">
 						<button
+							className="wve-tool-btn wve-mobile-only"
+							title="Export layout as JSON file"
+							onClick={() => downloadLayout(layout)}
+						>
+							📤 Export
+						</button>
+						<button
+							className="wve-tool-btn wve-mobile-only"
+							title="Import village layout JSON"
+							onClick={() => file.current?.click()}
+						>
+							📥 Import
+						</button>
+						<button
+							className="wve-tool-btn wve-mobile-only"
+							title="Copy prompt for AI village recreation"
+							onClick={() =>
+								navigator.clipboard.writeText(aiLayoutPrompt(layout)).then(
+									() => setMessage('AI prompt copied.'),
+									() => setMessage('Clipboard blocked; export JSON instead.')
+								)
+							}
+						>
+							✨ AI
+						</button>
+
+						<button
 							className="wve-tool-btn highlight"
 							title="Import authored 3D buildings, roads and trees for this region into editable features"
 							onClick={handleImportAuthoredObjects}
 						>
-							📥 Import Region 3D Objects
+							<span className="wve-label-full">📥 Import Region 3D Objects</span>
+							<span className="wve-label-short">📥 3D Objects</span>
 						</button>
 
 						<button
@@ -723,7 +773,8 @@ export default function WardVillageEditor({
 								setMessage(!groupSelectMode ? 'Group Selection Mode: Clicking an item selects the whole assembly.' : 'Part Selection Mode: Clicking selects only the individual item.');
 							}}
 						>
-							{groupSelectMode ? '🔗 Group Mode (အစု)' : '🎯 Part Mode (တစ်ခုတည်း)'}
+							<span className="wve-label-full">{groupSelectMode ? '🔗 Group Mode (အစု)' : '🎯 Part Mode (တစ်ခုတည်း)'}</span>
+							<span className="wve-label-short">{groupSelectMode ? '🔗 Group' : '🎯 Part'}</span>
 						</button>
 
 						<button
@@ -731,7 +782,8 @@ export default function WardVillageEditor({
 							title="Import GeoJSON features"
 							onClick={() => geoFile.current?.click()}
 						>
-							📂 Import GeoJSON
+							<span className="wve-label-full">📂 Import GeoJSON</span>
+							<span className="wve-label-short">📂 GeoJSON</span>
 						</button>
 
 						<button
@@ -739,7 +791,8 @@ export default function WardVillageEditor({
 							title="Upload reference overlay image"
 							onClick={() => imageFile.current?.click()}
 						>
-							🖼️ {reference ? 'Change Reference Image' : 'Add Reference Image'}
+							<span className="wve-label-full">🖼️ {reference ? 'Change Reference Image' : 'Add Reference Image'}</span>
+							<span className="wve-label-short">🖼️ {reference ? 'Ref Image' : '+ Image'}</span>
 						</button>
 
 						{reference && (
@@ -789,13 +842,14 @@ export default function WardVillageEditor({
 							<span className={`wve-toggle-indicator ${showNames ? 'on' : 'off'}`}>
 								{showNames ? '✓' : ''}
 							</span>
-							<span>🏷️ အမည်များ ပြရန် (Names)</span>
+							<span className="wve-label-full">🏷️ အမည်များ ပြရန် (Names)</span>
+							<span className="wve-label-short">🏷️ အမည်များ</span>
 						</button>
 						<span className="wve-badge-pill">
-							Region: <strong>{REGIONS.find((r) => r.id === region)?.name.split(' ')[0] ?? region}</strong>
+							<span className="wve-label-full">Region: </span><strong>{REGIONS.find((r) => r.id === region)?.name.split(' ')[0] ?? region}</strong>
 						</span>
 						<span className="wve-badge-pill">
-							<strong>{layout.features.length}</strong> Features
+							<strong>{layout.features.length}</strong> <span className="wve-label-full">Features</span><span className="wve-label-short">ခု</span>
 						</span>
 					</div>
 				</div>
@@ -1078,6 +1132,7 @@ export default function WardVillageEditor({
 				<div className="wve-map">
 					<svg
 						ref={svg}
+						className={mode === 'pan' ? 'panning' : ''}
 						viewBox={`${view.x - view.span / 2} ${view.z - height / 2} ${view.span} ${height}`}
 						preserveAspectRatio="none"
 						onPointerDown={down}
@@ -1089,12 +1144,31 @@ export default function WardVillageEditor({
 							if (mode === 'draw') finish();
 						}}
 						onWheel={(e) => {
-							const factor = e.deltaY > 0 ? 1.12 : 0.89;
-							setView((v) => ({
-								...v,
-								span: Math.max(15, Math.min(30000, v.span * factor)),
-							}));
+							e.preventDefault();
+							if (e.ctrlKey || e.metaKey) {
+								const factor = e.deltaY > 0 ? 1.12 : 0.89;
+								setView((v) => ({
+									...v,
+									span: Math.max(15, Math.min(30000, v.span * factor)),
+								}));
+							} else if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+								// Horizontal trackpad swipe or mouse wheel scroll right-to-left
+								const dx = e.deltaX * scale;
+								setView((v) => ({ ...v, x: v.x + dx }));
+							} else if (e.shiftKey) {
+								// Shift + wheel scrolls horizontally
+								const dx = (e.deltaY || e.deltaX) * scale;
+								setView((v) => ({ ...v, x: v.x + dx }));
+							} else {
+								const factor = e.deltaY > 0 ? 1.12 : 0.89;
+								setView((v) => ({
+									...v,
+									span: Math.max(15, Math.min(30000, v.span * factor)),
+									x: v.x + (e.deltaX ? e.deltaX * scale : 0),
+								}));
+							}
 						}}
+						onContextMenu={(e) => e.preventDefault()}
 					>
 						{/* Background grass/terrain */}
 						<rect
@@ -1391,14 +1465,70 @@ export default function WardVillageEditor({
 						)}
 					</svg>
 
+					{/* Map controls & badge */}
+					<div className="wve-map-controls">
+						<button
+							type="button"
+							className="wve-map-ctrl-btn"
+							title="Zoom in (ချဲ့ရန်)"
+							onClick={() => setView((v) => ({ ...v, span: Math.max(15, v.span * 0.8) }))}
+						>
+							＋
+						</button>
+						<button
+							type="button"
+							className="wve-map-ctrl-btn"
+							title="Zoom out (ချုံ့ရန်)"
+							onClick={() => setView((v) => ({ ...v, span: Math.min(30000, v.span * 1.25) }))}
+						>
+							－
+						</button>
+						<button
+							type="button"
+							className="wve-map-ctrl-btn"
+							title="Center view (အလယ်သို့)"
+							onClick={() => {
+								const c = regionCenter(region, initialCenter);
+								setView((v) => ({ ...v, x: c.x, z: c.z, span: 1100 }));
+							}}
+						>
+							⊙
+						</button>
+					</div>
+
 					<div className="wve-mapbadge">
 						X {view.x.toFixed(0)} · Z {view.z.toFixed(0)} · span {view.span.toFixed(0)}m
 					</div>
+
+					<button
+						type="button"
+						className="wve-map-scroll-down-btn"
+						title="Scroll to inspector and tools below"
+						onClick={() => {
+							const el = document.querySelector('.wve-inspector') || document.querySelector('.wve-sidebar');
+							el?.scrollIntoView({ behavior: 'smooth' });
+						}}
+					>
+						⬇️ Tools & Inspector သို့ ဆွဲကြည့်ရန်
+					</button>
 				</div>
 
 				{/* Right Inspector */}
 				<aside className="wve-inspector">
-					<h3>Inspector</h3>
+					<div className="wve-inspector-header">
+						<h3>Inspector</h3>
+						<button
+							type="button"
+							className="wve-scroll-top-btn"
+							title="Scroll back up to map"
+							onClick={() => {
+								const el = document.querySelector('.wve-map');
+								el?.scrollIntoView({ behavior: 'smooth' });
+							}}
+						>
+							⬆️ မြေပုံသို့
+						</button>
+					</div>
 					{/* Multi-selection tools when more than 1 feature is selected */}
 					{selection.length > 1 && (
 						<section className="wve-selection-tools" aria-label="Multi-selection tools">

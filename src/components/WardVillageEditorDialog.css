@@ -4,11 +4,12 @@
   border-radius: 12px;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
   overflow: hidden;
-  position: relative;
   width: min(1480px, 98vw);
+  max-width: 98vw;
   height: 94dvh;
   max-height: 96dvh;
   background: #f8fafc;
+  margin: auto;
 }
 
 .ward-editor-dialog::backdrop {
@@ -16,6 +17,7 @@
   backdrop-filter: blur(4px);
 }
 
+/* The root flex column fills the dialog exactly */
 .ward-editor-dialog .wve-root {
   display: flex;
   flex-direction: column;
@@ -25,23 +27,32 @@
   overflow: hidden;
 }
 
-.ward-editor-dialog .wve-main {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
+/* Header stays in normal flow — no z-index, no position:fixed */
+.ward-editor-dialog .wve-header {
+  flex-shrink: 0;
+  position: static;
 }
 
-.ward-editor-dialog .wve-map {
-  min-height: 0;
-  height: 100%;
+/* Tablet sizing */
+@media (max-width: 1024px) {
+  .ward-editor-dialog {
+    width: 98vw;
+    max-width: 98vw;
+    height: 96dvh;
+    max-height: 96dvh;
+  }
 }
 
-@media (max-width: 800px) {
+/* Mobile full-screen modal */
+@media (max-width: 768px) {
   .ward-editor-dialog {
     width: 100vw;
+    max-width: 100vw;
     height: 100dvh;
-    max-height: none;
+    max-height: 100dvh;
     border-radius: 0;
     border: none;
+    margin: 0;
+    inset: 0;
   }
 }
