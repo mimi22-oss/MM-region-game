@@ -1,5 +1,6 @@
 import { ward, angle, toWorld } from "../data/ward.ts";
 import { isPointInsideKanbale } from "../data/villages/kanbale/index.ts";
+import { isPointInsideSiThar } from "../data/villages/sithar/index.ts";
 import { isPointInsideNatmyaung } from "../data/villages/natmyaung/index.ts";
 
 const cosA = Math.cos(angle);
@@ -384,6 +385,16 @@ export const MAP_DESTINATIONS: MapDestination[] = [
 		yaw: 0,
 		pitch: -0.16,
 		distance: 24,
+	},
+	{
+		id: "sithar",
+		label: "စည်သာရွာ",
+		title: "စည်သာရွာ · ကလေးမြို့နယ်",
+		subtitle: "ထောက်ကြန့်/ကြာအင်းရွာနှင့် နတ်မြောင်းရွာကြား · AH1 အာရှလမ်းမကြီး · ကလေးမြို့",
+		...toWorld(0, 4061),
+		yaw: Math.PI / 4,
+		pitch: -0.18,
+		distance: 18,
 	},
 	{
 		id: "natmyaung",
@@ -779,6 +790,52 @@ export function detectLocation(x: number, z: number): DetectedLocation {
 			subtitle:
 				"ကြာအင်းအင်းကြီး · ကြာအင်း အနောက်တောင်ဘက် · ရေကန်များနှင့် ရေပေါ်နန်း",
 			subArea: "ကြာအင်းရေကန်နှင့် ရေလယ်နားနေဆောင်",
+		};
+	}
+
+	// ၈.၅။ စည်သာရွာ (Si Thar Village: ထောက်ကြန့်/ကြာအင်းရွာနှင့် နတ်မြောင်းရွာကြား v = 4016 .. 4125)
+	if (isPointInsideSiThar(x, z) || (v >= 4016 && v <= 4125 && u >= -380 && u <= 410)) {
+		let subArea = "စည်သာရွာ";
+		let subtitle = "ထောက်ကြန့်/ကြာအင်းရွာနှင့် နတ်မြောင်းရွာကြား · AH1 အာရှလမ်းမကြီး · ကလေးမြို့";
+
+		if (Math.hypot(u - (-100.0), v - 4056.5) < 6.0) {
+			subArea = "စည်သာ နှစ်ခြင်းအသင်းတော် ဘုရားကျောင်း";
+			subtitle = "Sitha Baptist Church · စည်သာရွာ · ကလေးမြို့";
+		} else if (Math.hypot(u - (-112.0), v - 4056.5) < 6.0) {
+			subArea = "စည်သာ ကျေးရွာ စာကြည့်တိုက်";
+			subtitle = "Sithar Library · စည်သာရွာ · ကလေးမြို့";
+		} else if (Math.hypot(u - (-124.0), v - 4064.5) < 6.0) {
+			subArea = "စည်သာ ပင်တေကုတ္တေ ဘုရားကျောင်း";
+			subtitle = "United Pentecostal Church of Sitha · စည်သာရွာ · ကလေးမြို့";
+		} else if (Math.hypot(u - (-112.0), v - 4064.5) < 6.0) {
+			subArea = "စည်သာ ဘုန်းတော်ကြီးကျောင်း (ရွာလယ်ကျောင်း)";
+			subtitle = "ရန်ကင်းဓမ္မသုခ ရွာလယ်ကျောင်း · စည်သာရွာ";
+		} else if (Math.hypot(u - (-100.0), v - 4064.5) < 6.0) {
+			subArea = "ရန်ကင်းဓမ္မသုခ ကျောင်းတိုက်ကြီး";
+			subtitle = "ရန်ကင်းဓမ္မသုခ ကျောင်းတိုက် ပင်မဝင်းကြီး · စည်သာရွာ အလယ်ရပ်ကွက်";
+		} else if (Math.hypot(u - 22, v - 4060.5) < 14) {
+			subArea = "စည်သာ ဘူတာရုံ";
+			subtitle = "Si Thar Railway Station · AH1 လမ်းဘေး";
+		} else if (Math.hypot(u - (-124.0), v - 4056.5) < 6.0) {
+			subArea = "စည်သာ ကျေးရွာ အုပ်ချုပ်ရေးမှူးရုံး";
+			subtitle = "ကျေးရွာ အုပ်ချုပ်ရေးမှူးရုံး · စည်သာရွာ";
+		} else if (v <= 4038) {
+			subArea = "စည်သာ-ကြာအင်း ခြားထားသော လယ်ကွင်းများ";
+			subtitle = "ကြာအင်းရွာနှင့် စည်သာရွာကြား လယ် ၁၀ ကွက် · AH1 လမ်းဘေး";
+		} else if (v >= 4088) {
+			subArea = "စည်သာ-နတ်မြောင်း ခြားထားသော လယ်ကွင်းများ";
+			subtitle = "စည်သာရွာနှင့် နတ်မြောင်းရွာကြား လယ် ၁၀ ကွက် · AH1 လမ်းဘေး";
+		} else {
+			subArea = "စည်သာ ရွာတွင်းရပ်ကွက်";
+			subtitle = "စည်သာ လူနေရပ်ကွက်နှင့် ရွာတွင်းလမ်းများ · ကလေးမြို့";
+		}
+
+		return {
+			id: "sithar",
+			label: "စည်သာရွာ",
+			title: "စည်သာရွာ · ကလေးမြို့နယ်",
+			subtitle,
+			subArea,
 		};
 	}
 

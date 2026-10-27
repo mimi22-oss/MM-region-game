@@ -1,0 +1,6 @@
+interface:
+  display_name: "Map Data Agent"
+  short_description: "Import and stream bounded Myanmar Town map data"
+  default_prompt: "Use $map-data-management to add this GeoJSON dataset with bounded streaming and verify its map integration."
+policy:
+  allow_implicit_invocation: true

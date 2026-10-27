@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { exportMapSelection, insideSelection, readSelectionDraft, selectionError, selectionGeo, selectionMetrics, simplifySelection, selectionAiPrompt, selectionLocationText, selectionGeometry, movedSelectionPoints, selectionDraftError, type MapSelectionDraft } from '../src/game/mapSelection.ts';
 import { geoToWorld as centerWorld } from '../src/data/wards/myothar/center/myotharCenterData.ts';
 import { geoToWorld as kanbaleWorld } from '../src/data/villages/kanbale/kanbaleData.ts';
+import { geoToWorld as sitharWorld } from '../src/data/villages/sithar/sitharData.ts';
 import { geoToWorld as natmyaungWorld } from '../src/data/villages/natmyaung/natmyaungData.ts';
 
 const square = [{x:0,z:0},{x:20,z:0},{x:20,z:10},{x:0,z:10}];
@@ -21,7 +22,7 @@ test('selection rejects crossed, duplicate and degenerate boundaries, and handle
  assert.equal(insideSelection({x:4,z:7},concave),true);
 });
 test('each imported region uses its inverse geographic projection including Natmyaung scale', () => {
- for (const [reference, project] of [['myothar-center',centerWorld],['kanbale',kanbaleWorld],['natmyaung',natmyaungWorld]] as const) {
+ for (const [reference, project] of [['myothar-center',centerWorld],['kanbale',kanbaleWorld],['sithar',sitharWorld],['natmyaung',natmyaungWorld]] as const) {
   const source = {lon:94.068,lat:23.16}, world = project(source.lon,source.lat), actual = selectionGeo(world,reference);
   assert.ok(Math.abs(actual.lon-source.lon)<1e-10,reference);
   assert.ok(Math.abs(actual.lat-source.lat)<1e-10,reference);

@@ -27,21 +27,22 @@ import { ShweMyanmarPlan } from '../../ShweMyanmarPlan';
 import { Warehouses } from './Warehouses';
 import { FootballPitch } from './FootballPitch';
 
+import { sourceIsEdited } from '../../../game/worldEdits';
 export { Warehouses, FootballPitch };
 
 /** မြို့သာရပ်ကွက် · နယ်မြေ (၅) — 3D Scene Component */
 export function Area5(){
  return <group name="myothar-area-5">
   <Warehouses/>
-  <FootballPitch/>
+  {!sourceIsEdited('myothar-pitch') && !sourceIsEdited('myothar-pitch-surface') && <FootballPitch/>}
   <Canal/>
-  <Farmhouse/>
-  <UShweHouse/>
-  <KalaySignboard/>
-  <ToiletBlock/>
+  {!sourceIsEdited(farmhouse.id) && <Farmhouse/>}
+  {!sourceIsEdited(U_SHWE_HOUSE_ID) && <UShweHouse/>}
+  {!sourceIsEdited(KALAY_SIGN_HOUSE_ID) && <KalaySignboard/>}
+  {!sourceIsEdited('toilet-block') && <ToiletBlock/>}
   <MangoTrees/>
   <TamarindTrees/>
-  <WaterPump/>
+  {!sourceIsEdited('water-pump') && <WaterPump/>}
   <HandPumpLongSpout/>
   <OpenGround/>
   <Monastery/>

@@ -31,11 +31,25 @@ import {
 
 import { kanbaleVillage, kanbaleDrain } from './kanbale/index.ts';
 import { natmyaungVillage } from './natmyaung/index.ts';
+import {
+	siTharVillage,
+	siTharSeparationFields,
+	siTharLeftSeparationFields,
+	siTharRightSeparationFields,
+	kyarInnSiTharSeparationFields,
+	siTharNatMyaungSeparationFields,
+} from './sithar/index.ts';
 
 export {
 	kanbaleVillage,
 	kanbaleDrain,
 	natmyaungVillage,
+	siTharVillage,
+	siTharSeparationFields,
+	siTharLeftSeparationFields,
+	siTharRightSeparationFields,
+	kyarInnSiTharSeparationFields,
+	siTharNatMyaungSeparationFields,
 	htaukKyantVillage,
 	htaukKyantLanes,
 	htaukKyantCrossLanes,
@@ -91,7 +105,9 @@ export const kalayVillages: VillageMeta[] = [
 	tharYarGoneVillage,
 	htaukKyantVillage,
 	kyarInnVillage,
+	siTharVillage,
 	kanbaleVillage,
 	natmyaungVillage,
 ];
+
 

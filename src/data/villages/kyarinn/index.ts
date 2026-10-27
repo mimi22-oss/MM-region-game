@@ -39,7 +39,7 @@ export const kyarInnTaphiChaung: EastWestCanalPlot = {
 };
 
 // ကြာအင်းကျေးရွာ အရှေ့-အနောက် လမ်းသွယ်များ (v = 3675 မှ 4035 အထိ)
-export const kyarInnLanes = [3675, 3710, 3745, 3780, 3815, 3850, 3885, 3920, 3955, 3990, 4025];
+export const kyarInnLanes = [3675, 3710, 3745, 3780, 3815, 3850, 3885, 3920, 3955, 3990, 4020];
 // ရွာတွင်း မြောက်-တောင် လမ်းသွယ်များ (အနောက်ဘက် ၆ လမ်း၊ အရှေ့ဘက် ၄ လမ်း)
 export const kyarInnCrossLanes = [-210, -172, -134, -96, -58, 56, 98, 140, 182];
 
@@ -663,10 +663,12 @@ const roads: RoadPlot[] = [
 		name: `ကြာအင်း အတွင်းလမ်း ${i + 1}`,
 		...toWorld(u, 3850),
 		width: 4.5,
-		depth: 370,
+		depth: 340,
 		rotation: angle,
 		main: false,
 	})),
+	// Preserve the north connection while ending the southern lanes before the fields.
+	...kyarInnCrossLanes.map((u,i)=>({id:`kyarinn-ns-north-${i+1}`,name:'ကြာအင်း မြောက်ဘက်လမ်းဆက်',...toWorld(u,3672.5),width:4.5,depth:15,rotation:angle,main:false})),
 ];
 
 // ရွာအနောက်ဘက် လယ်ကွင်းများ (အနောက်တောင်ဘက် ကြာအင်းရေကန်နေရာမှအပ ကျန်နေရာများ)

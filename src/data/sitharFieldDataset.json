@@ -1,0 +1,18 @@
+{
+  "manifest": "/map/sithar-fields/0431166f76b83ca83ff0/manifest.json",
+  "projection": {
+    "origin": [
+      94.02392,
+      23.0489597
+    ],
+    "anchor": [
+      2871.560638398569,
+      2871.5606383985696
+    ],
+    "metersPerDegree": [
+      13830.750000000002,
+      15028.2
+    ],
+    "rotation": 0.7853981633974483
+  }
+}

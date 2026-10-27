@@ -3,10 +3,11 @@ import { robotLocation } from './robotLocation.ts';
 import { toLocalUV, detectLocation } from './locationDetect.ts';
 import * as center from '../data/wards/myothar/center/myotharCenterData.ts';
 import * as kanbale from '../data/villages/kanbale/kanbaleData.ts';
+import * as sithar from '../data/villages/sithar/sitharData.ts';
 import * as natmyaung from '../data/villages/natmyaung/natmyaungData.ts';
 
 export type MapPoint = { x: number; z: number };
-export type GeoReference = 'myothar-center' | 'kanbale' | 'natmyaung' | 'scene';
+export type GeoReference = 'myothar-center' | 'kanbale' | 'sithar' | 'natmyaung' | 'scene';
 export type FillKind = 'mixed' | 'house' | 'building' | 'office' | 'tree' | 'ward' | 'river' | 'stream' | 'lake' | 'pond' | 'canal' | 'drain';
 export type SelectionGeometry = 'Polygon' | 'LineString';
 export type SelectionOperation = 'create' | 'update' | 'move' | 'delete';
@@ -17,11 +18,12 @@ export const SELECTION_STORAGE_KEY = 'mm-town-map-selection-v1';
 export const FILL_KINDS: Record<FillKind, string> = { mixed: 'အိမ် / အဆောက်အဦ / သစ်ပင် ရောနှော', house: 'လူနေအိမ်', building: 'အဆောက်အဦ', office: 'ဌာန / ရုံး', tree: 'သစ်ပင်', ward: 'ရပ်ကွက်', river: 'မြစ်', stream: 'ချောင်း', lake: 'အင်း / အိုင်', pond: 'ရေကန်', canal: 'ဆည်မြောင်း / ရေသွင်းမြောင်း', drain: 'ရေနုတ်မြောင်း' };
 export function selectionGeometry(kind: FillKind): SelectionGeometry { return ['river', 'stream', 'canal', 'drain'].includes(kind) ? 'LineString' : 'Polygon'; }
 export function defaultWaterWidth(kind: FillKind) { return kind === 'river' ? 20 : kind === 'stream' ? 5 : kind === 'canal' ? 3 : 1; }
-export const GEO_REFERENCES: Record<GeoReference, string> = { 'myothar-center': 'မြို့သာ အလယ် GeoJSON', kanbale: 'ကံပုလဲ GeoJSON', natmyaung: 'နတ်မြောင်း GeoJSON (ချုံ့ထားသောမြေပုံ)', scene: 'အခြားနေရာ — Scene ခန့်မှန်းတည်နေရာ' };
+export const GEO_REFERENCES: Record<GeoReference, string> = { 'myothar-center': 'မြို့သာ အလယ် GeoJSON', kanbale: 'ကံပုလဲ GeoJSON', sithar: 'စည်သာ GeoJSON', natmyaung: 'နတ်မြောင်း GeoJSON (ချုံ့ထားသောမြေပုံ)', scene: 'အခြားနေရာ — Scene ခန့်မှန်းတည်နေရာ' };
 
 export function suggestGeoReference(point: MapPoint): GeoReference {
 	const place = detectLocation(point.x, point.z), { u, v } = toLocalUV(point.x, point.z);
 	if (place.id === 'kanbale' || place.id === 'kanbale-rice-mill' || place.id === 'kanbale-school') return 'kanbale';
+	if (place.id === 'sithar' || (v >= 4018 && v <= 4108)) return 'sithar';
 	if (place.id === 'natmyaung' || (v >= 4120 && v <= 4350)) return 'natmyaung';
 	if (v < -270 && v >= -1800 && u >= -1000 && u <= 650) return 'myothar-center';
 	return 'scene';
@@ -30,6 +32,7 @@ export function selectionGeo(point: MapPoint, reference: GeoReference) {
 	const { u, v } = toLocalUV(point.x, point.z);
 	if (reference === 'myothar-center') return center.localUVToGeo(u, v);
 	if (reference === 'kanbale') return kanbale.localUVToGeo(u, v);
+	if (reference === 'sithar') return sithar.localUVToGeo(u, v);
 	if (reference === 'natmyaung') return natmyaung.localUVToGeo(u, v);
 	const geo = robotLocation(point.x, point.z, 0);
 	return { lon: geo.longitude, lat: geo.latitude };

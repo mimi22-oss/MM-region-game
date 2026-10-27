@@ -1,5 +1,6 @@
 import {PassengerBalloon} from './PassengerBalloon';
 import {balloonRide,balloonInput,BALLOON_DECK,BALLOON_LAUNCH,clearBalloonInput,resetBalloon,balloonFlightFloor,balloonLanding,stepBalloon,balloonExitSpot,type BalloonStatus} from '../game/balloonRide';
+import {isThadingyutFestivalActive} from '../game/thadingyutFestival';
 import {createJumpPose,prepareJump,stepJumpPose,jumpKneeBend} from '../game/humanJumpPose';
 import {createHumanJump,rememberJumpMomentum,startHumanJump,stepHumanJump,steerHumanJump} from '../game/humanJump';
 import {walkWithContacts,createWalkingRecoil,stepWalkingRecoil} from '../game/walkingCollision';
@@ -423,7 +424,7 @@ export const Player = memo(function Player({
   if(!balloon.riding){balloon.y=height(balloon.x,balloon.z);balloon.grounded=true;}
   const balloonDistance=Math.hypot(s.x-balloon.x,s.z-balloon.z);
   if(balloon.mustLeave&&balloonDistance>5)balloon.mustLeave=false;
-  const nearBalloon=character==='cartoon'&&!currentCar()&&!ride.riding&&!balloon.riding&&!balloon.mustLeave&&!jump.current.airborne&&jumpPose.current.prepare===0&&balloonDistance<3.6;
+  const nearBalloon=isThadingyutFestivalActive()&&character==='cartoon'&&!currentCar()&&!ride.riding&&!balloon.riding&&!balloon.mustLeave&&!jump.current.airborne&&jumpPose.current.prepare===0&&balloonDistance<3.6;
   if(nearBalloon&&!aerial&&!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0){
    balloon.nearTime+=dt;
    if(balloon.nearTime>.55){

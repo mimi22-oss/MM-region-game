@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { nankaleinTeaShopData, type TVData, type TeaTableData } from '../../../data/wards/kalayArea1/kalayArea1TeaShop.ts';
+import { sourceIsEdited } from '../../../game/worldEdits';
 
 /**
  * Ceramic Myanmar Tea Cup Component (မြန်မာ့ရိုးရာ လက်ဖက်ရည်ခွက်ကလေး)
@@ -31,7 +32,7 @@ function TeaCup({ x, y, z }: { x: number; y: number; z: number }) {
  * Tea Table with 4 Stools, 4 Tea Cups, and a Teapot
  * (စားပွဲ ၁ လုံး၊ ထိုင်ခုံ ၄ လုံး၊ လက်ဖက်ရည် ၄ ခွက်စီနှင့် ရေနွေးကြမ်းကရား)
  */
-function TeaTable({ table }: { table: TeaTableData }) {
+export function TeaTable({ table }: { table: TeaTableData }) {
 	const isOutdoor = table.isOutdoor;
 
 	return (
@@ -148,9 +149,12 @@ function WallMountedTV({ tv }: { tv: TVData }) {
  */
 export const KalayArea1TeaShop = memo(function KalayArea1TeaShop({
 	onSelect,
+	ignoreEdits = false,
 }: {
 	onSelect?: () => void;
+	ignoreEdits?: boolean;
 }) {
+	if (!ignoreEdits && sourceIsEdited(nankaleinTeaShopData.id)) return null;
 	const shop = nankaleinTeaShopData;
 
 	return (

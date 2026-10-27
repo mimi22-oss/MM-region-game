@@ -1,8 +1,30 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Raycaster, Vector3 } from 'three';
+import { BoxGeometry, Color, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Raycaster, Vector3 } from 'three';
+import {staticDetails,updateStaticDetails} from '../src/game/staticVisibility.ts';
 import { batchStaticMeshes } from '../src/game/staticBatch.ts';
 import { spatialIndex } from '../src/game/spatialIndex.ts';
+
+test('paint variations share one draw call while preserving each building color',()=>{
+ const root=new Group(),colors:Color[]=[];
+ for(let i=0;i<40;i++){
+  const color=new Color().setHSL(i/40,.6,.5);colors.push(color);
+  const mesh=new Mesh(new BoxGeometry(6,8,5),new MeshStandardMaterial({color}));mesh.position.set(10+i%8*10,4,10+Math.floor(i/8)*10);root.add(mesh);
+ }
+ const batch=batchStaticMeshes(root);assert.equal(batch.batchCount,1);
+ const actual=new Color();colors.forEach((expected,i)=>{batch.batches[0].getColorAt(i,actual);assert.ok(Math.abs(actual.r-expected.r)<1e-6);assert.ok(Math.abs(actual.g-expected.g)<1e-6);assert.ok(Math.abs(actual.b-expected.b)<1e-6);});
+ assert.equal((batch.batches[0].material as MeshStandardMaterial).color.getHexString(),'ffffff');batch.dispose();
+});
+test('decorative detail culling preserves roofs, walls and walkable road decks and restores nearby trims',()=>{
+ const root=new Group();
+ for(let i=0;i<2;i++)for(const [size,walkable] of [[[1.5,1.4,.1],false],[[8,5,6],false],[[2,.1,2],true]] as const){
+  const mesh=new Mesh(new BoxGeometry(...size),new MeshStandardMaterial());mesh.position.set(10+i*5,1,10);mesh.userData.walkable=walkable;root.add(mesh);
+ }
+ const batch=batchStaticMeshes(root),details=staticDetails(root);assert.equal(details.length,1);
+ updateStaticDetails(details,1000,5,1000,false);assert.equal(details[0].mesh.visible,false);
+ assert.ok(batch.batches.filter(m=>m!==details[0].mesh).every(m=>m.visible));
+ updateStaticDetails(details,10,5,10,false);assert.equal(details[0].mesh.visible,true);batch.dispose();
+});
 
 test('batching reduces repeated primitives and preserves transformed bounds, ray hits and cleanup',()=>{
  const root=new Group(),parent=new Group();parent.position.set(10,0,10);parent.rotation.y=Math.PI/4;root.add(parent);

@@ -923,4 +923,82 @@ test('Nankalein tea shop in Kalay Area 1 has walkable dining areas and blocks wa
   assert.equal(loc.label, 'နန်းကလိန် လက်ဖက်ရည်ဆိုင်');
 });
 
+test('Si Thar village is integrated between Kyar Inn and Nat Myaung with spacious houses and 10 separation fields each North and South', async () => {
+  const {
+    siTharVillage,
+    siTharBuildings,
+    siTharRoads,
+    siTharBoundaryWorldPoints,
+    siTharLeftSeparationFields,
+    siTharRightSeparationFields,
+    kyarInnSiTharSeparationFields,
+    siTharNatMyaungSeparationFields,
+    siTharSeparationFields,
+    isPointInsideSiThar,
+    geoToWorld,
+    worldToGeo,
+    toWorld,
+  } = await import('../src/data/villages/sithar/index.ts');
+  const { detectLocation } = await import('../src/game/locationDetect.ts');
+
+  // 1. Metadata & Spatial Placement
+  assert.equal(siTharVillage.id, 'sithar');
+  assert.equal(siTharVillage.name, 'စည်သာရွာ');
+  assert.equal(siTharVillage.englishName, 'Si Thar');
+  assert.equal(siTharVillage.coordinates.lat, 23.0489597);
+
+  // 2. Separation Fields (10 between Kyar Inn & Si Thar, 10 between Si Thar & Nat Myaung, total 20)
+  assert.equal(kyarInnSiTharSeparationFields.length, 10, 'Exactly 10 separation field plots between Kyar Inn and Si Thar');
+  assert.equal(siTharNatMyaungSeparationFields.length, 10, 'Exactly 10 separation field plots between Si Thar and Nat Myaung');
+  assert.equal(siTharSeparationFields.length, 20, 'Total 20 separation field plots around Si Thar');
+
+  // 3. Boundary & Roads
+  assert.equal(siTharBoundaryWorldPoints.length, 55, 'Boundary has 55 points from GeoJSON');
+  assert.ok(siTharRoads.length >= 20, 'Has full road network');
+
+  // 4. Buildings & Landmarks
+  assert.ok(siTharBuildings.length >= 35, 'Village has residential houses and landmarks');
+  const church = siTharBuildings.find(b => b.id === 'sithar-baptist-church');
+  const library = siTharBuildings.find(b => b.id === 'sithar-library');
+  const monastery = siTharBuildings.find(b => b.id === 'sithar-yanking-monastery-main');
+  const admin = siTharBuildings.find(b => b.id === 'sithar-admin-office');
+  assert.ok(church && library && monastery && admin, 'All major landmark buildings exist');
+
+  // 5. Boundary test
+  assert.ok(isPointInsideSiThar(church!.x, church!.z), 'Church is inside Si Thar boundary');
+  assert.equal(isPointInsideSiThar(-1000, -1000), false, 'Far point is outside boundary');
+
+  // 6. Collision: houses block walking, AH1 road is walkable
+  assert.equal(canStand(church!.x, church!.z), false, 'Church building blocks walking');
+  assert.equal(canStand(monastery!.x, monastery!.z), false, 'Monastery building blocks walking');
+  const ah1Center = toWorld(0, 4061);
+  assert.ok(canStand(ah1Center.x, ah1Center.z), 'AH1 center through Si Thar is walkable');
+
+  // 7. Location Detection (HUD Toast)
+  const locVillage = detectLocation(ah1Center.x, ah1Center.z);
+  assert.equal(locVillage.id, 'sithar');
+  assert.equal(locVillage.label, 'စည်သာရွာ');
+  assert.equal(locVillage.title, 'စည်သာရွာ · ကလေးမြို့နယ်');
+
+  const locChurch = detectLocation(church!.x, church!.z);
+  assert.equal(locChurch.id, 'sithar');
+  assert.equal(locChurch.subArea, 'စည်သာ နှစ်ခြင်းအသင်းတော် ဘုရားကျောင်း');
+
+  const locLibrary = detectLocation(library!.x, library!.z);
+  assert.equal(locLibrary.id, 'sithar');
+  assert.equal(locLibrary.subArea, 'စည်သာ ကျေးရွာ စာကြည့်တိုက်');
+
+  // Farmlands Detection
+  const kistPoint = toWorld(100, 4026);
+  const locKist = detectLocation(kistPoint.x, kistPoint.z);
+  assert.equal(locKist.id, 'sithar');
+  assert.equal(locKist.subArea, 'စည်သာ-ကြာအင်း ခြားထားသော လယ်ကွင်းများ');
+
+  const stnmPoint = toWorld(100, 4094);
+  const locStnm = detectLocation(stnmPoint.x, stnmPoint.z);
+  assert.equal(locStnm.id, 'sithar');
+  assert.equal(locStnm.subArea, 'စည်သာ-နတ်မြောင်း ခြားထားသော လယ်ကွင်းများ');
+});
+
+
 

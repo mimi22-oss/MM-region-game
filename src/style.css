@@ -4742,8 +4742,8 @@ main.night-mode .appearance-saved {
 
 .player-life {
 	position: fixed;
-	top: 8%;
-	right: 25px;
+	top: 10%;
+	right: 28px;
 	/* transform: translateX(100px); */
 	z-index: 12;
 	/* padding: 4px 10px; */
@@ -4792,6 +4792,7 @@ body:has(.balloon-controls-layer) .player-life {
 
 @media(max-width:600px) {
 	.player-life {
+		top: 8%;
 		right: 20px;
 		/* padding: 4px 8px */
 	}

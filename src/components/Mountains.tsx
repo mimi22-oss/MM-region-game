@@ -1019,8 +1019,8 @@ export function Mountains() {
 	return (
 		<group ref={mountainRoot} name="forested-ridge-terrain">
 			{/* ၁။ တောင်တန်း မျက်နှာပြင် (Highland Plateau Surface & Mountain Flanks) */}
-			<RidgeSurface peaks={foreground} step={mobileQuality ? 28 : 10} />
-			<RidgeSurface peaks={distantMountainTiers} step={mobileQuality ? 50 : 20} haze={0.5} />
+			<RidgeSurface peaks={foreground} step={mobileQuality ? 28 : 20} />
+			<RidgeSurface peaks={distantMountainTiers} step={mobileQuality ? 50 : 40} haze={0.5} />
 
 			{/* ၂။ ဝေပုလ္လ တောင်တက်လမ်း (Webula Scenic Mountain Access Road) */}
 			{roadSegments.map(seg => (

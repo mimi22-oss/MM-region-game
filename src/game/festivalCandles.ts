@@ -1,5 +1,6 @@
 import {Group,InstancedMesh,Matrix4,Vector3,type Object3D,type BufferGeometry,type Material} from 'three';
 import {candleGeometry,candleHolderGeometry,candlePoolGeometry,flameGeometry,candleGlowGeometry,candleSolidMaterial,candleHolderLitMaterial,candlePoolLitMaterial,candleFlameMaterial,candleGlowMaterial,CANDLE_WICK_TOP,HOLDER_CANDLE_BASE,HOLDER_CANDLE_SCALE} from './candleModel.ts';
+import {isThadingyutFestivalActive} from './thadingyutFestival.ts';
 type Item={x:number;y:number;z:number;holder?:boolean};
 const noRaycast=()=>{};
 /** One batch per part and 64m tile; no React trees or per-flame frame callbacks. */
@@ -17,6 +18,7 @@ export function decorateFestivalRegion(root:Group){
   }
  });
  const festival=new Group();festival.name='festival-candles';festival.userData.dynamic=true;
+ festival.visible=isThadingyutFestivalActive();
  const matrix=new Matrix4();
  for(const [key,items] of tiles){
   const tile=new Group();tile.name=`candle-tile-${key}`;
@@ -45,6 +47,7 @@ export function decorateFestivalRegion(root:Group){
 /** Distant candles keep their flames and radiant glows; nearby cups and wax retain full detail. */
 export function updateFestivalVisibility(root:Object3D,x:number,z:number,mobile=false,height=0){
  const festival=root.children.find(child=>child.name==='festival-candles');if(!festival)return;
+ festival.visible=isThadingyutFestivalActive();
  for(const tile of festival.children){
   const distance=Math.hypot(tile.position.x+32-x,tile.position.z+32-z);
   tile.visible=distance<Math.max(mobile?300:600,height*1.8+100);
@@ -55,6 +58,7 @@ export function updateFestivalVisibility(root:Object3D,x:number,z:number,mobile=
 /** Small light markers accompany simplified houses when full regions are detached for aerial views. */
 export function createFestivalOverview(root:Group){
  const result=new Group();result.name='festival-overview';
+ result.visible=isThadingyutFestivalActive();
  const festival=root.children.find(c=>c.name==='festival-candles');if(!festival)return result;
  const positions=new Map<string,Vector3>(),matrix=new Matrix4(),p=new Vector3();
  for(const tile of festival.children){

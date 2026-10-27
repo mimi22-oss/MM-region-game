@@ -9,6 +9,13 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
+test('travelling drops stale queued prefetches without interrupting the active import',async()=>{
+ const job=deferred<string>(),started:string[]=[];
+ const queue=new RegionDownloadQueue(['a','b','c'].map(id=>({id,name:id,load:()=>{started.push(id);return id==='a'?job.promise:Promise.resolve(id);}})));
+ queue.request(['a','b']);queue.retainPending(['c']);queue.request(['c'],true);job.resolve('a');await job.promise;await Promise.resolve();
+ assert.deepEqual(started,['a','c']);assert.equal(queue.getSnapshot().find(v=>v.id==='b')?.phase,'idle');
+});
+
 test('region downloads are serial, deduplicated and foreground destinations precede queued prefetches', async () => {
   const jobs = Object.fromEntries(['spawn', 'near', 'far', 'destination'].map(id => [id, deferred<string>()]));
   const started: string[] = [];

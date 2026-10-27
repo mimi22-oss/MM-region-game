@@ -2,6 +2,7 @@ import { Box } from './Primitives';
 import { angle } from '../data/ward';
 import { uShweHouseCoords, U_SHWE_HOUSE_ID } from '../data/ushwehouse';
 import { mobileQuality } from '../game/sceneBudget';
+import { sourceIsEdited } from '../game/worldEdits';
 
 export { U_SHWE_HOUSE_ID };
 
@@ -18,7 +19,8 @@ export { U_SHWE_HOUSE_ID };
  *   - ငှက်ပျောဖက်ထုပ်မုန့်များ
  *   - လက်ဖက်ရည်ခွက်များ၊ ဓာတ်ဗူး၊ ရေနွေးကြမ်းအိုးနှင့် စားပွဲဝိုင်း၊ ခုံပုလေးများ
  */
-export function UShweHouse() {
+export function UShweHouse({ ignoreEdits = false }: { ignoreEdits?: boolean } = {}) {
+	if (!ignoreEdits && sourceIsEdited(U_SHWE_HOUSE_ID)) return null;
 	const h = uShweHouseCoords;
 	const rot = angle + Math.PI / 2; // 3*pi/4, facing front street
 	const front = h.depth / 2; // 4.5m

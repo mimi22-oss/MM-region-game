@@ -7,6 +7,7 @@ import {
 	shweMyanmarResidential,
 	shweMyanmarCrossRoads,
 } from '../data/wards/myothar/shweMyanmarArea';
+import { sourceIsEdited } from '../game/worldEdits';
 
 /**
  * သိုလှောင်ရုံတန်း တောင်ဘက်ပိုင်း 3D Scene Component
@@ -356,7 +357,7 @@ export function ShweMyanmarArea() {
 				</group>
 
 				{/* လူနေအိမ်များ ၅ လုံး (Residential Myanmar Houses) */}
-				{res.houses.map((house) => (
+				{res.houses.filter(house => !sourceIsEdited(house.id)).map((house) => (
 					<group key={house.id} position={[house.x, 0, house.z]} rotation={[0, house.rotation, 0]}>
                         <PorchCandles width={house.width*.7} front={house.depth/2} y={house.height*.4+.06}/>
 						{/* အောက်ခံခုံ (Foundation Base) */}

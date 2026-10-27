@@ -6,6 +6,7 @@ import { Gardens } from './Landmarks';
 import { Box } from './Primitives';
 import { DoubleSide } from 'three';
 import { CarCallSpotMarker } from './CarCallSpotMarker';
+import { sourceIsEdited } from '../game/worldEdits';
 
 /**
  * Character's walk-in Farmhouse (စိုက်ခင်းအိမ်):
@@ -15,7 +16,8 @@ import { CarCallSpotMarker } from './CarCallSpotMarker';
  * - Wire Mesh Compound Fence ("သံဇကာ ခြံစည်းရိုး") placed at lx=18.0 (3 full meters clear of the kitchen annex outer wall!)
  * - 4 requested interior furnishings: TV, Table, Bed, Computer + full kitchen appliances
  */
-export function FarmhouseBuilding() {
+export function FarmhouseBuilding({ ignoreEdits = false }: { ignoreEdits?: boolean } = {}) {
+	if (!ignoreEdits && sourceIsEdited(farmhouse.id)) return null;
 	const h = farmhouse;
 	const rot = houseVisualRotation(h);
 

@@ -2,6 +2,7 @@ import { ward } from '../data/ward';
 import { Block } from './Primitives';
 import { FarmTrees } from './Tree';
 import { Field } from './Field';
+import { sourceIsEdited } from '../game/worldEdits';
 export function Monastery(){const m=ward.monastery;return <group position={[m.x,0,m.z]} rotation={[0,m.rotation,0]}>
  <Block y={0.02} w={m.width} h={0.04} d={m.depth} color="#b9b08a"/>
  <Block z={-18} y={0.06} w={80} h={0.04} d={23} color="#a7a279"/>
@@ -41,7 +42,7 @@ export function Gardens(){const f=ward.farm,p=ward.pond,l=ward.frontLot,n=ward.f
 export function RiceMill(){const m=ward.riceMill;return <>
  {[m.yard,...m.paths].map((p,i)=><group key={i} position={[p.x,0,p.z]} rotation={[0,p.rotation,0]}><Block y={0.07} w={p.width} h={0.12} d={p.depth} color={i?'#b8a386':'#c6b996'}/></group>)}
  {m.fields.map((f,i)=><Field key={i} f={f} bunded/>)}
- {m.buildings.map((b,i)=><group key={b.id} position={[b.x,0,b.z]} rotation={[0,b.rotation,0]}>
+ {m.buildings.filter(b => !sourceIsEdited(b.id)).map((b,i)=><group key={b.id} position={[b.x,0,b.z]} rotation={[0,b.rotation,0]}>
   <Block y={0.15} w={b.width+2} h={0.3} d={b.depth+2} color="#b4a48b"/>
   <Block y={4.2} w={b.width} h={8.4} d={b.depth} color={b.color}/>
   {[-1,1].map(side=><mesh key={side} position={[side*b.width/4,9.8,0]} rotation={[0,0,-side*Math.atan2(2.8,b.width/2)]} castShadow><boxGeometry args={[Math.hypot(b.width/2,2.8)+1.4,0.25,b.depth+2]}/><meshStandardMaterial color={b.roof}/></mesh>)}

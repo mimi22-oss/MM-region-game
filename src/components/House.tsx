@@ -4,6 +4,7 @@ import { mobileQuality } from '../game/sceneBudget';
 import { diagnosticConfig } from '../game/diagnosticMode';
 import { angle, ward, type House as HouseData } from '../data/ward';
 import { Box } from './Primitives';
+import { sourceIsEdited } from '../game/worldEdits';
 export const FARMHOUSE_NAME='လမ်းသွယ် ၂ · စိုက်ခင်းအိမ်';
 export function houseVisualRotation(h:HouseData){
  return angle+(h.x*Math.cos(angle)-h.z*Math.sin(angle)>0?-Math.PI/2:Math.PI/2);
@@ -55,7 +56,7 @@ function BlueSheetSection({startX,endX}:{startX:number;endX:number}){
   })}
  </group>;
 }
-function BlueSheetFrontFence({z,width,gateWidth=2.6,owned=false}:{z:number;width:number;gateWidth?:number;owned?:boolean}){
+export function BlueSheetFrontFence({z=0,width=6.0,gateWidth=2.6,owned=false}:{z?:number;width?:number;gateWidth?:number;owned?:boolean}){
  const halfWidth=width/2;
  const halfGate=gateWidth/2;
  const leafLen=halfGate;
@@ -98,8 +99,8 @@ function HouseFence({h}:{h:HouseData}){
   <BlueSheetFrontFence z={frontHalf} width={fenceWidth} gateWidth={2.6}/>
  </group>;
 }
-export function House({h}:{h:HouseData}){
- if (diagnosticConfig.disableBuildings) return null;
+export function House({h, ignoreEdits = false}:{h:HouseData; ignoreEdits?: boolean}){
+ if (diagnosticConfig.disableBuildings || (!ignoreEdits && sourceIsEdited(h.id))) return null;
  const front=h.depth/2;
  const balconyWidth=h.width*0.65;
  const rot=houseVisualRotation(h);

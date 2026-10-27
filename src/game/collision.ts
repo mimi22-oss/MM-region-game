@@ -36,6 +36,7 @@ import { myotharCenterBuildings } from "../data/wards/myothar/center/myotharCent
 import { kalayArea1Buildings } from "../data/wards/kalayArea1/kalayArea1Buildings.ts";
 import { nankaleinCreek, nankaleinBridge } from "../data/wards/kalayArea1/kalayArea1Data.ts";
 import { nankaleinTeaShopData } from "../data/wards/kalayArea1/kalayArea1TeaShop.ts";
+import { sourceIsEdited } from "./worldEdits.ts";
 export const PLAYER_RADIUS = 0.4;
 const nearbyAreca = spatialIndex(estatePalms, (p) => ({
   x: p.x,
@@ -109,7 +110,7 @@ const nearbyTrees = spatialIndex(
     ...mangoTrees,
     ...tamarindTrees,
   ],
-  (t) => ({ x: t.x, z: t.z, radius: t.radius + PLAYER_RADIUS }),
+  (t) => ({ id: (t as { id?: string }).id, x: t.x, z: t.z, radius: t.radius + PLAYER_RADIUS }),
 );
 const mountainObstacles = [...ward.mountains, ...ward.weipula.peaks];
 const polylineCanals = [
@@ -401,7 +402,7 @@ function canStandMountainVillage(x: number, z: number): boolean {
 /** The same trunk bounds are used for blocking and the pedestrian's small recoil. */
 export function treeBlocks(x: number, z: number): boolean {
   return nearbyAreca(x, z).some((p) => Math.hypot(x - p.x, z - p.z) < 0.62) ||
-    nearbyTrees(x, z).some((t) => Math.hypot(x - t.x, z - t.z) < t.radius + PLAYER_RADIUS);
+    nearbyTrees(x, z).some((t) => (!t.id || !sourceIsEdited(t.id)) && Math.hypot(x - t.x, z - t.z) < t.radius + PLAYER_RADIUS);
 }
 
 /** clearance is sole height above local ground; airborne skips water, never solid buildings. */
@@ -542,12 +543,24 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
     Math.abs(z) > edge
   )
     return false;
-  if (!canStandFarmhouse(x, z, clearance)) return false;
+  if (farmhouse.id && sourceIsEdited(farmhouse.id)) {
+    // Farmhouse is edited or deleted, skip static collision
+  } else if (!canStandFarmhouse(x, z, clearance)) {
+    return false;
+  }
   if (!canStandToilet(x, z)) return false;
-  if (!canStandUShweHouse(x, z)) return false;
+  if (uShweHouse.id && sourceIsEdited(uShweHouse.id)) {
+    // U Shwe House is edited or deleted, skip static collision
+  } else if (!canStandUShweHouse(x, z)) {
+    return false;
+  }
   if (!canStandMountainVillage(x, z)) return false;
   if (!canStandKanbaleSchool(x, z)) return false;
-  if (!canStandNankaleinTeaShop(x, z)) return false;
+  if (sourceIsEdited(nankaleinTeaShopData.id)) {
+    // Tea shop is edited or deleted, skip static collision
+  } else if (!canStandNankaleinTeaShop(x, z)) {
+    return false;
+  }
   if (!canStandCemetery(x, z, clearance)) return false;
   if (Math.hypot(x - 295.571, z - 261.63) < 2.4 + PLAYER_RADIUS) return false;
   if (Math.hypot(x - 109.721, z - 284.313) < 0.42 + PLAYER_RADIUS) return false;
@@ -576,6 +589,7 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
     if (Math.hypot(x - pipeX, z - pipeZ) < 0.2 + PLAYER_RADIUS) return false;
   }
   for (const h of nearbyBuildings(x, z)) {
+    if (h.id && sourceIsEdited(h.id)) continue;
     const dx = x - h.x,
       dz = z - h.z,
       c = Math.cos(h.rotation),
@@ -593,7 +607,37 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
     const nz = Math.max(-h.depth / 2 - 0.6, Math.min(lz, h.depth / 2 + 2.6));
     if (Math.hypot(lx - nx, lz - nz) < PLAYER_RADIUS) return false;
   }
+  for (const obs of dynamicWorldObstacles) {
+    if (obs.radius) {
+      if (Math.hypot(x - obs.x, z - obs.z) < obs.radius + PLAYER_RADIUS) return false;
+    } else if (obs.width && obs.depth) {
+      const rot = obs.rotation || 0;
+      const c = Math.cos(rot), s = Math.sin(rot);
+      const dx = x - obs.x, dz = z - obs.z;
+      const lx = dx * c - dz * s;
+      const lz = dx * s + dz * c;
+      if (Math.abs(lx) < obs.width / 2 + PLAYER_RADIUS && Math.abs(lz) < obs.depth / 2 + PLAYER_RADIUS) {
+        return false;
+      }
+    }
+  }
   return !treeBlocks(x, z);
+}
+export interface DynamicWorldObstacle {
+  id: string;
+  x: number;
+  z: number;
+  width?: number;
+  depth?: number;
+  radius?: number;
+  rotation?: number;
+}
+let dynamicWorldObstacles: DynamicWorldObstacle[] = [];
+export function setDynamicWorldObstacles(obstacles: DynamicWorldObstacle[]) {
+  dynamicWorldObstacles = obstacles;
+}
+export function getDynamicWorldObstacles(): DynamicWorldObstacle[] {
+  return dynamicWorldObstacles;
 }
 export function move(
   position: { x: number; z: number },

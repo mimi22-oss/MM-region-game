@@ -62,12 +62,16 @@ import {
   detectLocation,
   type DetectedLocation,
 } from "./game/locationDetect";
+import { syncAllWorldEdits } from "./game/editorRegions";
 import "./style.css";
+
+syncAllWorldEdits();
 
 const KalayWardsPlan = lazy(() =>
   import("./components/wards").then((m) => ({ default: m.KalayWardsPlan })),
 );
 const MapSelectionTool = lazy(() => import('./components/MapSelectionTool'));
+const WardVillageEditorDialog = lazy(() => import('./components/WardVillageEditorDialog'));
 const KalayVillagesPlan = lazy(() =>
   import("./components/villages").then((m) => ({
     default: m.KalayVillagesPlan,
@@ -171,6 +175,7 @@ function App() {
     [],
   );
   const [selectionOpen, setSelectionOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [sceneActive, setSceneActive] = useState(false);
@@ -302,7 +307,7 @@ function App() {
   }, []);
   useEffect(() => {
     const close = (e: KeyboardEvent) => {
-      if (selectionOpen) return;
+      if (selectionOpen || editorOpen) return;
       if (loading) return;
       if (e.code === "Escape") {
         setMapOpen(false);
@@ -318,7 +323,7 @@ function App() {
     };
     document.addEventListener("keydown", close);
     return () => document.removeEventListener("keydown", close);
-  }, [loading, selectionOpen,environment.cycle]);
+  }, [loading, selectionOpen, editorOpen, environment.cycle]);
   const position = useCallback((x: number, z: number, yaw?: number) => {
     posRef.current.x = x;
     posRef.current.z = z;
@@ -373,7 +378,7 @@ function App() {
       <div
         className="scene-wrap"
         onClick={() => {
-          if (!mapOpen && !loading) {
+          if (!mapOpen && !loading && !editorOpen && !selectionOpen) {
             setSceneActive(true);
             setSettingsOpen(false);
           }
@@ -410,7 +415,7 @@ function App() {
               canvas.addEventListener('webglcontextrestored', handleContextRestored, false);
             }}
           >
-            <FrameBudget />
+            <FrameBudget paused={loading}/>
             <Town minute={environment.minute} destination={teleportTarget} paused={loading} onLoadingChange={setSceneLoading} onSceneError={sceneError} />
             <TeleportPicker
               active={teleportMode}
@@ -420,7 +425,7 @@ function App() {
               onDraggingChange={setTeleportDragging}
             />
             <Player
-              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || selectionOpen} loading={loading}
+              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || selectionOpen || editorOpen} loading={loading}
               onCarStatus={carUpdate}
               onBalloonStatus={balloonUpdate}
               character={character}
@@ -467,7 +472,7 @@ function App() {
         input={mobileInput}
         flying={balloonStatus.riding}
         canJump={!balloonStatus.riding && character === "cartoon" && !rideStatus.riding && !carStatus.driving && !rideStatus.crashed}
-        disabled={mapOpen || settingsOpen || loading || carStatus.driving}
+        disabled={mapOpen || settingsOpen || loading || carStatus.driving || editorOpen || selectionOpen}
         onInteract={activateMobile}
       />
       {!mapOpen && !settingsOpen && (
@@ -564,6 +569,24 @@ function App() {
       <div className="settings-wrap">
         <button
           type="button"
+          className="settings-btn"
+          style={{ marginRight: "6px" }}
+          aria-label="2D Map & 3D Asset Editor"
+          title="2D Map & 3D Asset Editor"
+          onClick={() => {
+            if (document.pointerLockElement) document.exitPointerLock();
+            setSceneActive(false);
+            setSettingsOpen(false);
+            setSelectionOpen(false);
+            setMapOpen(false);
+            setTeleportMode(false);
+            setEditorOpen(true);
+          }}
+        >
+          🗺️
+        </button>
+        <button
+          type="button"
           className={
             settingsOpen ? "settings-btn settings-btn-active" : "settings-btn"
           }
@@ -604,6 +627,18 @@ function App() {
                 setSelectionOpen(true);
               }}>နယ်မြေဝိုက်ရွေး · GeoJSON ထုတ်ယူရန် ↗</button>
               <p>အိမ်၊ အဆောက်အဦ၊ ဌာန၊ သစ်ပင် ဖြည့်လိုသည့်နေရာကို မြေပုံပေါ်မှာ ဝိုက်ရွေးပါ။</p>
+            </div>
+            <div className="robot-location-panel map-selection-launch">
+              <button type="button" className="robot-location-toggle" onClick={() => {
+                if (document.pointerLockElement) document.exitPointerLock();
+                setSceneActive(false);
+                setSettingsOpen(false);
+                setSelectionOpen(false);
+                 setMapOpen(false);
+                 setTeleportMode(false);
+                 setEditorOpen(true);
+              }}>🗺️ 2D Map Editor ဖွင့်ရန် ↗</button>
+              <p>ရပ်ကွက်၊ လမ်း၊ မြေကွက်၊ အိမ်၊ သစ်ပင်များကို ပြင်ဆင်ရန်။</p>
             </div>
             <div className="guide-item">
               <div className="guide-header">
@@ -719,7 +754,7 @@ function App() {
           </section>
         )}
       </div>
-      {!welcomeDismissed && !mapOpen && !topDown && !rideStatus.riding && !carStatus.driving && !guideOpen && (
+      {!welcomeDismissed && !editorOpen && !selectionOpen && !mapOpen && !topDown && !rideStatus.riding && !carStatus.driving && !guideOpen && (
         <section className="welcome" aria-label="ကြိုဆိုပါသည်">
           <div className="welcome-actions">
             <button
@@ -755,7 +790,8 @@ function App() {
           document.querySelector("canvas")?.requestPointerLock();
         }}
       />
-      {locked && <div className="crosshair">+</div>}
+      {locked && !editorOpen && !selectionOpen && <div className="crosshair">+</div>}
+      {editorOpen && <Suspense fallback={<div className="selection-loading" role="status">Editor ဖွင့်နေသည်…</div>}><WardVillageEditorDialog focus={viewPos} onClose={() => setEditorOpen(false)} /></Suspense>}
       {selectionOpen && <Suspense fallback={<div className="selection-loading" role="status">မြေပုံဖွင့်နေသည်…</div>}><MapSelectionTool focus={viewPos} onClose={() => setSelectionOpen(false)} /></Suspense>}
       <aside
         className={mapOpen ? "map map-expanded" : "map"}

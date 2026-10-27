@@ -8,6 +8,27 @@ export type RegionBounds = {
   minZ: number;
   maxZ: number;
 };
+
+/** Small bounded prefetch window, never a request for every region in the catalogue. */
+export function selectPrefetchRegions(regions: readonly RegionBounds[], x: number, z: number, active: readonly string[], limit = 1) {
+  const nearby: { id: string; distance: number }[] = [];
+  if (limit <= 0 || !active.length) return [];
+  for (const r of regions) {
+    if (active.includes(r.id)) continue;
+    const distance = Math.hypot(Math.max(r.minX - x, 0, x - r.maxX), Math.max(r.minZ - z, 0, z - r.maxZ));
+    if (distance > 1400) continue;
+    const index = nearby.findIndex(item => item.distance > distance);
+    nearby.splice(index < 0 ? nearby.length : index, 0, { id: r.id, distance });
+    if (nearby.length > limit) nearby.pop();
+  }
+  return nearby.map(r => r.id);
+}
+
+/** Map insertion order is maintained as LRU by the caller; active/live roots are protected. */
+export function regionEvictionCandidate(cached: Iterable<string>, active: readonly string[], pinned: readonly string[] = ['myothar']) {
+  for (const id of cached) if (!active.includes(id) && !pinned.includes(id)) return id;
+  return undefined;
+}
 export function selectRegions(
   regions: RegionBounds[],
   x: number,

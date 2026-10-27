@@ -3,6 +3,7 @@ import { ImportedGableRoof } from '../../../ImportedGableRoof.tsx';
 import type { MyotharCenterBuildingData } from '../../../../data/wards/myothar/center/index.ts';
 import { Block as Box } from '../../../Primitives.tsx';
 import { CandleRow, PorchCandles } from '../../../FestivalAnchor.tsx';
+import { sourceIsEdited } from '../../../../game/worldEdits.ts';
 
 export interface MyotharCenterBuildingProps {
 	building: MyotharCenterBuildingData;
@@ -27,6 +28,7 @@ export const MyotharCenterBuilding = memo(function MyotharCenterBuilding({
 	selected = false,
 	onSelect,
 }: MyotharCenterBuildingProps) {
+	if (sourceIsEdited(building.id)) return null;
 	const w = building.houseWidth || 5.0;
 	const d = building.houseLength || 6.2;
 	const isTwoStorey = building.area >= 70;

@@ -39,6 +39,7 @@ const loaders: Record<string, () => Promise<ComponentType>> = {
   tharyargone: () => import('./villages/tharyargone').then(m => m.TharYarGoneVillage),
   htaukkyant: () => import('./villages/htaukkyant').then(m => m.HtaukKyantVillage),
   kyarinn: () => import('./villages/kyarinn').then(m => m.KyarInnVillage),
+  sithar: () => import('./villages/sithar/SiTharVillage').then(m => m.SiTharVillage),
   kanbale: () => import('./villages/kanbale/KanbaleVillage').then(m => m.KanbaleVillage),
   natmyaung: () => import('./villages/natmyaung/NatmyaungVillage').then(m => m.NatmyaungVillage),
 };

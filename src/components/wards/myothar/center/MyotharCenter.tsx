@@ -13,6 +13,7 @@ import { MyotharCenterBuilding } from './MyotharCenterBuilding';
 import { MyotharCenterLandmarks } from './MyotharCenterLandmarks';
 import { Cemetery } from '../../../Cemetery.tsx';
 import { Tree } from '../../../Tree.tsx';
+import { sourceIsEdited } from '../../../../game/worldEdits';
 
 export interface MyotharCenterProps {
 	onSelectBuilding?: (building: MyotharCenterBuildingData) => void;
@@ -173,8 +174,8 @@ export const MyotharCenter = memo(function MyotharCenter({
 			{/* ======================================================== */}
 			<group name="myothar-center-buildings">
 				{myotharCenterBuildings.map((building: MyotharCenterBuildingData) => {
-					// Skip buildings that are replaced by full custom landmark models
-					if (landmarkBuildingIds.has(building.id)) return null;
+					// Skip buildings that are replaced by full custom landmark models or edited/moved
+					if (landmarkBuildingIds.has(building.id) || sourceIsEdited(building.id)) return null;
 
 					const isSelected = selectedId === building.id;
 					return (

@@ -2,11 +2,13 @@ import { memo, useMemo } from 'react';
 import {CandleRow,PorchCandles} from '../../FestivalAnchor';
 import type { KanbaleBuildingData } from '../../../data/villages/kanbale';
 import { Box } from '../../Primitives';
+import { sourceIsEdited } from '../../../game/worldEdits';
 
 export interface KanbaleBuildingProps {
   building: KanbaleBuildingData;
   selected?: boolean;
   onSelect?: (id: string) => void;
+  ignoreEdits?: boolean;
 }
 
 /**
@@ -27,7 +29,9 @@ export const KanbaleBuilding = memo(function KanbaleBuilding({
   building,
   selected = false,
   onSelect,
+  ignoreEdits = false,
 }: KanbaleBuildingProps) {
+  if (!ignoreEdits && sourceIsEdited(building.id)) return null;
   // Dimensions along frontage (w) and ridge depth (d)
   const w = building.houseWidth || Math.max(building.width, 6.5);
   const d = building.houseLength || Math.max(building.depth, 7.5);

@@ -13,6 +13,7 @@ import { KalayArea1Building } from './KalayArea1Building.tsx';
 import { KalayArea1TeaShop } from './KalayArea1TeaShop.tsx';
 import { NankaleinCreek } from './NankaleinCreek.tsx';
 import { Tree } from '../../Tree.tsx';
+import { sourceIsEdited } from '../../../game/worldEdits';
 
 export interface KalayArea1Props {
 	onSelectBuilding?: (building: KalayArea1BuildingData) => void;
@@ -164,6 +165,7 @@ export const KalayArea1 = memo(function KalayArea1({
 			{/* ======================================================== */}
 			<group name="kalay-area-1-buildings">
 				{kalayArea1Buildings.map((building: KalayArea1BuildingData) => {
+					if (sourceIsEdited(building.id)) return null;
 					const isSelected = selectedId === building.id;
 					return (
 						<KalayArea1Building

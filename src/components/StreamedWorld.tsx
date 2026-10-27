@@ -1,4 +1,5 @@
 import { CarBots } from './CarBots';
+import {staticDetails,updateStaticDetails} from '../game/staticVisibility';
 import {decorateFestivalRegion,updateFestivalVisibility,createFestivalOverview} from '../game/festivalCandles';
 import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect, useSyncExternalStore, memo, type ComponentType } from 'react';
 import { createPortal, useFrame, useThree } from '@react-three/fiber';
@@ -10,18 +11,18 @@ import { StaticBatch } from './StaticBatch';
 import { RobotBots, prepareRobotPatrols } from './RobotBots';
 import { RegionActivity } from './RegionActivity';
 import { snapshotRegion, regionFlows, animateRegionFlows, warmRegion, disposePreparedRegion } from '../game/preparedScene';
-import { registerGroundRegion, releaseGroundRegions } from '../game/groundSurface';
+import { registerGroundRegion, releaseGroundRegion, releaseGroundRegions } from '../game/groundSurface';
 import { regionAssets, worldRegions as regions } from './regionAssets';
 import { startupDiagnostics } from '../game/startupDiagnostics';
 import { diagnosticConfig } from '../game/diagnosticMode';
+import { sourceIsEdited } from '../game/worldEdits';
 
-const bounds = regions.map(r => ({
-  id: r.id,
-  minX: Math.min(...r.houses.map(h => h.x)) - 60,
-  maxX: Math.max(...r.houses.map(h => h.x)) + 60,
-  minZ: Math.min(...r.houses.map(h => h.z)) - 60,
-  maxZ: Math.max(...r.houses.map(h => h.z)) + 60,
-}));
+// No spread into Math.min/max: large source collections exceed JS argument limits.
+const bounds = regions.map(r => {
+  let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
+  for(const h of r.houses){minX=Math.min(minX,h.x);maxX=Math.max(maxX,h.x);minZ=Math.min(minZ,h.z);maxZ=Math.max(maxZ,h.z);}
+  return {id:r.id,minX:minX-60,maxX:maxX+60,minZ:minZ-60,maxZ:maxZ+60};
+});
 startupDiagnostics.record('map-parse', { regionCount: bounds.length });
 
 const spawnRegions = selectRegions(bounds, ward.spawn.x, ward.spawn.z, 5, [], mobileQuality);
@@ -32,13 +33,13 @@ const overviewGeometry = new BoxGeometry(), overviewMaterial = new MeshLambertMa
 /** A single draw call per region keeps the whole map visible without detailed object trees. */
 function Overview({ region }: { region: typeof regions[number] }) {
   const mesh = useRef<InstancedMesh>(null);
-  const plots = useMemo<Plot[]>(() => [
-    ...region.fields.map(f => ({ ...f, height: .1, y: 0 })),
-    ...('bundedFields' in region ? region.bundedFields : []).map(f => ({ ...f, height: .1, y: 0 })),
-    ...('separationFields' in region ? region.separationFields : []).map(f => ({ ...f, height: .1, y: 0 })),
+  const plots = useMemo<Plot[]>(() => {
+    const fields=[...new Map([...region.fields,...('bundedFields' in region?region.bundedFields:[]),...('separationFields' in region?region.separationFields:[])].map(f=>['id' in f?f.id:`${f.x}/${f.z}/${f.width}/${f.depth}/${f.rotation}`,f])).values()];
+    return [
+    ...fields.map(f => ({ ...f, height: .1, y: 0 })),
     ...region.roads.map(r => ({ ...r, color: r.main ? '#657371' : '#d4bd98', height: .15, y: .1 })),
-    ...region.houses.map(h => ({ ...h, color: h.roof, height: 5, y: 2.5 })),
-  ], [region]);
+    ...region.houses.filter(h => !sourceIsEdited(h.id)).map(h => ({ ...h, color: h.roof, height: 5, y: 2.5 })),
+  ];}, [region]);
 
   useLayoutEffect(() => {
     const matrix = new Matrix4(), q = new Quaternion(), axis = new Vector3(0, 1, 0), v = new Vector3(), scale = new Vector3(), color = new Color();
@@ -84,7 +85,7 @@ export type StreamedWorldProps = {
   onSceneError: () => void;
 };
 
-type CachedRegion = { root: Group; flows: Object3D[]; festivalOverview: Group };
+type CachedRegion = { root: Group; flows: Object3D[]; festivalOverview: Group; details:ReturnType<typeof staticDetails> };
 const MAX_CACHED_REGIONS = mobileQuality ? 2 : 5;
 
 export function StreamedWorld({ destination, paused = false, onLoadingChange, onSceneError }: StreamedWorldProps) {
@@ -95,20 +96,23 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
   const [warming, setWarming] = useState<{ id: string; root: Group } | null>(null);
   const [started, setStarted] = useState(false);
   const [active, setActive] = useState(spawnRegions);
+  const [overviewIds,setOverviewIds]=useState(()=>selectOverviewRegions(bounds,ward.spawn.x,ward.spawn.z,mobileQuality));
   const elapsed = useRef(0);
 
   // Progressive loading: Prioritize active region, then spawn, then idle background
   const building = useMemo(() => {
+    if(warming)return undefined; // Finish GPU/ground preparation before building another region.
     const activeUnprepared = active.find(id => !prepared.includes(id) && !cache.current.has(id));
     if (activeUnprepared) return activeUnprepared;
-    const spawnUnprepared = spawnRegions.find(id => !prepared.includes(id) && !cache.current.has(id));
+    const spawnUnprepared = !started ? spawnRegions.find(id => !prepared.includes(id) && !cache.current.has(id)) : undefined;
     if (spawnUnprepared) return spawnUnprepared;
-    if (!mobileQuality && !diagnosticConfig.disableDistantChunks && started) {
+    // Stop background construction when full: evicted downloads must not cycle forever.
+    if (!mobileQuality && !diagnosticConfig.disableDistantChunks && started && cache.current.size < MAX_CACHED_REGIONS) {
       const nextDownloaded = downloads.find(d => d.phase === 'downloaded' && !prepared.includes(d.id) && !cache.current.has(d.id));
       return nextDownloaded?.id;
     }
     return undefined;
-  }, [active, prepared, started, downloads]);
+  }, [active, prepared, started, downloads,warming]);
 
   const onBuilt = useCallback((id: string, root: Group) => {
     if (cache.current.has(id)) return;
@@ -116,9 +120,10 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
     // Bounded caching on mobile: evict least recently used non-spawn, non-active region
     if (cache.current.size >= MAX_CACHED_REGIONS) {
       for (const [cachedId, cached] of cache.current.entries()) {
-        if (!spawnRegions.includes(cachedId) && !active.includes(cachedId)) {
+        if (cachedId !== 'myothar' && !active.includes(cachedId)) {
           cached.root.removeFromParent();
           cached.festivalOverview.removeFromParent();
+          releaseGroundRegion(scene,cachedId);
           disposePreparedRegion(cached.root);
           disposePreparedRegion(cached.festivalOverview);
           cache.current.delete(cachedId);
@@ -132,9 +137,10 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
       root,
       flows: id === 'myothar' ? [] : regionFlows(root),
       festivalOverview: createFestivalOverview(root),
+      details:staticDetails(root),
     });
     setWarming({ id, root });
-  }, [active]);
+  }, [active,scene]);
 
   // Request spawn regions immediately; load distant regions on-demand or idle
   useEffect(() => {
@@ -143,11 +149,16 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
 
   useEffect(() => {
     if (!started) return;
+    regionAssets.retainPending(active);
     regionAssets.request(active, true);
     if (!mobileQuality && !diagnosticConfig.disableDistantChunks) {
       const timer = window.setTimeout(() => {
-        const remaining = regions.map(r => r.id).filter(id => !spawnRegions.includes(id));
-        regionAssets.request(remaining, false);
+        // Only one neighbouring region, not every region in the world catalogue.
+        const focus=active.map(id=>bounds.find(b=>b.id===id)!).filter(Boolean);
+        if(!focus.length)return;
+        const nearest=bounds.filter(b=>!active.includes(b.id)).map(b=>({id:b.id,d:Math.min(...focus.map(a=>Math.hypot(Math.max(a.minX-b.maxX,0,b.minX-a.maxX),Math.max(a.minZ-b.maxZ,0,b.minZ-a.maxZ))))})).sort((a,b)=>a.d-b.d)[0];
+        regionAssets.retainPending([...active,...(nearest&&nearest.d<650?[nearest.id]:[])]);
+        if(nearest&&nearest.d<650)regionAssets.request([nearest.id], false);
       }, 1500);
       return () => window.clearTimeout(timer);
     }
@@ -188,6 +199,8 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
       if (!cached) continue;
       const { root, festivalOverview } = cached;
       if (active.includes(id)) {
+        // Map insertion order is the cache's least-recently-used order.
+        cache.current.delete(id);cache.current.set(id,cached);
         if (root.parent !== scene) scene.add(root);
         festivalOverview.removeFromParent();
       } else {
@@ -251,11 +264,16 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
     if (elapsed.current < .2) return;
     elapsed.current = 0;
     for (const id of active) {
-      const root = cache.current.get(id)?.root;
-      if (root) updateFestivalVisibility(root, focus.x, focus.z, mobileQuality, camera.position.y);
+      const cached = cache.current.get(id);
+      if (cached) {
+        updateFestivalVisibility(cached.root, focus.x, focus.z, mobileQuality, camera.position.y);
+        updateStaticDetails(cached.details,camera.position.x,camera.position.y,camera.position.z,mobileQuality);
+      }
     }
     const next = selectRegions(bounds, focus.x, focus.z, camera.position.y, active, mobileQuality);
     if (next.join() !== active.join()) setActive(next);
+    const nextOverview=selectOverviewRegions(bounds,focus.x,focus.z,mobileQuality);
+    if(nextOverview.join()!==overviewIds.join())setOverviewIds(nextOverview);
   });
 
   const myothar = downloads.find(item => item.id === 'myothar')?.value;
@@ -265,7 +283,7 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
     {myothar && <RegionBuilder id="myothar" Scene={myothar} live active={started && active.includes('myothar')} onBuilt={onBuilt} />}
     {building && building !== 'myothar' && Scene && !cache.current.has(building) &&
       <RegionBuilder key={building} id={building} Scene={Scene} onBuilt={onBuilt} />}
-    {regions.map(region => <group key={region.id} visible={!active.includes(region.id) || !prepared.includes(region.id)}><Overview region={region} /></group>)}
+    {regions.filter(region=>overviewIds.includes(region.id)).map(region => <group key={region.id} visible={!active.includes(region.id) || !prepared.includes(region.id)}><Overview region={region} /></group>)}
     {!paused && started && !diagnosticConfig.disableNPCs && <><RobotBots activeRegions={active} /><CarBots /></>}
   </>;
 }

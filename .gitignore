@@ -2,7 +2,10 @@ node_modules/
 dist/
 *.tsbuildinfo
 map/
+!public/map/
 .agents/**/SKILL.md
+!.agents/skills/map-data-management/SKILL.md
+!.agents/skills/map-location-pipeline/SKILL.md
 .env
 .env.*
 !.env.example

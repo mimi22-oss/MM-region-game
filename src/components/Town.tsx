@@ -1,4 +1,5 @@
 import { StreamedWorld, type StreamedWorldProps } from './StreamedWorld';
+import {SeparationFieldTiles} from './SeparationFieldTiles';
 import { Mountains } from './Mountains';
 import { memo } from 'react';
 
@@ -10,17 +11,23 @@ import {CandleAnimation} from './Candle';
 import {FestivalLighting} from './FestivalLighting';
 import {FireBalloonSky} from './FireBalloonSky';
 
+import { DynamicWorldObjects } from './DynamicWorldObjects';
+import { useThadingyutFestival } from '../game/thadingyutFestival';
+
 export const Town = memo(function Town({ minute = 780, ...streaming }: { minute?: number } & StreamedWorldProps) {
  const period=periodAtMinute(minute),night=period==='night'||period==='evening';
+ const festivalActive = useThadingyutFestival();
 	return (
 		<>
-            <CandleAnimation/>
-            <FestivalLighting night={night}/>
-            <FireBalloonSky active={night} balloonsPerVillage={400} />
+            {festivalActive && <CandleAnimation/>}
+            {festivalActive && <FestivalLighting night={night}/>}
+            <FireBalloonSky active={night && festivalActive} balloonsPerVillage={400} />
             <TimeEnvironment minute={minute}/>
 
 			<StreamedWorld {...streaming} />
+            <SeparationFieldTiles/>
             <Mountains />
+            <DynamicWorldObjects />
 
 			{/* A low visual border; collision follows the ward boundary. */}
 			{[-1, 1].map(s => (

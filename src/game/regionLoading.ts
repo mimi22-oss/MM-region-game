@@ -25,6 +25,17 @@ export class RegionDownloadQueue<T> {
     return () => { this.listeners.delete(listener); };
   };
 
+  /** Drop obsolete queued work when travel changes direction. An in-flight import finishes once. */
+  retainPending(ids: readonly string[]) {
+    const wanted = new Set(ids);
+    const cancelled = new Set(this.pending.filter(id => !wanted.has(id)));
+    if (!cancelled.size) return;
+    this.pending = this.pending.filter(id => wanted.has(id));
+    this.snapshot = this.snapshot.map(entry => cancelled.has(entry.id) && entry.phase === 'queued'
+      ? { ...entry, phase: 'idle' } : entry);
+    this.emit();
+  }
+
   request(ids: string[], foreground = false) {
     const requested: string[] = [];
     for (const id of new Set(ids)) {

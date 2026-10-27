@@ -1,4 +1,4 @@
-import { useRef, type RefObject } from 'react';
+import { useEffect,useRef, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector3 } from 'three';
 import { worldMapLabels } from '../data/mapLabels';
@@ -18,7 +18,12 @@ export function MapLabelsOverlay({ host, hidden }: { host: LabelHost; hidden: bo
 /** Project after Player's camera update. No extra scene renders, text textures or per-frame React state. */
 export function MapLabelsProjection({ host, enabled }: { host: LabelHost; enabled: boolean }) {
  const state = useRef({ point: new Vector3(), direction: new Vector3(), nextLayout: 0, nextGround: 0,
-  selected: new Set<string>(), heights: new Map<string, number>(), elements: new Map<string, HTMLDivElement>() });
+  selected: new Set<string>(), heights: new Map<string, number>(), elements: new Map<string, HTMLDivElement>(),sizes:new Map<string,{width:number;height:number}>() });
+ useEffect(()=>{
+  const reset=()=>{state.current.sizes.clear();state.current.nextLayout=0;};
+  window.addEventListener('resize',reset);document.fonts?.addEventListener('loadingdone',reset);
+  return ()=>{window.removeEventListener('resize',reset);document.fonts?.removeEventListener('loadingdone',reset);};
+ },[]);
  useFrame(({ camera, scene, size, clock }) => {
   const root = host.current;
   if (!root) return;
@@ -33,8 +38,10 @@ export function MapLabelsProjection({ host, enabled }: { host: LabelHost; enable
   if (now >= s.nextGround) {
    const ground = sceneGround(scene, now);
    for (const label of worldMapLabels) s.heights.set(label.id, ground.height(label.x, label.z) + 3);
-   s.nextGround = now + 2;
+   s.nextGround = now + 30;
   }
+  // Read label sizes together, before any transform writes; avoid repeated forced layouts.
+  if(refresh)for(const [id,element] of s.elements)if(!s.sizes.has(id))s.sizes.set(id,{width:element.offsetWidth,height:element.offsetHeight});
   camera.updateMatrixWorld();
   const candidates: ProjectedLabel[] = [];
   for (const label of worldMapLabels) {
@@ -47,7 +54,7 @@ export function MapLabelsProjection({ host, enabled }: { host: LabelHost; enable
    if (!visible) { element.style.visibility = 'hidden'; continue; }
    const x = (s.point.x + 1) * size.width / 2, y = (1 - s.point.y) * size.height / 2;
    element.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-100%)`;
-   if (refresh) candidates.push({ id: label.id, x, y, width: element.offsetWidth, height: element.offsetHeight, priority: label.priority });
+   if (refresh) candidates.push({ id: label.id, x, y, ...s.sizes.get(label.id)!, priority: label.priority });
   }
   if (refresh) {
    s.selected = new Set(layoutMapLabels(candidates, size.width, size.height, size.width < 600 ? 18 : 36).map(label => label.id));

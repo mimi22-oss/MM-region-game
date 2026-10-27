@@ -4,6 +4,7 @@ import {
   InstancedMesh,
   Matrix4,
   Mesh,
+  Color,
   type BufferGeometry,
   type Material,
   type Object3D,
@@ -44,6 +45,8 @@ export function batchStaticMeshes(root: Group) {
       const json = material.toJSON();
       delete json.uuid;
       delete json.metadata;
+      // Wall/roof paint belongs in instance colors, not a separate GPU draw call.
+      delete json.color;
       materialKey = JSON.stringify(json);
       materialKeys.set(material, materialKey);
     }
@@ -65,7 +68,8 @@ export function batchStaticMeshes(root: Group) {
       );
     }
     const e = matrix.elements;
-    const detail = shape === unitBox && matrix.getMaxScaleOnAxis() < 5;
+    const detail = shape === unitBox && !object.userData.walkable && matrix.getMaxScaleOnAxis() < 2.5 &&
+      Math.min(Math.hypot(e[0],e[1],e[2]),Math.hypot(e[4],e[5],e[6]),Math.hypot(e[8],e[9],e[10]))<.3;
     const key = JSON.stringify([
       Math.floor(e[12] / 128),
       Math.floor(e[14] / 128),
@@ -88,10 +92,13 @@ export function batchStaticMeshes(root: Group) {
     batches: InstancedMesh[] = [];
   for (const group of groups.values()) {
     if (group.items.length < 2) continue;
-    const first = group.items[0].mesh,
+    const first = group.items[0].mesh;
+    const batchMaterial=group.material.clone() as Material & {color:Color};
+    batchMaterial.color.set('#ffffff');batchMaterial.userData={...batchMaterial.userData,shared:false};
+    const
       batch = new InstancedMesh(
         group.geometry,
-        group.material,
+        batchMaterial,
         group.items.length,
       );
     batch.userData.walkable=Boolean(first.userData.walkable);
@@ -100,16 +107,21 @@ export function batchStaticMeshes(root: Group) {
     batch.renderOrder = first.renderOrder;
     group.items.forEach(({ mesh, matrix }, i) => {
       batch.setMatrixAt(i, matrix);
+      batch.setColorAt(i,(mesh.material as Material & {color:Color}).color);
       removed.push({ mesh, parent: mesh.parent! });
       mesh.removeFromParent();
     });
     batch.instanceMatrix.needsUpdate = true;
+    if(batch.instanceColor)batch.instanceColor.needsUpdate=true;
+    batch.updateMatrix();batch.matrixAutoUpdate=false;
     batch.computeBoundingBox();
     batch.computeBoundingSphere();
     batch.name = "static-tile";
     batch.userData.detail =
       group.geometry === unitBox &&
-      group.items.every((item) => item.matrix.getMaxScaleOnAxis() < 5);
+      !first.userData.walkable && group.items.every(({matrix})=>{
+        const e=matrix.elements;return matrix.getMaxScaleOnAxis()<2.5&&Math.min(Math.hypot(e[0],e[1],e[2]),Math.hypot(e[4],e[5],e[6]),Math.hypot(e[8],e[9],e[10]))<.3;
+      });
     root.add(batch);
     batches.push(batch);
   }

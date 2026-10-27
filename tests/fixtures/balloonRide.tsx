@@ -17,7 +17,7 @@ function Fixture(){
  const [zoom,setZoom]=useState(6),[topDown,setTopDown]=useState(false),[paused,setPaused]=useState(false),[status,setStatus]=useState(emptyBalloonStatus);
  const input=useRef(createMobileInput()),ignore=useCallback(()=>{},[]);
  const teleport=useRef({x:BALLOON_LAUNCH.x+3.2,z:BALLOON_LAUNCH.z,yaw:BALLOON_LAUNCH.yaw,distance:6,seq:1});
- api.balloonPause=setPaused;
+ api.balloonPause=setPaused;api.balloonMobileInput=input.current;
  return <><Canvas style={{width:'100vw',height:'100vh'}} dpr={.6} camera={{far:10000}}>
   <ambientLight intensity={2}/><directionalLight position={[10,30,5]} intensity={2}/><color attach="background" args={['#b8d3e5']}/>
   <mesh rotation={[-Math.PI/2,0,0]} userData={{walkable:true}}><planeGeometry args={[20000,20000]}/><meshStandardMaterial color="#91ad78"/></mesh>

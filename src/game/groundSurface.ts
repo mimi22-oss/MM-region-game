@@ -64,6 +64,14 @@ export function releaseGroundRegions(scene:Object3D){
  for(const root of entry?.regions?.values()??[])groundWorlds.delete(root);
  scenes.delete(scene);
 }
+/** A disposed region must not remain reachable through the physics index. */
+export function releaseGroundRegion(scene:Object3D,id:string){
+ const entry=scenes.get(scene),root=entry?.regions?.get(id);
+ if(!entry?.regions||!root)return;
+ groundWorlds.delete(root);
+ entry.regions.delete(id);
+ entry.surface.refresh(...entry.regions.values());
+}
 /** All actors share one index; adding bots does not add scene traversals. */
 export function sceneGround(scene:Object3D,time:number){
  const world=groundWorlds.get(scene)??scene,entry=groundEntry(world);

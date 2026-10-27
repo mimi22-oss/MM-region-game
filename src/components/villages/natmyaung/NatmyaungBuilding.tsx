@@ -2,11 +2,13 @@ import { memo, useMemo } from 'react';
 import {CandleRow,PorchCandles} from '../../FestivalAnchor';
 import type { NatmyaungBuildingData } from '../../../data/villages/natmyaung';
 import { Box } from '../../Primitives';
+import { sourceIsEdited } from '../../../game/worldEdits';
 
 export interface NatmyaungBuildingProps {
   building: NatmyaungBuildingData;
   selected?: boolean;
   onSelect?: (id: string) => void;
+  ignoreEdits?: boolean;
 }
 
 /**
@@ -27,7 +29,9 @@ export const NatmyaungBuilding = memo(function NatmyaungBuilding({
   building,
   selected = false,
   onSelect,
+  ignoreEdits = false,
 }: NatmyaungBuildingProps) {
+  if (!ignoreEdits && sourceIsEdited(building.id)) return null;
   const w = building.houseWidth || Math.max(building.width, 7.0);
   const d = building.houseLength || Math.max(building.depth, 7.5);
   const front = d / 2;
