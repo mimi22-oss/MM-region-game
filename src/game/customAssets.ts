@@ -18,7 +18,13 @@ function normalizeGeneratedParts(value: unknown): unknown {
     if (!part || typeof part !== 'object' || Array.isArray(part)) return part;
     const p = part as Record<string, unknown>;
     const shape = typeof p.shape === 'string' ? p.shape.trim().toLowerCase() : p.shape;
-    return { ...p, shape: shape === 'cube' ? 'box' : shape, color: normalizeColor(p.color) };
+    const pos = Array.isArray(p.position) && p.position.length === 3
+      ? p.position.map(n => typeof n === 'number' && Number.isFinite(n) ? Math.max(-1, Math.min(1, n)) : n)
+      : p.position;
+    const sz = Array.isArray(p.size) && p.size.length === 3
+      ? p.size.map(n => typeof n === 'number' && Number.isFinite(n) ? Math.max(0.01, Math.min(2, n)) : n)
+      : p.size;
+    return { ...p, shape: shape === 'cube' ? 'box' : shape, position: pos, size: sz, color: normalizeColor(p.color) };
   });
 }
 const vectorSchema = (description: string, minimum: number, maximum: number) => ({ type: 'array', items: { type: 'number', minimum, maximum }, minItems: 3, maxItems: 3, description });

@@ -21,10 +21,20 @@ export default function WardVillageEditorDialog({
     };
   }, []);
 
+  const handleClose = () => {
+    const node = dialog.current;
+    if (node && node.open) {
+      try {
+        node.close();
+      } catch {}
+    }
+    onClose();
+  };
+
   const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
     // If clicking outside the dialog content on the backdrop
     if (e.target === dialog.current) {
-      onClose();
+      handleClose();
     }
   };
 
@@ -36,10 +46,10 @@ export default function WardVillageEditorDialog({
       onClick={handleBackdropClick}
       onCancel={(event) => {
         event.preventDefault();
-        onClose();
+        handleClose();
       }}
     >
-      <WardVillageEditor initialCenter={focus} onClose={onClose} />
+      <WardVillageEditor initialCenter={focus} onClose={handleClose} />
     </dialog>
   );
 }

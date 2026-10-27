@@ -25,8 +25,23 @@ export function AssetAiAdd({ onClose, onSaved }: { onClose: () => void; onSaved:
   };
   const save = () => { if (!asset) return; try { const saved = saveCustomAsset(asset); registerCustomAsset(saved); onSaved(saved.id); onClose(); } catch (e) { setMessage(e instanceof Error ? e.message : 'Save failed.'); } };
   const span = asset ? Math.max(...asset.dimensions) : 8;
-  return <div className="asset-ai-backdrop" onKeyDown={e => e.stopPropagation()}><section className="asset-ai-dialog" role="dialog" aria-modal="true" aria-label="AI 3D add">
-    <header><strong>✨ AI 3D Asset အသစ်ဖန်တီးရန်</strong><button aria-label="Close" onClick={onClose}>✕</button></header>
+  return <div
+    className="asset-ai-backdrop"
+    onClick={e => { if (!busy && e.target === e.currentTarget) onClose(); }}
+    onKeyDown={e => { e.stopPropagation(); if (e.key === 'Escape' && !busy) onClose(); }}
+  ><section className="asset-ai-dialog" role="dialog" aria-modal="true" aria-label="AI 3D add">
+    <header>
+      <strong>✨ AI 3D Asset အသစ်ဖန်တီးရန်</strong>
+      <button
+        type="button"
+        className="asset-ai-close-btn"
+        aria-label="Close"
+        disabled={busy}
+        onClick={() => { if (!busy) onClose(); }}
+      >
+        ✕
+      </button>
+    </header>
     <div className="asset-ai-body"><div className="asset-ai-preview" style={{ background: '#0f172a' }}>
       {asset ? <Canvas key={asset.id} camera={{ position: [span * 1.5, span * 1.2, span * 1.5], fov: 45, near: 0.01, far: 1000 }} onCreated={({ camera }) => camera.lookAt(0, asset.dimensions[1] / 2, 0)}><ambientLight intensity={1.4} /><directionalLight position={[10, 20, 10]} intensity={2} /><CustomAssetModel asset={asset} /></Canvas> : (!busy && <p style={{ padding: 20, color: '#cbd5e1' }}>ဖန်တီးပြီးနောက် 3D preview ကို ဤနေရာတွင် ပြပါမည်။</p>)}
       {busy && <NeuralGridOverlay title={message || 'AI 3D ဖန်တီးနေသည်…'} />}

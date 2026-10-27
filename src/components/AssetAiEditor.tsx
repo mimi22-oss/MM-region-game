@@ -29,9 +29,24 @@ export function AssetAiEditor({ assetId, onClose, onPlace }: { assetId: string; 
     } catch (error) { if (!controller.signal.aborted) setMessage(error instanceof Error ? error.message : 'Request failed.'); }
     finally { if (!controller.signal.aborted) setBusy(false); }
   };
-  return <div className="asset-ai-backdrop" onKeyDown={e => e.stopPropagation()}>
+  return <div
+    className="asset-ai-backdrop"
+    onClick={e => { if (!busy && e.target === e.currentTarget) onClose(); }}
+    onKeyDown={e => { e.stopPropagation(); if (e.key === 'Escape' && !busy) onClose(); }}
+  >
     <section className="asset-ai-dialog" role="dialog" aria-modal="true" aria-label={`${def.name} 3D editor`}>
-      <header><strong>{def.name} · {def.nameMm}</strong><button aria-label="Close" onClick={onClose}>✕</button></header>
+      <header>
+        <strong>{def.name} · {def.nameMm}</strong>
+        <button
+          type="button"
+          className="asset-ai-close-btn"
+          aria-label="Close"
+          disabled={busy}
+          onClick={() => { if (!busy) onClose(); }}
+        >
+          ✕
+        </button>
+      </header>
       <div className="asset-ai-body">
         <div className="asset-ai-preview">
           <AssetPreviewCanvas assetId={assetId} edit={edit} />

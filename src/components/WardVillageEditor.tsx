@@ -546,7 +546,16 @@ export default function WardVillageEditor({
 			const editing = (e.target as HTMLElement).closest('input,textarea,select,[contenteditable="true"]');
 			if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); return; }
 			if (editing) return;
-			if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); cancelInteraction(); }
+			if (e.key === 'Escape') {
+				if (showAssetAdd || previewModalAssetId) return;
+				const hadActive = Boolean(drag.current || selectionBox || draft.length || placingAssetId || extendEnd);
+				cancelInteraction();
+				if (!hadActive && onClose) {
+					e.preventDefault();
+					handleClose();
+				}
+				return;
+			}
 			if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
 			if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
 			if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelected(); }
@@ -723,9 +732,11 @@ export default function WardVillageEditor({
 
 						{onClose && (
 							<button
+								type="button"
 								className="wve-close-btn"
+								disabled={showAssetAdd || !!previewModalAssetId}
 								onClick={handleClose}
-								title="Save & Close Editor"
+								title={showAssetAdd || previewModalAssetId ? '3D မော်ဒယ် တည်းဖြတ်နေချိန် Close ကို ပိတ်ထားပါသည်' : 'Save & Close Editor'}
 								aria-label="Save & Close Editor"
 							>
 								✕<span className="wve-label-full"> Close</span>
