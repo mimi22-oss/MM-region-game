@@ -738,7 +738,7 @@ kbd {
 .location-actions {
 	position: absolute;
 	top: 24px;
-	right: 120px;
+	right: 75px;
 	bottom: auto;
 	left: auto;
 	z-index: 15;
@@ -1625,7 +1625,7 @@ main.night-mode .home-guidance-pill {
 	.location-actions {
 		position: absolute !important;
 		top: 14px !important;
-		right: 95px !important;
+		right: 56px !important;
 		bottom: auto !important;
 		left: auto !important;
 		flex-direction: row !important;

@@ -28,7 +28,9 @@ import {
 	type AssetCategory,
 	type AssetDefinition,
 } from '../game/assetRegistry';
-import { Asset3DPreviewModal } from './Asset3DRenderer';
+import { AssetAiEditor } from './AssetAiEditor';
+import { AssetAiAdd } from './AssetAiAdd';
+import type { AssetEdit } from '../game/assetAiEdit';
 import { getRegionAuthoredFeatures } from '../game/regionObjectsMigration';
 import { deleteSelection, editVertex, expandGroups, extendLine, joinLines, removeVertex, transformSelection } from '../game/layoutTransforms';
 
@@ -209,7 +211,10 @@ export default function WardVillageEditor({
 	const [assetSearchQuery, setAssetSearchQuery] = useState('');
 	const [assetCategory, setAssetCategory] = useState<AssetCategory | undefined>(undefined);
 	const [placingAssetId, setPlacingAssetId] = useState<string | null>(null);
+	const [placingEdit, setPlacingEdit] = useState<AssetEdit | null>(null);
 	const [previewModalAssetId, setPreviewModalAssetId] = useState<string | null>(null);
+	const [showAssetAdd, setShowAssetAdd] = useState(false);
+	const [assetRevision, setAssetRevision] = useState(0);
 
 	// Label visibility toggle on 2D map
 	const [showNames, setShowNames] = useState<boolean>(() => {
@@ -352,14 +357,15 @@ export default function WardVillageEditor({
 			points: [point],
 			rotation: def.defaultRotation,
 			dimensions: { ...def.defaultDimensions },
-			scale: def.defaultScale,
-			color: def.defaultColor,
-			roofColor: def.defaultRoofColor,
+			scale: placingEdit?.scale ?? def.defaultScale,
+			color: placingEdit?.color ?? def.defaultColor,
+			roofColor: placingEdit?.roofColor ?? def.defaultRoofColor,
 			isCustomPlaced: true,
 		};
 
 		commit({ ...layout, features: [...layout.features, newFeature] });
 		setSelected(newFeature.id);
+		setPlacingEdit(null);
 		setMode('select');
 		setMessage(`Placed ${newFeature.name} at X:${point.x.toFixed(1)} Z:${point.z.toFixed(1)}`);
 	};
@@ -567,7 +573,7 @@ export default function WardVillageEditor({
 
 	const filteredAssets = useMemo(() => {
 		return searchAssets(assetSearchQuery, assetCategory);
-	}, [assetSearchQuery, assetCategory]);
+	}, [assetSearchQuery, assetCategory, assetRevision]);
 
 	const importFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const f = e.target.files?.[0];
@@ -605,13 +611,15 @@ export default function WardVillageEditor({
 
 	return (
 		<div className="wve-root">
+			{showAssetAdd && <AssetAiAdd onClose={() => setShowAssetAdd(false)} onSaved={(id) => { setAssetRevision(n => n + 1); setAssetSearchQuery(''); setAssetCategory(undefined); setMessage(`Asset အသစ် သိမ်းပြီးပါပြီ: ${getAssetDefinition(id)?.name ?? id}`); }} />}
 			{/* 3D Preview Modal */}
 			{previewModalAssetId && (
-				<Asset3DPreviewModal
+				<AssetAiEditor
 					assetId={previewModalAssetId}
 					onClose={() => setPreviewModalAssetId(null)}
-					onPlace={(id) => {
+					onPlace={(id, edit) => {
 						setPlacingAssetId(id);
+						setPlacingEdit(edit);
 						setMode('draw');
 						const def = getAssetDefinition(id);
 						setMessage(`Click on 2D map to place instance of: ${def?.name ?? id}`);
@@ -991,6 +999,7 @@ export default function WardVillageEditor({
 							)}
 
 							{/* Search Box */}
+							<button onClick={() => setShowAssetAdd(true)} style={{ width: '100%', marginBottom: 10 }}>✨ AI 3D Add · Asset အသစ်ဖန်တီးရန်</button>
 							<div className="wve-asset-search">
 								<input
 									type="text"
@@ -1025,6 +1034,7 @@ export default function WardVillageEditor({
 									<div
 										key={def.assetId}
 										className={`wve-asset-card ${placingAssetId === def.assetId ? 'selected' : ''}`}
+										onClick={() => setPreviewModalAssetId(def.assetId)}
 									>
 										<div className="wve-asset-thumb">
 											<AssetCardThumbnail def={def} />
@@ -1044,14 +1054,16 @@ export default function WardVillageEditor({
 										<div className="wve-asset-actions">
 											<button
 												title="3D Interactive Preview"
-												onClick={() => setPreviewModalAssetId(def.assetId)}
+												onClick={(e) => { e.stopPropagation(); setPreviewModalAssetId(def.assetId); }}
 											>
 												👁️ 3D
 											</button>
 											<button
 												className={placingAssetId === def.assetId ? 'active' : ''}
 												title="Place instance on 2D Map"
-												onClick={() => {
+												onClick={(e) => {
+													e.stopPropagation();
+													setPlacingEdit(null);
 													setPlacingAssetId(def.assetId);
 													setMode('draw');
 													setMessage(`Click on 2D map to place instance of: ${def.name}`);
@@ -1292,8 +1304,8 @@ export default function WardVillageEditor({
 							}
 
 							// 3. RENDER ASSET / POINT FEATURE WITH ACCURATE SVG FOOTPRINT
-							const w = f.dimensions?.width ?? def?.defaultDimensions.width ?? f.size ?? 8;
-							const d = f.dimensions?.depth ?? def?.defaultDimensions.depth ?? f.size ?? 8;
+							const w = (f.dimensions?.width ?? def?.defaultDimensions.width ?? f.size ?? 8) * (Array.isArray(f.scale) ? f.scale[0] : (f.scale ?? 1));
+							const d = (f.dimensions?.depth ?? def?.defaultDimensions.depth ?? f.size ?? 8) * (Array.isArray(f.scale) ? f.scale[2] : (f.scale ?? 1));
 							// In SVG, positive rotation is clockwise. Three.js rotation is in radians.
 							const rotDeg = -((f.rotation ?? 0) * 180) / Math.PI;
 							const fp = def?.footprint;
@@ -1307,10 +1319,11 @@ export default function WardVillageEditor({
 								>
 									{/* Accurate Asset Footprint */}
 									{fp?.shape === 'circle' ? (
-										<circle
+										<ellipse
 											cx={0}
 											cy={0}
-											r={w / 2}
+											rx={w / 2}
+											ry={d / 2}
 											fill={f.color || fp.color}
 											stroke={isSelected ? '#ef4444' : fp.stroke}
 											strokeWidth={Math.max(scale * 1.5, 0.4)}

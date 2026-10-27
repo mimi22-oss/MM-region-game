@@ -9,6 +9,8 @@
  * - Physical collision properties (box / cylinder / none)
  */
 
+import { loadCustomAssets, type CustomAsset } from './customAssets';
+
 export type AssetCategory =
   | 'buildings'
   | 'nature'
@@ -63,6 +65,7 @@ export interface AssetDefinition {
   tags: string[];
   isAnimated?: boolean;
   isVehicle?: boolean;
+  customModel?: CustomAsset;
 }
 
 export const ASSET_CATEGORIES: { id: AssetCategory; label: string; labelMm: string; icon: string }[] = [
@@ -790,6 +793,16 @@ export const ASSET_REGISTRY: Record<string, AssetDefinition> = {
 };
 
 export const ASSET_LIST: AssetDefinition[] = Object.values(ASSET_REGISTRY);
+
+export function registerCustomAsset(asset: CustomAsset) {
+  const [width, height, depth] = asset.dimensions;
+  const def: AssetDefinition = { assetId: asset.id, name: asset.name, nameMm: asset.nameMm, category: asset.category, sourceComponent: 'Custom 3D', description: 'AI-created geometric 3D asset', defaultDimensions: { width, height, depth }, defaultScale: 1, defaultRotation: 0, collision: { type: 'box' }, footprint: { shape: 'rect', defaultWidth: width, defaultDepth: depth, color: asset.parts[0].color, stroke: '#475569' }, tags: ['custom', 'ai'], customModel: asset };
+  ASSET_REGISTRY[asset.id] = def;
+  const index = ASSET_LIST.findIndex(a => a.assetId === asset.id);
+  if (index < 0) ASSET_LIST.push(def); else ASSET_LIST[index] = def;
+  return def;
+}
+for (const asset of loadCustomAssets()) registerCustomAsset(asset);
 
 export function getAssetDefinition(assetId: string | undefined): AssetDefinition | undefined {
   if (!assetId) return undefined;

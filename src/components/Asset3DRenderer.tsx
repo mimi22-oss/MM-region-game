@@ -32,6 +32,7 @@ import { Car } from './Car';
 import { MyanmarFireBalloon } from './MyanmarFireBalloon';
 import { CandleInHolder } from './Candle';
 import { Box } from './Primitives';
+import { CustomAssetModel } from './CustomAssetModel';
 
 export function FootballGoalModel({ width = 7.44, height = 2.44, depth = 2.44 }: { width?: number; height?: number; depth?: number }) {
   const halfW = width / 2;
@@ -589,6 +590,10 @@ export const Asset3DInstance = memo(function Asset3DInstance(props: Asset3DInsta
     }
 
     default: {
+      if (def?.customModel) {
+        content = <group rotation={[0, rotation, 0]}><CustomAssetModel asset={def.customModel} dimensions={dimensions} color={color} /></group>;
+        break;
+      }
       // Fallback: clean architectural building matching dimensions
       content = (
         <group rotation={[0, rotation, 0]}>
@@ -681,9 +686,11 @@ function PreviewCameraController({
 export function AssetPreviewCanvas({
   assetId,
   autoRotate = true,
+  edit,
 }: {
   assetId: string;
   autoRotate?: boolean;
+  edit?: import('../game/assetAiEdit').AssetEdit;
 }) {
   const def = getAssetDefinition(assetId);
   const dims = def?.defaultDimensions ?? { width: 8, depth: 8, height: 6 };
@@ -715,6 +722,9 @@ export function AssetPreviewCanvas({
           assetId={assetId}
           position={[0, 0, 0]}
           rotation={0}
+          scale={edit?.scale}
+          color={edit?.color}
+          roofColor={edit?.roofColor}
         />
 
         <PreviewCameraController

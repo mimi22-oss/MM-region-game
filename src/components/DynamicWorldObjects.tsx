@@ -51,6 +51,8 @@ function computeObstacles(features: LayoutFeature[], festivalActive: boolean): D
     if (!festivalActive && isFestival) continue;
     const pt = f.points[0];
     const def = getAssetDefinition(f.assetId);
+    const sx = Array.isArray(f.scale) ? f.scale[0] : (f.scale ?? 1);
+    const sz = Array.isArray(f.scale) ? f.scale[2] : (f.scale ?? 1);
 
     if (def && def.collision.type !== 'none') {
       if (def.collision.type === 'cylinder') {
@@ -58,11 +60,11 @@ function computeObstacles(features: LayoutFeature[], festivalActive: boolean): D
           id: f.id,
           x: pt.x,
           z: pt.z,
-          radius: def.collision.radius ?? 0.8,
+          radius: (def.collision.radius ?? 0.8) * Math.max(sx, sz),
         });
       } else {
-        const w = f.dimensions?.width ?? def.defaultDimensions.width;
-        const d = f.dimensions?.depth ?? def.defaultDimensions.depth;
+        const w = (f.dimensions?.width ?? def.defaultDimensions.width) * sx;
+        const d = (f.dimensions?.depth ?? def.defaultDimensions.depth) * sz;
         obstacles.push({
           id: f.id,
           x: pt.x,

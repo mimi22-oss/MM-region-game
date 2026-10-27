@@ -569,24 +569,6 @@ function App() {
       <div className="settings-wrap">
         <button
           type="button"
-          className="settings-btn"
-          style={{ marginRight: "6px" }}
-          aria-label="2D Map & 3D Asset Editor"
-          title="2D Map & 3D Asset Editor"
-          onClick={() => {
-            if (document.pointerLockElement) document.exitPointerLock();
-            setSceneActive(false);
-            setSettingsOpen(false);
-            setSelectionOpen(false);
-            setMapOpen(false);
-            setTeleportMode(false);
-            setEditorOpen(true);
-          }}
-        >
-          🗺️
-        </button>
-        <button
-          type="button"
           className={
             settingsOpen ? "settings-btn settings-btn-active" : "settings-btn"
           }
@@ -620,26 +602,6 @@ function App() {
               yaw={robotYaw}
               characterLabel={character === "robot" ? "စက်ရုပ်" : "ကာတွန်း"}
             />
-            <div className="robot-location-panel map-selection-launch">
-              <button type="button" className="robot-location-toggle" onClick={() => {
-                if (document.pointerLockElement) document.exitPointerLock();
-                setSceneActive(false);
-                setSelectionOpen(true);
-              }}>နယ်မြေဝိုက်ရွေး · GeoJSON ထုတ်ယူရန် ↗</button>
-              <p>အိမ်၊ အဆောက်အဦ၊ ဌာန၊ သစ်ပင် ဖြည့်လိုသည့်နေရာကို မြေပုံပေါ်မှာ ဝိုက်ရွေးပါ။</p>
-            </div>
-            <div className="robot-location-panel map-selection-launch">
-              <button type="button" className="robot-location-toggle" onClick={() => {
-                if (document.pointerLockElement) document.exitPointerLock();
-                setSceneActive(false);
-                setSettingsOpen(false);
-                setSelectionOpen(false);
-                 setMapOpen(false);
-                 setTeleportMode(false);
-                 setEditorOpen(true);
-              }}>🗺️ 2D Map Editor ဖွင့်ရန် ↗</button>
-              <p>ရပ်ကွက်၊ လမ်း၊ မြေကွက်၊ အိမ်၊ သစ်ပင်များကို ပြင်ဆင်ရန်။</p>
-            </div>
             <div className="guide-item">
               <div className="guide-header">
                 <strong>အသုံးပြုနည်း လမ်းညွှန်</strong>
@@ -750,6 +712,40 @@ function App() {
                 ဘယ်ဘက်ဆွဲ၍ ၃၆၀° လှည့်ပါ · ညာဘက်ဖိ၍ ပြေးပါ · ညာဘက်ဆွဲ၍ ကြည့်ပါ
                 · လက်နှစ်ချောင်းဖြင့် Zoom ချဲ့/ချုံ့ပါ · လက်နှစ်ချောင်းဆွဲ၍ ခရီးသွားပါ
               </p>
+            </div>
+            <div className="robot-location-panel map-selection-launch" style={{ marginTop: "14px" }}>
+              <button
+                type="button"
+                className="robot-location-toggle"
+                onClick={() => {
+                  if (document.pointerLockElement) document.exitPointerLock();
+                  setSceneActive(false);
+                  setSelectionOpen(true);
+                }}
+              >
+                နယ်မြေဝိုက်ရွေး · GeoJSON ထုတ်ယူရန် ↗
+              </button>
+              <p>အိမ်၊ အဆောက်အဦ၊ ဌာန၊ သစ်ပင် ဖြည့်လိုသည့်နေရာကို မြေပုံပေါ်မှာ ဝိုက်ရွေးပါ။</p>
+            </div>
+            <div className="robot-location-panel map-selection-launch">
+              <button
+                type="button"
+                className="robot-location-toggle"
+                aria-label="2D Map & 3D Asset Editor"
+                title="2D Map & 3D Asset Editor"
+                onClick={() => {
+                  if (document.pointerLockElement) document.exitPointerLock();
+                  setSceneActive(false);
+                  setSettingsOpen(false);
+                  setSelectionOpen(false);
+                  setMapOpen(false);
+                  setTeleportMode(false);
+                  setEditorOpen(true);
+                }}
+              >
+                🗺️ 2D Map & 3D Asset Editor ဖွင့်ရန် ↗
+              </button>
+              <p>ရပ်ကွက်၊ လမ်း၊ မြေကွက်၊ အိမ်၊ သစ်ပင်များကို ပြင်ဆင်ရန် (Developer Tool)။</p>
             </div>
           </section>
         )}
