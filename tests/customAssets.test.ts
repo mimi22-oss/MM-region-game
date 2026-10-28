@@ -1,14 +1,28 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { validateCustomAsset, generateCustomAsset } from '../src/game/customAssets.ts';
+import { validateCustomAsset, generateCustomAsset, saveCustomAsset, updateCustomAsset, deleteCustomAsset, loadCustomAssets, countAssetPlacements } from '../src/game/customAssets.ts';
+import { createCustomTemplate } from '../src/game/customAssetTemplates.ts';
 
 const asset = { id: 'custom:test', name: 'House', nameMm: 'အိမ်', category: 'buildings', dimensions: [8, 6, 10], parts: [{ shape: 'box', position: [0, 0.5, 0], size: [1, 1, 1], color: '#aabbcc' }] };
 test('custom asset validates bounded non-executable geometry', () => {
   assert.equal(validateCustomAsset(asset).parts.length, 1);
+  for (const s of ['box', 'cylinder', 'sphere', 'cone', 'pyramid', 'capsule', 'torus', 'dome', 'wedge'] as const) {
+    assert.equal(validateCustomAsset({ ...asset, parts: [{ ...asset.parts[0], shape: s }] }).parts[0].shape, s);
+  }
   assert.throws(() => validateCustomAsset({ ...asset, dimensions: [Infinity, 1, 1] }));
   assert.throws(() => validateCustomAsset({ ...asset, parts: Array(41).fill(asset.parts[0]) }));
   assert.throws(() => validateCustomAsset({ ...asset, parts: [{ ...asset.parts[0], shape: 'script' }] }));
   assert.throws(() => validateCustomAsset({ ...asset, parts: [{ ...asset.parts[0], color: 'url(x)' }] }));
+});
+test('character, building and tree templates preserve part rotations through validation', () => {
+  for (const kind of ['blank', 'character', 'building', 'tree'] as const) {
+    const original = createCustomTemplate(kind, 'custom:template');
+    assert.deepEqual(validateCustomAsset(original), original);
+    assert.ok(original.parts.length > 0 && original.parts.length <= 40);
+  }
+  const rotated = createCustomTemplate('building', 'custom:template');
+  assert.deepEqual(validateCustomAsset(rotated).parts[1].rotation, [0, 45, 0]);
+  assert.throws(() => validateCustomAsset({ ...rotated, parts: [{ ...rotated.parts[0], rotation: [Infinity, 0, 0] }] }));
 });
 test('Gemini response becomes a validated asset and key stays in header', async () => {
   const original = globalThis.fetch;
@@ -70,4 +84,16 @@ test('503 retries once and reports a continued outage', async () => {
     await assert.rejects(generateCustomAsset({ key: 'secret', model: 'gemini-test', prompt: 'house', signal: controller.signal, onRetry: () => controller.abort() }), { name: 'AbortError' });
     assert.equal(calls, 1);
   } finally { globalThis.fetch = original; }
+});
+test('asset CRUD persists changes and refuses deletion while used on a map', () => {
+  const data = new Map<string, string>();
+  const old = globalThis.localStorage;
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { get length() { return data.size; }, key: (i: number) => [...data.keys()][i] ?? null, getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => data.set(k, v), removeItem: (k: string) => data.delete(k), clear: () => data.clear() } });
+  try {
+    const original = validateCustomAsset(asset); saveCustomAsset(original);
+    updateCustomAsset({ ...original, name: 'Updated' }); assert.equal(loadCustomAssets()[0].name, 'Updated');
+    data.set('mm-editor-region-v1:test', JSON.stringify({ features: [{ assetId: original.id }] }));
+    assert.equal(countAssetPlacements(original.id), 1); assert.throws(() => deleteCustomAsset(original.id));
+    data.delete('mm-editor-region-v1:test'); deleteCustomAsset(original.id); assert.equal(loadCustomAssets().length, 0);
+  } finally { Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: old }); }
 });

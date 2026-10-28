@@ -802,6 +802,12 @@ export function registerCustomAsset(asset: CustomAsset) {
   if (index < 0) ASSET_LIST.push(def); else ASSET_LIST[index] = def;
   return def;
 }
+export function unregisterCustomAsset(id: string) {
+  if (!ASSET_REGISTRY[id]?.customModel) return;
+  delete ASSET_REGISTRY[id];
+  const index = ASSET_LIST.findIndex(a => a.assetId === id);
+  if (index >= 0) ASSET_LIST.splice(index, 1);
+}
 for (const asset of loadCustomAssets()) registerCustomAsset(asset);
 
 export function getAssetDefinition(assetId: string | undefined): AssetDefinition | undefined {

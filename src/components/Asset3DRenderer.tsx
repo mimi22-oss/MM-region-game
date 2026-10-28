@@ -33,6 +33,8 @@ import { MyanmarFireBalloon } from './MyanmarFireBalloon';
 import { CandleInHolder } from './Candle';
 import { Box } from './Primitives';
 import { CustomAssetModel } from './CustomAssetModel';
+import { getBuiltInEdit } from '../game/builtInAssetEdits';
+import type { AssetEdit } from '../game/assetAiEdit';
 
 export function FootballGoalModel({ width = 7.44, height = 2.44, depth = 2.44 }: { width?: number; height?: number; depth?: number }) {
   const halfW = width / 2;
@@ -109,6 +111,7 @@ export function FootballSurfaceModel({ width = 68, depth = 104 }: { width?: numb
 }
 
 export interface Asset3DInstanceProps {
+  builtinEdit?: AssetEdit | null;
   assetId?: string;
   position?: [number, number, number];
   rotation?: number; // radians around Y
@@ -187,14 +190,16 @@ export const Asset3DInstance = memo(function Asset3DInstance(props: Asset3DInsta
   } = props;
 
   const def: AssetDefinition | undefined = getAssetDefinition(assetId);
+  const builtinEdit = def?.customModel ? undefined : (props.builtinEdit === undefined ? getBuiltInEdit(assetId) : props.builtinEdit ?? undefined);
   const effectiveWidth = dimensions?.width ?? def?.defaultDimensions.width ?? 8;
   const effectiveDepth = dimensions?.depth ?? def?.defaultDimensions.depth ?? 8;
-  const effectiveColor = color ?? def?.defaultColor ?? '#baa892';
-  const effectiveRoof = roofColor ?? def?.defaultRoofColor ?? '#687788';
+  const effectiveColor = builtinEdit?.color ?? color ?? def?.defaultColor ?? '#baa892';
+  const effectiveRoof = builtinEdit?.roofColor ?? roofColor ?? def?.defaultRoofColor ?? '#687788';
 
-  const scaleVec: [number, number, number] = Array.isArray(scale)
+  const baseScale: [number, number, number] = Array.isArray(scale)
     ? scale
     : [scale, scale, scale];
+  const scaleVec: [number, number, number] = builtinEdit ? [baseScale[0] * builtinEdit.scale[0], baseScale[1] * builtinEdit.scale[1], baseScale[2] * builtinEdit.scale[2]] : baseScale;
 
   const handleClick = (e: { stopPropagation: () => void }) => {
     e.stopPropagation();
@@ -722,9 +727,10 @@ export function AssetPreviewCanvas({
           assetId={assetId}
           position={[0, 0, 0]}
           rotation={0}
-          scale={edit?.scale}
+          scale={def?.customModel ? edit?.scale : undefined}
           color={edit?.color}
           roofColor={edit?.roofColor}
+          builtinEdit={def?.customModel ? undefined : edit}
         />
 
         <PreviewCameraController

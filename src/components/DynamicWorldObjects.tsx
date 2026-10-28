@@ -8,6 +8,7 @@ import { Asset3DInstance } from './Asset3DRenderer';
 import { setDynamicWorldObstacles, type DynamicWorldObstacle } from '../game/collision';
 import { isAuthoredFeatureModified } from '../game/worldEdits';
 import { useThadingyutFestival } from '../game/thadingyutFestival';
+import { getBuiltInEdit } from '../game/builtInAssetEdits';
 
 /**
  * Loads all dynamic/custom placed features and modified authored features across all regions.
@@ -51,8 +52,9 @@ function computeObstacles(features: LayoutFeature[], festivalActive: boolean): D
     if (!festivalActive && isFestival) continue;
     const pt = f.points[0];
     const def = getAssetDefinition(f.assetId);
-    const sx = Array.isArray(f.scale) ? f.scale[0] : (f.scale ?? 1);
-    const sz = Array.isArray(f.scale) ? f.scale[2] : (f.scale ?? 1);
+    const edit = def?.customModel ? undefined : getBuiltInEdit(f.assetId);
+    const sx = (Array.isArray(f.scale) ? f.scale[0] : (f.scale ?? 1)) * (edit?.scale[0] ?? 1);
+    const sz = (Array.isArray(f.scale) ? f.scale[2] : (f.scale ?? 1)) * (edit?.scale[2] ?? 1);
 
     if (def && def.collision.type !== 'none') {
       if (def.collision.type === 'cylinder') {

@@ -31,6 +31,7 @@ import {
 import { AssetAiEditor } from './AssetAiEditor';
 import { AssetAiAdd } from './AssetAiAdd';
 import type { AssetEdit } from '../game/assetAiEdit';
+import { getBuiltInEdit } from '../game/builtInAssetEdits';
 import { getRegionAuthoredFeatures } from '../game/regionObjectsMigration';
 import { deleteSelection, editVertex, expandGroups, extendLine, joinLines, removeVertex, transformSelection } from '../game/layoutTransforms';
 
@@ -1315,8 +1316,9 @@ export default function WardVillageEditor({
 							}
 
 							// 3. RENDER ASSET / POINT FEATURE WITH ACCURATE SVG FOOTPRINT
-							const w = (f.dimensions?.width ?? def?.defaultDimensions.width ?? f.size ?? 8) * (Array.isArray(f.scale) ? f.scale[0] : (f.scale ?? 1));
-							const d = (f.dimensions?.depth ?? def?.defaultDimensions.depth ?? f.size ?? 8) * (Array.isArray(f.scale) ? f.scale[2] : (f.scale ?? 1));
+							const builtinEdit = def?.customModel ? undefined : getBuiltInEdit(f.assetId);
+							const w = (f.dimensions?.width ?? def?.defaultDimensions.width ?? f.size ?? 8) * (Array.isArray(f.scale) ? f.scale[0] : (f.scale ?? 1)) * (builtinEdit?.scale[0] ?? 1);
+							const d = (f.dimensions?.depth ?? def?.defaultDimensions.depth ?? f.size ?? 8) * (Array.isArray(f.scale) ? f.scale[2] : (f.scale ?? 1)) * (builtinEdit?.scale[2] ?? 1);
 							// In SVG, positive rotation is clockwise. Three.js rotation is in radians.
 							const rotDeg = -((f.rotation ?? 0) * 180) / Math.PI;
 							const fp = def?.footprint;

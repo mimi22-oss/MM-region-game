@@ -65,7 +65,9 @@ import {
 import { syncAllWorldEdits } from "./game/editorRegions";
 import "./style.css";
 
-syncAllWorldEdits();
+const is3DList = window.location.pathname.replace(/\/+$/, '') === '/3dlist';
+if (!is3DList) syncAllWorldEdits();
+const AssetLibraryPage = lazy(() => import('./components/AssetLibraryPage'));
 
 const KalayWardsPlan = lazy(() =>
   import("./components/wards").then((m) => ({ default: m.KalayWardsPlan })),
@@ -924,6 +926,6 @@ function App() {
 }
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    {is3DList ? <Suspense fallback={<div>Loading 3D library…</div>}><AssetLibraryPage /></Suspense> : <App />}
   </React.StrictMode>,
 );
