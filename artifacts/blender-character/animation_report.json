@@ -1,0 +1,158 @@
+{
+  "rig": "Canolia_Rig",
+  "bones": 22,
+  "skinned_meshes": 19,
+  "clips": [
+    {
+      "name": "Idle",
+      "duration": 2.4,
+      "frames": 72,
+      "loop": true,
+      "in_place": true
+    },
+    {
+      "name": "Walk",
+      "duration": 1.0,
+      "frames": 30,
+      "loop": true,
+      "in_place": true
+    },
+    {
+      "name": "Vault",
+      "duration": 1.8,
+      "frames": 54,
+      "loop": false,
+      "in_place": true
+    },
+    {
+      "name": "Bike_Mount",
+      "duration": 2.2,
+      "frames": 66,
+      "loop": false,
+      "in_place": true
+    },
+    {
+      "name": "Bike_Idle",
+      "duration": 2.0,
+      "frames": 60,
+      "loop": true,
+      "in_place": true
+    },
+    {
+      "name": "Bike_Drive",
+      "duration": 1.0,
+      "frames": 30,
+      "loop": true,
+      "in_place": true
+    },
+    {
+      "name": "Car_Drive",
+      "duration": 2.0,
+      "frames": 60,
+      "loop": true,
+      "in_place": true
+    },
+    {
+      "name": "Swim_Idle",
+      "duration": 2.0,
+      "frames": 60,
+      "loop": true,
+      "in_place": true
+    },
+    {
+      "name": "Swim_Forward",
+      "duration": 1.6,
+      "frames": 48,
+      "loop": true,
+      "in_place": true
+    }
+  ],
+  "notes": [
+    "Static original files preserved; animated outputs use _animated suffix.",
+    "Procedural humanoid weights and hand-authored animation poses.",
+    "No vehicle or fence is included. Align vehicle seat, handlebars, steering wheel and obstacle in application.",
+    "Vault translation over a fence must be supplied by the application.",
+    "All clips in place; root stays at origin.",
+    "Bike_Mount is a standing-to-seated transition; tune vehicle placement."
+  ],
+  "checks": [
+    {
+      "name": "Idle",
+      "sampled_frames": 5,
+      "loop_endpoint_error_m": 0.0,
+      "finite_transforms": true
+    },
+    {
+      "name": "Walk",
+      "sampled_frames": 5,
+      "loop_endpoint_error_m": 0.0,
+      "finite_transforms": true
+    },
+    {
+      "name": "Vault",
+      "sampled_frames": 5,
+      "loop_endpoint_error_m": 0.0,
+      "finite_transforms": true
+    },
+    {
+      "name": "Bike_Mount",
+      "sampled_frames": 5,
+      "loop_endpoint_error_m": 0.40641509238302154,
+      "finite_transforms": true
+    },
+    {
+      "name": "Bike_Idle",
+      "sampled_frames": 5,
+      "loop_endpoint_error_m": 0.0,
+      "finite_transforms": true
+    },
+    {
+      "name": "Bike_Drive",
+      "sampled_frames": 5,
+      "loop_endpoint_error_m": 0.0,
+      "finite_transforms": true
+    },
+    {
+      "name": "Car_Drive",
+      "sampled_frames": 5,
+      "loop_endpoint_error_m": 0.0,
+      "finite_transforms": true
+    },
+    {
+      "name": "Swim_Idle",
+      "sampled_frames": 5,
+      "loop_endpoint_error_m": 0.0,
+      "finite_transforms": true
+    },
+    {
+      "name": "Swim_Forward",
+      "sampled_frames": 5,
+      "loop_endpoint_error_m": 0.0,
+      "finite_transforms": true
+    }
+  ],
+  "unweighted_vertices": 0,
+  "export_validation": {
+    "animations": [
+      "Bike_Drive",
+      "Bike_Idle",
+      "Bike_Mount",
+      "Car_Drive",
+      "Idle",
+      "Swim_Forward",
+      "Swim_Idle",
+      "Vault",
+      "Walk"
+    ],
+    "skins": 1,
+    "skinned_primitives": 19,
+    "reimported_actions": 9,
+    "reimported_rigs": 1,
+    "all_reimported_midpoints_finite": true,
+    "glb_bytes": 2151492
+  },
+  "files": {
+    "blend": "C:\\Users\\EBPMyanmar\\Desktop\\Myanmar-Town-Prototype\\artifacts\\blender-character\\reference_model_animated.blend",
+    "glb": "C:\\Users\\EBPMyanmar\\Desktop\\Myanmar-Town-Prototype\\artifacts\\blender-character\\reference_model_animated.glb"
+  }
+}

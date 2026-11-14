@@ -795,6 +795,110 @@ main.asset-list-page header.asset-list-header p,
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
+.camera-toolbar-divider {
+  width: 1px;
+  height: 18px;
+  align-self: center;
+  background: #1f473c;
+  margin: 0 3px;
+}
+
+.camera-btn.shade-btn {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.camera-btn.shade-btn.active {
+  background: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.45);
+}
+
+.camera-btn.real-human-btn.active,
+.plan-mode-btn.real-human-btn.active {
+  background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(13, 148, 136, 0.55);
+}
+
+/* Floating Real Human Shading Preset Bar inside 3D Preview */
+.asset-shading-preset-bar {
+  position: absolute;
+  top: 48px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: rgba(8, 20, 16, 0.94);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  border-radius: 9px;
+  padding: 6px 10px;
+  z-index: 9;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  max-width: calc(100% - 24px);
+  animation: fadeInPresetBar 0.18s ease-out;
+}
+
+@keyframes fadeInPresetBar {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.shading-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.shading-preset-row.secondary {
+  border-top: 1px solid rgba(31, 71, 60, 0.7);
+  padding-top: 4px;
+}
+
+.shading-preset-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #79a192;
+  margin-right: 2px;
+}
+
+.shading-preset-chip,
+.shading-clothes-chip {
+  background: #112a21;
+  border: 1px solid #1f4a3c;
+  color: #cbd5e1;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.shading-preset-chip:hover,
+.shading-clothes-chip:hover {
+  background: #1a4235;
+  color: #ffffff;
+  border-color: #2dd4bf;
+}
+
+.shading-preset-chip.active,
+.shading-clothes-chip.active {
+  background: #0d9488;
+  color: #ffffff;
+  border-color: #14b8a6;
+  box-shadow: 0 0 8px rgba(13, 148, 136, 0.4);
+}
+
 /* 2D Top View SVG Plan & Figma Pen Tool */
 .asset-list-plan {
   background: #11221c;
@@ -1718,6 +1822,101 @@ main.asset-list-page header.asset-list-header p,
   min-width: 0;
 }
 
+/* Real Human Material Studio Panel */
+.real-human-studio-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: linear-gradient(180deg, #0d2721 0%, #091a15 100%);
+  border: 1px solid #205c4d;
+  border-radius: 11px;
+  padding: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  animation: fadeInPresetBar 0.2s ease-out;
+}
+
+.real-human-studio-panel h4 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #5eead4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.human-studio-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.human-studio-field span {
+  font-size: 11px;
+  font-weight: 600;
+  color: #92bfae;
+}
+
+.human-studio-field select,
+.human-studio-field input[type='range'] {
+  width: 100%;
+}
+
+.human-studio-colors-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.human-studio-color-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: #0a1713;
+  border: 1px solid #1a3b31;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.human-studio-color-item input[type='color'] {
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.apply-game-avatar-btn {
+  margin-top: 4px;
+  background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%);
+  border: 1px solid #2dd4bf;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 9px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 3px 10px rgba(13, 148, 136, 0.4);
+  transition: all 0.15s ease;
+}
+
+.apply-game-avatar-btn:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.55);
+}
+
+.apply-game-avatar-btn:active {
+  transform: translateY(0);
+}
+
 .asset-prop-group {
   display: flex;
   flex-direction: column;
@@ -2453,6 +2652,32 @@ main.asset-list-page header.asset-list-header p,
     gap: 4px;
     padding: 3px 6px;
     justify-content: center;
+  }
+
+  .asset-camera-toolbar {
+    top: 8px;
+    right: 8px;
+    gap: 2px;
+    padding: 2px;
+  }
+
+  .asset-camera-toolbar .camera-btn {
+    font-size: 10px;
+    padding: 4px 6px;
+  }
+
+  .asset-shading-preset-bar {
+    top: 42px;
+    right: 8px;
+    left: 8px;
+    max-width: none;
+    padding: 4px 8px;
+  }
+
+  .shading-preset-chip,
+  .shading-clothes-chip {
+    font-size: 9.5px;
+    padding: 2px 5px;
   }
 
   .asset-toast-message {

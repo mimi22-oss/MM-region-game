@@ -1,0 +1,9 @@
+.multiplayer-panel { position: fixed; bottom: 16px; left: 16px; z-index: 90; width: min(280px, calc(100vw - 32px)); padding: 10px 12px; border: 1px solid #527083; border-radius: 12px; background: #102733f2; color: #eef7ff; font: 13px/1.45 system-ui, sans-serif; max-height: 65vh; overflow: auto; }
+.multiplayer-panel[hidden] { display: none; }
+.multiplayer-panel summary { cursor: pointer; font-weight: 600; }
+.multiplayer-panel p { margin: 10px 0; }
+.multiplayer-panel label { display: grid; gap: 3px; margin: 8px 0; }
+.multiplayer-panel input, .multiplayer-panel select, .multiplayer-panel button { box-sizing: border-box; width: 100%; padding: 7px; border-radius: 5px; border: 1px solid #7894a3; font: inherit; }
+.multiplayer-panel button { cursor: pointer; background: #b5f3e5; color: #102733; }
+.multiplayer-panel [role=status]:not(:empty) { margin-top: 8px; }
+.multiplayer-panel small { display: block; margin-top: 8px; }

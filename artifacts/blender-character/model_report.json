@@ -1,0 +1,153 @@
+{
+  "connection": "Blender local MCP socket bridge localhost:9876; direct execution verified",
+  "blender_version": "5.2.3 LTS",
+  "export_vertices": 34711,
+  "export_polygons": 65720,
+  "export_triangles": 65720,
+  "mesh_objects": 19,
+  "material_count": 19,
+  "textures": 0,
+  "materials": [
+    {
+      "material": "Warm peach skin",
+      "vertices": 5574,
+      "polygons": 11052,
+      "triangles": 11052
+    },
+    {
+      "material": "Inner ear warm rose",
+      "vertices": 390,
+      "polygons": 764,
+      "triangles": 764
+    },
+    {
+      "material": "Warm white eye",
+      "vertices": 590,
+      "polygons": 1156,
+      "triangles": 1156
+    },
+    {
+      "material": "Iris outer rim",
+      "vertices": 284,
+      "polygons": 560,
+      "triangles": 560
+    },
+    {
+      "material": "Deep brown iris",
+      "vertices": 284,
+      "polygons": 560,
+      "triangles": 560
+    },
+    {
+      "material": "Pupils",
+      "vertices": 284,
+      "polygons": 560,
+      "triangles": 560
+    },
+    {
+      "material": "Espresso hair",
+      "vertices": 5037,
+      "polygons": 9795,
+      "triangles": 9795
+    },
+    {
+      "material": "Soft warm smile",
+      "vertices": 490,
+      "polygons": 960,
+      "triangles": 960
+    },
+    {
+      "material": "Warm hair ridges",
+      "vertices": 4155,
+      "polygons": 7978,
+      "triangles": 7978
+    },
+    {
+      "material": "Hoodie violet cotton",
+      "vertices": 5958,
+      "polygons": 11618,
+      "triangles": 11618
+    },
+    {
+      "material": "Violet rib knit",
+      "vertices": 368,
+      "polygons": 724,
+      "triangles": 724
+    },
+    {
+      "material": "Violet stitching",
+      "vertices": 1014,
+      "polygons": 1134,
+      "triangles": 1134
+    },
+    {
+      "material": "Ivory cord and embroidery",
+      "vertices": 2172,
+      "polygons": 3088,
+      "triangles": 3088
+    },
+    {
+      "material": "Shoe seams",
+      "vertices": 805,
+      "polygons": 1485,
+      "triangles": 1485
+    },
+    {
+      "material": "Hood interior",
+      "vertices": 337,
+      "polygons": 472,
+      "triangles": 472
+    },
+    {
+      "material": "Charcoal cotton",
+      "vertices": 4044,
+      "polygons": 8068,
+      "triangles": 8068
+    },
+    {
+      "material": "Charcoal stitching",
+      "vertices": 372,
+      "polygons": 664,
+      "triangles": 664
+    },
+    {
+      "material": "White rubber",
+      "vertices": 599,
+      "polygons": 1182,
+      "triangles": 1182
+    },
+    {
+      "material": "Off white leather",
+      "vertices": 1954,
+      "polygons": 3900,
+      "triangles": 3900
+    }
+  ],
+  "glb_validation": {
+    "mesh_objects": 19,
+    "triangles": 65720,
+    "height_m": 1.7758431294932961
+  },
+  "rigged": false,
+  "notes": [
+    "Separate original Scene preserved.",
+    "Editable source and reduced final model retained in separate scenes.",
+    "Face, swept hairstyle, fabric wrinkles and hands are simplified relative to reference.",
+    "Rear head, hood and shoe depth estimated from one front image.",
+    "Static model; no skeleton or animations."
+  ],
+  "files": {
+    "reference_model.blend": {
+      "path": "C:\\Users\\EBPMyanmar\\Desktop\\Myanmar-Town-Prototype\\artifacts\\blender-character\\reference_model.blend",
+      "bytes": 4965826
+    },
+    "reference_model.glb": {
+      "path": "C:\\Users\\EBPMyanmar\\Desktop\\Myanmar-Town-Prototype\\artifacts\\blender-character\\reference_model.glb",
+      "bytes": 1244908
+    },
+    "reference_model_render.png": {
+      "path": "C:\\Users\\EBPMyanmar\\Desktop\\Myanmar-Town-Prototype\\artifacts\\blender-character\\reference_model_render.png",
+      "bytes": 877692
+    }
+  }
+}

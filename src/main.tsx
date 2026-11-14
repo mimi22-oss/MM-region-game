@@ -1,4 +1,7 @@
 import {EnvironmentSettings,useEnvironmentTime} from './components/EnvironmentSettings';
+import { MultiplayerSession } from './multiplayer/session';
+import { MultiplayerPanel } from './multiplayer/MultiplayerPanel';
+import { RemotePlayers } from './multiplayer/RemotePlayers';
 import {EnvironmentAudio} from './components/EnvironmentAudio';
 import {BalloonControls} from './components/BalloonControls';
 import {emptyBalloonStatus,clearBalloonInput,type BalloonStatus} from './game/balloonRide';
@@ -107,6 +110,8 @@ class SceneError extends Component<
   }
 }
 function App() {
+  const [multiplayer] = useState(() => new MultiplayerSession());
+  useEffect(() => () => multiplayer.leave(), [multiplayer]);
   const mapLabelsHost = useRef<HTMLDivElement>(null);
   const [sceneLoading, setSceneLoading] = useState<WorldLoadingState>({
     blocking: true,
@@ -418,6 +423,7 @@ function App() {
             }}
           >
             <FrameBudget paused={loading}/>
+            <RemotePlayers session={multiplayer} />
             <Town minute={environment.minute} destination={teleportTarget} paused={loading} onLoadingChange={setSceneLoading} onSceneError={sceneError} />
             <TeleportPicker
               active={teleportMode}
@@ -546,6 +552,7 @@ function App() {
           <span className="home-guidance-text">{displayedGuidance}</span>
         </div>
       )}
+      <MultiplayerPanel session={multiplayer} hidden={loading || hideHud || mapOpen || editorOpen || selectionOpen} />
       <header>
         <h1 style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>
           MM Region Game - မြန်မာဒေသ 3D ဂိမ်း

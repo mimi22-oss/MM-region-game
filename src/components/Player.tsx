@@ -94,7 +94,7 @@ export const Player = memo(function Player({
  const walkingRecoil=useRef(createWalkingRecoil(0));
  const jump=useRef(createHumanJump());
  const jumpPose=useRef(createJumpPose());
- const characterMotion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0,airborne:false,jumpBend:0});
+ const characterMotion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0,airborne:false,jumpBend:0,jumpVelocity:0});
 
  const state=useRef({
   x:ward.spawn.x,
@@ -583,6 +583,7 @@ export const Player = memo(function Player({
   const dx=s.x-oldX,dz=s.z-oldZ;
   const travelled=Math.hypot(dx,dz);
   characterMotion.current.airborne=jump.current.airborne;
+  characterMotion.current.jumpVelocity=jump.current.vy;
   characterMotion.current.jumpBend=jumpKneeBend(jumpPose.current);
   characterMotion.current.speed=balloon.riding?0:dt>0?travelled/dt:0;
   characterMotion.current.distance+=balloon.riding?0:isWalkingRecoil()?-travelled:travelled;

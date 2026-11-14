@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
@@ -23,6 +23,10 @@ import {
   type ShapeKind,
 } from '../game/customAssets';
 import { CustomAssetModel } from './CustomAssetModel';
+import { CartoonCharacter, type CharacterMotion, type DrivingPose } from './CartoonCharacter';
+import { type BoyClip } from '../game/glbHuman';
+import { HUMAN_PRESETS, type HumanAppearance, type HumanPreset } from '../data/appearance';
+import { setAppearance, useAppearance } from '../game/appearanceStore';
 import { AssetAiAdd } from './AssetAiAdd';
 import { BuiltInAssetEditor } from './BuiltInAssetEditor';
 import { createCustomTemplate, type TemplateKind } from '../game/customAssetTemplates';
@@ -31,6 +35,122 @@ import './AssetLibraryPage.css';
 type CameraAngle = 'perspective' | 'top' | 'front' | 'side';
 type DrawMode = 'select' | 'pen' | 'edit-points';
 type TransformTool = 'translate' | 'rotate' | 'scale';
+type ShadingMode = 'solid' | 'material';
+
+const HUMAN_PRESET_LABELS: Record<HumanPreset, string> = {
+  boy: 'Boy · လူငယ်',
+  girl: 'Girl · မိန်းကလေး',
+  mother: 'Mother · အမေ (လုံချည်)',
+  grandmother: 'Grandmother · အဘွား (ဆံထုံး)',
+  grandfather: 'Grandfather · အဖိုး (ဆံဖြူ)',
+  father: 'Father · အဖေ (အင်္ကျီ)',
+};
+
+const HUMAN_ANIMATION_LABELS: Record<BoyClip, string> = {
+  idle: 'Idle · ရပ်နေပုံ',
+  walk: 'Walk · လမ်းလျှောက်ပုံ',
+  run: 'Run · ပြေးနေပုံ',
+  jump: 'Jump · ခုန်နေပုံ',
+  sit: 'Sit · ထိုင်/ကားမောင်းပုံ',
+  motorcycle_idle: 'Motorcycle Idle · ဆိုင်ကယ်ရပ်နေပုံ',
+  motorcycle_ride: 'Motorcycle Ride · ဆိုင်ကယ်စီးနေပုံ',
+};
+
+function StudioAnimatedCharacter({
+  appearance,
+  animation,
+}: {
+  appearance: HumanAppearance;
+  animation: BoyClip;
+}) {
+  const motionRef = useRef<CharacterMotion>({
+    speed: 0,
+    distance: 0,
+    airborne: false,
+    jumpBend: 0,
+    jumpVelocity: 0,
+  });
+  const drivingRef = useRef<DrivingPose>({
+    active: true,
+    wheelAngle: 0,
+    interior: false,
+    clutch: false,
+    brake: false,
+    throttle: true,
+  });
+  const clockRef = useRef(0);
+
+  useFrame((_, delta) => {
+    const dt = Math.min(delta, 0.06);
+    clockRef.current += dt;
+    const t = clockRef.current;
+    const m = motionRef.current;
+
+    if (animation === 'walk') {
+      m.speed = 3.8;
+      m.distance += m.speed * dt;
+      m.airborne = false;
+      m.jumpBend = 0;
+      m.jumpVelocity = 0;
+    } else if (animation === 'run') {
+      m.speed = 8.8;
+      m.distance += m.speed * dt;
+      m.airborne = false;
+      m.jumpBend = 0;
+      m.jumpVelocity = 0;
+    } else if (animation === 'jump') {
+      const cycle = (t % 1.4) / 1.4;
+      if (cycle < 0.22) {
+        m.airborne = false;
+        m.jumpBend = Math.sin((cycle / 0.22) * Math.PI);
+        m.jumpVelocity = 0;
+      } else if (cycle < 0.78) {
+        const airT = (cycle - 0.22) / 0.56;
+        m.airborne = true;
+        m.jumpBend = Math.sin(airT * Math.PI) * 0.85;
+        m.jumpVelocity = (0.5 - airT) * 9;
+      } else {
+        const landT = (cycle - 0.78) / 0.22;
+        m.airborne = false;
+        m.jumpBend = Math.sin(landT * Math.PI) * 0.65;
+        m.jumpVelocity = 0;
+      }
+      m.speed = 0;
+    } else if (animation === 'sit') {
+      m.speed = 0;
+      m.airborne = false;
+      m.jumpBend = 0;
+      drivingRef.current.wheelAngle = Math.sin(t * 1.4) * 0.35;
+      drivingRef.current.brake = Math.sin(t * 0.8) > 0.65;
+    } else if (animation === 'motorcycle_idle') {
+      m.speed = 0;
+      m.airborne = false;
+      m.jumpBend = 0;
+    } else if (animation === 'motorcycle_ride') {
+      m.speed = 7.5;
+      m.distance += m.speed * dt;
+      m.airborne = false;
+      m.jumpBend = 0;
+    } else {
+      m.speed = 0;
+      m.airborne = false;
+      m.jumpBend = 0;
+      m.jumpVelocity = 0;
+    }
+  });
+
+  const isRiding = animation === 'motorcycle_idle' || animation === 'motorcycle_ride';
+  const isDriving = animation === 'sit';
+
+  return (
+    <CartoonCharacter
+      appearance={appearance}
+      motion={motionRef}
+      riding={isRiding}
+      driving={isDriving ? drivingRef : undefined}
+    />
+  );
+}
 
 type CanvasDragState =
   | { type: 'move-free'; startPos: [number, number, number]; startPointer: [number, number]; startPoints?: [number, number][] }
@@ -366,6 +486,22 @@ export default function AssetLibraryPage() {
   const [planViewAngle, setPlanViewAngle] = useState<CameraAngle>('perspective');
   const planOrbitRef = useRef<OrbitControls | null>(null);
 
+  // Viewport Shading Mode: 'solid' (Blender block parts & gizmo) vs 'material' (Real In-Game Character)
+  const currentAppearance = useAppearance();
+  const [shadingMode, setShadingMode] = useState<ShadingMode>('solid');
+  const [activeHumanPreset, setActiveHumanPreset] = useState<HumanPreset>(() => currentAppearance.human.preset ?? 'boy');
+  const [customHumanAppearance, setCustomHumanAppearance] = useState<HumanAppearance>(() => currentAppearance.human ?? HUMAN_PRESETS.boy);
+  const [previewAnimation, setPreviewAnimation] = useState<BoyClip>('idle');
+
+  const isCharacter = Boolean(
+    draft && (
+      draft.id.includes('character') ||
+      draft.name.toLowerCase().includes('character') ||
+      draft.nameMm.includes('လူ') ||
+      draft.category === 'cultural'
+    )
+  );
+
   const request = useRef<AbortController | null>(null);
   useEffect(() => () => request.current?.abort(), []);
 
@@ -408,6 +544,12 @@ export default function AssetLibraryPage() {
     setMobileView('editor');
     setDrawMode('select');
     setPenPoints([]);
+    const isChar = asset.name.toLowerCase().includes('character') || asset.nameMm.includes('လူ') || asset.category === 'cultural';
+    if (isChar) {
+      setShadingMode('material');
+    } else {
+      setShadingMode('solid');
+    }
   };
 
   const selectBuiltIn = (assetId: string) => {
@@ -420,6 +562,10 @@ export default function AssetLibraryPage() {
   const startTemplate = (kind: TemplateKind) => {
     if (draft && !confirm('လက်ရှိ draft ကို ပိတ်ပြီး ပုံစံအသစ် စတင်မလား။ မသိမ်းရသေးသော ပြင်ဆင်မှုများ ပျောက်နိုင်ပါသည်။')) return;
     edit(createCustomTemplate(kind, `custom:${crypto.randomUUID()}`), true);
+    if (kind === 'character') {
+      setShadingMode('material');
+      setMessage('🧍 Real Shade Mode: Game ထဲမှ စစ်မှန်သော 3D လူဇာတ်ကောင် (CartoonCharacter) ကို ဖွင့်ထားပါသည်။ အစိတ်အပိုင်းများ ပြင်ရန် 🎨 Solid ကို နှိပ်နိုင်ပါသည်။');
+    }
   };
 
   const save = () => {
@@ -1277,18 +1423,55 @@ export default function AssetLibraryPage() {
                       <ambientLight intensity={1.3} />
                       <directionalLight position={[10, 20, 10]} intensity={2} />
                       <directionalLight position={[-10, 15, -10]} intensity={0.8} />
-                      <CustomAssetModel
-                        asset={draft}
-                        selectedPart={partIndex}
-                        onSelectPart={setPartIndex}
-                        editMode={drawMode === 'edit-points'}
-                        selectedVertexIdx={selectedVertexIdx}
-                      />
+                      <gridHelper args={[span * 4, 20, '#1f4d40', '#153228']} position={[0, 0, 0]} />
+
+                      {shadingMode === 'material' ? (
+                        <group position={[0, 0, 0]}>
+                          <StudioAnimatedCharacter
+                            appearance={customHumanAppearance}
+                            animation={previewAnimation}
+                          />
+                        </group>
+                      ) : (
+                        <CustomAssetModel
+                          asset={draft}
+                          selectedPart={partIndex}
+                          onSelectPart={setPartIndex}
+                          editMode={drawMode === 'edit-points'}
+                          selectedVertexIdx={selectedVertexIdx}
+                        />
+                      )}
                       <Orbit height={draft.dimensions?.[1] ?? 2} viewAngle={viewAngle} />
                     </Canvas>
 
-                    {/* Camera Angle Selector Toolbar */}
+                    {/* Camera Angle & Viewport Shading Toolbar */}
                     <div className="asset-camera-toolbar">
+                      {/* Viewport Shading Mode Buttons */}
+                      <button
+                        type="button"
+                        className={`camera-btn shade-btn ${shadingMode === 'solid' ? 'active' : ''}`}
+                        onClick={() => {
+                          setShadingMode('solid');
+                          setMessage('🎨 Solid Mode: 3D အစိတ်အပိုင်းများ (Parts & Gizmo) ကို ပြသထားပါသည်။');
+                        }}
+                        title="Solid / Parts Mode · အစိတ်အပိုင်းများ ပြင်ဆင်ရန်"
+                      >
+                        🎨 Solid
+                      </button>
+                      <button
+                        type="button"
+                        className={`camera-btn shade-btn real-human-btn ${shadingMode === 'material' ? 'active' : ''}`}
+                        onClick={() => {
+                          setShadingMode('material');
+                          setMessage('🧍 Real Character Shade Mode: Game ထဲမှ စစ်မှန်သော 3D လူဇာတ်ကောင် (CartoonCharacter) ကို ပြသထားပါသည်။');
+                        }}
+                        title="Material / Real Shade · Game ထဲမှ လူပုံစံအစစ် ကြည့်ရှုရန်"
+                      >
+                        🧍 Real Shade
+                      </button>
+
+                      <div className="camera-toolbar-divider" />
+
                       <button
                         className={`camera-btn ${viewAngle === 'perspective' ? 'active' : ''}`}
                         onClick={() => setViewAngle('perspective')}
@@ -1319,7 +1502,74 @@ export default function AssetLibraryPage() {
                       </button>
                     </div>
 
-                    <span className="asset-preview-badge">3D PREVIEW · ဆွဲလှည့်၍ ကြည့်နိုင်သည်</span>
+                    {/* Real Human Material Mode Floating Quick Switcher */}
+                    {shadingMode === 'material' && (
+                      <div className="asset-shading-preset-bar" aria-label="Real Human Model Presets">
+                        <div className="shading-preset-row">
+                          <span className="shading-preset-label">🧍 လူပုံစံ:</span>
+                          {(['boy', 'girl', 'mother', 'grandmother', 'grandfather', 'father'] as HumanPreset[]).map(pKey => (
+                            <button
+                              key={pKey}
+                              type="button"
+                              className={`shading-preset-chip ${customHumanAppearance.preset === pKey ? 'active' : ''}`}
+                              onClick={() => {
+                                const preset = HUMAN_PRESETS[pKey];
+                                setCustomHumanAppearance(preset);
+                                setActiveHumanPreset(pKey);
+                                setMessage(`✓ လူပုံစံကို "${HUMAN_PRESET_LABELS[pKey]}" သို့ ပြောင်းပြီးပါပြီ။`);
+                              }}
+                            >
+                              {pKey === 'boy' && '👦 လူငယ်'}
+                              {pKey === 'girl' && '👧 မိန်းကလေး'}
+                              {pKey === 'mother' && '👩 အမေ (လုံချည်)'}
+                              {pKey === 'grandmother' && '👵 အဘွား'}
+                              {pKey === 'grandfather' && '👴 အဖိုး'}
+                              {pKey === 'father' && '👨 အဖေ'}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="shading-preset-row secondary">
+                          <span className="shading-preset-label">အဝတ်:</span>
+                          {(['hoodie', 'longyi', 'shirt', 'dress'] as const).map(c => (
+                            <button
+                              key={c}
+                              type="button"
+                              className={`shading-clothes-chip ${customHumanAppearance.clothes === c ? 'active' : ''}`}
+                              onClick={() => {
+                                setCustomHumanAppearance(prev => ({ ...prev, clothes: c }));
+                              }}
+                            >
+                              {c === 'hoodie' && '🧥 Hoodie'}
+                              {c === 'longyi' && '🇲🇲 လုံချည်'}
+                              {c === 'shirt' && '👔 အင်္ကျီ'}
+                              {c === 'dress' && '👗 ဂါဝန်'}
+                            </button>
+                          ))}
+                          <span className="shading-preset-label" style={{ marginLeft: 6 }}>ဆံပင်:</span>
+                          {(['swept', 'bob', 'long', 'bun'] as const).map(h => (
+                            <button
+                              key={h}
+                              type="button"
+                              className={`shading-clothes-chip ${customHumanAppearance.hair === h ? 'active' : ''}`}
+                              onClick={() => {
+                                setCustomHumanAppearance(prev => ({ ...prev, hair: h }));
+                              }}
+                            >
+                              {h === 'swept' && 'ဘေးခွဲ'}
+                              {h === 'bob' && 'ဆံပင်တို'}
+                              {h === 'long' && 'ဆံပင်ရှည်'}
+                              {h === 'bun' && 'ဆံထုံး'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <span className="asset-preview-badge">
+                      {shadingMode === 'material'
+                        ? `🧍 REAL CHARACTER SHADE · ${HUMAN_PRESET_LABELS[customHumanAppearance.preset]}`
+                        : '3D PREVIEW · ဆွဲလှည့်၍ ကြည့်နိုင်သည်'}
+                    </span>
                   </div>
 
                   {/* Plan Section: toggles between 2D SVG and 3D editable Canvas */}
@@ -1360,6 +1610,24 @@ export default function AssetLibraryPage() {
                           title="Top-View 2D Plan (SVG Blender Canvas)"
                         >
                           📐 2D Plan
+                        </button>
+
+                        <div className="plan-mode-divider" />
+                        <button
+                          type="button"
+                          className={`plan-mode-btn ${shadingMode === 'solid' ? 'active' : ''}`}
+                          onClick={() => setShadingMode('solid')}
+                          title="Solid Mode (Parts & Gizmo)"
+                        >
+                          🎨 Solid
+                        </button>
+                        <button
+                          type="button"
+                          className={`plan-mode-btn real-human-btn ${shadingMode === 'material' ? 'active' : ''}`}
+                          onClick={() => setShadingMode('material')}
+                          title="Real Shade Mode (Game Character)"
+                        >
+                          🧍 Real Shade
                         </button>
 
                         <div className="plan-mode-divider" />
@@ -1606,25 +1874,36 @@ export default function AssetLibraryPage() {
                           <directionalLight position={[-8, 12, -8]} intensity={0.9} />
                           {/* Ground grid helper */}
                           <gridHelper args={[span * 4, 20, '#1f4d40', '#153228']} position={[0, 0, 0]} />
-                          <CustomAssetModel
-                            asset={draft}
-                            selectedPart={partIndex}
-                            onSelectPart={idx => {
-                              setPartIndex(idx);
-                              setMessage(`✓ Part ${idx + 1} (${draft.parts[idx]?.shape}) ကို 3D View မှ ရွေးပြီးပါပြီ။`);
-                            }}
-                            editMode={drawMode === 'edit-points'}
-                            selectedVertexIdx={selectedVertexIdx}
-                          />
-                          <TransformGizmo
-                            part={part}
-                            dimensions={draft.dimensions}
-                            transformTool={transformTool}
-                            snapEnabled={snapEnabled}
-                            onLiveUpdate={updatePartLive}
-                            onBeforeChange={recordHistoryBeforeChange}
-                            orbitControlsRef={planOrbitRef}
-                          />
+                          {shadingMode === 'material' ? (
+                            <group position={[0, 0, 0]}>
+                              <StudioAnimatedCharacter
+                                appearance={customHumanAppearance}
+                                animation={previewAnimation}
+                              />
+                            </group>
+                          ) : (
+                            <>
+                              <CustomAssetModel
+                                asset={draft}
+                                selectedPart={partIndex}
+                                onSelectPart={idx => {
+                                  setPartIndex(idx);
+                                  setMessage(`✓ Part ${idx + 1} (${draft.parts[idx]?.shape}) ကို 3D View မှ ရွေးပြီးပါပြီ။`);
+                                }}
+                                editMode={drawMode === 'edit-points'}
+                                selectedVertexIdx={selectedVertexIdx}
+                              />
+                              <TransformGizmo
+                                part={part}
+                                dimensions={draft.dimensions}
+                                transformTool={transformTool}
+                                snapEnabled={snapEnabled}
+                                onLiveUpdate={updatePartLive}
+                                onBeforeChange={recordHistoryBeforeChange}
+                                orbitControlsRef={planOrbitRef}
+                              />
+                            </>
+                          )}
                           <Orbit
                             height={draft.dimensions?.[1] ?? 2}
                             viewAngle={planViewAngle}
@@ -2672,6 +2951,144 @@ export default function AssetLibraryPage() {
 
                 {/* Inspector & Comprehensive Drawing Tools */}
                 <div className="asset-list-properties">
+                  {/* Real Human Material & Appearance Studio Panel when in Material Mode */}
+                  {shadingMode === 'material' && (
+                    <div className="real-human-studio-panel">
+                      <h4>🧍 စစ်မှန်သော 3D လူဇာတ်ကောင် (Real In-Game Character Studio)</h4>
+                      <p style={{ fontSize: '11px', color: '#94a3b8', margin: 0 }}>
+                        Game world (index page) ထဲတွင် အမှန်တကယ် အသုံးပြုနေသော 3D လူမော်ဒယ် ဖြစ်သည်။
+                      </p>
+
+                      <div className="human-studio-field">
+                        <span>လူပုံစံ ရွေးချယ်မှု (Preset):</span>
+                        <select
+                          value={customHumanAppearance.preset}
+                          onChange={e => {
+                            const pKey = e.target.value as HumanPreset;
+                            setCustomHumanAppearance(HUMAN_PRESETS[pKey]);
+                            setActiveHumanPreset(pKey);
+                          }}
+                        >
+                          {Object.entries(HUMAN_PRESET_LABELS).map(([k, label]) => (
+                            <option key={k} value={k}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="human-studio-field">
+                        <span>လှုပ်ရှားမှု ပုံစံ (Animation):</span>
+                        <select
+                          value={previewAnimation}
+                          onChange={e => setPreviewAnimation(e.target.value as BoyClip)}
+                        >
+                          {Object.entries(HUMAN_ANIMATION_LABELS).map(([k, label]) => (
+                            <option key={k} value={k}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="human-studio-field">
+                        <span>အဝတ်အစား (Clothing):</span>
+                        <select
+                          value={customHumanAppearance.clothes}
+                          onChange={e => setCustomHumanAppearance(prev => ({ ...prev, clothes: e.target.value as any }))}
+                        >
+                          <option value="hoodie">Hoodie · ခေါင်းစွပ်အင်္ကျီ</option>
+                          <option value="longyi">Longyi · မြန်မာ့ရိုးရာ လုံချည် + တိုက်ပုံ</option>
+                          <option value="shirt">Shirt · ရှပ်အင်္ကျီ</option>
+                          <option value="dress">Dress · ဂါဝန်ရှည်</option>
+                        </select>
+                      </div>
+
+                      <div className="human-studio-field">
+                        <span>ဆံပင်ပုံစံ (Hairstyle):</span>
+                        <select
+                          value={customHumanAppearance.hair}
+                          onChange={e => setCustomHumanAppearance(prev => ({ ...prev, hair: e.target.value as any }))}
+                        >
+                          <option value="swept">Swept · ဘေးခွဲဆံပင်</option>
+                          <option value="bob">Bob · ဆံပင်တို</option>
+                          <option value="long">Long · ဆံပင်ရှည်</option>
+                          <option value="bun">Bun · မြန်မာ့ရိုးရာ ဆံထုံး</option>
+                        </select>
+                      </div>
+
+                      <div className="human-studio-field">
+                        <span>မျက်နှာပုံစံ (Face Shape):</span>
+                        <select
+                          value={customHumanAppearance.face}
+                          onChange={e => setCustomHumanAppearance(prev => ({ ...prev, face: e.target.value as any }))}
+                        >
+                          <option value="oval">Oval · ဘဲဥပုံ မျက်နှာ</option>
+                          <option value="round">Round · ဝိုင်းစက်သော မျက်နှာ</option>
+                          <option value="mature">Mature · အရွယ်ရောက်/အသက်ကြီး</option>
+                        </select>
+                      </div>
+
+                      <div className="human-studio-colors-grid">
+                        <label className="human-studio-color-item">
+                          <span>အသားရောင်:</span>
+                          <input
+                            type="color"
+                            value={customHumanAppearance.skin}
+                            onChange={e => setCustomHumanAppearance(prev => ({ ...prev, skin: e.target.value }))}
+                          />
+                        </label>
+                        <label className="human-studio-color-item">
+                          <span>ဆံပင်အရောင်:</span>
+                          <input
+                            type="color"
+                            value={customHumanAppearance.hairColor}
+                            onChange={e => setCustomHumanAppearance(prev => ({ ...prev, hairColor: e.target.value }))}
+                          />
+                        </label>
+                        <label className="human-studio-color-item">
+                          <span>အင်္ကျီအရောင်:</span>
+                          <input
+                            type="color"
+                            value={customHumanAppearance.clothingColor}
+                            onChange={e => setCustomHumanAppearance(prev => ({ ...prev, clothingColor: e.target.value }))}
+                          />
+                        </label>
+                        <label className="human-studio-color-item">
+                          <span>လုံချည်/ဘောင်းဘီ:</span>
+                          <input
+                            type="color"
+                            value={customHumanAppearance.trousersColor}
+                            onChange={e => setCustomHumanAppearance(prev => ({ ...prev, trousersColor: e.target.value }))}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="human-studio-field">
+                        <span>အရပ်အမောင်း (Height) · {Math.round(customHumanAppearance.height * 100)}%:</span>
+                        <input
+                          type="range"
+                          min="0.8"
+                          max="1.2"
+                          step="0.01"
+                          value={customHumanAppearance.height}
+                          onChange={e => setCustomHumanAppearance(prev => ({ ...prev, height: Number(e.target.value) }))}
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        className="apply-game-avatar-btn"
+                        onClick={() => {
+                          setAppearance({ ...currentAppearance, human: customHumanAppearance });
+                          setMessage('✓ ဤလူပုံစံကို Game Player Avatar အဖြစ် သတ်မှတ်ပြီးပါပြီ။ Top Page (ဂိမ်းကမ္ဘာ) တွင် တွေ့မြင်ရပါမည်။');
+                        }}
+                      >
+                        🎮 ဂိမ်းထဲသို့ ဤလူပုံစံ ထည့်သွင်းမည် (Apply to Game Avatar)
+                      </button>
+                    </div>
+                  )}
+
                   {/* Tool Panel 1: Fast Shape Adder */}
                   <div className="asset-tool-section">
                     <span className="asset-section-tag">＋ Shape အသစ် တိုက်ရိုက်ထည့်ရန်</span>
