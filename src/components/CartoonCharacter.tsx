@@ -22,11 +22,14 @@ export type DrivingPose={active:boolean;wheelAngle:number;interior:boolean;clutc
 const ProceduralHuman=lazy(()=>import('./ProceduralHuman').then(module=>({default:module.CartoonCharacter})));
 
 /** Renders GLB (`boy.glb`/`girl.glb`) when enabled or falls back to `ProceduralHuman`. */
-export function CartoonCharacter({appearance=HUMAN_PRESETS.boy,...props}:{appearance?:HumanAppearance;motion:RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>}){
+export function CartoonCharacter({appearance=HUMAN_PRESETS.boy,deferGlb=false,...props}:{appearance?:HumanAppearance;motion:RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>;deferGlb?:boolean}){
  const [failed,setFailed]=useState<string|null>(null);
+ const [glbUnlocked,setGlbUnlocked]=useState(!deferGlb);
  const rendererMode=useCharacterRendererMode();
  const useGlb=shouldUseGlbCharacter(appearance.preset,rendererMode);
+ useEffect(()=>{if(!deferGlb)setGlbUnlocked(true);},[deferGlb]);
  useEffect(()=>{setFailed(null);},[rendererMode,appearance.preset]);
+ if(useGlb&&!glbUnlocked&&failed!==appearance.preset)return null;
  // Previous 3D boy route (replaced by src/assets/boy.glb and girl.glb):
  // return <BlenderCharacter appearance={appearance} {...props}/>;
  // Keep the authored renderer available for family presets or when toggled to `'code'`.

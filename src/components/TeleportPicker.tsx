@@ -146,7 +146,7 @@ export function TeleportPicker({
 			const target = e.target;
 			if (
 				target instanceof HTMLElement &&
-				target.closest('.teleport-confirm-card, .location-actions, .settings-wrap, .guide-dialog-modal, .mobile-actions')
+				target.closest('.teleport-confirm-card, .location-actions, .action-menu-popover, .settings-wrap, .guide-dialog-modal, .mobile-actions')
 			) {
 				return;
 			}
@@ -196,7 +196,7 @@ export function TeleportPicker({
 			const target = e.target;
 			if (
 				target instanceof HTMLElement &&
-				target.closest('.teleport-confirm-card, .location-actions, .settings-wrap, .guide-dialog-modal, .mobile-actions')
+				target.closest('.teleport-confirm-card, .location-actions, .action-menu-popover, .settings-wrap, .guide-dialog-modal, .mobile-actions')
 			) {
 				return;
 			}

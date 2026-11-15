@@ -16,6 +16,7 @@ import { regionAssets, worldRegions as regions } from './regionAssets';
 import { startupDiagnostics } from '../game/startupDiagnostics';
 import { diagnosticConfig } from '../game/diagnosticMode';
 import { sourceIsEdited } from '../game/worldEdits';
+import { getIntroState, isIntroHighAltitude, useIntroState } from '../game/IntroStateMachine';
 
 // No spread into Math.min/max: large source collections exceed JS argument limits.
 const bounds = regions.map(r => {
@@ -104,6 +105,7 @@ const MAX_CACHED_REGIONS = mobileQuality ? 2 : 5;
 
 export function StreamedWorld({ destination, paused = false, onLoadingChange, onSceneError }: StreamedWorldProps) {
   const { gl, scene, invalidate } = useThree();
+  const intro = useIntroState();
   const downloads = useSyncExternalStore(regionAssets.subscribe, regionAssets.getSnapshot);
   const cache = useRef(new Map<string, CachedRegion>());
   const [prepared, setPrepared] = useState<string[]>([]);
@@ -113,12 +115,24 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
   const [overviewIds,setOverviewIds]=useState(()=>selectOverviewRegions(bounds,ward.spawn.x,ward.spawn.z,mobileQuality));
   const elapsed = useRef(0);
   const lastRegionCheck = useRef({ initialized: false, fx: 0, fz: 0, cy: 0, activeCount: -1 });
+  useLayoutEffect(() => {
+    elapsed.current = 0.25;
+  }, [intro.active, intro.runId]);
+  const introTargetRegions = useMemo(
+    () =>
+      intro.active && intro.target
+        ? selectRegions(bounds, intro.target.x, intro.target.z, 10, [], mobileQuality)
+        : [],
+    [intro.active, intro.target?.x, intro.target?.z],
+  );
 
-  // Progressive loading: Prioritize active region, then spawn, then idle background
+  // Progressive loading: Prioritize active region, intro destination, then spawn, then idle background
   const building = useMemo(() => {
     if(warming)return undefined; // Finish GPU/ground preparation before building another region.
     const activeUnprepared = active.find(id => !prepared.includes(id) && !cache.current.has(id));
     if (activeUnprepared) return activeUnprepared;
+    const introUnprepared = introTargetRegions.find(id => !prepared.includes(id) && !cache.current.has(id));
+    if (introUnprepared) return introUnprepared;
     const spawnUnprepared = !started ? spawnRegions.find(id => !prepared.includes(id) && !cache.current.has(id)) : undefined;
     if (spawnUnprepared) return spawnUnprepared;
     // Stop background construction when full: evicted downloads must not cycle forever.
@@ -127,15 +141,15 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
       return nextDownloaded?.id;
     }
     return undefined;
-  }, [active, prepared, started, downloads,warming]);
+  }, [active, introTargetRegions, prepared, started, downloads, warming]);
 
   const onBuilt = useCallback((id: string, root: Group) => {
     if (cache.current.has(id)) return;
 
-    // Bounded caching on mobile: evict least recently used non-spawn, non-active region
+    // Bounded caching on mobile: evict least recently used non-spawn, non-active, non-intro region
     if (cache.current.size >= MAX_CACHED_REGIONS) {
       for (const [cachedId, cached] of cache.current.entries()) {
-        if (cachedId !== 'myothar' && !active.includes(cachedId)) {
+        if (cachedId !== 'myothar' && !active.includes(cachedId) && !introTargetRegions.includes(cachedId)) {
           cached.root.removeFromParent();
           cached.festivalOverview.removeFromParent();
           releaseGroundRegion(scene,cachedId);
@@ -155,7 +169,7 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
       details:staticDetails(root),
     });
     setWarming({ id, root });
-  }, [active,scene]);
+  }, [active, introTargetRegions, scene]);
 
   // Request spawn regions immediately; load distant regions on-demand or idle
   useEffect(() => {
@@ -164,20 +178,23 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
 
   useEffect(() => {
     if (!started) return;
-    regionAssets.retainPending(active);
-    regionAssets.request(active, true);
+    const wanted = introTargetRegions.length
+      ? [...new Set([...active, ...introTargetRegions])]
+      : active;
+    regionAssets.retainPending(wanted);
+    regionAssets.request(wanted, true);
     if (!mobileQuality && !diagnosticConfig.disableDistantChunks) {
       const timer = window.setTimeout(() => {
         // Only one neighbouring region, not every region in the world catalogue.
-        const focus=active.map(id=>bounds.find(b=>b.id===id)!).filter(Boolean);
+        const focus=wanted.map(id=>bounds.find(b=>b.id===id)!).filter(Boolean);
         if(!focus.length)return;
-        const nearest=bounds.filter(b=>!active.includes(b.id)).map(b=>({id:b.id,d:Math.min(...focus.map(a=>Math.hypot(Math.max(a.minX-b.maxX,0,b.minX-a.maxX),Math.max(a.minZ-b.maxZ,0,b.minZ-a.maxZ))))})).sort((a,b)=>a.d-b.d)[0];
-        regionAssets.retainPending([...active,...(nearest&&nearest.d<650?[nearest.id]:[])]);
+        const nearest=bounds.filter(b=>!wanted.includes(b.id)).map(b=>({id:b.id,d:Math.min(...focus.map(a=>Math.hypot(Math.max(a.minX-b.maxX,0,b.minX-a.maxX),Math.max(a.minZ-b.maxZ,0,b.minZ-a.maxZ))))})).sort((a,b)=>a.d-b.d)[0];
+        regionAssets.retainPending([...wanted,...(nearest&&nearest.d<650?[nearest.id]:[])]);
         if(nearest&&nearest.d<650)regionAssets.request([nearest.id], false);
       }, 1500);
       return () => window.clearTimeout(timer);
     }
-  }, [started, active]);
+  }, [started, active, introTargetRegions]);
 
   useEffect(() => {
     if (!warming) return;
@@ -204,6 +221,8 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
 
   useLayoutEffect(() => {
     if (!destination || !started) return;
+    const introNow = getIntroState();
+    if (introNow.active && !introNow.reducedMotion) return;
     const height = 3.15 + (destination.distance ?? 10) * Math.sin(-(destination.pitch ?? -.16));
     setActive(selectRegions(bounds, destination.x, destination.z, height, [], mobileQuality));
   }, [destination, started]);
@@ -281,7 +300,11 @@ const fallbackFocus = { x: 0, z: 0 };
 
   useFrame(({ camera, clock }, dt) => {
     if (!started) return;
-    for (const id of active) animateRegionFlows(cache.current.get(id)?.flows ?? [], clock.elapsedTime);
+    const introNow = getIntroState();
+    const introHighAlt = introNow.active && !introNow.reducedMotion && camera.position.y > (mobileQuality ? 220 : 280);
+    if (!introHighAlt) {
+      for (const id of active) animateRegionFlows(cache.current.get(id)?.flows ?? [], clock.elapsedTime);
+    }
     let focus = camera.userData.viewFocus as { x: number; z: number } | undefined;
     if (!focus) {
       fallbackFocus.x = camera.position.x;
@@ -291,11 +314,13 @@ const fallbackFocus = { x: 0, z: 0 };
     elapsed.current += dt;
     if (elapsed.current < .2) return;
     elapsed.current = 0;
-    for (const id of active) {
-      const cached = cache.current.get(id);
-      if (cached) {
-        updateFestivalVisibility(cached.root, focus.x, focus.z, mobileQuality, camera.position.y);
-        updateStaticDetails(cached.details,camera.position.x,camera.position.y,camera.position.z,mobileQuality);
+    if (!introHighAlt) {
+      for (const id of active) {
+        const cached = cache.current.get(id);
+        if (cached) {
+          updateFestivalVisibility(cached.root, focus.x, focus.z, mobileQuality, camera.position.y);
+          updateStaticDetails(cached.details,camera.position.x,camera.position.y,camera.position.z,mobileQuality);
+        }
       }
     }
     const lr = lastRegionCheck.current;
@@ -306,7 +331,16 @@ const fallbackFocus = { x: 0, z: 0 };
       Math.abs(focus.z - lr.fz) > 5 ||
       Math.abs(camera.position.y - lr.cy) > 3
     ) {
-      const next = selectRegions(bounds, focus.x, focus.z, camera.position.y, active, mobileQuality);
+      let next: string[];
+      if (introHighAlt) {
+        // High-altitude stage: render only lightweight regional Overviews, never swap transit full-detail meshes.
+        next = [];
+      } else if (introNow.active && introNow.target) {
+        // Descending intro: stick strictly to destination chunks so flyover doesn't flash unrelated transit regions.
+        next = selectRegions(bounds, introNow.target.x, introNow.target.z, camera.position.y, active, mobileQuality);
+      } else {
+        next = selectRegions(bounds, focus.x, focus.z, camera.position.y, active, mobileQuality);
+      }
       if (!sameStringList(next, active)) setActive(next);
       const nextOverview=selectOverviewRegions(bounds,focus.x,focus.z,mobileQuality);
       if(!sameStringList(nextOverview,overviewIds))setOverviewIds(nextOverview);
@@ -320,12 +354,13 @@ const fallbackFocus = { x: 0, z: 0 };
 
   const myothar = downloads.find(item => item.id === 'myothar')?.value;
   const Scene = building ? downloads.find(item => item.id === building)?.value : undefined;
+  const hideNpcsDuringHighIntro = intro.active && isIntroHighAltitude(intro);
 
   return <>
     {myothar && <RegionBuilder id="myothar" Scene={myothar} live active={started && active.includes('myothar')} onBuilt={onBuilt} />}
     {building && building !== 'myothar' && Scene && !cache.current.has(building) &&
       <RegionBuilder key={building} id={building} Scene={Scene} onBuilt={onBuilt} />}
     {regions.filter(region=>overviewIds.includes(region.id)).map(region => <group key={region.id} visible={!active.includes(region.id) || !prepared.includes(region.id)}><Overview region={region} /></group>)}
-    {!paused && started && !diagnosticConfig.disableNPCs && <><RobotBots activeRegions={active} /><CarBots /></>}
+    {!paused && started && !diagnosticConfig.disableNPCs && !hideNpcsDuringHighIntro && <><RobotBots activeRegions={active} /><CarBots /></>}
   </>;
 }

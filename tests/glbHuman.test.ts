@@ -127,3 +127,31 @@ test('characterRenderer defaults to glb for boy/girl and toggles cleanly between
  assert.equal(setCharacterRendererMode('glb'),'glb');
  assert.equal(shouldUseGlbCharacter('boy'),true);
 });
+test('GLB boy and girl characters blink naturally in standing and seated animations',async()=>{
+ for(const preset of ['boy','girl'] as const){
+  const model=await parseCharacterGlb(`../src/assets/${preset}.glb`);
+  const avatar=createGlbHuman(model.scene,{preset});
+  assert.equal(avatar.blink(),0,'eyes start open');
+
+  let peak=0;
+  let reopened=false;
+  for(let i=0;i<300;i++){
+   avatar.update({speed:0,distance:0},false,undefined,.016);
+   const v=avatar.blink();
+   assert.ok(Number.isFinite(v)&&v>=0&&v<=1);
+   if(v>peak)peak=v;
+   if(peak>0.8&&v===0)reopened=true;
+  }
+  assert.ok(peak>0.8,`${preset} reaches full blink closure (${peak})`);
+  assert.ok(reopened,`${preset} re-opens cleanly after blink`);
+
+  let seatedPeak=0;
+  for(let i=0;i<300;i++){
+   avatar.update({speed:0,distance:0},true,undefined,.016);
+   const v=avatar.blink();
+   if(v>seatedPeak)seatedPeak=v;
+  }
+  assert.ok(seatedPeak>0.8,`${preset} blinks while seated on motorcycle (${seatedPeak})`);
+  avatar.dispose();
+ }
+});

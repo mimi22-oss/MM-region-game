@@ -341,13 +341,14 @@ export function BalloonShow({
       midIndices.length = 0;
       farIndices.length = 0;
 
+      const allowNear = camera.position.y < 240;
       for (let i = 0; i < totalCount; i++) {
         const pose = evaluateBalloonTransformInto(descriptors[i], t, posePool[i]);
         const dx = pose.x - fx;
         const dz = pose.z - fz;
         const distSq = dx * dx + dz * dz;
 
-        if (distSq < nearDistSq && pose.y < 135) {
+        if (allowNear && distSq < nearDistSq && pose.y < 135) {
           isNearCache[i] = 1;
           nearIndices.push(i);
           nearDistSqList.push(distSq);

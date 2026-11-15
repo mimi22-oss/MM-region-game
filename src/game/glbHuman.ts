@@ -1,10 +1,27 @@
-import {Bone,Box3,Group,Matrix4,Mesh,type Object3D,Quaternion,SkinnedMesh,Vector3} from 'three';
+import {
+ AnimationAction,
+ AnimationClip,
+ AnimationMixer,
+ Bone,
+ Box3,
+ Group,
+ LoopOnce,
+ LoopRepeat,
+ Matrix4,
+ Mesh,
+ type Object3D,
+ Quaternion,
+ SkinnedMesh,
+ Vector3,
+} from 'three';
 import {clone} from 'three/examples/jsm/utils/SkeletonUtils.js';
 import {createLimbFitter} from './characterRig.ts';
 import {driverGrip} from './carCabin.ts';
+import {createGlbEyeBlink,type GlbEyePreset} from './glbEyeBlink.ts';
 
 export interface GlbHumanOptions {
  castShadow?: boolean;
+ preset?: GlbEyePreset;
 }
 
 export const BOY_CLIPS=['idle','walk','run','jump','sit','motorcycle_idle','motorcycle_ride'] as const;
@@ -65,6 +82,8 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
  const scale=1.8/size.y;
  object.scale.multiplyScalar(scale);
  object.position.set(-(bounds.min.x+bounds.max.x)*scale/2,-bounds.min.y*scale,-(bounds.min.z+bounds.max.z)*scale/2);
+ object.updateMatrixWorld(true);
+ const eyeBlink=createGlbEyeBlink(object,options?.preset);
  // Supplied GLBs face +Z. Gameplay, vehicle seats and the camera use -Z.
  placement.rotation.y=Math.PI;
  root.updateMatrixWorld(true);
@@ -209,6 +228,78 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
  let smoothJumpBend=0;
  let smoothAirborne=0;
  let smoothVy=0;
+
+ // Single shared AnimationMixer for optional retargeted special action clips (dances)
+ const hipsRestPos=hips.position.clone();
+ const mixer=new AnimationMixer(object);
+ const procQuats=restList.map(()=>new Quaternion());
+ const procPlacementPos=new Vector3();
+ const dancePlacementPos=new Vector3(0,0,0);
+ const danceHipsPos=new Vector3();
+ let activeSpecialAction:AnimationAction|null=null;
+ let activeSpecialLoop=true;
+ let danceTargetActive=false;
+ let danceBlend=0;
+ let onSpecialFinishedCb:(()=>void)|null=null;
+
+ const handleMixerFinished=(event:{action:AnimationAction})=>{
+  if(event.action===activeSpecialAction&&!activeSpecialLoop){
+   danceTargetActive=false;
+   onSpecialFinishedCb?.();
+  }
+ };
+ mixer.addEventListener('finished',handleMixerFinished);
+
+ function setSpecialClip(
+  clip:AnimationClip|null,
+  opts?:{loop?:boolean;syncTimeSec?:number;crossFadeSec?:number},
+ ){
+  if(!clip){
+   danceTargetActive=false;
+   return;
+  }
+  const nextLoop=opts?.loop??true;
+  const crossFadeSec=opts?.crossFadeSec??0.28;
+  const nextAction=mixer.clipAction(clip);
+  nextAction.setLoop(nextLoop?LoopRepeat:LoopOnce,nextLoop?Infinity:1);
+  nextAction.clampWhenFinished=!nextLoop;
+
+  if(activeSpecialAction!==nextAction||!nextAction.isRunning()){
+   if(activeSpecialAction&&activeSpecialAction!==nextAction&&danceBlend>0.05&&activeSpecialAction.isRunning()){
+    nextAction.reset();
+    nextAction.enabled=true;
+    nextAction.setEffectiveWeight(1);
+    nextAction.setEffectiveTimeScale(1);
+    if(opts?.syncTimeSec&&clip.duration>0){
+     nextAction.time=opts.syncTimeSec%clip.duration;
+    }
+    nextAction.play();
+    activeSpecialAction.crossFadeTo(nextAction,crossFadeSec,false);
+   }else{
+    mixer.stopAllAction();
+    nextAction.reset();
+    nextAction.enabled=true;
+    nextAction.setEffectiveWeight(1);
+    nextAction.setEffectiveTimeScale(1);
+    if(opts?.syncTimeSec&&clip.duration>0){
+     nextAction.time=opts.syncTimeSec%clip.duration;
+    }
+    nextAction.play();
+   }
+  }else if(!nextLoop&&activeSpecialLoop){
+   const currentTime=nextAction.time;
+   nextAction.reset();
+   nextAction.enabled=true;
+   nextAction.setEffectiveWeight(1);
+   nextAction.setEffectiveTimeScale(1);
+   nextAction.time=currentTime;
+   nextAction.play();
+  }
+
+  activeSpecialAction=nextAction;
+  activeSpecialLoop=nextLoop;
+  danceTargetActive=true;
+ }
 
  function rotateAxis(b:Bone|null,ax:number,ay:number,az:number,angle:number){
   if(!b||Math.abs(angle)<1e-6)return;
@@ -410,6 +501,7 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
 
  function update(motion:Motion,riding=false,driving?:Driving,delta?:number){
   for(let i=0;i<restList.length;i++)restList[i].bone.quaternion.copy(restList[i].q);
+  hips.position.copy(hipsRestPos);
 
   currentClip=selectBoyClip(motion,riding,!!driving);
   const seated=riding||!!driving;
@@ -418,12 +510,31 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
   const rawBend=seated?0:clamp(motion.jumpBend??0,0,1);
   const rawAirborne=!seated&&motion.airborne?1:0;
   const rawJump=Math.max(rawAirborne,rawBend>.01?1:0);
+  if(seated){
+   danceTargetActive=false;
+   danceBlend=0;
+   if(activeSpecialAction!==null){
+    mixer.stopAllAction();
+    activeSpecialAction=null;
+   }
+  }else if(absSpeed>.35||rawJump>.5){
+   danceTargetActive=false;
+  }
+  const targetDance=!seated&&danceTargetActive&&activeSpecialAction!==null?1:0;
+  const specialStepDt=delta!==undefined&&delta>0?Math.min(delta,.06):0;
+  if(specialStepDt>0){
+   danceBlend=damp(danceBlend,targetDance,targetDance>0?12:15,specialStepDt);
+   if(Math.abs(targetDance-danceBlend)<.002)danceBlend=targetDance;
+  }else{
+   danceBlend=targetDance;
+  }
   const targetMove=seated||rawAirborne>.5?0:clamp((absSpeed-.05)/.75,0,1);
   const targetRun=clamp((absSpeed-4.3)/3.2,0,1);
 
   if(delta!==undefined&&delta>0){
    const dt=Math.min(delta,.06);
    idleClock+=dt;
+   eyeBlink.step(dt);
    smoothSpeed=damp(smoothSpeed,rawSpeed,12,dt);
    moveWeight=damp(moveWeight,targetMove,10,dt);
    runWeight=damp(runWeight,targetRun,8,dt);
@@ -691,6 +802,32 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
    const handWQ=getWorldQuatRef(limb.hand).multiplyQuaternions(forearmWQ,limb.hand.quaternion);
    curlHandFast(limb,handWQ,fingerCurl);
   }
+
+  if(danceBlend>0&&activeSpecialAction!==null){
+   const isBlending=danceBlend<.999;
+   if(isBlending){
+    for(let i=0;i<restList.length;i++)procQuats[i].copy(restList[i].bone.quaternion);
+    procPlacementPos.copy(placement.position);
+   }
+   for(let i=0;i<restList.length;i++)restList[i].bone.quaternion.copy(restList[i].q);
+   hips.position.copy(hipsRestPos);
+   mixer.update(specialStepDt);
+   if(isBlending){
+    for(let i=0;i<restList.length;i++){
+     const b=restList[i].bone;
+     procQuats[i].slerp(b.quaternion,danceBlend);
+     b.quaternion.copy(procQuats[i]);
+    }
+    danceHipsPos.copy(hips.position);
+    hips.position.lerpVectors(hipsRestPos,danceHipsPos,danceBlend);
+    placement.position.lerpVectors(procPlacementPos,dancePlacementPos,danceBlend);
+   }else{
+    placement.position.copy(dancePlacementPos);
+   }
+  }else if(activeSpecialAction!==null&&!danceTargetActive){
+   mixer.stopAllAction();
+   activeSpecialAction=null;
+  }
  }
 
  function setCastShadow(enabled:boolean){
@@ -698,8 +835,24 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
  }
 
  function dispose(){
-  // Geometry, textures and materials remain owned by the shared GLTF cache.
+  mixer.removeEventListener('finished',handleMixerFinished);
+  mixer.stopAllAction();
+  mixer.uncacheRoot(object);
+  eyeBlink.dispose();
+  // Geometry and textures remain owned by the shared GLTF cache.
   object.traverse(child=>{if(child instanceof SkinnedMesh)child.skeleton.dispose();});
  }
- return {root,object,update,dispose,setCastShadow,clip:()=>currentClip};
+ return {
+  root,
+  object,
+  update,
+  dispose,
+  setCastShadow,
+  setSpecialClip,
+  onSpecialFinished(listener:(()=>void)|null){onSpecialFinishedCb=listener;},
+  specialBlend:()=>danceBlend,
+  specialClipName:()=>activeSpecialAction&&danceBlend>.01?activeSpecialAction.getClip().name:null,
+  clip:()=>currentClip,
+  blink:eyeBlink.value,
+ };
 }

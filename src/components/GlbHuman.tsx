@@ -5,6 +5,14 @@ import {GLTFLoader,type GLTF} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type {HumanAppearance} from '../data/appearance';
 import {createGlbHuman} from '../game/glbHuman';
 import {getQualityPreset,useQualityPreset} from '../game/qualityPreset';
+import {
+ getSpecialActionSyncPhase,
+ loadSpecialActionClipForRig,
+ markSpecialActionError,
+ markSpecialActionPlaying,
+ stopSpecialAction,
+ useSpecialAction,
+} from '../game/specialActions';
 import type {CharacterMotion,DrivingPose} from './CartoonCharacter';
 
 // 3D boy/girl model files: Vite emits these URLs in production as well as development.
@@ -76,8 +84,37 @@ export function GlbHuman(props:Props){
 }
 function LoadedHuman({model,preset,appearance,motion,riding=false,driving}:Props&{model:GLTF}){
  const quality=useQualityPreset();
- const instance=useMemo(()=>createGlbHuman(model.scene,{castShadow:quality.characterCastShadow}),[model]);
+ const special=useSpecialAction();
+ const canPlaySpecial=!riding&&!driving;
+ const activeSpecialId=canPlaySpecial?special.activeActionId:null;
+ const instance=useMemo(()=>createGlbHuman(model.scene,{castShadow:quality.characterCastShadow,preset}),[model,preset]);
  useEffect(()=>{instance.setCastShadow(quality.characterCastShadow);},[instance,quality.characterCastShadow]);
+ useEffect(()=>{
+  instance.onSpecialFinished(()=>stopSpecialAction());
+  return ()=>instance.onSpecialFinished(null);
+ },[instance]);
+ useEffect(()=>{
+  if(!activeSpecialId){
+   instance.setSpecialClip(null);
+   return;
+  }
+  let cancelled=false;
+  loadSpecialActionClipForRig(activeSpecialId,preset,model.scene)
+   .then(clip=>{
+    if(cancelled)return;
+    const syncTimeSec=getSpecialActionSyncPhase(special.startedAtMs,clip.duration,special.loop);
+    instance.setSpecialClip(clip,{loop:special.loop,syncTimeSec});
+    markSpecialActionPlaying(activeSpecialId);
+   })
+   .catch(err=>{
+    if(cancelled)return;
+    const message=err instanceof Error?err.message:'Unable to load dance animation.';
+    console.error(`Unable to load special action ${activeSpecialId}:`,err);
+    markSpecialActionError(activeSpecialId,message);
+    instance.setSpecialClip(null);
+   });
+  return ()=>{cancelled=true;};
+ },[instance,activeSpecialId,special.loop,special.startedAtMs,preset,model]);
  useEffect(()=>()=>instance.dispose(),[instance]);
  useFrame((_,delta)=>{if(!driving||driving.current.active)instance.update(motion.current,riding,driving?.current,delta);});
  // Preserve the supplied texture artwork; height remains adjustable in Appearance.

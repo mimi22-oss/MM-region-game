@@ -46,6 +46,11 @@ export function FestivalLighting({night}:{night:boolean}){
 
  useFrame(({scene:frameScene,camera,clock},dt)=>{
   if(lights.length===0)return;
+  if(camera.position.y>220){
+   lit.current=0;
+   for(let i=0;i<lights.length;i++)lights[i].intensity=0;
+   return;
+  }
   const lamps=frameScene.userData.environmentLamps??(night?1:0);
   if(!night&&lamps<0.05){
    lit.current=0;

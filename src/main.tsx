@@ -1,4 +1,5 @@
-import {EnvironmentSettings,useEnvironmentTime} from './components/EnvironmentSettings';
+import { EnvironmentSettings,useEnvironmentTime } from './components/EnvironmentSettings';
+import { ActionMenu } from './components/ActionMenu';
 import { MultiplayerSession } from './multiplayer/session';
 import { MultiplayerPanel } from './multiplayer/MultiplayerPanel';
 import { RemotePlayers } from './multiplayer/RemotePlayers';
@@ -21,6 +22,22 @@ import {
 } from "./components/CharacterPicker";
 import { homeGuidance } from "./game/homeAccess";
 import { FrameBudget } from "./components/FrameBudget";
+import { CinematicIntroController } from "./components/CinematicIntroController";
+import { IntroOverlay, IntroSettingsPanel } from "./components/IntroOverlay";
+import {
+  getIntroSettings,
+  isReducedMotionPreferred,
+  resolveIntroBehavior,
+  shouldPlayIntro,
+  useIntroSettings,
+} from "./game/IntroSettings";
+import {
+  getIntroState,
+  isIntroHighAltitude,
+  skipIntro,
+  startIntro,
+  useIntroState,
+} from "./game/IntroStateMachine";
 import { mobileQuality } from "./game/sceneBudget";
 import { startupDiagnostics } from "./game/startupDiagnostics";
 import { diagnosticConfig } from "./game/diagnosticMode";
@@ -32,6 +49,7 @@ import React, {
   Suspense,
   memo,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useMemo,
   useRef,
@@ -184,11 +202,15 @@ function App() {
   );
   const [guideOpen, setGuideOpen] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const [sceneActive, setSceneActive] = useState(false);
   const [topDown, setTopDown] = useState(false);
   const [zoom, setZoom] = useState(ward.spawnZoom);
   const environment=useEnvironmentTime();
   const night=environment.period==='night'||environment.period==='evening';
+  const intro = useIntroState();
+  const introSettings = useIntroSettings();
+  const entryIntroAttemptedRef = useRef(false);
   const [navigationRequest, setNavigationRequest] = useState<{
     action: "locate" | "teleport";
     seq: number;
@@ -296,6 +318,8 @@ function App() {
     const dest = MAP_DESTINATIONS.find((d) => d.id === id);
     if (!dest) return;
     if (document.pointerLockElement) document.exitPointerLock();
+    const originX = posRef.current.x;
+    const originZ = posRef.current.z;
     setPos({ x: dest.x, z: dest.z });
     setMapOpen(false);
     setSettingsOpen(false);
@@ -310,13 +334,44 @@ function App() {
       distance: dest.distance,
       seq: Date.now(),
     });
+    const settings = getIntroSettings();
+    const behavior = resolveIntroBehavior("travel", settings, {
+      diagnosticDisabled: diagnosticConfig.enabled,
+    });
+    if (behavior !== "skip") {
+      setWelcomeDismissed(true);
+      startIntro(
+        {
+          id: dest.id,
+          label: dest.label,
+          title: dest.title,
+          subtitle: dest.subtitle,
+          x: dest.x,
+          z: dest.z,
+          yaw: dest.yaw,
+          pitch: dest.pitch,
+          distance: dest.distance,
+        },
+        "travel",
+        {
+          durationSec: settings.durationSec,
+          reducedMotion: behavior === "reduced-settle",
+          originX,
+          originZ,
+        },
+      );
+    }
   }, []);
   useEffect(() => {
     const close = (e: KeyboardEvent) => {
       if (loading) return;
       if (e.code === "Escape") {
+        if (getIntroState().active) {
+          skipIntro();
+        }
         setMapOpen(false);
         setSettingsOpen(false);
+        setActionMenuOpen(false);
         setSceneActive(false);
         setTeleportMode(false);
         setTeleportPin(null);
@@ -376,6 +431,73 @@ function App() {
     });
   };
   const hideHud = locked || sceneActive;
+  useLayoutEffect(() => {
+    if (loading || entryIntroAttemptedRef.current) return;
+    entryIntroAttemptedRef.current = true;
+    const settings = getIntroSettings();
+    const behavior = resolveIntroBehavior("entry", settings, {
+      diagnosticDisabled: diagnosticConfig.enabled,
+    });
+    if (behavior === "skip") return;
+    const spawnLoc = detectLocation(ward.spawn.x, ward.spawn.z);
+    setWelcomeDismissed(true);
+    setFirst(false);
+    setTopDown(false);
+    setZoom(ward.spawnZoom);
+    startIntro(
+      {
+        id: spawnLoc.id,
+        label: spawnLoc.label || ward.currentArea,
+        title: spawnLoc.title || `${ward.currentArea}`,
+        subtitle: spawnLoc.subArea ?? spawnLoc.subtitle,
+        x: ward.spawn.x,
+        z: ward.spawn.z,
+        yaw: ward.spawnYaw,
+        pitch: -0.12,
+        distance: ward.spawnZoom,
+      },
+      "entry",
+      {
+        durationSec: settings.durationSec,
+        reducedMotion: behavior === "reduced-settle",
+      },
+    );
+  }, [loading]);
+
+  const handleReplayIntro = useCallback(() => {
+    if (document.pointerLockElement) document.exitPointerLock();
+    const px = posRef.current.x;
+    const pz = posRef.current.z;
+    const loc = detectLocation(px, pz);
+    const settings = getIntroSettings();
+    const reduced = settings.respectReducedMotion && isReducedMotionPreferred();
+    setSettingsOpen(false);
+    setMapOpen(false);
+    setWelcomeDismissed(true);
+    setFirst(false);
+    setTopDown(false);
+    startIntro(
+      {
+        id: loc.id,
+        label: loc.label,
+        title: loc.title,
+        subtitle: loc.subArea ?? loc.subtitle,
+        x: px,
+        z: pz,
+        yaw: robotYawRef.current,
+        pitch: -0.14,
+        distance: Math.min(12, Math.max(3, zoom)),
+      },
+      "entry",
+      {
+        durationSec: settings.durationSec,
+        reducedMotion: reduced,
+        originX: ward.spawn.x,
+        originZ: ward.spawn.z,
+      },
+    );
+  }, [zoom]);
+
   return (
     <main className={night ? "night-mode" : ""} data-time-period={environment.period}>
       <EnvironmentAudio period={environment.period} volume={environment.preferences.volume} enabled={environment.preferences.sound} active={visible&&!loading}/>
@@ -383,7 +505,7 @@ function App() {
       <div
         className="scene-wrap"
         onClick={() => {
-          if (!mapOpen && !loading) {
+          if (!mapOpen && !loading && !getIntroState().active) {
             setSceneActive(true);
             setSettingsOpen(false);
           }
@@ -430,8 +552,10 @@ function App() {
               onScreenPos={setTeleportScreenPos}
               onDraggingChange={setTeleportDragging}
             />
+            <CinematicIntroController />
             <Player
-              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen} loading={loading}
+              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || intro.active} loading={loading}
+              deferGlb={(loading && shouldPlayIntro("entry", introSettings, { diagnosticDisabled: diagnosticConfig.enabled }) && !(introSettings.respectReducedMotion && isReducedMotionPreferred())) || (intro.active && isIntroHighAltitude(intro))}
               onCarStatus={carUpdate}
               onBalloonStatus={balloonUpdate}
               character={character}
@@ -451,12 +575,12 @@ function App() {
               onPosition={position}
               onViewPosition={viewPosition}
             />
-            <MapLabelsProjection host={mapLabelsHost} enabled={!loading && !mapOpen && !first} />
+            <MapLabelsProjection host={mapLabelsHost} enabled={!loading && !mapOpen && !first && !intro.active} />
           </Canvas>
         </SceneError>
-        <MapLabelsOverlay host={mapLabelsHost} hidden={loading || mapOpen || first} />
+        <MapLabelsOverlay host={mapLabelsHost} hidden={loading || mapOpen || first || intro.active} />
       </div>
-      {!loading && !rideStatus.riding && !carStatus.driving && !balloonStatus.riding && <div className="player-life"><LifeMeter lives={rideStatus.lives}/></div>}
+      {!intro.active && !loading && !rideStatus.riding && !carStatus.driving && !balloonStatus.riding && <div className="player-life"><LifeMeter lives={rideStatus.lives}/></div>}
       {rideStatus.crashed && (rideStatus.damage??1)>0 && (
         <div className="ride-crash-banner" role="alert">
           <span className="ride-crash-icon">💥</span>
@@ -470,18 +594,18 @@ function App() {
           </div>
         </div>
       )}
-      {!balloonStatus.riding&&!mapOpen&&!settingsOpen&&<RideControls status={rideStatus} limit={rideLimit} onLimit={setRideLimit} onBrake={setBraking} onAccelerate={setAccelerating} onDismount={()=>{setBraking(false);setAccelerating(false);setDismountRequest(n=>n+1)}}/>}
-      {!balloonStatus.riding&&!mapOpen&&!settingsOpen&&!loading&&<CarControls status={carStatus}/>}
-      <BalloonControls status={balloonStatus} paused={mapOpen||settingsOpen||loading} onTopView={toggleTopDown} onZoom={direction=>setZoom(v=>Math.max(6,Math.min(3600,v*(direction>0?1.4:1/1.4))))}/>
-      <MobileControls
+      {!intro.active && !balloonStatus.riding&&!mapOpen&&!settingsOpen&&<RideControls status={rideStatus} limit={rideLimit} onLimit={setRideLimit} onBrake={setBraking} onAccelerate={setAccelerating} onDismount={()=>{setBraking(false);setAccelerating(false);setDismountRequest(n=>n+1)}}/>}
+      {!intro.active && !balloonStatus.riding&&!mapOpen&&!settingsOpen&&!loading&&<CarControls status={carStatus}/>}
+      <BalloonControls status={balloonStatus} paused={intro.active||mapOpen||settingsOpen||loading} onTopView={toggleTopDown} onZoom={direction=>setZoom(v=>Math.max(6,Math.min(3600,v*(direction>0?1.4:1/1.4))))}/>
+      {!intro.active && <MobileControls
         key={navigationRequest?.seq ?? 0}
         input={mobileInput}
         flying={balloonStatus.riding}
         canJump={!balloonStatus.riding && character === "cartoon" && !rideStatus.riding && !carStatus.driving && !rideStatus.crashed}
         disabled={mapOpen || settingsOpen || loading || carStatus.driving}
         onInteract={activateMobile}
-      />
-      {!mapOpen && !settingsOpen && (
+      />}
+      {!intro.active && !mapOpen && !settingsOpen && (
         <div
           className="location-actions"
           onPointerDown={(e) => e.stopPropagation()}
@@ -525,6 +649,20 @@ function App() {
               <path d="M12 3v12m-4-4 4 4 4-4M6 14c-3 1-4 2-4 4 0 2 4 3 10 3s10-1 10-3c0-2-1-3-4-4" />
             </svg>
           </button>
+          <ActionMenu
+            open={actionMenuOpen}
+            onOpenChange={setActionMenuOpen}
+            character={character}
+            disabledReason={
+              balloonStatus.riding
+                ? "မီးပုံးပျံပေါ်မှ ဆင်းပြီးမှ အကကစားနိုင်ပါမည်။"
+                : carStatus.driving
+                  ? "ကားမောင်းနေစဉ် အကကစား၍ မရပါ။"
+                  : rideStatus.riding
+                    ? "ဆိုင်ကယ်ပေါ်မှ ဆင်းပြီးမှ အကကစားနိုင်ပါမည်။"
+                    : null
+            }
+          />
           {navigationNotice && <p role="status">{navigationNotice}</p>}
         </div>
       )}
@@ -544,13 +682,13 @@ function App() {
         />
       )}
 
-      {!mapOpen && displayedGuidance && (
+      {!intro.active && !mapOpen && displayedGuidance && (
         <div className="home-guidance" role="status" aria-live="polite">
           <span className="home-guidance-pill">🏡 အိမ်လမ်းညွှန်</span>
           <span className="home-guidance-text">{displayedGuidance}</span>
         </div>
       )}
-      <MultiplayerPanel session={multiplayer} hidden={loading || hideHud || mapOpen} />
+      <MultiplayerPanel session={multiplayer} hidden={loading || hideHud || mapOpen || intro.active} />
       <header>
         <h1 style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>
           MM Region Game - မြန်မာဒေသ 3D ဂိမ်း
@@ -559,7 +697,7 @@ function App() {
         {/* <h1>{currentLoc.title}</h1> */}
         {/* <p>{currentLoc.subtitle}</p> */}
       </header>
-      {arrivalToast && !mapOpen && (
+      {!intro.active && arrivalToast && !mapOpen && (
         <div className="location-toast" role="status" aria-live="polite">
           <span className="location-toast-icon">📍</span>
           <div className="location-toast-body">
@@ -573,7 +711,7 @@ function App() {
           </div>
         </div>
       )}
-      <div className="settings-wrap">
+      {!intro.active && <div className="settings-wrap">
         <button
           type="button"
           className={
@@ -620,6 +758,7 @@ function App() {
                 </div>
               </div>
               <EnvironmentSettings value={environment.preferences} onChange={environment.setPreferences} onChoose={environment.choose} now={environment.now} period={environment.period}/>
+              <IntroSettingsPanel onReplay={handleReplayIntro} />
               <div className="cam-controls" aria-label="3D ကင်မရာ ထိန်းချုပ်မှုများ">
                 <button
                   type="button"
@@ -722,8 +861,8 @@ function App() {
             </div>
           </section>
         )}
-      </div>
-      {!welcomeDismissed && !mapOpen && !topDown && !rideStatus.riding && !carStatus.driving && !guideOpen && (
+      </div>}
+      {!intro.active && !welcomeDismissed && !mapOpen && !topDown && !rideStatus.riding && !carStatus.driving && !guideOpen && (
         <section className="welcome" aria-label="ကြိုဆိုပါသည်">
           <div className="welcome-actions">
             <button
@@ -760,7 +899,7 @@ function App() {
         }}
       />
       {locked && <div className="crosshair">+</div>}
-      <aside
+      {!intro.active && <aside
         className={mapOpen ? "map map-expanded" : "map"}
         aria-label="Ward plan"
         onClick={() => {
@@ -884,7 +1023,8 @@ function App() {
             မြင်ကွင်းသို့ သွားနိုင်ပါသည် · Esc ပိတ်ရန်
           </p>
         )}
-      </aside>
+      </aside>}
+      <IntroOverlay hidden={loading || mapOpen} />
       <footer>
         {/* <span><span className="footer-location">📍 {currentLoc.subArea ?? currentLoc.label} · </span>{topDown ? 'ကောင်းကင်တည့်တည့်' : first ? 'ပထမလူ မြင်ကွင်း' : 'တတိယလူ မြင်ကွင်း'} · Zoom {Math.round(zoom)} မီတာ · {pos.x.toFixed(1)}, {pos.z.toFixed(1)} မီတာ</span> */}
       </footer>
