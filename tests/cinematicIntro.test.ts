@@ -60,7 +60,7 @@ const sampleTarget: IntroTarget = {
 
 test('IntroSettings defaults (~7s), clamping, storage roundtrip, and playback modes', () => {
   assert.equal(DEFAULT_INTRO_DURATION_SEC, 7);
-  assert.equal(DEFAULT_INTRO_SETTINGS.mode, 'first-entry');
+  assert.equal(DEFAULT_INTRO_SETTINGS.mode, 'every-entry');
 
   const storage = createMemoryStorage();
   const initial = loadIntroSettings(storage);

@@ -16,12 +16,12 @@ export type IntroSettingsStorage = {
   setItem: (key: string, value: string) => void;
 };
 
-export const INTRO_SETTINGS_STORAGE_KEY = 'mm-town-intro-settings-v1';
+export const INTRO_SETTINGS_STORAGE_KEY = 'mm-town-intro-settings-v2';
 export const DEFAULT_INTRO_DURATION_SEC = 7;
 export const MIN_INTRO_DURATION_SEC = 3;
 export const MAX_INTRO_DURATION_SEC = 14;
 export const REDUCED_MOTION_DURATION_SEC = 0.45;
-export const DEFAULT_INTRO_MODE: IntroPlayMode = 'first-entry';
+export const DEFAULT_INTRO_MODE: IntroPlayMode = 'every-entry';
 
 export const DEFAULT_INTRO_SETTINGS: IntroSettings = {
   mode: DEFAULT_INTRO_MODE,

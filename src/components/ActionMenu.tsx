@@ -141,7 +141,10 @@ export function ActionMenu({open,onOpenChange,character,disabledReason}:ActionMe
          className={`action-dance-btn${selected?' is-active':''}`}
          disabled={Boolean(unavailableMessage)}
          aria-pressed={selected}
-         onClick={()=>toggleSpecialAction(action.id)}
+         onClick={()=>{
+          toggleSpecialAction(action.id);
+          onOpenChange(false);
+         }}
         >
          <span className="action-dance-title">{action.label}</span>
          <span className="action-dance-meta">

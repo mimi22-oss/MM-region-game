@@ -1,4 +1,4 @@
-import { EnvironmentSettings,useEnvironmentTime } from './components/EnvironmentSettings';
+import { useEnvironmentTime } from './components/EnvironmentSettings';
 import { ActionMenu } from './components/ActionMenu';
 import { MultiplayerSession } from './multiplayer/session';
 import { MultiplayerPanel } from './multiplayer/MultiplayerPanel';
@@ -7,15 +7,13 @@ import {EnvironmentAudio} from './components/EnvironmentAudio';
 import {BalloonControls} from './components/BalloonControls';
 import {emptyBalloonStatus,clearBalloonInput,type BalloonStatus} from './game/balloonRide';
 import {LifeMeter} from './components/LifeMeter';
-import {AppearanceSettings} from './components/AppearanceSettings';
 import { RideControls } from './components/RideControls';
 import { CarControls } from './components/CarControls';
 import { GuideDialog } from './components/GuideDialog';
 import type { CarStatus } from './game/carRide';
 import type { RideStatus } from './game/motorcycleRide';
-import { RobotLocationPanel } from "./components/RobotLocationPanel";
+import { SettingsMenu } from "./components/SettingsMenu";
 import {
-  CharacterPicker,
   savedCharacter,
   CHARACTER_STORAGE_KEY,
   type CharacterKind,
@@ -23,7 +21,7 @@ import {
 import { homeGuidance } from "./game/homeAccess";
 import { FrameBudget } from "./components/FrameBudget";
 import { CinematicIntroController } from "./components/CinematicIntroController";
-import { IntroOverlay, IntroSettingsPanel } from "./components/IntroOverlay";
+import { IntroOverlay } from "./components/IntroOverlay";
 import {
   getIntroSettings,
   isReducedMotionPreferred,
@@ -688,7 +686,7 @@ function App() {
           <span className="home-guidance-text">{displayedGuidance}</span>
         </div>
       )}
-      <MultiplayerPanel session={multiplayer} hidden={loading || hideHud || mapOpen || intro.active} />
+      <MultiplayerPanel session={multiplayer} hidden={loading || hideHud || mapOpen || settingsOpen || intro.active} />
       <header>
         <h1 style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>
           MM Region Game - မြန်မာဒေသ 3D ဂိမ်း
@@ -711,7 +709,7 @@ function App() {
           </div>
         </div>
       )}
-      {!intro.active && <div className="settings-wrap">
+      {!intro.active && <div className={settingsOpen ? "settings-wrap settings-wrap-open" : "settings-wrap"}>
         <button
           type="button"
           className={
@@ -734,133 +732,35 @@ function App() {
         >
           ⚙
         </button>
-        {settingsOpen && (
-          <section
-            className="settings-menu"
-            aria-label="အသုံးပြုနည်း လမ်းညွှန်"
-          >
-            <CharacterPicker value={character} onChange={chooseCharacter} disabled={rideStatus.riding||carStatus.driving||balloonStatus.riding}/>
-            <AppearanceSettings kind={character} onKindChange={chooseCharacter} characterLocked={rideStatus.riding||carStatus.driving||balloonStatus.riding} carLocked={carStatus.driving}/>
-            <RobotLocationPanel
-              x={pos.x}
-              z={pos.z}
-              yaw={robotYaw}
-              characterLabel={character === "robot" ? "စက်ရုပ်" : "ကာတွန်း"}
-            />
-            <div className="guide-item">
-              <div className="guide-header">
-                <strong>အသုံးပြုနည်း လမ်းညွှန်</strong>
-                <div className="badge">
-                  <span /> မြေပုံ · {currentLoc.label}{" "}
-                  <b>
-                    {ward.size} × {ward.size} မီတာ
-                  </b>
-                </div>
-              </div>
-              <EnvironmentSettings value={environment.preferences} onChange={environment.setPreferences} onChoose={environment.choose} now={environment.now} period={environment.period}/>
-              <IntroSettingsPanel onReplay={handleReplayIntro} />
-              <div className="cam-controls" aria-label="3D ကင်မရာ ထိန်းချုပ်မှုများ">
-                <button
-                  type="button"
-                  className="cam-btn"
-                  onClick={() => {
-                    if (document.pointerLockElement) document.exitPointerLock();
-                    setSettingsOpen(false);
-                    setGuideOpen(true);
-                  }}
-                >
-                  📖 အသုံးပြုနည်း လမ်းညွှန် ↗
-                </button>
-                <button
-                  type="button"
-                  className="cam-btn"
-                  onClick={() => {
-                    if (document.pointerLockElement) document.exitPointerLock();
-                    setSettingsOpen(false);
-                    setPos({ x: posRef.current.x, z: posRef.current.z });
-                    setMapOpen(true);
-                  }}
-                >
-                  ရပ်ကွက်မြေပုံ ↗
-                </button>
-                <button
-                  type="button"
-                  className={topDown ? "cam-btn cam-btn-active" : "cam-btn"}
-                  aria-pressed={topDown}
-                  onClick={toggleTopDown}
-                >
-                  {topDown
-                    ? "✓ ကောင်းကင်တည့်တည့်"
-                    : "ကောင်းကင်တည့်တည့် (T)"}
-                </button>
-                <div className="cam-zoom-row">
-                  <button
-                    type="button"
-                    className="cam-btn"
-                    onClick={() => stepZoom(-1)}
-                    title="Zoom ချဲ့မည်"
-                  >
-                    ＋ Zoom ချဲ့မည်
-                  </button>
-                  <button
-                    type="button"
-                    className="cam-btn"
-                    onClick={() => stepZoom(1)}
-                    title="Zoom ချုံ့မည်"
-                  >
-                    － Zoom ချုံ့မည်
-                  </button>
-                </div>
-              </div>
-              <ul className="guide-list desktop-guide">
-                <li>
-                  <kbd>N</kbd>
-                  <span>နေ့ခင်း / ညချမ်း အလင်းရောင်</span>
-                </li>
-                <li>
-                  <kbd>W A S D / ↑ ↓ ← →</kbd>
-                  <span>လမ်းလျှောက် / မြေပုံရွှေ့ရန်</span>
-                </li>
-                <li>
-                  <kbd>Shift + Drag</kbd>
-                  <span>မြေပုံကို ဆွဲရွှေ့ရန်</span>
-                </li>
-                <li>
-                  <kbd>Shift</kbd>
-                  <span>အမြန်ပြေးရန်</span>
-                </li>
-                <li>
-                  <kbd>Space</kbd>
-                  <span>လူဇာတ်ကောင် ခုန်ရန် · ပြေးရင်းခုန်လျှင် ပိုဝေးရောက်မည်</span>
-                </li>
-                <li>
-                  <kbd>Scroll</kbd>
-                  <span>Zoom အဝင် / အထွက်</span>
-                </li>
-                <li>
-                  <kbd>T</kbd>
-                  <span>ကောင်းကင်တည့်တည့် ကြည့်ရန်</span>
-                </li>
-                <li>
-                  <kbd>V</kbd>
-                  <span>မြင်ကွင်းပြောင်းရန်</span>
-                </li>
-                <li>
-                  <kbd>R</kbd>
-                  <span>မူလနေရာ (အစသို့)</span>
-                </li>
-                <li>
-                  <kbd>Esc</kbd>
-                  <span>Mouse လွှတ်ရန် / ပိတ်ရန်</span>
-                </li>
-              </ul>
-              <p className="mobile-guide">
-                ဘယ်ဘက်ဆွဲ၍ ၃၆၀° လှည့်ပါ · ညာဘက်ဖိ၍ ပြေးပါ · ညာဘက်ဆွဲ၍ ကြည့်ပါ
-                · လက်နှစ်ချောင်းဖြင့် Zoom ချဲ့/ချုံ့ပါ · လက်နှစ်ချောင်းဆွဲ၍ ခရီးသွားပါ
-              </p>
-            </div>
-          </section>
-        )}
+        <SettingsMenu
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          character={character}
+          onChooseCharacter={chooseCharacter}
+          characterLocked={rideStatus.riding || carStatus.driving || balloonStatus.riding}
+          carLocked={carStatus.driving}
+          pos={pos}
+          robotYaw={robotYaw}
+          currentLoc={currentLoc}
+          wardSize={ward.size}
+          environment={environment}
+          topDown={topDown}
+          zoom={zoom}
+          onToggleTopDown={toggleTopDown}
+          onStepZoom={stepZoom}
+          onOpenMap={() => {
+            if (document.pointerLockElement) document.exitPointerLock();
+            setSettingsOpen(false);
+            setPos({ x: posRef.current.x, z: posRef.current.z });
+            setMapOpen(true);
+          }}
+          onOpenGuide={() => {
+            if (document.pointerLockElement) document.exitPointerLock();
+            setSettingsOpen(false);
+            setGuideOpen(true);
+          }}
+          onReplayIntro={handleReplayIntro}
+        />
       </div>}
       {!intro.active && !welcomeDismissed && !mapOpen && !topDown && !rideStatus.riding && !carStatus.driving && !guideOpen && (
         <section className="welcome" aria-label="ကြိုဆိုပါသည်">
