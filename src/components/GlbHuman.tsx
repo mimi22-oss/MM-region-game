@@ -1,4 +1,4 @@
-import {useEffect,useLayoutEffect,useState,type RefObject} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState,type RefObject} from 'react';
 import {useFrame} from '@react-three/fiber';
 import {Mesh,MeshStandardMaterial,type Texture} from 'three';
 import {GLTFLoader,type GLTF} from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -6,6 +6,7 @@ import type {HumanAppearance} from '../data/appearance';
 import {createGlbHuman} from '../game/glbHuman';
 import {getQualityPreset,useQualityPreset} from '../game/qualityPreset';
 import {
+ getSpecialAction,
  getSpecialActionSyncPhase,
  loadSpecialActionClipForRig,
  markSpecialActionError,
@@ -108,6 +109,10 @@ function LoadedHuman({model,preset,appearance,motion,riding=false,driving}:Props
    instance.onSpecialStopped(null);
   };
  },[instance]);
+ const latestPlaybackRef=useRef({loop:special.loop,speed:special.speed});
+ latestPlaybackRef.current={loop:special.loop,speed:special.speed};
+ useEffect(()=>{instance?.setSpecialLoop(special.loop);},[instance,special.loop]);
+ useEffect(()=>{instance?.setSpecialSpeed(special.speed);},[instance,special.speed]);
  useEffect(()=>{
   if(!instance)return;
   if(!activeSpecialId){
@@ -116,11 +121,23 @@ function LoadedHuman({model,preset,appearance,motion,riding=false,driving}:Props
   }
   let cancelled=false;
   const loadGen=special.generation;
+  const def=getSpecialAction(activeSpecialId);
   loadSpecialActionClipForRig(activeSpecialId,preset,model.scene)
    .then(clip=>{
     if(cancelled)return;
-    const syncTimeSec=getSpecialActionSyncPhase(special.startedAtMs,clip.duration,special.loop);
-    instance.setSpecialClip(clip,{loop:special.loop,syncTimeSec,speed:special.speed});
+    const {loop,speed}=latestPlaybackRef.current;
+    const syncTimeSec=def?.supportsGroupSync
+     ? getSpecialActionSyncPhase(special.startedAtMs,clip.duration,loop)
+     : 0;
+    instance.setSpecialClip(clip,{
+     loop,
+     syncTimeSec,
+     speed,
+     crossFadeSec:def?.crossFadeSec,
+     fadeOutSec:def?.fadeOutSec,
+     endHoldSec:def?.endHoldSec,
+     restart:true,
+    });
     markSpecialActionPlaying(activeSpecialId,loadGen);
    })
    .catch(err=>{
@@ -131,7 +148,7 @@ function LoadedHuman({model,preset,appearance,motion,riding=false,driving}:Props
     instance.setSpecialClip(null);
    });
   return ()=>{cancelled=true;};
- },[instance,activeSpecialId,special.loop,special.speed,special.startedAtMs,special.generation,preset,model]);
+ },[instance,activeSpecialId,special.startedAtMs,special.generation,preset,model]);
  useFrame((_,delta)=>{if(instance&&(!driving||driving.current.active))instance.update(motion.current,riding,driving?.current,delta);});
  if(!instance)return null;
  // Preserve the supplied texture artwork; height remains adjustable in Appearance.

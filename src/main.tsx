@@ -11,6 +11,16 @@ import {LifeMeter} from './components/LifeMeter';
 import { RideControls } from './components/RideControls';
 import { CarControls } from './components/CarControls';
 import { GuideDialog } from './components/GuideDialog';
+import {
+  SubscriptionProximityPrompt,
+  SubscriptionShopDialog,
+} from './components/SubscriptionShopDialog';
+import {
+  closeSubscriptionShop,
+  getSubscriptionShopState,
+  openSubscriptionShop,
+  useSubscriptionShop,
+} from './game/subscriptionShop';
 import type { CarStatus } from './game/carRide';
 import type { RideStatus } from './game/motorcycleRide';
 import { SettingsMenu } from "./components/SettingsMenu";
@@ -208,6 +218,28 @@ function App() {
   const environment=useEnvironmentTime();
   const night=environment.period==='night'||environment.period==='evening';
   const intro = useIntroState();
+  const subscriptionShop = useSubscriptionShop();
+
+  useEffect(() => {
+    const onShopKeyDown = (e: KeyboardEvent) => {
+      if (loading || mapOpen || settingsOpen || guideOpen || getIntroState().active) return;
+      if (carStatus.driving || balloonStatus.riding || rideStatus.riding) return;
+      if (getSubscriptionShopState().isOpen) return;
+      if (e.code !== 'KeyE' || e.repeat) return;
+      if (
+        e.target instanceof HTMLElement &&
+        e.target.closest('input,select,textarea,[contenteditable="true"]')
+      ) {
+        return;
+      }
+      if (getSubscriptionShopState().isNearBillboard) {
+        e.preventDefault();
+        openSubscriptionShop('keyboard');
+      }
+    };
+    window.addEventListener('keydown', onShopKeyDown);
+    return () => window.removeEventListener('keydown', onShopKeyDown);
+  }, [loading, mapOpen, settingsOpen, guideOpen, carStatus.driving, balloonStatus.riding, rideStatus.riding]);
   const introSettings = useIntroSettings();
   const vehicleWaiting = useVehicleWaiting();
   const entryIntroAttemptedRef = useRef(false);
@@ -366,6 +398,10 @@ function App() {
     const close = (e: KeyboardEvent) => {
       if (loading) return;
       if (e.code === "Escape") {
+        if (getSubscriptionShopState().isOpen) {
+          closeSubscriptionShop();
+          return;
+        }
         if (getIntroState().active) {
           skipIntro();
         }
@@ -377,6 +413,7 @@ function App() {
         setTeleportPin(null);
         setTeleportScreenPos(null);
       }
+      if (getSubscriptionShopState().isOpen) return;
       if (e.code === "KeyN" && !e.repeat && !(e.target instanceof HTMLElement && e.target.closest('input,select,textarea,[contenteditable="true"]'))) {
         environment.cycle();
       }
@@ -505,7 +542,7 @@ function App() {
       <div
         className="scene-wrap"
         onClick={() => {
-          if (!mapOpen && !loading && !getIntroState().active) {
+          if (!mapOpen && !loading && !getIntroState().active && !getSubscriptionShopState().isOpen) {
             setSceneActive(true);
             setSettingsOpen(false);
           }
@@ -554,7 +591,7 @@ function App() {
             />
             <CinematicIntroController />
             <Player
-              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || intro.active} loading={loading}
+              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || intro.active || subscriptionShop.isOpen} loading={loading}
               deferGlb={(loading && shouldPlayIntro("entry", introSettings, { diagnosticDisabled: diagnosticConfig.enabled }) && !(introSettings.respectReducedMotion && isReducedMotionPreferred())) || (intro.active && isIntroHighAltitude(intro))}
               onCarStatus={carUpdate}
               onBalloonStatus={balloonUpdate}
@@ -602,7 +639,7 @@ function App() {
         input={mobileInput}
         flying={balloonStatus.riding}
         canJump={!balloonStatus.riding && character === "cartoon" && !rideStatus.riding && !carStatus.driving && !rideStatus.crashed}
-        disabled={mapOpen || settingsOpen || loading || carStatus.driving}
+        disabled={mapOpen || settingsOpen || loading || carStatus.driving || subscriptionShop.isOpen}
         onInteract={activateMobile}
       />}
       {!intro.active && !mapOpen && !settingsOpen && (
@@ -684,6 +721,19 @@ function App() {
         />
       )}
 
+      <SubscriptionProximityPrompt
+        shop={subscriptionShop}
+        visible={
+          !intro.active &&
+          !mapOpen &&
+          !settingsOpen &&
+          !guideOpen &&
+          !loading &&
+          !carStatus.driving &&
+          !balloonStatus.riding &&
+          !rideStatus.riding
+        }
+      />
       {!intro.active && !mapOpen && displayedGuidance && (
         <div className="home-guidance" role="status" aria-live="polite">
           <span className="home-guidance-pill">🏡 အိမ်လမ်းညွှန်</span>
@@ -933,6 +983,12 @@ function App() {
         {/* <span><span className="footer-location">📍 {currentLoc.subArea ?? currentLoc.label} · </span>{topDown ? 'ကောင်းကင်တည့်တည့်' : first ? 'ပထမလူ မြင်ကွင်း' : 'တတိယလူ မြင်ကွင်း'} · Zoom {Math.round(zoom)} မီတာ · {pos.x.toFixed(1)}, {pos.z.toFixed(1)} မီတာ</span> */}
       </footer>
       </div>
+      <SubscriptionShopDialog
+        isOpen={subscriptionShop.isOpen}
+        url={subscriptionShop.url}
+        title={subscriptionShop.title}
+        onClose={closeSubscriptionShop}
+      />
       <WorldLoading state={sceneLoading} sceneFailed={sceneFailed} />
     </main>
   );

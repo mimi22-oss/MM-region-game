@@ -12,7 +12,7 @@ import {
  Vector3,
 } from 'three';
 import {clone} from 'three/examples/jsm/utils/SkeletonUtils.js';
-import {AnimationController} from '../animation/core/AnimationController.ts';
+import {AnimationController,type MotionPlayOptions} from '../animation/core/AnimationController.ts';
 import {createLimbFitter} from './characterRig.ts';
 import {driverGrip} from './carCabin.ts';
 import {createGlbEyeBlink,type GlbEyePreset} from './glbEyeBlink.ts';
@@ -237,7 +237,7 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
 
  function setSpecialClip(
   clip:AnimationClip|null,
-  opts?:{loop?:boolean;syncTimeSec?:number;crossFadeSec?:number;speed?:number},
+  opts?:MotionPlayOptions,
  ){
   animController.play(clip,opts);
  }

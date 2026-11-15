@@ -68,11 +68,18 @@ export class AnimationStateMachine {
   requestAction(
     id: MotionId,
     category: MotionCategory,
-    opts?: { loop?: boolean; speed?: number; startedAtMs?: number; groupId?: string | null },
+    opts?: {
+      loop?: boolean;
+      speed?: number;
+      startedAtMs?: number;
+      groupId?: string | null;
+      restart?: boolean;
+    },
   ): { changed: boolean; snapshot: AnimationStateSnapshot } {
     const loop = opts?.loop ?? true;
     const speed = opts?.speed ?? this.snapshot.speed ?? 1;
     const isAlreadyActive =
+      !opts?.restart &&
       this.snapshot.activeActionId === id &&
       this.snapshot.loop === loop &&
       this.snapshot.speed === speed &&

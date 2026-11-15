@@ -13,6 +13,7 @@ import {
   subscribeSpecialAction,
   syncCharacterLocomotionState,
   toggleSpecialAction,
+  triggerSpecialAction,
   useSpecialActionStore,
   type SpecialActionState,
   type SpecialActionStatus,
@@ -34,13 +35,26 @@ import {
 } from '../animation/core/MotionLoader.ts';
 import {
   getMotion,
+  getMotionCategoryGroups,
+  listManualMotions,
+  listMotionCategories,
+  listMotionSubgroups,
   listMotions,
+  listMotionsBySubgroup,
   registerMotion,
   registerMotionAlias,
   resolveMotionId,
   type MotionCategory,
+  type MotionCategoryMeta,
+  type MotionCategoryWithCount,
   type MotionDefinition,
+  type MotionEndPose,
   type MotionId,
+  type MotionInterruptibility,
+  type MotionSubgroup,
+  type MotionSubgroupGroup,
+  type MotionSubgroupMeta,
+  type UiActionCategory,
 } from '../animation/core/MotionRegistry.ts';
 import { normalizeBoneName } from '../animation/retargeting/BoneMapping.ts';
 import {
@@ -49,6 +63,14 @@ import {
 } from '../animation/retargeting/SkeletonRetargeter.ts';
 
 export type SpecialActionCategory = MotionCategory;
+export type SpecialActionUiCategory = UiActionCategory;
+export type SpecialActionSubgroup = MotionSubgroup;
+export type SpecialActionInterruptibility = MotionInterruptibility;
+export type SpecialActionEndPose = MotionEndPose;
+export type SpecialActionCategoryMeta = MotionCategoryMeta;
+export type SpecialActionCategoryWithCount = MotionCategoryWithCount;
+export type SpecialActionSubgroupMeta = MotionSubgroupMeta;
+export type SpecialActionSubgroupGroup = MotionSubgroupGroup;
 export type SpecialActionId = MotionId;
 export type SpecialActionDefinition = MotionDefinition;
 export type RawAnimationAsset = RawMotionAsset;
@@ -62,10 +84,15 @@ export {
   cloneTransformHierarchyOnly,
   getMotion as getSpecialAction,
   getMotionCacheStats as getSpecialActionCacheStats,
+  getMotionCategoryGroups as getSpecialActionCategoryGroups,
   getSpecialActionState,
   getSpecialActionSyncPhase,
   isWaitingMotionId,
+  listManualMotions as listManualSpecialActions,
+  listMotionCategories as listSpecialActionCategories,
+  listMotionSubgroups as listSpecialActionSubgroups,
   listMotions as listSpecialActions,
+  listMotionsBySubgroup as listSpecialActionsBySubgroup,
   markSpecialActionError,
   markSpecialActionPlaying,
   normalizeBoneName,
@@ -82,6 +109,7 @@ export {
   subscribeSpecialAction,
   syncCharacterLocomotionState,
   toggleSpecialAction,
+  triggerSpecialAction,
   useSpecialActionStore as useSpecialAction,
   type SpecialActionState,
   type SpecialActionStatus,

@@ -111,7 +111,14 @@ export function useSpecialActionStore(): SpecialActionState {
  */
 export function playSpecialAction(
   id: MotionId,
-  opts?: { loop?: boolean; speed?: number; startedAtMs?: number; groupId?: string | null; force?: boolean },
+  opts?: {
+    loop?: boolean;
+    speed?: number;
+    startedAtMs?: number;
+    groupId?: string | null;
+    force?: boolean;
+    restart?: boolean;
+  },
 ): boolean {
   const canonicalId = resolveMotionId(id);
   const def = getMotion(canonicalId);
@@ -120,7 +127,10 @@ export function playSpecialAction(
   const snap = stateMachine.getSnapshot();
   if (!opts?.force && snap.activeActionId && snap.activeActionId !== canonicalId) {
     const activeDef = getMotion(snap.activeActionId);
-    if (activeDef && activeDef.priority > def.priority) {
+    if (
+      activeDef &&
+      (activeDef.interruptibility === 'vehicle-only' || activeDef.priority > def.priority)
+    ) {
       return false;
     }
   }
@@ -139,10 +149,35 @@ export function playSpecialAction(
     speed,
     startedAtMs: opts?.startedAtMs,
     groupId: opts?.groupId ?? null,
+    restart: opts?.restart,
   });
 
   if (changed) emitIfChanged();
   return true;
+}
+
+/**
+ * Triggers a manual UI action according to its registry metadata:
+ * one-shot retriggerable actions (boxing, kicking, reactions, movement) replay immediately on tap,
+ * while toggleable looping actions (dances, exercises) toggle cleanly.
+ */
+export function triggerSpecialAction(
+  id: MotionId,
+  opts?: { loop?: boolean; speed?: number },
+): boolean {
+  const canonicalId = resolveMotionId(id);
+  const def = getMotion(canonicalId);
+  if (!def || def.autoTriggeredOnly) return false;
+
+  const snap = stateMachine.getSnapshot();
+  if (snap.activeActionId === canonicalId) {
+    if (def.allowRetrigger) {
+      return playSpecialAction(canonicalId, { ...opts, restart: true });
+    }
+    stopSpecialAction();
+    return false;
+  }
+  return playSpecialAction(canonicalId, opts);
 }
 
 export function markSpecialActionPlaying(id: MotionId, generation?: number): void {

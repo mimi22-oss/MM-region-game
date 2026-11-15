@@ -7,6 +7,7 @@ import { Box } from './Primitives';
 import { DoubleSide } from 'three';
 import { CarCallSpotMarker } from './CarCallSpotMarker';
 import { sourceIsEdited } from '../game/worldEdits';
+import { SubscriptionBillboard } from './SubscriptionBillboard';
 
 /**
  * Character's walk-in Farmhouse (စိုက်ခင်းအိမ်):
@@ -162,6 +163,7 @@ export function FarmhouseBuilding({ ignoreEdits = false }: { ignoreEdits?: boole
 			{/* ဟင်းလင်းပွင့်နေသော တံခါးရွက် ၂ ချပ် (Open Double Doors swung inward) */}
             <group position={[0,0,5]}><HomeGate id="door" width={2.4} height={2.4} color="#7a5438"/></group>
             <HomeDirections/>
+            <SubscriptionBillboard />
 
 
 			{/* ======================================================== */}

@@ -19,7 +19,10 @@ export interface MotionPlayOptions {
   loop?: boolean;
   syncTimeSec?: number;
   crossFadeSec?: number;
+  fadeOutSec?: number;
+  endHoldSec?: number;
   speed?: number;
+  restart?: boolean;
 }
 
 function dampWeight(current: number, target: number, lambda: number, dt: number): number {
@@ -28,8 +31,8 @@ function dampWeight(current: number, target: number, lambda: number, dt: number)
 
 /**
  * Per-character AnimationController sharing the rig's single `THREE.AnimationMixer`.
- * Coordinates Play, Stop, Loop, Speed, Fade In/Out, and Return-to-Idle without extra mixers
- * or per-frame heap allocations.
+ * Coordinates Play, Stop, Loop, Speed, Fade In/Out, ground-pose settle holds, and Return-to-Idle
+ * without extra mixers or per-frame heap allocations.
  */
 export class AnimationController {
   private readonly mixer: AnimationMixer;
@@ -37,10 +40,20 @@ export class AnimationController {
   private activeAction: AnimationAction | null = null;
   private activeLoop = true;
   private activeSpeed = 1;
+  private activeFadeOutSec = 0.28;
+  private activeEndHoldSec = 0;
+  private holdingAtEnd = false;
+  private endHoldRemainingSec = 0;
+  private fadeOutElapsedSec = 0;
+  private fadeOutStartWeight = 0;
+  private usingSmoothFadeOut = false;
   private targetActive = false;
   private blendWeight = 0;
   private onFinishedCb: (() => void) | null = null;
   private disposed = false;
+
+  // Bounded scratch tracking of previous crossfade source clips so finished sources are uncached cleanly
+  private readonly retiredClips = new Set<AnimationClip>();
 
   // Pre-allocated scratch vectors (zero per-frame heap allocations)
   private readonly hipsActionPos = new Vector3();
@@ -49,8 +62,13 @@ export class AnimationController {
   private readonly handleMixerFinished = (event: { action: AnimationAction }) => {
     if (this.disposed) return;
     if (event.action === this.activeAction && !this.activeLoop) {
-      this.targetActive = false;
-      this.onFinishedCb?.();
+      if (this.activeEndHoldSec > 0) {
+        this.holdingAtEnd = true;
+        this.endHoldRemainingSec = this.activeEndHoldSec;
+      } else {
+        this.beginFadeOut(false);
+        this.onFinishedCb?.();
+      }
     }
   };
 
@@ -69,11 +87,38 @@ export class AnimationController {
   }
 
   get isActive(): boolean {
-    return this.targetActive && this.activeAction !== null;
+    return (this.targetActive || this.holdingAtEnd) && this.activeAction !== null;
   }
 
   get currentClipName(): string | null {
     return this.activeAction && this.blendWeight > 0.01 ? this.activeAction.getClip().name : null;
+  }
+
+  private beginFadeOut(interruptedByMotion: boolean): void {
+    if (!this.targetActive && !this.holdingAtEnd) {
+      if (interruptedByMotion && this.usingSmoothFadeOut) {
+        this.usingSmoothFadeOut = false;
+      }
+      return;
+    }
+    this.holdingAtEnd = false;
+    this.endHoldRemainingSec = 0;
+    this.targetActive = false;
+    if (!interruptedByMotion && this.activeFadeOutSec > 0.35 && this.blendWeight > 0.01) {
+      this.usingSmoothFadeOut = true;
+      this.fadeOutElapsedSec = 0;
+      this.fadeOutStartWeight = this.blendWeight;
+    } else {
+      this.usingSmoothFadeOut = false;
+    }
+  }
+
+  private flushRetiredClips(exceptClip?: AnimationClip): void {
+    for (const clip of this.retiredClips) {
+      if (clip === exceptClip) continue;
+      this.mixer.uncacheAction(clip, this.rootObject);
+      this.retiredClips.delete(clip);
+    }
   }
 
   setLoop(loop: boolean): void {
@@ -81,6 +126,14 @@ export class AnimationController {
     if (!this.activeAction) return;
     this.activeAction.setLoop(loop ? LoopRepeat : LoopOnce, loop ? Infinity : 1);
     this.activeAction.clampWhenFinished = !loop;
+    if (loop && (this.holdingAtEnd || this.activeAction.paused)) {
+      this.holdingAtEnd = false;
+      this.endHoldRemainingSec = 0;
+      this.usingSmoothFadeOut = false;
+      this.activeAction.paused = false;
+      this.targetActive = true;
+      this.activeAction.play();
+    }
   }
 
   setSpeed(speed: number): void {
@@ -105,12 +158,24 @@ export class AnimationController {
     const prevClip = prevAction ? prevAction.getClip() : null;
     const nextAction = this.mixer.clipAction(clip);
 
+    this.holdingAtEnd = false;
+    this.endHoldRemainingSec = 0;
+    this.usingSmoothFadeOut = false;
+    this.activeFadeOutSec = opts?.fadeOutSec ?? 0.28;
+    this.activeEndHoldSec = opts?.endHoldSec ?? 0;
+
     nextAction.setLoop(nextLoop ? LoopRepeat : LoopOnce, nextLoop ? Infinity : 1);
     nextAction.clampWhenFinished = !nextLoop;
     nextAction.setEffectiveTimeScale(nextSpeed);
 
-    if (prevAction !== nextAction || !nextAction.isRunning()) {
-      if (prevAction && prevAction !== nextAction && this.blendWeight > 0.05 && prevAction.isRunning()) {
+    const sameAction = prevAction === nextAction;
+    const shouldStartFresh = !sameAction || !nextAction.isRunning() || opts?.restart === true;
+
+    if (shouldStartFresh) {
+      if (!sameAction && prevAction && this.blendWeight > 0.05 && prevAction.enabled) {
+        if (prevClip && prevClip !== clip) {
+          this.retiredClips.add(prevClip);
+        }
         nextAction.reset();
         nextAction.enabled = true;
         nextAction.setEffectiveWeight(1);
@@ -122,6 +187,7 @@ export class AnimationController {
         prevAction.crossFadeTo(nextAction, crossFadeSec, false);
       } else {
         this.mixer.stopAllAction();
+        this.flushRetiredClips(clip);
         if (prevClip && prevClip !== clip) {
           this.mixer.uncacheAction(prevClip, this.rootObject);
         }
@@ -155,24 +221,29 @@ export class AnimationController {
   }
 
   stop(): void {
-    this.targetActive = false;
+    this.beginFadeOut(false);
   }
 
   fadeOut(immediate = false): void {
+    this.holdingAtEnd = false;
+    this.endHoldRemainingSec = 0;
     this.targetActive = false;
+    this.usingSmoothFadeOut = false;
     if (immediate) {
       this.blendWeight = 0;
+      this.mixer.stopAllAction();
+      this.flushRetiredClips();
       if (this.activeAction) {
-        const clip = this.activeAction.getClip();
-        this.mixer.stopAllAction();
-        this.mixer.uncacheAction(clip, this.rootObject);
+        this.mixer.uncacheAction(this.activeAction.getClip(), this.rootObject);
         this.activeAction = null;
       }
+    } else {
+      this.beginFadeOut(false);
     }
   }
 
   returnToIdle(): void {
-    this.targetActive = false;
+    this.beginFadeOut(false);
   }
 
   /** Updates the blend envelope between procedural locomotion and clip playback; returns true when fully exited. */
@@ -181,13 +252,33 @@ export class AnimationController {
       this.fadeOut(true);
       return true;
     }
-    if (interruptedByMotion) {
-      this.targetActive = false;
+    if (interruptedByMotion && (this.targetActive || this.holdingAtEnd || this.usingSmoothFadeOut)) {
+      this.beginFadeOut(true);
     }
 
-    const targetBlend = this.targetActive && this.activeAction !== null ? 1 : 0;
+    if (this.holdingAtEnd && dtSec > 0) {
+      this.endHoldRemainingSec -= dtSec;
+      if (this.endHoldRemainingSec <= 0) {
+        this.beginFadeOut(false);
+        this.onFinishedCb?.();
+      }
+    }
+
+    const targetBlend = (this.targetActive || this.holdingAtEnd) && this.activeAction !== null ? 1 : 0;
+    if (targetBlend === 1) {
+      this.usingSmoothFadeOut = false;
+    }
+
     if (dtSec > 0) {
-      this.blendWeight = dampWeight(this.blendWeight, targetBlend, targetBlend > 0 ? 12 : 15, dtSec);
+      if (targetBlend === 0 && this.usingSmoothFadeOut) {
+        this.fadeOutElapsedSec += dtSec;
+        const progress = Math.min(1, this.fadeOutElapsedSec / Math.max(0.25, this.activeFadeOutSec));
+        // Raised cosine eases smoothly off floor/prone or turned end-poses instead of popping upright immediately
+        const ease = 0.5 + 0.5 * Math.cos(Math.PI * progress);
+        this.blendWeight = progress >= 1 ? 0 : this.fadeOutStartWeight * ease;
+      } else {
+        this.blendWeight = dampWeight(this.blendWeight, targetBlend, targetBlend > 0 ? 12 : 15, dtSec);
+      }
       if (Math.abs(targetBlend - this.blendWeight) < 0.002) {
         this.blendWeight = targetBlend;
       }
@@ -195,11 +286,17 @@ export class AnimationController {
       this.blendWeight = targetBlend;
     }
 
-    if (this.blendWeight <= 0 && !this.targetActive && this.activeAction !== null) {
+    if (this.blendWeight >= 0.999 && this.retiredClips.size > 0) {
+      this.flushRetiredClips(this.activeAction?.getClip());
+    }
+
+    if (this.blendWeight <= 0 && !this.targetActive && !this.holdingAtEnd && this.activeAction !== null) {
       const clip = this.activeAction.getClip();
       this.mixer.stopAllAction();
+      this.flushRetiredClips();
       this.mixer.uncacheAction(clip, this.rootObject);
       this.activeAction = null;
+      this.usingSmoothFadeOut = false;
       return true;
     }
     return false;
@@ -252,14 +349,14 @@ export class AnimationController {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.holdingAtEnd = false;
+    this.usingSmoothFadeOut = false;
     this.mixer.removeEventListener('finished', this.handleMixerFinished);
+    this.mixer.stopAllAction();
+    this.flushRetiredClips();
     if (this.activeAction) {
-      const clip = this.activeAction.getClip();
-      this.mixer.stopAllAction();
-      this.mixer.uncacheAction(clip, this.rootObject);
+      this.mixer.uncacheAction(this.activeAction.getClip(), this.rootObject);
       this.activeAction = null;
-    } else {
-      this.mixer.stopAllAction();
     }
     this.mixer.uncacheRoot(this.rootObject);
     this.onFinishedCb = null;

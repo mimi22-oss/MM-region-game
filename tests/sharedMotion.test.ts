@@ -128,9 +128,10 @@ test('Girl (girl (1).glb & girl.glb) and Boy accurately retarget all 6 dances + 
   ]);
 
   const allMotions = listMotions();
-  assert.equal(allMotions.length, 7);
+  assert.equal(allMotions.length, 24);
   assert.equal(listDanceActions().length, 6);
   assert.equal(getMotion('vehicle-wait')?.clipName, 'wait.001');
+  const baseLocomotionMotions = [...listDanceActions(), getMotion('vehicle-wait')!];
 
   const boyRefAvatar = createGlbHuman(boy.scene, { preset: 'boy' });
   const girlAvatar = createGlbHuman(girl.scene, { preset: 'girl' });
@@ -142,7 +143,7 @@ test('Girl (girl (1).glb & girl.glb) and Boy accurately retarget all 6 dances + 
   const b2 = new Vector3();
 
   try {
-    for (const def of allMotions) {
+    for (const def of baseLocomotionMotions) {
       const ext = await parseExtractedMotion(def.assetUrl);
       const srcClip = ext.animations[0];
 
@@ -315,7 +316,20 @@ test('Repeated 60x Play/Switch/Stop cycles keep mixer action count and LRU cache
   const boyAvatar = createGlbHuman(boy.scene, { preset: 'boy' });
   const mockLoader = (url: string) => parseExtractedMotion(url);
 
-  const cycleIds = ['dance_01', 'dance_02', 'dance_03', 'dance_04', 'dance_05', 'dance_06', 'vehicle-wait'] as const;
+  const cycleIds = [
+    'dance_01',
+    'dance_02',
+    'box_01',
+    'front_kick_01',
+    'warm_up',
+    'press_up',
+    'hit_to_head',
+    'defeat_03',
+    'fall',
+    'dive',
+    'turn',
+    'vehicle-wait',
+  ] as const;
 
   try {
     for (let i = 0; i < 60; i++) {

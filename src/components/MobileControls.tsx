@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject, type PointerEvent } from 'react';
 import { MobileGesture, type MobileInput, type MobileDirection } from '../game/mobileInput';
+import { tryTapSubscriptionBillboard } from '../game/subscriptionShop';
 
 export function MobileControls({
 	input,
@@ -88,7 +89,18 @@ export function MobileControls({
 		};
 	}, [disabled, clear]);
 
+	const tapStart = useRef<{ pointerId: number; x: number; y: number; t: number } | null>(null);
 	const down = (e: PointerEvent<HTMLDivElement>, side: 'left' | 'right') => {
+		if (!disabled && gesture.current.fingers.size === 0 && !(e.target instanceof Element && e.target.closest('button'))) {
+			tapStart.current = {
+				pointerId: e.pointerId,
+				x: e.clientX,
+				y: e.clientY,
+				t: performance.now(),
+			};
+		} else {
+			tapStart.current = null;
+		}
 		if (disabled || e.button !== 0) return;
 		e.preventDefault();
 		e.stopPropagation();
@@ -165,6 +177,28 @@ export function MobileControls({
 	};
 
 	const release = (e: PointerEvent<HTMLDivElement>) => {
+        const tap = tapStart.current;
+        if (tap && tap.pointerId === e.pointerId) {
+            if (e.type === 'pointerup') {
+                tapStart.current = null;
+                if (
+                    !disabled &&
+                    gesture.current.fingers.size <= 1 &&
+                    !gesture.current.pinching &&
+                    !gesture.current.tick &&
+                    performance.now() - tap.t <= 900 &&
+                    Math.hypot(e.clientX - tap.x, e.clientY - tap.y) <= 10 &&
+                    !(e.target instanceof Element && e.target.closest('button')) &&
+                    tryTapSubscriptionBillboard(e.clientX, e.clientY)
+                ) {
+                    gesture.current.up(e.pointerId);
+                    e.stopPropagation();
+                    return;
+                }
+            } else if (e.type === 'pointercancel') {
+                tapStart.current = null;
+            }
+        }
         if((e.type==='pointercancel'||e.type==='lostpointercapture')&&gesture.current.fingers.has(e.pointerId)){
             gesture.current.stop();
         }else gesture.current.up(e.pointerId);

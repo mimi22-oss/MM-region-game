@@ -12,6 +12,12 @@ import {
   stopSpecialAction,
 } from '../game/specialActions';
 import {
+  getSubscriptionShopState,
+  tryCenterClickSubscriptionBillboard,
+  tryTapSubscriptionBillboard,
+  wasBillboardClickRecentlyConsumed,
+} from '../game/subscriptionShop';
+import {
  beginEnteringVehicle,
  completeVehicleBoarding,
  getCarBoardingTarget,
@@ -263,6 +269,15 @@ export const Player = memo(function Player({
   if(teleportMode&&document.pointerLockElement===gl.domElement)document.exitPointerLock();
  },[teleportMode,gl]);
  useEffect(()=>{
+  if(controlsBlocked||mapOpen){
+   state.current.keys.clear();
+   state.current.dragging=false;
+   state.current.shiftDrag=false;
+   gl.domElement.style.cursor='';
+   if(document.pointerLockElement===gl.domElement)document.exitPointerLock();
+  }
+ },[controlsBlocked,mapOpen,gl]);
+ useEffect(()=>{
   const s=state.current;
   const clear=()=>{clearBalloonInput();balloonRide.vx=0;balloonRide.vz=0;balloonRide.vy=0;if(!jump.current.airborne)jumpPose.current=createJumpPose();if(!jump.current.airborne){jump.current.vx=0;jump.current.vz=0;}s.jumpRequested=false;if(mobileInput?.current)mobileInput.current.jump=false;motorcycleRide.speed=0;const car=currentCar();if(car)car.speed=0;clearCarInput();s.keys.clear();s.dragging=false;s.shiftDrag=false;gl.domElement.style.cursor=''};
   const lock=()=>{s.locked=document.pointerLockElement===gl.domElement;clear();onLock(s.locked)};
@@ -378,7 +393,13 @@ export const Player = memo(function Player({
   };
   const click=(e:MouseEvent)=>{
    if(teleportMode||mapOpen||controlsBlocked||s.dragMoved>5||e.shiftKey||s.keys.has('ShiftLeft')||s.keys.has('ShiftRight'))return;
-   if(document.pointerLockElement!==gl.domElement)gl.domElement.requestPointerLock()?.catch(()=>onLock(false));
+   if(wasBillboardClickRecentlyConsumed()||getSubscriptionShopState().isOpen)return;
+   if(document.pointerLockElement===gl.domElement){
+    tryCenterClickSubscriptionBillboard();
+    return;
+   }
+   if(tryTapSubscriptionBillboard(e.clientX,e.clientY,'billboard-click'))return;
+   gl.domElement.requestPointerLock()?.catch(()=>onLock(false));
   };
   const wheel=(e:WheelEvent)=>{
    if(mapOpen||controlsBlocked||(e.target instanceof HTMLElement&&e.target.closest('.settings-menu,.action-menu-popover,.ride-controls,.car-controls,.guide-dialog-modal,.teleport-confirm-card')))return;
