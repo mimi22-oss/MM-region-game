@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {Box3,SkinnedMesh,Vector3} from 'three';
+import {AnimationClip,Box3,QuaternionKeyframeTrack,SkinnedMesh,Vector3} from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {createGlbHuman,selectBoyClip} from '../src/game/glbHuman.ts';
 import {
@@ -153,5 +153,33 @@ test('GLB boy and girl characters blink naturally in standing and seated animati
   }
   assert.ok(seatedPeak>0.8,`${preset} blinks while seated on motorcycle (${seatedPeak})`);
   avatar.dispose();
+ }
+});
+test('disposed GLB human instance ignores special clips while a fresh remounted instance on the same scene animates normally',async()=>{
+ assert.equal(shouldUseGlbCharacter(undefined),false,'missing human preset does not match GLB dance support');
+ const clip=new AnimationClip('dance_01',1,[
+  new QuaternionKeyframeTrack('mixamorigLeftArm.quaternion',[0,0.5,1],[0,0,0,1,0,0,Math.SQRT1_2,Math.SQRT1_2,0,0,0,1]),
+ ]);
+ for(const preset of ['boy','girl'] as const){
+  const model=await parseCharacterGlb(`../src/assets/${preset}.glb`);
+  const stale=createGlbHuman(model.scene,{preset});
+  stale.dispose();
+  stale.setSpecialClip(clip,{loop:true});
+  stale.update({speed:0,distance:0},false,undefined,.032);
+  assert.equal(stale.specialBlend(),0,`${preset} disposed instance stays inert after cleanup`);
+  assert.equal(stale.specialClipName(),null);
+
+  const remounted=createGlbHuman(model.scene,{preset});
+  remounted.update({speed:0,distance:0},false,undefined,.016);
+  const idleArmQuat=remounted.object.getObjectByName('mixamorigLeftArm')!.quaternion.clone();
+  remounted.setSpecialClip(clip,{loop:true,syncTimeSec:0.5});
+  for(let f=0;f<25;f++){
+   remounted.update({speed:0,distance:0},false,undefined,.032);
+  }
+  assert.ok(remounted.specialBlend()>0.99,`${preset} fresh remounted instance reaches full special clip blend`);
+  assert.equal(remounted.specialClipName(),'dance_01');
+  const dancingArmQuat=remounted.object.getObjectByName('mixamorigLeftArm')!.quaternion;
+  assert.ok(idleArmQuat.angleTo(dancingArmQuat)>0.2,`${preset} fresh remounted instance rotates arm bones during special clip`);
+  remounted.dispose();
  }
 });

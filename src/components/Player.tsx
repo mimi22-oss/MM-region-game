@@ -6,14 +6,29 @@ import {walkWithContacts,createWalkingRecoil,stepWalkingRecoil} from '../game/wa
 import {useAppearance} from '../game/appearanceStore';
 import {shouldUseGlbCharacter} from '../game/characterRenderer';
 import {isIntroHighAltitude,isIntroOwningCamera} from '../game/IntroStateMachine';
-import {getSpecialActionState,stopSpecialAction} from '../game/specialActions';
+import {
+  getSpecialActionState,
+  isWaitingMotionId,
+  stopSpecialAction,
+} from '../game/specialActions';
+import {
+ beginEnteringVehicle,
+ completeVehicleBoarding,
+ getCarBoardingTarget,
+ getVehicleWaitingState,
+ interruptVehicleWaiting,
+ isVehicleWaitingActiveState,
+ isVehicleWaitingPickupLocked,
+ resetVehicleWaiting,
+ stepVehicleWaiting,
+} from '../game/vehicleWaiting';
 import {rideLife,hitRide,hitActor,hitWalkingContact,isWalkingRecoil,actorFallProgress,tickRideLife} from '../game/rideLife';
 import {hitsTraffic,trafficContact} from '../game/trafficColliders';
 import {motorcycleData} from '../data/motorcycle';
 import {resetMobileInput} from '../game/mobileInput';
 import { sceneGround,motorcycleGroundPose,carGroundPose } from '../game/groundSurface';
-import { carRide, carInput, currentCar, nearbyCar, enterCar, parkCar, carExitSpot, shiftCar, selectAutomaticRange, stepCar, carFootprintClear, clearCarInput, type CarStatus, type CarGear } from '../game/carRide';
-import { canSummonCar, stepCarSummon, updateSummonStand, carSummonState } from '../game/carSummon';
+import { carRide, carInput, currentCar, nearbyCar, enterCar, parkCar, carExitSpot, shiftCar, selectAutomaticRange, stepCar, carFootprintClear, clearCarInput, driveableCars, type CarStatus, type CarGear, type DriveableCar } from '../game/carRide';
+import { canSummonCar, getSummonParkingWorldSpot, stepCarSummon, updateSummonStand, carSummonState } from '../game/carSummon';
 import { ParkedCars } from './Car';
 import { DRIVER_EYE } from '../game/carCabin';
 import { motorcycleRide,tryMount,parkMotorcycle,dismountSpot,stepMotorcycle,type RideStatus } from '../game/motorcycleRide';
@@ -95,6 +110,7 @@ export const Player = memo(function Player({
  const wheels=useRef<Group>(null);
  const [riding,setRiding]=useState(false);
  const rideNotice=useRef(''),fallYaw=useRef(0);
+ const pickupAnchor=useRef<{requestId:number;x:number;z:number}|null>(null);
  const walkingRecoil=useRef(createWalkingRecoil(0));
  const jump=useRef(createHumanJump());
  const jumpPose=useRef(createJumpPose());
@@ -157,7 +173,7 @@ export const Player = memo(function Player({
   if(j.airborne){s.x=j.safeX;s.z=j.safeZ;}
   jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;
  },[character]);
- useEffect(()=>()=>{parkCar();resetBalloon();},[]);
+ useEffect(()=>()=>{resetVehicleWaiting(false);parkCar();resetBalloon();},[]);
  useEffect(()=>{motorcycleRide.maxKmh=speedLimit},[speedLimit]);
  useEffect(()=>{
   if(!dismountRequest||!motorcycleRide.riding||rideLife.crashTime>0)return;
@@ -185,6 +201,7 @@ export const Player = memo(function Player({
  },[topDown]);
  useEffect(()=>{
   if(!teleportTarget||rideLife.crashTime>0)return;
+  interruptVehicleWaiting();
   if(balloonRide.riding)resetBalloon();
   if(currentCar())parkCar();
   const s=state.current;
@@ -225,6 +242,7 @@ export const Player = memo(function Player({
   if(navigationRequest.action==='teleport'){
    const spot=findTeleportSpot(s.camX,s.camZ,canStand);
    if(!spot){onNavigationResult?.(false);return}
+   interruptVehicleWaiting();
    if(balloonRide.riding)resetBalloon();
    if(motorcycleRide.riding){parkMotorcycle();setRiding(false);}
    if(currentCar())parkCar();
@@ -386,6 +404,7 @@ export const Player = memo(function Player({
   const height=(x:number,z:number)=>ground.height(x,z);
   const clear=(x:number,z:number)=>canStand(x,z)&&height(x,z)-height(motorcycleRide.riding?motorcycleRide.x:s.x,motorcycleRide.riding?motorcycleRide.z:s.z)<.5;
   if(tickRideLife(mapOpen||controlsBlocked?0:dt)){
+   interruptVehicleWaiting();
    if(balloonRide.riding)resetBalloon();
    jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;
    parkCar();clearCarInput();
@@ -395,7 +414,27 @@ export const Player = memo(function Player({
    s.keys.clear();if(mobileInput?.current)resetMobileInput(mobileInput.current);
    onMode(false);onTopDown(false);onZoom(ward.spawnZoom);rideNotice.current='';
   }
-  updateHomeAccess(balloonRide.riding?Infinity:s.x,balloonRide.riding?Infinity:s.z,dt);stepCarSummon(dt,height,s.x,s.z,!!currentCar()||balloonRide.riding,motorcycleRide.riding);
+  const waitBefore=getVehicleWaitingState();
+  updateHomeAccess(balloonRide.riding?Infinity:s.x,balloonRide.riding?Infinity:s.z,dt);
+  stepCarSummon(dt,height,s.x,s.z,!!currentCar()||balloonRide.riding,motorcycleRide.riding,waitBefore.state==='ENTERING_VEHICLE');
+  const glbCapable=character==='cartoon'&&shouldUseGlbCharacter(appearance.human.preset);
+  const waitingSnapshot=stepVehicleWaiting(dt,{
+   playAnimation:glbCapable,
+   driving:!!currentCar(),
+   balloonRiding:balloonRide.riding,
+   motorcycleRiding:motorcycleRide.riding,
+   crashed:rideLife.crashTime>0||isWalkingRecoil(),
+   airborne:jump.current.airborne||jumpPose.current.prepare>0,
+  });
+  const pickupLocked=isVehicleWaitingPickupLocked(waitingSnapshot.state);
+  const enteringVehicle=waitingSnapshot.state==='ENTERING_VEHICLE';
+  if(pickupLocked){
+   if(!pickupAnchor.current||pickupAnchor.current.requestId!==waitingSnapshot.requestId){
+    pickupAnchor.current={requestId:waitingSnapshot.requestId,x:s.x,z:s.z};
+   }
+  }else if(pickupAnchor.current&&waitingSnapshot.state==='IDLE'){
+   pickupAnchor.current=null;
+  }
   let oldX=s.x,oldZ=s.z;
   const touch=mobileInput?.current;
   if(touch?.stopRequested){
@@ -403,7 +442,7 @@ export const Player = memo(function Player({
    balloonRide.autoCruise=false;balloonRide.autoReturn=false;balloonRide.vx=0;balloonRide.vz=0;balloonRide.vy=0;balloonRide.cruiseVx=0;balloonRide.cruiseVz=0;
    balloonInput.stopCruise=true;
   }
-  const wantsJump=s.jumpRequested||!!touch?.jump;s.jumpRequested=false;if(touch)touch.jump=false;
+  const wantsJump=!pickupLocked&&!enteringVehicle&&(s.jumpRequested||!!touch?.jump);s.jumpRequested=false;if(touch)touch.jump=false;
   if(touch){
    if(touch.panX||touch.panY){panView(touch.panX,touch.panY);touch.panX=0;touch.panY=0;}
    if(touch.zoomFactor!==1){applyZoom(s.targetDistance*touch.zoomFactor);touch.zoomFactor=1;}
@@ -414,7 +453,9 @@ export const Player = memo(function Player({
   let forward=Number(s.keys.has('KeyW')||s.keys.has('ArrowUp'))-Number(s.keys.has('KeyS')||s.keys.has('ArrowDown'));
   let right=Number(s.keys.has('KeyD')||s.keys.has('ArrowRight'))-Number(s.keys.has('KeyA')||s.keys.has('ArrowLeft'));
   if(touch?.active){forward=touch.forward;right=touch.right;}
-  if(controlsBlocked||introOwnsCamera||mapOpen||rideLife.crashTime>0){forward=0;right=0;}
+  if(controlsBlocked||introOwnsCamera||mapOpen||rideLife.crashTime>0||enteringVehicle){forward=0;right=0;}
+  const aerial=!balloonRide.riding&&!currentCar()&&!touch?.active&&!s.first&&(s.distance>20||s.topDown||s.panning);
+  if(pickupLocked&&!aerial){forward=0;right=0;}
   const len=Math.hypot(forward,right);if(len){forward/=len;right/=len;}
   const fast=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight')||!!touch?.sprint;
   const mobileScale=touch?.active?touch.moveScale:1;
@@ -425,7 +466,6 @@ export const Player = memo(function Player({
    s.first=false;s.topDown=false;s.panning=false;s.pitch=-.12;s.distance=6;s.targetDistance=6;
    onMode(false);onTopDown(false);onZoom(6);
   }
-  const aerial=!balloonRide.riding&&!currentCar()&&!touch?.active&&!s.first&&(s.distance>20||s.topDown||s.panning);
   const ride=motorcycleRide;
   if(carInput.exit&&currentCar()&&rideLife.crashTime<=0){
    carInput.exit=false;
@@ -447,10 +487,18 @@ export const Player = memo(function Player({
     if(touch)resetMobileInput(touch);clearBalloonInput();onMode(false);onTopDown(false);onZoom(24);
    }
   }else if(!balloon.riding)balloon.nearTime=0;
-  const nearCar=!balloon.riding&&!nearBalloon&&!jump.current.airborne&&jumpPose.current.prepare===0&&!wantsJump&&rideLife.crashTime<=0&&!ride.riding&&!currentCar()&&!aerial&&!controlsBlocked&&!mapOpen&&!loading?nearbyCar(s.x,s.z,clear):undefined;
+  const boardCarTarget=(targetCar:DriveableCar)=>{
+   carSummonState.status='idle';
+   enterCar(targetCar);
+   completeVehicleBoarding();
+   s.x=targetCar.x;s.z=targetCar.z;s.camX=s.x;s.camZ=s.z;s.yaw=targetCar.yaw;s.bodyYaw=s.yaw;s.first=true;s.topDown=false;s.panning=false;s.pitch=-.04;s.targetDistance=8;s.keys.clear();
+   if(touch)resetMobileInput(touch);
+   onMode(true);onTopDown(false);onZoom(8);oldX=s.x;oldZ=s.z;
+  };
+  const nearCar=!balloon.riding&&!nearBalloon&&!jump.current.airborne&&jumpPose.current.prepare===0&&!wantsJump&&rideLife.crashTime<=0&&!ride.riding&&!currentCar()&&!aerial&&!controlsBlocked&&!mapOpen&&!loading&&!pickupLocked&&!enteringVehicle?nearbyCar(s.x,s.z,clear):undefined;
   if(nearCar){
    carRide.nearTime=carRide.nearId===nearCar.id?carRide.nearTime+dt:0;carRide.nearId=nearCar.id;
-   if(carRide.nearTime>.65){carSummonState.status='idle';enterCar(nearCar);s.x=nearCar.x;s.z=nearCar.z;s.camX=s.x;s.camZ=s.z;s.yaw=nearCar.yaw;s.bodyYaw=s.yaw;s.first=true;s.topDown=false;s.panning=false;s.pitch=-.04;s.targetDistance=8;s.keys.clear();if(touch)resetMobileInput(touch);onMode(true);onTopDown(false);onZoom(8);oldX=s.x;oldZ=s.z;}
+   if(carRide.nearTime>.65)boardCarTarget(nearCar);
   }else{carRide.nearId=null;carRide.nearTime=0;}
   ride.cooldown=Math.max(0,ride.cooldown-dt);
   const near=Math.hypot(s.x-ride.x,s.z-ride.z)<1.8;
@@ -553,6 +601,30 @@ export const Player = memo(function Player({
     const edge=ward.size/2-PLAYER_RADIUS;
     panCamera(s,right*panSpeed,forward*panSpeed,edge);
    }
+  }else if(pickupLocked&&pickupAnchor.current){
+   s.x=pickupAnchor.current.x;
+   s.z=pickupAnchor.current.z;
+   const lookSpot=getSummonParkingWorldSpot();
+   const lx=lookSpot.x-s.x,lz=lookSpot.z-s.z;
+   if(Math.hypot(lx,lz)>0.05){
+    const targetWaitYaw=Math.atan2(-lx,-lz);
+    const yawDiff=Math.atan2(Math.sin(targetWaitYaw-s.bodyYaw),Math.cos(targetWaitYaw-s.bodyYaw));
+    s.bodyYaw+=yawDiff*Math.min(1,dt*6);
+   }
+   s.camX=s.x;s.camZ=s.z;
+  }else if(enteringVehicle){
+   const targetCar=driveableCars[0];
+   if(targetCar&&!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0){
+    const door=getCarBoardingTarget(targetCar,s.x,s.z);
+    const ddx=door.x-s.x,ddz=door.z-s.z,distToDoor=Math.hypot(ddx,ddz);
+    const stepDist=distToDoor>1e-4?Math.min(distToDoor,4.5*dt):0;
+    if(stepDist>0){
+     walkWithContacts(s,(ddx/distToDoor)*stepDist,(ddz/distToDoor)*stepDist,clear,(x,z)=>trafficContact(x,z,s.bodyYaw,height(x,z),true),treeBlocks);
+    }
+    const arrivedDoor=nearbyCar(s.x,s.z,clear)??(distToDoor<=0.45?targetCar:undefined);
+    if(arrivedDoor)boardCarTarget(arrivedDoor);
+   }
+   s.camX=s.x;s.camZ=s.z;
   }else{
    const speed=fast?9.5:touch?.active?Math.min(9.5,5.5*mobileScale):4;
    const vx=(-Math.sin(yaw)*forward+Math.cos(yaw)*right)*speed,vz=(-Math.cos(yaw)*forward-Math.sin(yaw)*right)*speed;
@@ -594,19 +666,21 @@ export const Player = memo(function Player({
   }
   const dx=s.x-oldX,dz=s.z-oldZ;
   const travelled=Math.hypot(dx,dz);
-  if(getSpecialActionState().activeActionId!==null){
-   const cantDance=
-    character!=='cartoon'||
-    !shouldUseGlbCharacter(appearance.human.preset)||
+  const activeSpecialId=getSpecialActionState().activeActionId;
+  if(activeSpecialId!==null){
+   const isWaitingClip=isWaitingMotionId(activeSpecialId);
+   const baseConflict=
+    !glbCapable||
     balloon.riding||
     !!currentCar()||
     ride.riding||
     isWalkingRecoil()||
     rideLife.crashTime>0||
     jump.current.airborne||
-    jumpPose.current.prepare>0||
-    (!aerial&&(len>0.01||wantsJump))||
-    travelled>0.015;
+    jumpPose.current.prepare>0;
+   const cantDance=isWaitingClip
+    ? baseConflict||!isVehicleWaitingActiveState(waitingSnapshot.state)||travelled>0.05
+    : baseConflict||pickupLocked||enteringVehicle||(!aerial&&(len>0.01||wantsJump))||travelled>0.015;
    if(cantDance)stopSpecialAction();
   }
   characterMotion.current.airborne=jump.current.airborne;

@@ -115,13 +115,18 @@ export function startCarReturn(): boolean {
 	return true;
 }
 
+export function getSummonParkingWorldSpot(): { x: number; z: number } {
+	return toWorld(TARGET_PARKING_U, TARGET_PARKING_V);
+}
+
 export function stepCarSummon(
 	dt: number,
 	height: (x: number, z: number) => number,
 	px?: number,
 	pz?: number,
 	driving?: boolean,
-	riding?: boolean
+	riding?: boolean,
+	holdForBoarding = false
 ): void {
 	if (carSummonState.status === 'idle') return;
 
@@ -176,6 +181,10 @@ export function stepCarSummon(
 			return;
 		}
 
+		if (holdForBoarding) {
+			carSummonState.arrivedTimer = 0;
+			return;
+		}
 		carSummonState.arrivedTimer += dt;
 
 		// Check if player is inside the summon circle (r = 3.5m)

@@ -128,8 +128,7 @@ test('lazy loader dedupes requests and enforces bounded LRU cache limits',async(
  let fetchCount=0;
  const mockLoader=async(url:string)=>{
   fetchCount++;
-  const fileName=url.split('/').pop()!;
-  const {gltf}=await parseAnimationOnlyGlb(`../public/animations/${fileName}`);
+  const {gltf}=await parseAnimationOnlyGlb(`../public${url}`);
   return gltf;
  };
 

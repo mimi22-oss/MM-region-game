@@ -851,6 +851,9 @@ kbd {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
+	max-height: min(74vh, 460px);
+	overflow-y: auto;
+	overscroll-behavior: contain;
 	z-index: 30;
 }
 
@@ -984,10 +987,92 @@ kbd {
 	line-height: 1.2;
 }
 
-.action-dance-meta {
+.action-dance-meta,
+.action-dance-sub {
 	font-size: 10.5px;
 	opacity: 0.8;
 	line-height: 1.2;
+}
+
+.action-menu-section {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.action-menu-section-title {
+	font-size: 10.5px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: #5b6e66;
+}
+
+.action-interaction-card {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 8px 10px;
+	border-radius: 10px;
+	border: 1px solid #dcd4be;
+	background: #f8f4e8;
+}
+
+.action-interaction-card.is-active {
+	background: #e0f2fe;
+	border-color: #38bdf8;
+}
+
+.action-interaction-info {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.action-interaction-title {
+	font-size: 12px;
+	font-weight: 700;
+	color: #163e36;
+}
+
+.action-interaction-sub {
+	font-size: 10.5px;
+	color: #4f645c;
+	line-height: 1.25;
+}
+
+.location-actions .action-menu-popover button.action-interaction-cancel {
+	width: auto;
+	height: auto;
+	min-height: 32px;
+	padding: 4px 10px;
+	border-radius: 8px;
+	background: #fee2e2;
+	color: #991b1b;
+	border: 1px solid #fca5a5;
+	font-size: 11px;
+	font-weight: 700;
+	flex-shrink: 0;
+}
+
+.location-actions .action-menu-popover button.action-dance-btn.is-loading {
+	opacity: 0.86;
+}
+
+.location-actions .action-menu-popover button.action-retry-btn {
+	width: auto;
+	height: auto;
+	min-height: 24px;
+	padding: 2px 8px;
+	margin-left: 6px;
+	border-radius: 6px;
+	border: 1px solid #ef4444;
+	background: #ffffff;
+	color: #991b1b;
+	font-size: 11px;
+	font-weight: 700;
 }
 
 /* Teleport Floating Confirmation Card anchored in screen-space */
@@ -3046,6 +3131,66 @@ body:has(.car-controls-driving) .mobile-controls {
 	line-height: 1;
 }
 
+.car-summon-status-col {
+	display: flex;
+	flex-direction: column;
+	line-height: 1.25;
+}
+
+.car-summon-subtext {
+	font-size: 11.5px;
+	font-weight: 600;
+	color: rgba(226, 232, 240, 0.9);
+}
+
+.car-summon-approaching {
+	color: #34d399;
+}
+
+.car-summon-approaching-badge {
+	font-size: 18px;
+	line-height: 1;
+	animation: pulse-border 1.1s infinite ease-in-out;
+}
+
+.car-summon-cancel-btn {
+	background: rgba(15, 23, 42, 0.72);
+	color: #fecaca;
+	border: 1.5px solid rgba(248, 113, 113, 0.55);
+	border-radius: 999px;
+	padding: 5px 12px;
+	font-weight: 700;
+	font-size: 12px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	touch-action: manipulation;
+}
+
+.car-summon-cancel-btn:hover {
+	background: rgba(185, 28, 28, 0.85);
+	color: #ffffff;
+	border-color: #fca5a5;
+}
+
+.car-summon-cancel-btn:active {
+	transform: scale(0.95);
+}
+
+.car-summon-enter-btn {
+	background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+	border-color: rgba(167, 243, 208, 0.75);
+	box-shadow: 0 4px 14px rgba(16, 185, 129, 0.45);
+}
+
+.car-summon-enter-btn:hover {
+	background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+	box-shadow: 0 6px 20px rgba(16, 185, 129, 0.65);
+}
+
+.car-summon-cancelled {
+	color: #fca5a5;
+}
+
 /* 1. Steering Wheel on Left (Laptop / Desktop / Mobile) */
 .car-steering-panel {
 	position: absolute;
@@ -3853,6 +3998,13 @@ body:has(.car-controls-driving) .mobile-controls {
 		bottom: max(20px, env(safe-area-inset-bottom));
 		padding: 7px 14px;
 		max-width: calc(100vw - 24px);
+		white-space: normal;
+	}
+
+	.car-summon-row {
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 8px;
 	}
 
 	.car-summon-text {

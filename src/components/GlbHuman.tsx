@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState,type RefObject} from 'react';
+import {useEffect,useLayoutEffect,useState,type RefObject} from 'react';
 import {useFrame} from '@react-three/fiber';
 import {Mesh,MeshStandardMaterial,type Texture} from 'three';
 import {GLTFLoader,type GLTF} from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -10,6 +10,7 @@ import {
  loadSpecialActionClipForRig,
  markSpecialActionError,
  markSpecialActionPlaying,
+ notifySpecialActionFadeOutComplete,
  stopSpecialAction,
  useSpecialAction,
 } from '../game/specialActions';
@@ -87,36 +88,52 @@ function LoadedHuman({model,preset,appearance,motion,riding=false,driving}:Props
  const special=useSpecialAction();
  const canPlaySpecial=!riding&&!driving;
  const activeSpecialId=canPlaySpecial?special.activeActionId:null;
- const instance=useMemo(()=>createGlbHuman(model.scene,{castShadow:quality.characterCastShadow,preset}),[model,preset]);
- useEffect(()=>{instance.setCastShadow(quality.characterCastShadow);},[instance,quality.characterCastShadow]);
+ const [instance,setInstance]=useState<ReturnType<typeof createGlbHuman>|null>(null);
+ // Manage the imperative Three.js controller inside useLayoutEffect so StrictMode remounts create a fresh instance instead of reusing a disposed useMemo instance.
+ useLayoutEffect(()=>{
+  const created=createGlbHuman(model.scene,{castShadow:getQualityPreset().characterCastShadow,preset});
+  setInstance(created);
+  return ()=>{
+   setInstance(current=>current===created?null:current);
+   created.dispose();
+  };
+ },[model,preset]);
+ useEffect(()=>{instance?.setCastShadow(quality.characterCastShadow);},[instance,quality.characterCastShadow]);
  useEffect(()=>{
+  if(!instance)return;
   instance.onSpecialFinished(()=>stopSpecialAction());
-  return ()=>instance.onSpecialFinished(null);
+  instance.onSpecialStopped(()=>notifySpecialActionFadeOutComplete());
+  return ()=>{
+   instance.onSpecialFinished(null);
+   instance.onSpecialStopped(null);
+  };
  },[instance]);
  useEffect(()=>{
+  if(!instance)return;
   if(!activeSpecialId){
    instance.setSpecialClip(null);
    return;
   }
   let cancelled=false;
+  const loadGen=special.generation;
   loadSpecialActionClipForRig(activeSpecialId,preset,model.scene)
    .then(clip=>{
     if(cancelled)return;
     const syncTimeSec=getSpecialActionSyncPhase(special.startedAtMs,clip.duration,special.loop);
-    instance.setSpecialClip(clip,{loop:special.loop,syncTimeSec});
-    markSpecialActionPlaying(activeSpecialId);
+    instance.setSpecialClip(clip,{loop:special.loop,syncTimeSec,speed:special.speed});
+    markSpecialActionPlaying(activeSpecialId,loadGen);
    })
    .catch(err=>{
     if(cancelled)return;
-    const message=err instanceof Error?err.message:'Unable to load dance animation.';
+    const message=err instanceof Error?err.message:'Unable to load special animation.';
     console.error(`Unable to load special action ${activeSpecialId}:`,err);
-    markSpecialActionError(activeSpecialId,message);
+    markSpecialActionError(activeSpecialId,message,loadGen);
     instance.setSpecialClip(null);
    });
   return ()=>{cancelled=true;};
- },[instance,activeSpecialId,special.loop,special.startedAtMs,preset,model]);
- useEffect(()=>()=>instance.dispose(),[instance]);
- useFrame((_,delta)=>{if(!driving||driving.current.active)instance.update(motion.current,riding,driving?.current,delta);});
+ },[instance,activeSpecialId,special.loop,special.speed,special.startedAtMs,special.generation,preset,model]);
+ useFrame((_,delta)=>{if(instance&&(!driving||driving.current.active))instance.update(motion.current,riding,driving?.current,delta);});
+ if(!instance)return null;
  // Preserve the supplied texture artwork; height remains adjustable in Appearance.
  return <group name={`glb-${preset}-character`} scale={riding||driving?1:appearance.height} userData={{humanPreset:preset,model:HUMAN_MODEL_URLS[preset]}}>
   <primitive object={instance.root} dispose={null}/>

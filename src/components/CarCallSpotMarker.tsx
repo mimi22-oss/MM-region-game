@@ -3,6 +3,7 @@ import { useRegionFrame as useFrame } from './RegionActivity';
 import { Group, Mesh, MeshBasicMaterial, DoubleSide } from 'three';
 import { carSummonState, SUMMON_TRIGGER_X, SUMMON_TRIGGER_Z } from '../game/carSummon';
 import { carRide } from '../game/carRide';
+import { useVehicleWaiting } from '../game/vehicleWaiting';
 
 /**
  * Animated 3D Ground Summon Zone & Floating Downward Arrow at:
@@ -14,6 +15,7 @@ import { carRide } from '../game/carRide';
  * - 3D Golden/Cyan arrow hovering and pointing down with bobbing & rotation animation
  */
 export function CarCallSpotMarker() {
+	const waiting = useVehicleWaiting();
 	const rootRef = useRef<Group>(null);
 	const innerSpinRef = useRef<Group>(null);
 	const pulseRef = useRef<Mesh>(null);
@@ -24,7 +26,7 @@ export function CarCallSpotMarker() {
 	useFrame(({ clock }, delta) => {
 		// Visibility: visible when not driving and car has not yet arrived
 		const isDrivingCar = !!carRide.carId;
-		const isArrived = carSummonState.status === 'arrived';
+		const isArrived = carSummonState.status === 'arrived' || waiting.state === 'VEHICLE_ARRIVED' || waiting.state === 'ENTERING_VEHICLE';
 		const visible = !isDrivingCar && !isArrived;
 
 		if (rootRef.current) {
@@ -59,7 +61,11 @@ export function CarCallSpotMarker() {
 	});
 
 	// Colors adapt if summon is actively in progress
-	const isIncoming = carSummonState.status === 'driving';
+	const isIncoming =
+		carSummonState.status === 'driving' ||
+		waiting.state === 'CALLING_VEHICLE' ||
+		waiting.state === 'WAITING_FOR_VEHICLE' ||
+		waiting.state === 'VEHICLE_APPROACHING';
 	const baseColor = isIncoming ? '#10b981' : '#0284c7';
 	const rimColor = isIncoming ? '#34d399' : '#38bdf8';
 

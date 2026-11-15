@@ -3,9 +3,10 @@ import { ActionMenu } from './components/ActionMenu';
 import { MultiplayerSession } from './multiplayer/session';
 import { MultiplayerPanel } from './multiplayer/MultiplayerPanel';
 import { RemotePlayers } from './multiplayer/RemotePlayers';
-import {EnvironmentAudio} from './components/EnvironmentAudio';
-import {BalloonControls} from './components/BalloonControls';
-import {emptyBalloonStatus,clearBalloonInput,type BalloonStatus} from './game/balloonRide';
+import { EnvironmentAudio } from './components/EnvironmentAudio';
+import { BalloonControls } from './components/BalloonControls';
+import { emptyBalloonStatus, clearBalloonInput, type BalloonStatus } from './game/balloonRide';
+import { isVehicleWaitingPickupLocked, useVehicleWaiting } from './game/vehicleWaiting';
 import {LifeMeter} from './components/LifeMeter';
 import { RideControls } from './components/RideControls';
 import { CarControls } from './components/CarControls';
@@ -208,6 +209,7 @@ function App() {
   const night=environment.period==='night'||environment.period==='evening';
   const intro = useIntroState();
   const introSettings = useIntroSettings();
+  const vehicleWaiting = useVehicleWaiting();
   const entryIntroAttemptedRef = useRef(false);
   const [navigationRequest, setNavigationRequest] = useState<{
     action: "locate" | "teleport";
@@ -658,7 +660,9 @@ function App() {
                   ? "ကားမောင်းနေစဉ် အကကစား၍ မရပါ။"
                   : rideStatus.riding
                     ? "ဆိုင်ကယ်ပေါ်မှ ဆင်းပြီးမှ အကကစားနိုင်ပါမည်။"
-                    : null
+                    : isVehicleWaitingPickupLocked(vehicleWaiting.state) || vehicleWaiting.state === "ENTERING_VEHICLE"
+                      ? "ကားစောင့်နေစဉ် အကကစား၍ မရပါ။"
+                      : null
             }
           />
           {navigationNotice && <p role="status">{navigationNotice}</p>}

@@ -1,7 +1,12 @@
 import { useEffect, useState, useRef, memo, type ReactNode } from 'react';
 import { LifeMeter } from './LifeMeter';
 import { carInput, clearCarInput, gearLabel, shiftCar, selectAutomaticRange, MAX_STEERING, STEERING_RATIO, type CarGear, type CarStatus } from '../game/carRide';
-import { startCarSummon } from '../game/carSummon';
+import {
+	beginEnteringVehicle,
+	cancelVehicleRequest,
+	requestVehiclePickup,
+	useVehicleWaiting,
+} from '../game/vehicleWaiting';
 
 function SteeringWheel({ steering }: { steering: number }) {
 	const drag = useRef<{ id: number; last: number; angle: number; cx: number; cy: number } | null>(null);
@@ -162,6 +167,8 @@ function Hold({
 
 export const CarControls = memo(function CarControls({ status }: { status: CarStatus }) {
  const automatic=status.transmission==='automatic';
+ const waiting = useVehicleWaiting();
+ const waitingUiActive = waiting.state !== 'IDLE' && waiting.state !== 'RIDING_VEHICLE';
 	useEffect(() => {
 		const release = () => clearCarInput();
 		window.addEventListener('blur', release);
@@ -174,45 +181,118 @@ export const CarControls = memo(function CarControls({ status }: { status: CarSt
 		};
 	}, []);
 
-	if (!status.driving && !status.near && !status.canSummon && (!status.summonStatus || status.summonStatus === 'idle' || status.summonStatus === 'returning')) return null;
+	if (!status.driving && !status.near && !status.canSummon && !waitingUiActive && (!status.summonStatus || status.summonStatus === 'idle' || status.summonStatus === 'returning')) return null;
 
 	return (
 		<section className={`car-controls${status.driving ? ' car-controls-driving' : ''}`} aria-label="ကားမောင်း ထိန်းချုပ်မှု" onPointerDown={event => event.stopPropagation()}>
 			{!status.driving ? (
 				<>
-					{status.near && (
+					{status.near && !waitingUiActive && (
 						<p className="car-near-prompt" role="status">
 							<span className="car-prompt-icon">🚗</span>
 							<span>ကားတံခါးနား ရပ်လိုက်လျှင် ဝင်ထိုင်ပါမည်…</span>
 						</p>
 					)}
-					{!status.near && (status.canSummon || (status.summonStatus && status.summonStatus !== 'idle' && status.summonStatus !== 'returning')) && (
+					{(waitingUiActive || (!status.near && (status.canSummon || (status.summonStatus && status.summonStatus !== 'idle' && status.summonStatus !== 'returning')))) && (
 						<div className="car-summon-card" role="region" aria-label="ကားခေါ်ယူမှု">
-							{(!status.summonStatus || status.summonStatus === 'idle') && (
+							{!waitingUiActive && (!status.summonStatus || status.summonStatus === 'idle') && (
 								<div className="car-summon-row">
 									<span className="car-summon-prompt-icon">🚗</span>
 									<span className="car-summon-text">ကားခေါ်မည်</span>
 									<button
 										type="button"
 										className="car-summon-btn"
-										onClick={() => startCarSummon()}
-										aria-label="ကားခေါ်မည်"
+										onClick={() => requestVehiclePickup('car')}
+										aria-label="Call Vehicle · ကားခေါ်မည်"
 										title="main လမ်းမကြီးရှေ့သို့ ကားခေါ်မည်"
 									>
-										<span>📞 ခေါ်မည်</span>
+										<span>📞 Call Vehicle</span>
 									</button>
 								</div>
 							)}
-							{status.summonStatus === 'driving' && (
-								<div className="car-summon-row car-summon-active">
+							{waiting.state === 'CALLING_VEHICLE' && (
+								<div className="car-summon-row car-summon-active" role="status">
 									<span className="car-summon-spinner" aria-hidden="true" />
-									<span className="car-summon-text">🚗 ကားလေး လာနေပါပြီ ခဏစောင့်ပါ…</span>
+									<span className="car-summon-text">Calling vehicle… · ကားခေါ်ယူနေသည်</span>
+									<button
+										type="button"
+										className="car-summon-cancel-btn"
+										onClick={() => cancelVehicleRequest('user')}
+									>
+										Cancel Request
+									</button>
 								</div>
 							)}
-							{status.summonStatus === 'arrived' && (
-								<div className="car-summon-row car-summon-arrived">
+							{waiting.state === 'WAITING_FOR_VEHICLE' && (
+								<div className="car-summon-row car-summon-active" role="status">
+									<span className="car-summon-spinner" aria-hidden="true" />
+									<span className="car-summon-text">Waiting for vehicle · ကားစောင့်နေသည်</span>
+									<button
+										type="button"
+										className="car-summon-cancel-btn"
+										onClick={() => cancelVehicleRequest('user')}
+									>
+										Cancel Request
+									</button>
+								</div>
+							)}
+							{waiting.state === 'VEHICLE_APPROACHING' && (
+								<div className="car-summon-row car-summon-approaching" role="status">
+									<span className="car-summon-approaching-badge" aria-hidden="true">🚗</span>
+									<div className="car-summon-status-col">
+										<span className="car-summon-text">Vehicle approaching · ကားရောက်လာနေပါပြီ</span>
+										<span className="car-summon-subtext">Waiting for vehicle ({waiting.approachPercent}%)</span>
+									</div>
+									<button
+										type="button"
+										className="car-summon-cancel-btn"
+										onClick={() => cancelVehicleRequest('user')}
+									>
+										Cancel Request
+									</button>
+								</div>
+							)}
+							{waiting.state === 'VEHICLE_ARRIVED' && (
+								<div className="car-summon-row car-summon-arrived" role="status">
 									<span className="car-summon-arrived-icon" aria-hidden="true">✅</span>
-									<span className="car-summon-text">ကား လမ်းမကြီးရှေ့သို့ ရောက်ရှိပါပြီ!</span>
+									<span className="car-summon-text">Vehicle Arrived · ကားရောက်ရှိပါပြီ</span>
+									<button
+										type="button"
+										className="car-summon-btn car-summon-enter-btn"
+										onClick={() => beginEnteringVehicle()}
+									>
+										Enter Vehicle
+									</button>
+								</div>
+							)}
+							{waiting.state === 'ENTERING_VEHICLE' && (
+								<div className="car-summon-row car-summon-arrived" role="status">
+									<span className="car-summon-spinner" aria-hidden="true" />
+									<span className="car-summon-text">Entering vehicle · ကားထဲ ဝင်နေသည်…</span>
+								</div>
+							)}
+							{waiting.state === 'CANCELLED' && (
+								<div className="car-summon-row car-summon-cancelled" role="status">
+									<span className="car-summon-text">Request cancelled · ကားခေါ်ယူမှု ပယ်ဖျက်လိုက်ပါပြီ</span>
+								</div>
+							)}
+							{!waitingUiActive && status.summonStatus === 'driving' && (
+								<div className="car-summon-row car-summon-active" role="status">
+									<span className="car-summon-spinner" aria-hidden="true" />
+									<span className="car-summon-text">Waiting for vehicle · ကားလေး လာနေပါပြီ</span>
+									<button
+										type="button"
+										className="car-summon-cancel-btn"
+										onClick={() => cancelVehicleRequest('user')}
+									>
+										Cancel Request
+									</button>
+								</div>
+							)}
+							{!waitingUiActive && status.summonStatus === 'arrived' && (
+								<div className="car-summon-row car-summon-arrived" role="status">
+									<span className="car-summon-arrived-icon" aria-hidden="true">✅</span>
+									<span className="car-summon-text">Vehicle Arrived · ကားရောက်ရှိပါပြီ!</span>
 								</div>
 							)}
 						</div>
