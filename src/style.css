@@ -602,6 +602,30 @@ kbd {
 	border-color: #163e36;
 }
 
+.map-jump-btn-haunted {
+	background: #2e1846;
+	border-color: #a855f7;
+	color: #f3e8ff;
+}
+
+.map-jump-btn-haunted:hover {
+	background: #4c1d95;
+	color: #ffffff;
+}
+
+.map-haunt-note {
+	flex-basis: 100%;
+	text-align: center;
+	font-size: 11px;
+	font-weight: 600;
+	color: #5b21b6;
+	margin-top: 2px;
+}
+
+main.night-mode .map-haunt-note {
+	color: #d8b4fe;
+}
+
 .map-region-clickable {
 	cursor: pointer;
 	transition: filter 0.15s;
@@ -5307,7 +5331,7 @@ main.night-mode .appearance-saved {
 
 .player-life {
 	position: fixed;
-	top: 10%;
+	top: 12%;
 	right: 28px;
 	/* transform: translateX(100px); */
 	z-index: 12;
@@ -6176,9 +6200,11 @@ body:has(.balloon-controls-layer) .player-life {
 	.cinematic-skip-btn kbd {
 		display: none;
 	}
+
 	.cinematic-intro-banner {
 		padding: 10px 13px;
 	}
+
 	.cinematic-intro-title {
 		font-size: 13.5px;
 	}
@@ -6697,6 +6723,7 @@ main.night-mode .settings-menu .guide-list kbd {
 	.settings-icon-grid {
 		grid-template-columns: repeat(4, minmax(0, 1fr));
 	}
+
 	.settings-details-grid,
 	.settings-menu .guide-list,
 	main.night-mode .settings-menu .guide-list {
@@ -6708,29 +6735,36 @@ main.night-mode .settings-menu .guide-list kbd {
 	.settings-menu-header {
 		padding: 12px 14px 10px;
 	}
+
 	.settings-menu-title-group h2 {
 		font-size: 17px;
 	}
+
 	.settings-location-pill {
 		display: none;
 	}
+
 	.settings-header-pill {
 		height: 32px;
 		padding: 0 10px;
 		font-size: 11px;
 	}
+
 	.settings-menu-body {
 		padding: 16px 12px 18px;
 	}
+
 	.settings-icon-grid {
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 8px;
 	}
+
 	.settings-tile {
 		min-height: 76px;
 		padding: 10px 6px;
 		gap: 6px;
 	}
+
 	.settings-tile-label {
 		font-size: 11px;
 	}
@@ -7086,6 +7120,7 @@ main.night-mode .settings-menu .guide-list kbd {
 	.subshop-backdrop {
 		padding: 0;
 	}
+
 	.subshop-modal {
 		width: 100vw;
 		height: 100vh;
@@ -7093,24 +7128,30 @@ main.night-mode .settings-menu .guide-list kbd {
 		border-radius: 0;
 		border: 0;
 	}
+
 	.subshop-header {
 		padding: max(10px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 10px max(12px, env(safe-area-inset-left, 0px));
 	}
+
 	.subshop-btn-label {
 		display: none;
 	}
+
 	.subshop-btn {
 		padding: 0 11px;
 		min-width: 38px;
 	}
+
 	.subshop-notice {
 		flex-direction: column;
 		align-items: flex-start;
 		padding: 8px 12px;
 	}
+
 	.subshop-proximity-wrap {
 		bottom: max(76px, calc(env(safe-area-inset-bottom, 0px) + 70px));
 	}
+
 	.subshop-proximity-key {
 		display: none;
 	}
@@ -7175,6 +7216,7 @@ main.night-mode .settings-menu .guide-list kbd {
 		opacity: 0;
 		transform: translateX(8px) scale(0.96);
 	}
+
 	to {
 		opacity: 1;
 		transform: translateX(0) scale(1);

@@ -1,5 +1,25 @@
 apply plugin: 'com.android.application'
 
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { stream ->
+        keystoreProperties.load(stream)
+    }
+}
+
+def releaseStorePath = System.getenv("ANDROID_KEYSTORE_PATH") ?: keystoreProperties.getProperty("storeFile")
+def releaseStorePass = System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: keystoreProperties.getProperty("storePassword")
+def releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: keystoreProperties.getProperty("keyAlias")
+def releaseKeyPass = System.getenv("ANDROID_KEY_PASSWORD") ?: keystoreProperties.getProperty("keyPassword")
+def hasReleaseSigning = Boolean.valueOf(
+    (releaseStorePath?.trim() as boolean) &&
+    (releaseStorePass?.trim() as boolean) &&
+    (releaseKeyAlias?.trim() as boolean) &&
+    (releaseKeyPass?.trim() as boolean) &&
+    file(releaseStorePath).exists()
+)
+
 android {
     namespace = "com.mmregion.town3d"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,11 +36,41 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseStorePath)
+                storePassword releaseStorePass
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPass
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
+    }
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    def buildingRelease = taskGraph.allTasks.any { task ->
+        task.name.toLowerCase().contains("release") &&
+            (task.name.toLowerCase().contains("assemble") ||
+             task.name.toLowerCase().contains("bundle") ||
+             task.name.toLowerCase().contains("package"))
+    }
+    if (buildingRelease && !hasReleaseSigning) {
+        throw new GradleException(
+            "Production release signing key not configured. Create android/keystore.properties or set ANDROID_KEYSTORE_PATH/PASSWORD/ALIAS env vars."
+        )
     }
 }
 

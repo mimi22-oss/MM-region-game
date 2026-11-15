@@ -1,0 +1,23 @@
+✔ all horror presets remain silent and safe before gesture/context creation (4.1238ms)
+✔ animation starts, contact phases, and stride phase crossings emit once, without timer catch-up (2.9075ms)
+✔ bundled ghost character GLB and 7 extracted motion GLBs are valid, compatible, and duplicate-free (643.4441ms)
+✔ isGhostNightActive enforces 18:00-05:00 schedule plus manual night and dev force overrides (0.5558ms)
+✔ warehouse waypoint graph aligns with Area 5 geometry, LOS wall blocking, and editor overrides (262.8368ms)
+✔ GhostAiController transitions deterministically across spawn, hide, observe, scare, flee, cooldown, road crossing, and despawn (91.4901ms)
+✔ rollGhostChaseThreshold covers 2..6 inclusive and persists unchanged during an active cycle (66.5891ms)
+✔ Ghost encounter escalation works for thresholds 2..6 with hysteresis, chase, neck-grab, fall, recovery, and reset (885.6235ms)
+✔ all 8 haunt zones build connected, obstacle-clear waypoint graphs across myothar (1085.8772ms)
+✔ selectRandomGhostZones distributes 3 ghosts cleanly and non-warehouse anchors run independently (213.8798ms)
+✔ multi-owner ghost grab interaction preserves active grab when idle ghosts publish state (1.165ms)
+✔ distance bands are hysteretic, gains smooth, and night respects world-time overrides (4.3768ms)
+✔ seeded scheduler varies intervals/origins, proximity weights, cooldowns and quiet gaps (33.9669ms)
+✔ no events during daytime, outside zone, encounter, overlap cap or AI confrontation (5.5212ms)
+✔ warehouse/tree sources match authored Area 5 geometry and skip edited sources (3.8693ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7332.4479

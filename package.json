@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "build:vercel": "npm run build && npm run ota:manifest -- --channel production",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --experimental-strip-types --test tests/collision.test.ts tests/performance.test.ts tests/ground.test.ts tests/rideLife.test.ts tests/regionLoading.test.ts tests/preparedScene.test.ts tests/carRide.test.ts tests/appearance.test.ts tests/blenderCharacter.test.ts tests/glbHuman.test.ts tests/specialActions.test.ts tests/vehicleWaiting.test.ts tests/sharedMotion.test.ts tests/actorImpact.test.ts tests/candles.test.ts tests/mapLabels.test.ts tests/mapSelection.test.ts tests/humanJump.test.ts tests/humanJumpPose.test.ts tests/balloonRide.test.ts tests/mobileAuto.test.ts tests/environmentTime.test.ts tests/mapTiles.test.ts tests/separationFields.test.ts tests/assetAiEdit.test.ts tests/customAssets.test.ts tests/builtInAssetEdits.test.ts tests/multiplayer.test.ts tests/tazaungdaingFestival.test.ts tests/mapPermissions.test.ts tests/festivalPerformance.test.ts tests/cinematicIntro.test.ts tests/subscriptionShop.test.ts tests/offlineAssets.test.ts tests/hybridAndroid.test.ts tests/ghostNpc.test.ts tests/otaUpdate.test.ts tests/androidApkDownload.test.ts tests/hudMenu.test.ts",
+    "test": "node --experimental-strip-types --test tests/collision.test.ts tests/performance.test.ts tests/ground.test.ts tests/rideLife.test.ts tests/regionLoading.test.ts tests/preparedScene.test.ts tests/carRide.test.ts tests/appearance.test.ts tests/blenderCharacter.test.ts tests/glbHuman.test.ts tests/specialActions.test.ts tests/vehicleWaiting.test.ts tests/sharedMotion.test.ts tests/actorImpact.test.ts tests/candles.test.ts tests/mapLabels.test.ts tests/mapSelection.test.ts tests/humanJump.test.ts tests/humanJumpPose.test.ts tests/balloonRide.test.ts tests/mobileAuto.test.ts tests/environmentTime.test.ts tests/mapTiles.test.ts tests/separationFields.test.ts tests/assetAiEdit.test.ts tests/customAssets.test.ts tests/builtInAssetEdits.test.ts tests/multiplayer.test.ts tests/tazaungdaingFestival.test.ts tests/mapPermissions.test.ts tests/festivalPerformance.test.ts tests/cinematicIntro.test.ts tests/subscriptionShop.test.ts tests/offlineAssets.test.ts tests/hybridAndroid.test.ts tests/ghostNpc.test.ts tests/otaUpdate.test.ts tests/androidApkDownload.test.ts tests/hudMenu.test.ts tests/ghostAudio.test.ts tests/hauntedWarehouseAudio.test.ts tests/playerHomeProtection.test.ts tests/ghostProximity.test.ts tests/ghostPersonalities.test.ts",
     "ota:manifest": "node --experimental-strip-types scripts/generateOtaArtifacts.mjs",
     "ota:verify": "node --experimental-strip-types scripts/verifyOtaArtifacts.mjs",
     "ota:classify": "node --experimental-strip-types scripts/classifyGitChanges.mjs",
@@ -24,6 +24,7 @@
     "server:check": "tsc -p server/tsconfig.json",
     "test:multiplayer": "node --experimental-strip-types --test tests/multiplayer.test.ts",
     "perf:festival": "node scripts/benchmarkFestivalAudit.mjs",
+    "test:audio:browser": "node scripts/checkGhostAudio.mjs",
     "cap:sync": "npm run build && npx cap sync android",
     "android:sync": "npx cap sync android"
   },

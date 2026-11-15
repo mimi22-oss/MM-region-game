@@ -1,3 +1,4 @@
+import {GhostGameOver} from './components/GhostGameOver';
 import '@fontsource/noto-sans-myanmar/400.css';
 import '@fontsource/noto-sans-myanmar/600.css';
 import '@fontsource/noto-sans-myanmar/700.css';
@@ -103,7 +104,11 @@ import {
   type DetectedLocation,
 } from "./game/locationDetect";
 import { syncAllWorldEdits } from "./game/editorRegions";
-import { getGhostEncounterInteraction, useGhostThreatActive } from "./game/ghostConfig";
+import {
+  getGhostEncounterInteraction,
+  useActiveGhostZones,
+  useGhostThreatActive,
+} from "./game/ghostConfig";
 import { installOfflineAssetInterceptor } from "./services/offlineAssetResolver";
 import { otaCoordinator } from "./services/otaUpdater";
 import {
@@ -299,6 +304,11 @@ function App() {
   });
   const autoApkPromptCheckedRef = useRef(false);
   const ghostThreatActive = useGhostThreatActive();
+  const activeGhostZones = useActiveGhostZones();
+  const activeGhostZoneIds = useMemo(
+    () => new Set(activeGhostZones.map((zone) => zone.zoneId)),
+    [activeGhostZones],
+  );
   const viewPosition = useCallback(
     (x: number, z: number) => {
       viewPosRef.current.x = x;
@@ -781,6 +791,7 @@ function App() {
 
   return (
     <main className={night ? "night-mode" : ""} data-time-period={environment.period}>
+      <GhostGameOver/>
       <EnvironmentAudio period={environment.period} volume={environment.preferences.volume} enabled={environment.preferences.sound} active={visible&&!loading}/>
       <div className="game-content" inert={loading}>
       <div
@@ -1228,16 +1239,23 @@ function App() {
                 className={
                   currentLoc.id === d.id
                     ? "map-jump-btn map-jump-btn-active"
-                    : "map-jump-btn"
+                    : activeGhostZoneIds.has(d.id)
+                      ? "map-jump-btn map-jump-btn-haunted"
+                      : "map-jump-btn"
                 }
                 onClick={(e) => {
                   e.stopPropagation();
                   handleSelectLocation(d.id);
                 }}
               >
-                📍 {d.label} ↗
+                {activeGhostZoneIds.has(d.id) ? "👻" : "📍"} {d.label} ↗
               </button>
             ))}
+            <span className="map-haunt-note">
+              {activeGhostZones.length > 0
+                ? `🌙 ညအချိန် သရဲခြောက်ဇုန် — ${activeGhostZones.map((z) => z.zoneName.split("·")[0].trim()).join(" · ")}`
+                : "🌙 သရဲမြင်လိုပါက ဆက်တင်မှ 🌙 ညအချိန်သို့ ပြောင်း၍ သိုလှောင်ရုံတန်း (AH1) သို့ သွားပါ"}
+            </span>
           </div>
         )}
         <svg
@@ -1286,6 +1304,18 @@ function App() {
                 )}
               </g>
             ))}
+          {activeGhostZones.map((zone) => (
+            <circle
+              key={`ghost-zone:${zone.ghostId}:${zone.zoneId}`}
+              cx={zone.x}
+              cy={zone.z}
+              r={mapOpen ? 46 : 115}
+              fill="rgba(168, 85, 247, 0.24)"
+              stroke="#c084fc"
+              strokeWidth={mapOpen ? 8 : 20}
+              pointerEvents="none"
+            />
+          ))}
           <circle
             cx={pos.x}
             cy={pos.z}

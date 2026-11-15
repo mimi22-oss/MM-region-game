@@ -1,0 +1,89 @@
+
+> mm-region-game@1.0.0 map:audit
+> node --experimental-strip-types scripts/auditMapData.mjs
+
+{
+  "architecture": "legacy eager data; lazy 3D components",
+  "regions": [
+    {
+      "id": "myothar",
+      "buildings": 1403,
+      "roads": 18,
+      "fields": 1,
+      "trees": 99
+    },
+    {
+      "id": "tharsi",
+      "buildings": 320,
+      "roads": 22,
+      "fields": 42,
+      "trees": 115
+    },
+    {
+      "id": "chinsai",
+      "buildings": 100,
+      "roads": 19,
+      "fields": 43,
+      "trees": 38
+    },
+    {
+      "id": "zingalin",
+      "buildings": 100,
+      "roads": 20,
+      "fields": 39,
+      "trees": 38
+    },
+    {
+      "id": "htomar",
+      "buildings": 235,
+      "roads": 26,
+      "fields": 67,
+      "trees": 56
+    },
+    {
+      "id": "tharyargone",
+      "buildings": 205,
+      "roads": 18,
+      "fields": 111,
+      "trees": 50
+    },
+    {
+      "id": "htaukkyant",
+      "buildings": 381,
+      "roads": 20,
+      "fields": 77,
+      "trees": 77
+    },
+    {
+      "id": "kyarinn",
+      "buildings": 394,
+      "roads": 33,
+      "fields": 59,
+      "trees": 67
+    },
+    {
+      "id": "sithar",
+      "buildings": 91,
+      "roads": 27,
+      "fields": 20,
+      "trees": 40
+    },
+    {
+      "id": "kanbale",
+      "buildings": 669,
+      "roads": 50,
+      "fields": 0,
+      "trees": 170
+    },
+    {
+      "id": "natmyaung",
+      "buildings": 445,
+      "roads": 10,
+      "fields": 0,
+      "trees": 47
+    }
+  ],
+  "totalFeatures": 5862,
+  "newDataPath": "scripts/mapTiles.mjs -> public/map/<dataset>/<version>/manifest.json -> openMapDataset",
+  "note": "Tile/JSON budgets bound new dataset residency; this audit does not measure browser FPS, GPU or total JS heap."
+}

@@ -1,0 +1,24 @@
+✔ bundled ghost character GLB and 7 extracted motion GLBs are valid, compatible, and duplicate-free (886.1177ms)
+✔ isGhostNightActive enforces 18:00-05:00 schedule plus manual night and dev force overrides (0.6559ms)
+✔ warehouse waypoint graph aligns with Area 5 geometry, LOS wall blocking, and editor overrides (288.0869ms)
+✔ GhostAiController transitions deterministically across spawn, hide, observe, scare, flee, cooldown, road crossing, and despawn (149.5889ms)
+✔ rollGhostChaseThreshold covers 2..6 inclusive and persists unchanged during an active cycle (71.9895ms)
+✔ thresholds 2..6 never gate first chase, neck-grab, fall and lethal completion (169.8795ms)
+✔ all 8 haunt zones build connected, obstacle-clear waypoint graphs across myothar (907.7859ms)
+✔ selectRandomGhostZones distributes 3 ghosts cleanly and non-warehouse anchors run independently (229.0359ms)
+✔ multi-owner ghost grab interaction preserves active grab when idle ghosts publish state (0.8849ms)
+✔ first continuous visible proximity chases even when random approach threshold is six (25.3258ms)
+✔ exact scene circle boundary is inclusive and editor polygon replaces fallback safely (5.5657ms)
+✔ protection precedes same-frame catch, scare windup, and active grab (8.4765ms)
+✔ three independent ghosts retreat, fade over two seconds, return to spawn, and respect exit buffer/cooldown (10.1249ms)
+✔ retreat never crosses blocked geometry or moves closer to protection, and pause does not advance fade (3.3736ms)
+✔ dormant ghosts do not respawn inside protection, including a moved editor boundary over spawn (2.7626ms)
+✔ per-instance fade restores authored material state without changing shared materials or recompiling each frame (2.4998ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4567.1421

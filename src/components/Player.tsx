@@ -1,3 +1,5 @@
+import {getPlayerDeathState,findProtectedRespawn,completePlayerRespawn,stepPlayerRespawnGrace} from '../game/playerDeath';
+import {PLAYER_ON_FOOT_SPEED} from '../game/ghostPersonalities';
 import {PassengerBalloon} from './PassengerBalloon';
 import {balloonRide,balloonInput,BALLOON_DECK,BALLOON_LAUNCH,clearBalloonInput,resetBalloon,balloonFlightFloor,balloonLanding,stepBalloon,balloonExitSpot,type BalloonStatus} from '../game/balloonRide';
 import {createJumpPose,prepareJump,stepJumpPose,jumpKneeBend} from '../game/humanJumpPose';
@@ -12,7 +14,8 @@ import {
   playSpecialAction,
   stopSpecialAction,
 } from '../game/specialActions';
-import { getGhostEncounterInteraction } from '../game/ghostConfig';
+import {isPlayerHomeProtected} from '../game/playerHomeProtection';
+import { clearGhostEncounterInteraction,clearGhostThreat,getGhostEncounterInteraction } from '../game/ghostConfig';
 import {
   getSubscriptionShopState,
   tryCenterClickSubscriptionBillboard,
@@ -123,7 +126,7 @@ export const Player = memo(function Player({
  const [riding,setRiding]=useState(false);
  const rideNotice=useRef(''),fallYaw=useRef(0);
  const pickupAnchor=useRef<{requestId:number;x:number;z:number}|null>(null);
- const ghostGrabFallSeq=useRef(0);
+ const ghostGrabFallSeq=useRef(0),ghostFallOwned=useRef<number|null>(null);
  const walkingRecoil=useRef(createWalkingRecoil(0));
  const jump=useRef(createHumanJump());
  const jumpPose=useRef(createJumpPose());
@@ -439,6 +442,19 @@ export const Player = memo(function Player({
   const ground=sceneGround(scene,clock.elapsedTime);
   const height=(x:number,z:number)=>ground.height(x,z);
   const clear=(x:number,z:number)=>canStand(x,z)&&height(x,z)-height(motorcycleRide.riding?motorcycleRide.x:s.x,motorcycleRide.riding?motorcycleRide.z:s.z)<.5;
+  const life=getPlayerDeathState();
+  stepPlayerRespawnGrace(mapOpen||controlsBlocked?0:dt);
+  if(life.phase==='respawning'){
+   const spot=findProtectedRespawn(clear)??(clear(ward.spawn.x,ward.spawn.z)?ward.spawn:null);
+   if(spot){
+    interruptVehicleWaiting();parkCar();parkMotorcycle();if(balloonRide.riding)resetBalloon();setRiding(false);
+    Object.assign(s,{x:spot.x,z:spot.z,camX:spot.x,camZ:spot.z,bodyYaw:ward.spawnYaw,yaw:ward.spawnYaw,panning:false,first:false,topDown:false,pitch:-.12,distance:6,targetDistance:6});
+    jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;s.keys.clear();
+    clearGhostEncounterInteraction();clearGhostThreat();stopSpecialAction(true);ghostFallOwned.current=null;
+    if(mobileInput?.current)resetMobileInput(mobileInput.current);onMode(false);onTopDown(false);onZoom(6);completePlayerRespawn();
+   }
+  }
+  if(life.phase==='dead'){s.keys.clear();s.jumpRequested=false;if(mobileInput?.current)resetMobileInput(mobileInput.current);return;}
   if(tickRideLife(mapOpen||controlsBlocked?0:dt)){
    interruptVehicleWaiting();
    if(balloonRide.riding)resetBalloon();
@@ -478,6 +494,13 @@ export const Player = memo(function Player({
    balloonRide.autoCruise=false;balloonRide.autoReturn=false;balloonRide.vx=0;balloonRide.vz=0;balloonRide.vy=0;balloonRide.cruiseVx=0;balloonRide.cruiseVz=0;
    balloonInput.stopCruise=true;
   }
+  const currentGhostFallAction=getSpecialActionState();
+  if(currentGhostFallAction.activeActionId!=='fall'||currentGhostFallAction.generation!==ghostFallOwned.current)ghostFallOwned.current=null;
+  if(isPlayerHomeProtected(s.x,s.z)){
+   clearGhostEncounterInteraction();clearGhostThreat();
+   if(ghostFallOwned.current!==null&&currentGhostFallAction.activeActionId==='fall')stopSpecialAction(true);
+   ghostFallOwned.current=null;
+  }
   const ghostInteraction=getGhostEncounterInteraction();
   const ghostGrabbedOnFoot=ghostInteraction.active&&!balloonRide.riding&&!motorcycleRide.riding&&!currentCar();
   const wantsJump=!pickupLocked&&!enteringVehicle&&!ghostGrabbedOnFoot&&(s.jumpRequested||!!touch?.jump);s.jumpRequested=false;if(touch)touch.jump=false;
@@ -504,7 +527,7 @@ export const Player = memo(function Player({
    if(ghostInteraction.phase==='player-fall'&&ghostInteraction.seq!==ghostGrabFallSeq.current){
     ghostGrabFallSeq.current=ghostInteraction.seq;
     fallYaw.current=s.bodyYaw;
-    if(glbCapable&&character==='cartoon'){playSpecialAction('fall',{loop:false,force:true});}
+    if(glbCapable&&character==='cartoon'){if(playSpecialAction('fall',{loop:false,force:true}))ghostFallOwned.current=getSpecialActionState().generation;}
    }
   }
   const len=Math.hypot(forward,right);if(len){forward/=len;right/=len;}
@@ -677,7 +700,7 @@ export const Player = memo(function Player({
    }
    s.camX=s.x;s.camZ=s.z;
   }else{
-   const speed=fast?9.5:touch?.active?Math.min(9.5,5.5*mobileScale):4;
+   const speed=fast?PLAYER_ON_FOOT_SPEED.run:touch?.active?Math.min(PLAYER_ON_FOOT_SPEED.run,PLAYER_ON_FOOT_SPEED.walk*mobileScale):PLAYER_ON_FOOT_SPEED.walk;
    const vx=(-Math.sin(yaw)*forward+Math.cos(yaw)*right)*speed,vz=(-Math.cos(yaw)*forward-Math.sin(yaw)*right)*speed;
    const mx=vx*dt,mz=vz*dt;
    if(!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0){

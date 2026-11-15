@@ -1,3 +1,4 @@
+import {HOME_SAFE_ZONE_TAG,validHomePolygon} from '../game/playerHomeProtection';
 import React, { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import {
 	aiLayoutPrompt,
@@ -1865,6 +1866,10 @@ export default function WardVillageEditor({
 									placeholder="Object Name"
 								/>
 							</label>
+                            {isAdmin&&current.kind==='block'&&<button type="button" disabled={current.metadata?.safeZone!==HOME_SAFE_ZONE_TAG&&!validHomePolygon(current.points)} onClick={()=>{
+                              patch({metadata:{...current.metadata,safeZone:current.metadata?.safeZone===HOME_SAFE_ZONE_TAG?undefined:HOME_SAFE_ZONE_TAG}});
+                              setMessage('Home safe boundary updated. Save to apply. Keep one protected-home polygon.');
+                            }}>{current.metadata?.safeZone===HOME_SAFE_ZONE_TAG?'Remove home protection':'Use as player home safe boundary'}</button>}
 							<strong>{isPathOrLine(current) ? '🛣️ လမ်း / ရေမြောင်း ကွေ့နှင့် အမှတ်များ ပြင်ဆင်ရန် (Curve & Path Points)' : '🗺️ နယ်မြေ / ဘလောက် အမှတ်များ ပြင်ဆင်ရန်'}</strong>
 							<p className="wve-help">အပြာစက်များကို ဆွဲပြီး လမ်းကွေ့၊ အနားသတ် ပြင်ပါ။ Add Point ဖြင့် အကွေ့အသစ် ထည့်ပါ။</p>
 							<label>အမှတ်ရွေးပါ / Vertex:

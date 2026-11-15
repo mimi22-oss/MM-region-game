@@ -1,0 +1,27 @@
+✖ first continuous visible proximity chases even when random approach threshold is six (17.5151ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2215.3783
+
+✖ failing tests:
+
+test at tests\ghostProximity.test.ts:7:1
+✖ first continuous visible proximity chases even when random approach threshold is six (17.5151ms)
+  AssertionError [ERR_ASSERTION]: actual trace: FLEEING, RETURNING_HOME, COOLDOWN, HIDING; threshold=6
+      at TestContext.<anonymous> (file:///C:/Users/EBPMyanmar/Desktop/Myanmar-Town-Prototype/tests/ghostProximity.test.ts:11:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

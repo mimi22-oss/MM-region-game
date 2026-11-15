@@ -6,6 +6,7 @@ import {
   shweMyanmarVacantLot,
 } from './wards/myothar/shweMyanmarArea.ts';
 import { canStand, treeBlocks } from '../game/collision.ts';
+import { warehouseZoneDistance } from '../game/audio/warehouseSoundOrigins.ts';
 import {
   DEFAULT_GHOST_COUNT,
   GHOST_MIN_ZONE_SEPARATION_M,
@@ -68,6 +69,7 @@ export interface GhostWarehouseEnvironment {
   readonly roadCrossings: readonly GhostRoadCrossingPair[];
   readonly obstacleBoxes: readonly GhostObstacleBox[];
   readonly treeColliders: readonly GhostTreeCollider[];
+  readonly measureDistanceFromZone?: (x: number, z: number) => number;
 }
 
 export type GhostHauntZoneId =
@@ -442,19 +444,25 @@ export function buildDefaultWarehouseEnvironment(): GhostWarehouseEnvironment {
     { id: 'ah1-cross-north', roadId: ah1?.id ?? 'ah1', westCurbId: 'curb-west-north', eastCurbId: 'curb-east-north', roadHalfWidth },
   ];
 
-  return finalizeEnvironmentFromDrafts({
+  const anchor = {
+    x: GHOST_WAREHOUSE_ANCHOR.x,
+    z: GHOST_WAREHOUSE_ANCHOR.z,
+    localU: GHOST_WAREHOUSE_ANCHOR.localU,
+    localV: GHOST_WAREHOUSE_ANCHOR.localV,
+  };
+  const env = finalizeEnvironmentFromDrafts({
     zoneId: 'warehouse-row',
     zoneName: GHOST_WAREHOUSE_ANCHOR.areaName,
     regionId: GHOST_WAREHOUSE_ANCHOR.regionId,
-    anchor: {
-      x: GHOST_WAREHOUSE_ANCHOR.x,
-      z: GHOST_WAREHOUSE_ANCHOR.z,
-      localU: GHOST_WAREHOUSE_ANCHOR.localU,
-      localV: GHOST_WAREHOUSE_ANCHOR.localV,
-    },
+    anchor,
     drafts,
     crossingCandidates,
   });
+  return {
+    ...env,
+    measureDistanceFromZone: (x: number, z: number) =>
+      warehouseZoneDistance(x, z, anchor, activeWarehouses),
+  };
 }
 
 function readStoredWaypointOverrides(): GhostWaypointOverridePayload | null {
@@ -993,6 +1001,7 @@ export function selectRandomGhostZones(
   count: number = DEFAULT_GHOST_COUNT,
   randomFn: () => number = Math.random,
   minSeparationM: number = GHOST_MIN_ZONE_SEPARATION_M,
+  requiredZones: readonly GhostHauntZoneId[] = [],
 ): GhostHauntZoneId[] {
   const valid = GHOST_HAUNT_ZONE_IDS.map((id) => ({
     id,
@@ -1003,7 +1012,20 @@ export function selectRandomGhostZones(
   const targetCount = Math.max(0, Math.min(count, valid.length));
   if (targetCount === 0) return [];
 
-  const shuffled = [...valid];
+  const validById = new Map(valid.map((entry) => [entry.id, entry]));
+  const picked: typeof valid = [];
+  const pickedIds = new Set<GhostHauntZoneId>();
+  for (const requiredId of requiredZones) {
+    if (picked.length >= targetCount) break;
+    if (pickedIds.has(requiredId)) continue;
+    const entry = validById.get(requiredId);
+    if (entry) {
+      picked.push(entry);
+      pickedIds.add(requiredId);
+    }
+  }
+
+  const shuffled = valid.filter((entry) => !pickedIds.has(entry.id));
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(randomFn() * (i + 1));
     const tmp = shuffled[i];
@@ -1011,17 +1033,18 @@ export function selectRandomGhostZones(
     shuffled[j] = tmp;
   }
 
-  const picked: typeof shuffled = [];
   for (const cand of shuffled) {
     if (picked.length >= targetCount) break;
     const wellSeparated = picked.every(
       (p) => Math.hypot(cand.env.anchor.x - p.env.anchor.x, cand.env.anchor.z - p.env.anchor.z) >= minSeparationM,
     );
-    if (wellSeparated) picked.push(cand);
+    if (wellSeparated) {
+      picked.push(cand);
+      pickedIds.add(cand.id);
+    }
   }
 
   if (picked.length < targetCount) {
-    const pickedIds = new Set(picked.map((p) => p.id));
     for (const cand of shuffled) {
       if (picked.length >= targetCount) break;
       if (!pickedIds.has(cand.id)) {
@@ -1032,4 +1055,21 @@ export function selectRandomGhostZones(
   }
 
   return picked.map((p) => p.id);
+}
+
+/**
+ * Picks runtime ghost haunt zones while guaranteeing `warehouse-row` hosts the primary hunter
+ * and distributing additional ghosts across spatially separated town zones.
+ */
+export function selectActiveGhostZones(
+  count: number = DEFAULT_GHOST_COUNT,
+  randomFn: () => number = Math.random,
+  minSeparationM: number = GHOST_MIN_ZONE_SEPARATION_M,
+): GhostHauntZoneId[] {
+  return selectRandomGhostZones(
+    count,
+    randomFn,
+    minSeparationM,
+    count >= 1 ? ['warehouse-row'] : [],
+  );
 }

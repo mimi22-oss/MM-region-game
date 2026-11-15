@@ -42,6 +42,8 @@ export const GHOST_SCHEDULE_CONFIG: GhostScheduleConfig = {
 };
 
 export interface GhostAiConfig {
+  readonly chaseAccelerationMps2?:number;
+  readonly observeBeforeChaseSec?:number;
   readonly patrolRadiusM: number;
   /** Distance from anchor/ghost at which lazy model loading begins when active. */
   readonly assetLoadDistanceM: number;
@@ -232,6 +234,51 @@ export function useGhostThreatActive(): boolean {
   );
 }
 
+export interface ActiveGhostZoneMarker {
+  readonly ghostId: string;
+  readonly zoneId: string;
+  readonly zoneName: string;
+  readonly x: number;
+  readonly z: number;
+}
+
+const EMPTY_GHOST_ZONES: readonly ActiveGhostZoneMarker[] = [];
+let activeGhostZonesSnapshot: readonly ActiveGhostZoneMarker[] = EMPTY_GHOST_ZONES;
+const activeGhostZoneListeners = new Set<() => void>();
+
+export function setActiveGhostZones(zones: readonly ActiveGhostZoneMarker[]): void {
+  const next = zones.length === 0 ? EMPTY_GHOST_ZONES : zones.map((z) => ({ ...z }));
+  const unchanged =
+    next.length === activeGhostZonesSnapshot.length &&
+    next.every((item, idx) => {
+      const prev = activeGhostZonesSnapshot[idx];
+      return (
+        prev.ghostId === item.ghostId &&
+        prev.zoneId === item.zoneId &&
+        prev.x === item.x &&
+        prev.z === item.z
+      );
+    });
+  if (unchanged) return;
+  activeGhostZonesSnapshot = next;
+  for (const listener of activeGhostZoneListeners) listener();
+}
+
+export function getActiveGhostZones(): readonly ActiveGhostZoneMarker[] {
+  return activeGhostZonesSnapshot;
+}
+
+export function useActiveGhostZones(): readonly ActiveGhostZoneMarker[] {
+  return useSyncExternalStore(
+    (cb) => {
+      activeGhostZoneListeners.add(cb);
+      return () => activeGhostZoneListeners.delete(cb);
+    },
+    getActiveGhostZones,
+    getActiveGhostZones,
+  );
+}
+
 export function getGhostEncounterInteraction(): Readonly<GhostEncounterInteractionState> {
   let fallback: GhostEncounterInteractionState | null = null;
   for (const state of ghostInteractionByOwner.values()) {
@@ -366,6 +413,13 @@ export function isGhostNightActive(
 ): boolean {
   if (options?.forceActive) return true;
   if (options?.timeMode === 'night') return true;
+  if (
+    options?.timeMode === 'day' ||
+    options?.timeMode === 'morning' ||
+    options?.timeMode === 'evening'
+  ) {
+    return false;
+  }
 
   const schedule = options?.schedule ?? GHOST_SCHEDULE_CONFIG;
   const wrapped = ((minute % 1440) + 1440) % 1440;

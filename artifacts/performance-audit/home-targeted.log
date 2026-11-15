@@ -1,0 +1,26 @@
+✔ all horror presets remain silent and safe before gesture/context creation (3.437ms)
+✔ animation starts, contact phases, and stride phase crossings emit once, without timer catch-up (3.1945ms)
+✔ home retreat and fade audio fire once per state, without duplicate fade cues (0.659ms)
+✔ bundled ghost character GLB and 7 extracted motion GLBs are valid, compatible, and duplicate-free (539.1953ms)
+✔ isGhostNightActive enforces 18:00-05:00 schedule plus manual night and dev force overrides (0.8263ms)
+✔ warehouse waypoint graph aligns with Area 5 geometry, LOS wall blocking, and editor overrides (199.1451ms)
+✔ GhostAiController transitions deterministically across spawn, hide, observe, scare, flee, cooldown, road crossing, and despawn (59.9796ms)
+✔ rollGhostChaseThreshold covers 2..6 inclusive and persists unchanged during an active cycle (46.5683ms)
+✔ Ghost encounter escalation works for thresholds 2..6 with hysteresis, chase, neck-grab, fall, recovery, and reset (471.4252ms)
+✔ all 8 haunt zones build connected, obstacle-clear waypoint graphs across myothar (580.8876ms)
+✔ selectRandomGhostZones distributes 3 ghosts cleanly and non-warehouse anchors run independently (188.7332ms)
+✔ multi-owner ghost grab interaction preserves active grab when idle ghosts publish state (0.8548ms)
+✔ exact scene circle boundary is inclusive and editor polygon replaces fallback safely (2.2919ms)
+✔ protection precedes same-frame catch, scare windup, and active grab (4.0769ms)
+✔ three independent ghosts retreat, fade over two seconds, return to spawn, and respect exit buffer/cooldown (6.9157ms)
+✔ retreat never crosses blocked geometry or moves closer to protection, and pause does not advance fade (2.6984ms)
+✔ dormant ghosts do not respawn inside protection, including a moved editor boundary over spawn (1.9593ms)
+✔ per-instance fade restores authored material state without changing shared materials or recompiling each frame (2.004ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5156.7477

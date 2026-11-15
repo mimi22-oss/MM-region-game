@@ -1,0 +1,2 @@
+src/game/ghostGrabPose.ts(6,43): error TS7034: Variable 'arms' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/game/ghostGrabPose.ts(14,20): error TS7005: Variable 'arms' implicitly has an 'any[]' type.

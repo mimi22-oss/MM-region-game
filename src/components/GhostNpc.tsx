@@ -1,3 +1,7 @@
+import {killPlayerFromGhost,playerUnavailableForGhost} from '../game/playerDeath';
+import {createGhostGrabPose} from '../game/ghostGrabPose';
+import {createGhostPersonalityConfig,ghostPersonalityForId} from '../game/ghostPersonalities';
+import {rememberGhostMaterial,applyGhostOpacity} from '../game/ghostVisuals';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import {
@@ -22,7 +26,7 @@ import {
 } from '../animation/ghost/GhostMotionLibrary.ts';
 import {
   buildGhostHauntEnvironment,
-  selectRandomGhostZones,
+  selectActiveGhostZones,
   type GhostHauntZoneId,
   type GhostWarehouseEnvironment,
 } from '../data/ghostWarehouseWaypoints.ts';
@@ -40,6 +44,7 @@ import {
   GHOST_TARGET_HEIGHT_M,
   isGhostNightActive,
   isOtherGhostGrabbingPlayer,
+  setActiveGhostZones,
   setGhostEncounterInteraction,
   setGhostThreatActive,
   useGhostDevSettings,
@@ -159,6 +164,7 @@ function loadGhostModelOnce(): Promise<GLTF> {
 
 export interface GhostNpcProps {
   readonly enabled: boolean;
+  readonly paused?:boolean;
   readonly minute: number;
   readonly timeMode: TimeMode;
   readonly soundEnabled?: boolean;
@@ -170,6 +176,7 @@ export interface GhostNpcProps {
 
 export interface GhostNpcsProps {
   readonly enabled: boolean;
+  readonly paused?:boolean;
   readonly minute: number;
   readonly timeMode: TimeMode;
   readonly soundEnabled?: boolean;
@@ -184,7 +191,7 @@ interface GhostSpawnAssignment {
 }
 
 function createRandomGhostAssignments(count: number): GhostSpawnAssignment[] {
-  const zones = selectRandomGhostZones(count);
+  const zones = selectActiveGhostZones(count);
   return zones.map((zoneId, idx) => ({
     ghostId: `ghost-${idx + 1}`,
     zoneId,
@@ -198,6 +205,7 @@ function createRandomGhostAssignments(count: number): GhostSpawnAssignment[] {
  */
 export function GhostNpcs({
   enabled,
+  paused=false,
   minute,
   timeMode,
   soundEnabled = true,
@@ -255,6 +263,26 @@ export function GhostNpcs({
     return undefined;
   }, [scheduleActive, rerollAssignments]);
 
+  useEffect(() => {
+    if (!enabled || !scheduleActive) {
+      setActiveGhostZones([]);
+      return;
+    }
+    setActiveGhostZones(
+      assignments.map((item) => {
+        const env = buildGhostHauntEnvironment(item.zoneId);
+        return {
+          ghostId: item.ghostId,
+          zoneId: item.zoneId,
+          zoneName: env.zoneName ?? item.zoneId,
+          x: env.anchor.x,
+          z: env.anchor.z,
+        };
+      }),
+    );
+    return () => setActiveGhostZones([]);
+  }, [assignments, enabled, scheduleActive]);
+
   return (
     <group name="night-ghosts-swarm">
       {assignments.map((item) => (
@@ -264,6 +292,7 @@ export function GhostNpcs({
           zoneId={item.zoneId}
           initialSeed={item.seed}
           enabled={enabled}
+          paused={paused}
           minute={minute}
           timeMode={timeMode}
           soundEnabled={soundEnabled}
@@ -281,6 +310,7 @@ export function GhostNpcs({
  */
 export function GhostNpc({
   enabled,
+  paused=false,
   minute,
   timeMode,
   soundEnabled = true,
@@ -301,16 +331,18 @@ export function GhostNpc({
   const [modelGltf, setModelGltf] = useState<GLTF | null>(null);
   const { camera } = useThree();
 
-  const checkTimerRef = useRef(0.35);
+  const checkTimerRef = useRef(0);
   const playerObjRef = useRef<Mesh | Group | null>(null);
   const playerVecRef = useRef(new Vector3());
 
   // Wait before fetching 3.7MB model until player is both active-hours (or dev forced) & near this ghost zone.
   useFrame(({ scene }, dt) => {
-    if (loadArmed || !enabled || !scheduleActive) return;
+    if (paused || loadArmed || !enabled || !scheduleActive) return;
     checkTimerRef.current += Math.min(dt, 0.1);
     if (checkTimerRef.current < 0.4) return;
     checkTimerRef.current = 0;
+
+    if (!('playerOccupied' in camera.userData)) return;
 
     if (!playerObjRef.current || !playerObjRef.current.parent) {
       playerObjRef.current = (scene.getObjectByName('player-avatar') as Group | null) ?? null;
@@ -324,13 +356,14 @@ export function GhostNpc({
       pz = playerVecRef.current.z;
     } else {
       const focus = camera.userData?.viewFocus as { x?: number; z?: number } | undefined;
-      if (focus && typeof focus.x === 'number' && typeof focus.z === 'number') {
-        px = focus.x;
-        pz = focus.z;
-      }
+      if (!focus || typeof focus.x !== 'number' || typeof focus.z !== 'number') return;
+      px = focus.x;
+      pz = focus.z;
     }
 
-    const dist = Math.hypot(px - zoneEnv.anchor.x, pz - zoneEnv.anchor.z);
+    const dist =
+      zoneEnv.measureDistanceFromZone?.(px, pz) ??
+      Math.hypot(px - zoneEnv.anchor.x, pz - zoneEnv.anchor.z);
     if (dist <= DEFAULT_GHOST_AI_CONFIG.assetLoadDistanceM) {
       setLoadArmed(true);
     }
@@ -358,6 +391,7 @@ export function GhostNpc({
       key={`${ghostId}:${zoneId}:${initialSeed ?? 0}`}
       modelGltf={modelGltf}
       enabled={enabled}
+      paused={paused}
       scheduleActive={scheduleActive}
       soundEnabled={soundEnabled}
       soundVolume={soundVolume}
@@ -372,6 +406,7 @@ export function GhostNpc({
 function LoadedGhostNpc({
   modelGltf,
   enabled,
+  paused=false,
   scheduleActive,
   soundEnabled,
   soundVolume,
@@ -382,6 +417,7 @@ function LoadedGhostNpc({
 }: {
   modelGltf: GLTF;
   enabled: boolean;
+  paused?:boolean;
   scheduleActive: boolean;
   soundEnabled: boolean;
   soundVolume: number;
@@ -404,6 +440,9 @@ function LoadedGhostNpc({
     currentClipKey: string;
     lastAppliedOpacity: number;
     lastAudioSeq: number;
+    lastSafetyState:string;
+    lastKillSeq:number;
+    grabPose:ReturnType<typeof createGhostGrabPose>;
     audioSync:HorrorAnimationSync;
     dispose: () => void;
   } | null>(null);
@@ -454,7 +493,7 @@ function LoadedGhostNpc({
         obj.frustumCulled = false;
         const rawMats = Array.isArray(obj.material) ? obj.material : [obj.material];
         const clonedMats = rawMats.map((m) => {
-          const mat = m.clone();
+          const mat = m.clone();rememberGhostMaterial(mat);
           if (!seenMat.has(mat)) {
             seenMat.add(mat);
             materials.push(mat);
@@ -467,7 +506,7 @@ function LoadedGhostNpc({
 
     const mixer = new AnimationMixer(cloned);
     const controller = new AnimationController(mixer, cloned);
-    const ai = new GhostAiController(zoneEnv, DEFAULT_GHOST_AI_CONFIG, initialSeed);
+    const ai = new GhostAiController(zoneEnv, createGhostPersonalityConfig(ghostPersonalityForId(ghostId)), initialSeed);
 
     group.add(cloned);
     group.visible = false;
@@ -575,6 +614,9 @@ function LoadedGhostNpc({
       currentClipKey: '',
       lastAppliedOpacity: -1,
       lastAudioSeq: 0,
+      lastSafetyState:'',
+      lastKillSeq:-1,
+      grabPose:createGhostGrabPose(cloned),
       audioSync:new HorrorAnimationSync(),
       dispose,
     };
@@ -605,7 +647,7 @@ function LoadedGhostNpc({
   useFrame(({ scene, clock, camera }, delta) => {
     const rig = rigRef.current;
     const root = rootRef.current;
-    if (!rig || !root) return;
+    if (!rig || !root || paused) return;
 
     const dt = Math.min(delta, 0.05);
     const shouldRun = enabledRef.current && scheduleActiveRef.current;
@@ -663,7 +705,7 @@ function LoadedGhostNpc({
       playerX: px,
       playerZ: pz,
       playerInVehicle:
-        Boolean(camera.userData?.playerOccupied) ||
+        playerUnavailableForGhost() || Boolean(camera.userData?.playerOccupied) ||
         Math.abs(py - rig.y) > 2.6 ||
         isOtherGhostGrabbingPlayer(ghostId),
       traffic: trafficList,
@@ -672,6 +714,7 @@ function LoadedGhostNpc({
     camera.getWorldPosition(audioCamera.position);camera.getWorldQuaternion(audioCamera.rotation);
     audioCamera.forward.set(0,0,-1).applyQuaternion(audioCamera.rotation);audioCamera.up.set(0,1,0).applyQuaternion(audioCamera.rotation);
     gameAudio.listener(audioCamera.position.x,audioCamera.position.y,audioCamera.position.z,audioCamera.forward.x,audioCamera.forward.y,audioCamera.forward.z,audioCamera.up.x,audioCamera.up.y,audioCamera.up.z);
+    if(snap.playerKilled&&rig.lastKillSeq!==snap.grabInteraction.seq){rig.lastKillSeq=snap.grabInteraction.seq;killPlayerFromGhost(ghostId,snap.grabInteraction.seq,px,pz);}
     setGhostEncounterInteraction(snap.grabInteraction, ghostId);
     setGhostThreatActive(
       ghostId,
@@ -681,14 +724,18 @@ function LoadedGhostNpc({
         snap.state === 'OBSERVING_PLAYER',
     );
 
+    root.userData.ghostAttackEnabled=snap.attackEnabled;root.userData.ghostCollisionEnabled=snap.collisionEnabled;
+    const retreating=snap.state==='RETREAT'||snap.state==='FADE_OUT';
+    if(retreating&&rig.lastSafetyState!==snap.state)rig.audio.stop(ghostId);
+    rig.lastSafetyState=snap.state;
     const audible=soundRef.current.enabled&&shouldRun&&snap.visible&&snap.distToPlayerM<=65;
     rig.audio.position(ghostId,snap.x,rig.y+1.5,snap.z,audible);
-    rig.audio.sustain(ghostId,'ghost_ambient',audible&&snap.state!=='CHASING');
+    rig.audio.sustain(ghostId,'ghost_ambient',audible&&!retreating&&snap.state!=='CHASING');
     rig.audio.sustain(ghostId,'ghost_chase_tension',audible&&snap.state==='CHASING');
     const actualClip=rig.currentClipKey.split(':')[0];
     const clip=cachedGhostClips.get(actualClip as GhostClipId);
     const action=clip?rig.mixer.existingAction(clip):null;
-    rig.audioSync.step({state:snap.state,clip:action?.isRunning()?actualClip:'',clipTime:action?.time??0,clipDuration:clip?.duration??0,
+    rig.audioSync.step({state:snap.state,clip:action?.isRunning()&&(!retreating||actualClip==='depressed')?actualClip:'',clipTime:action?.time??0,clipDuration:clip?.duration??0,
       moving:snap.state==='FLEEING'||snap.state==='CHASING'||snap.state==='WANDERING'||snap.state==='ROAD_CROSSING'||snap.state==='RETURNING_HOME',
       grabPhase:snap.grabInteraction.phase,visible:snap.visible},preset=>{if(audible)rig.audio.play(preset,1,ghostId);});
 
@@ -709,15 +756,11 @@ function LoadedGhostNpc({
     root.rotation.set(0, snap.yaw, 0);
 
     // Apply opacity fade transitions cleanly without dirtying materials every frame
-    if (Math.abs(snap.opacity - rig.lastAppliedOpacity) > 0.015) {
+    if (Math.abs(snap.opacity - rig.lastAppliedOpacity) > 0.003) {
       rig.lastAppliedOpacity = snap.opacity;
-      const isTranslucent = snap.opacity < 0.99;
       for (let i = 0; i < rig.materials.length; i++) {
         const m = rig.materials[i];
-        m.transparent = isTranslucent;
-        m.opacity = snap.opacity;
-        m.depthWrite = !isTranslucent;
-        m.needsUpdate = true;
+        applyGhostOpacity(m,snap.opacity);
       }
     }
 
@@ -740,6 +783,7 @@ function LoadedGhostNpc({
     if (snap.distToPlayerM <= DEFAULT_GHOST_AI_CONFIG.aiSuspendDistanceM) {
       rig.controller.stepBlend(false, false, dt);
       rig.mixer.update(dt);
+      if(snap.grabInteraction.phase==='neck-grab')rig.grabPose.update(px,py+1.35,pz,snap.yaw);
     }
   });
 

@@ -24,7 +24,9 @@ import {
   isGhostSegmentWalkable,
   listGhostHauntZones,
   loadGhostWarehouseEnvironment,
+  selectActiveGhostZones,
   selectRandomGhostZones,
+  warehouseLocalToWorld,
   worldToWarehouseLocal,
 } from '../src/data/ghostWarehouseWaypoints.ts';
 import {
@@ -332,10 +334,10 @@ test('GhostAiController transitions deterministically across spawn, hide, observ
 
   assert.equal(snap.encounterCount, 1, 'Stationary player inside zone increments encounterCount once');
   assert.ok(snap.chaseThreshold >= 2 && snap.chaseThreshold <= 6, 'Threshold stays within 2..6');
-  assert.ok(seenStates.has('FLEEING'), 'Early encounter flees to hiding');
-  assert.ok(seenCues.has('flee-scare'), 'Early encounter emits procedural flee-scare audio cue');
+  assert.ok(seenStates.has('CHASING')||seenStates.has('GRABBING'), 'First approach engages without a random threshold');
+  assert.ok(seenClips.has('freaky')||seenStates.has('CHASING'), 'Chase/contact presentation activates');
   assert.ok(seenClips.has('flee_01') || seenClips.has('flee_02'), 'Flee clip played while escaping');
-  assert.equal(snap.chaseTriggerCount, 0, 'First encounter does not trigger threshold chase');
+  assert.ok(snap.chaseTriggerCount>=1, 'First encounter triggers direct chase');
 
   // 5. Road Crossing with incoming vehicle wait + alignment check
   (ai as unknown as { x: number; z: number }).x = westCurb.x;
@@ -425,223 +427,21 @@ test('rollGhostChaseThreshold covers 2..6 inclusive and persists unchanged durin
   assert.equal(rngCalls, 1, 'No extra RNG threshold rolls occur mid-cycle');
 });
 
-test('Ghost encounter escalation works for thresholds 2..6 with hysteresis, chase, neck-grab, fall, recovery, and reset', () => {
-  const env = buildDefaultWarehouseEnvironment();
-  clearGhostEncounterInteraction();
-
-  // Map exact threshold [2..6] -> deterministic unit float input for Math.floor(r * 5) + 2
-  const rngValueFor = (threshold: number): number => (threshold - 2 + 0.35) / 5;
-
-  for (const targetThreshold of [2, 3, 4, 5, 6]) {
-    const nextCycleThreshold = targetThreshold === 6 ? 2 : targetThreshold + 1;
-    const rngSeq = [rngValueFor(targetThreshold), rngValueFor(nextCycleThreshold), 0.5];
-    let rngIndex = 0;
-
-    const ai = new GhostAiController(
-      env,
-      {
-        ...DEFAULT_GHOST_AI_CONFIG,
-        spawnDurationSec: 0.25,
-        despawnDurationSec: 0.25,
-        hideDurationRangeSec: [0.5, 0.6],
-        observeDurationRangeSec: [0.3, 0.4],
-        scareDurationSec: 0.35,
-        laughDurationSec: 0.35,
-        scareFollowupLaughChance: 1.0,
-        fleeDurationSec: 0.7,
-        returnSpeedMps: 6.5,
-        cooldownDurationSec: 0.6,
-        encounterCooldownSec: 0.6,
-        encounterEntryRadiusM: 14,
-        encounterExitRadiusM: 22,
-        chaseSpeedMps: 8.5,
-        grabRangeM: 2.3,
-        grabHoldDurationSec: 0.3,
-        playerFallDurationSec: 0.45,
-        recoverDurationSec: 0.35,
-      },
-      100 + targetThreshold,
-      () => rngSeq[Math.min(rngIndex++, rngSeq.length - 1)],
-    );
-
-    const westCurb = env.waypointById.get('curb-west-main')!;
-    // Outside encounterExitRadiusM (22m) of every warehouse node, yet well inside AI active district zone
-    const farX = GHOST_WAREHOUSE_ANCHOR.x + 35;
-    const farZ = GHOST_WAREHOUSE_ANCHOR.z + 35;
-
-    // Spawn at night while player is in Warehouse district (> exit radius)
-    let snap = ai.getSnapshot();
-    for (let i = 0; i < 20; i++) {
-      snap = ai.step({
-        dt: 0.05,
-        activeBySchedule: true,
-        playerX: farX,
-        playerZ: farZ,
-      });
-    }
-    assert.equal(snap.chaseThreshold, targetThreshold, `Cycle starts with threshold=${targetThreshold}`);
-    assert.equal(rngIndex, 1, 'Threshold rolled once at cycle start');
-
-    let lastAudioSeq = snap.audioCue?.seq ?? 0;
-    const collectAudioCue = (cues: string[], s: typeof snap) => {
-      if (s.audioCue && s.audioCue.seq > lastAudioSeq) {
-        lastAudioSeq = s.audioCue.seq;
-        cues.push(s.audioCue.cue);
-      }
-    };
-
-    // Perform encounters 1 .. targetThreshold - 1 (flee & hide)
-    for (let enc = 1; enc < targetThreshold; enc++) {
-      // Exit zone cleanly and wait until previous encounter + cooldown complete and zone re-arms
-      for (let i = 0; i < 300; i++) {
-        snap = ai.step({ dt: 0.05, activeBySchedule: true, playerX: farX, playerZ: farZ });
-        if (
-          !snap.playerInsideEncounterZone &&
-          (snap.state === 'HIDING' || snap.state === 'WANDERING' || snap.state === 'OBSERVING_PLAYER')
-        ) {
-          break;
-        }
-      }
-      assert.equal(snap.playerInsideEncounterZone, false, 'Player exited zone cleanly after cooldown');
-
-      const internal = ai as unknown as { x: number; z: number };
-      internal.x = westCurb.x;
-      internal.z = westCurb.z;
-      ai.forceStateForTest('HIDING');
-
-      const encStates = new Set<string>();
-      const encClips = new Set<string>();
-      const encCues: string[] = [];
-
-      // Approach within encounterEntryRadiusM (10m away) and stay inside gap (17m < exitRadiusM 22m)
-      for (let i = 0; i < 45; i++) {
-        const curSnap = ai.getSnapshot();
-        const distOffset = i < 20 ? 8 : 17; // stays inside exitRadiusM=22 after stepping back slightly
-        snap = ai.step({
-          dt: 0.05,
-          activeBySchedule: true,
-          playerX: curSnap.x + distOffset,
-          playerZ: curSnap.z,
-        });
-        encStates.add(snap.state);
-        encClips.add(snap.activeClip.clipId);
-        collectAudioCue(encCues, snap);
-      }
-
-      assert.equal(
-        snap.encounterCount,
-        enc,
-        `Threshold ${targetThreshold}: encounter ${enc} incremented exactly once without hysteresis bypass`,
-      );
-      assert.equal(snap.chaseThreshold, targetThreshold, 'Threshold unchanged mid-cycle');
-      assert.ok(encStates.has('FLEEING'), `Encounter ${enc} triggered FLEEING`);
-      assert.ok(encCues.includes('flee-scare'), `Encounter ${enc} emitted flee-scare procedural audio cue`);
-      assert.ok(
-        encClips.has('flee_01') || encClips.has('flee_02'),
-        `Encounter ${enc} played flee animation while escaping`,
-      );
-      assert.equal(snap.chaseTriggerCount, 0, 'Pre-threshold encounter must not trigger chase');
-      assert.equal(snap.grabCount, 0, 'Pre-threshold encounter must not grab player');
-    }
-
-    // Leave proximity beyond exit radius and wait until flee/return/cooldown ends before threshold encounter
-    for (let i = 0; i < 300; i++) {
-      snap = ai.step({ dt: 0.05, activeBySchedule: true, playerX: farX, playerZ: farZ });
-      if (
-        !snap.playerInsideEncounterZone &&
-        (snap.state === 'HIDING' || snap.state === 'WANDERING' || snap.state === 'OBSERVING_PLAYER')
-      ) {
-        break;
-      }
-    }
-    assert.equal(snap.playerInsideEncounterZone, false, 'Zone re-armed after exiting past exitRadiusM');
-
-    // Final encounter === targetThreshold: confront -> chase -> grab -> fall -> recover -> cooldown -> cycle reset
-    const eastCurb = env.waypointById.get('curb-east-main')!;
-    (ai as unknown as { x: number; z: number }).x = westCurb.x;
-    (ai as unknown as { x: number; z: number }).z = westCurb.z;
-    ai.forceStateForTest('HIDING');
-
-    const finalStates: string[] = [];
-    const finalClips: string[] = [];
-    const finalCues: string[] = [];
-    const grabPhases: string[] = [];
-
-    // Approach at clear open road spot 8m east so SCARING completes into CHASING, then hold player near ghost to allow catch/grab/fall/recover/reset
-    let px = (westCurb.x + eastCurb.x) * 0.5;
-    let pz = (westCurb.z + eastCurb.z) * 0.5;
-    for (let i = 0; i < 160; i++) {
-      snap = ai.step({
-        dt: 0.05,
-        activeBySchedule: true,
-        playerX: px,
-        playerZ: pz,
-      });
-      setGhostEncounterInteraction(snap.grabInteraction);
-      if (snap.grabInteraction.active) {
-        assert.equal(getGhostEncounterInteraction().phase, snap.grabInteraction.phase);
-      }
-      if (finalStates[finalStates.length - 1] !== snap.state) finalStates.push(snap.state);
-      if (finalClips[finalClips.length - 1] !== snap.activeClip.clipId) finalClips.push(snap.activeClip.clipId);
-      collectAudioCue(finalCues, snap);
-      if (snap.grabInteraction.active && grabPhases[grabPhases.length - 1] !== snap.grabInteraction.phase) {
-        grabPhases.push(snap.grabInteraction.phase);
-      }
-      // Once recovery/cooldown completes and cycle resets (encounterCount resets to 0), stop early once we observed reset
-      if (snap.encounterCycleCount >= 1 && snap.state === 'HIDING') {
-        break;
-      }
-      // Keep player reachable on open road during SCARING/CHASING so catch reliably triggers
-      if (snap.state === 'SCARING' || snap.state === 'CHASING') {
-        assert.equal(
-          snap.encounterCount,
-          targetThreshold,
-          'No duplicate encounter increment during SCARING or CHASING',
-        );
-      }
-      if (snap.state === 'GRABBING' || snap.state === 'RECOVERING') {
-        assert.equal(
-          snap.encounterCount,
-          targetThreshold,
-          'No duplicate encounter increment during GRABBING or RECOVERING',
-        );
-      }
-    }
-    clearGhostEncounterInteraction();
-    assert.equal(getGhostEncounterInteraction().active, false);
-
-    assert.ok(finalStates.includes('SCARING'), `Threshold ${targetThreshold}: entered SCARING`);
-    assert.ok(finalStates.includes('CHASING'), `Threshold ${targetThreshold}: entered CHASING`);
-    assert.ok(finalStates.includes('GRABBING'), `Threshold ${targetThreshold}: caught player into GRABBING`);
-    assert.ok(finalStates.includes('RECOVERING'), `Threshold ${targetThreshold}: entered RECOVERING`);
-    assert.ok(finalStates.includes('COOLDOWN'), `Threshold ${targetThreshold}: entered COOLDOWN`);
-
-    assert.ok(finalClips.includes('freaky'), `Threshold ${targetThreshold}: played freaky.001`);
-    assert.ok(finalClips.includes('laugh_01'), `Threshold ${targetThreshold}: played laugh_01.001`);
-    assert.ok(
-      finalClips.includes('flee_01') || finalClips.includes('flee_02'),
-      `Threshold ${targetThreshold}: chased with flee animation`,
-    );
-
-    assert.ok(finalCues.includes('scream'), `Threshold ${targetThreshold}: synthesized scream cue`);
-    assert.ok(finalCues.includes('evil-laugh'), `Threshold ${targetThreshold}: synthesized evil-laugh cue`);
-    assert.ok(finalCues.includes('grab-impact'), `Threshold ${targetThreshold}: synthesized grab-impact cue`);
-
-    assert.deepEqual(
-      grabPhases,
-      ['neck-grab', 'player-fall'],
-      `Threshold ${targetThreshold}: ran neck-grab then player-fall sequence`,
-    );
-    assert.equal(snap.chaseTriggerCount, 1);
-    assert.equal(snap.grabCount, 1);
-    assert.ok(snap.encounterCycleCount >= 1, 'Completed encounter cycle');
-    assert.equal(snap.encounterCount, 0, 'Encounter count reset for next cycle');
-    assert.equal(
-      snap.chaseThreshold,
-      nextCycleThreshold,
-      'Next cycle generated a fresh threshold in 2..6 after reset',
-    );
+test('thresholds 2..6 never gate first chase, neck-grab, fall and lethal completion',()=>{
+ const env=buildDefaultWarehouseEnvironment();
+ for(const threshold of [2,3,4,5,6]){
+  const ai=new GhostAiController(env,{...DEFAULT_GHOST_AI_CONFIG,spawnDurationSec:.25,chaseSpeedMps:8.5,grabHoldDurationSec:.3,playerFallDurationSec:.45},100+threshold,()=>(threshold-2+.35)/5);
+  for(let i=0;i<20;i++)ai.step({dt:.05,activeBySchedule:true,playerX:GHOST_WAREHOUSE_ANCHOR.x+80,playerZ:GHOST_WAREHOUSE_ANCHOR.z+80});
+  const west=env.waypointById.get('curb-west-main')!,east=env.waypointById.get('curb-east-main')!;
+  const internal=ai as unknown as {x:number;z:number};internal.x=west.x;internal.z=west.z;ai.forceStateForTest('HIDING');
+  const phases=new Set<string>(),states=new Set<string>();let killed=false;
+  for(let i=0;i<150;i++){
+   const snap=ai.step({dt:.05,activeBySchedule:true,playerX:(west.x+east.x)/2,playerZ:(west.z+east.z)/2});
+   states.add(snap.state);if(snap.grabInteraction.active)phases.add(snap.grabInteraction.phase);killed ||= snap.playerKilled;
+   if(killed)break;
   }
+  assert.ok(states.has('CHASING'));assert.ok(states.has('GRABBING'));assert.deepEqual([...phases],['neck-grab','player-fall']);assert.equal(killed,true);assert.equal(ai.getSnapshot().grabCount,1);
+ }
 });
 
 test('all 8 haunt zones build connected, obstacle-clear waypoint graphs across myothar', () => {
@@ -801,4 +601,55 @@ test('multi-owner ghost grab interaction preserves active grab when idle ghosts 
   } finally {
     clearGhostEncounterInteraction();
   }
+});
+
+test('selectActiveGhostZones always guarantees warehouse-row while northern corridor entry spawns cleanly', () => {
+  const zones = listGhostHauntZones();
+  const anchorById = new Map(zones.map((z) => [z.zoneId, z.anchor]));
+
+  for (let seed = 1; seed <= 25; seed++) {
+    let s = (seed * 2654435761) >>> 0;
+    const rng = () => {
+      s = (1664525 * s + 1013904223) >>> 0;
+      return s / 0x100000000;
+    };
+    const active = selectActiveGhostZones(DEFAULT_GHOST_COUNT, rng);
+    assert.equal(active.length, DEFAULT_GHOST_COUNT);
+    assert.equal(active[0], 'warehouse-row', 'ghost-1 always owns warehouse-row');
+    assert.equal(new Set(active).size, DEFAULT_GHOST_COUNT);
+
+    for (let i = 0; i < active.length; i++) {
+      for (let j = i + 1; j < active.length; j++) {
+        const a = anchorById.get(active[i])!;
+        const b = anchorById.get(active[j])!;
+        assert.ok(
+          Math.hypot(a.x - b.x, a.z - b.z) >= GHOST_MIN_ZONE_SEPARATION_M,
+          `zones ${active[i]} and ${active[j]} remain separated`,
+        );
+      }
+    }
+  }
+
+  const env = buildDefaultWarehouseEnvironment();
+  const northEntry = warehouseLocalToWorld(0, -80);
+  const radialFromAnchor = Math.hypot(northEntry.x - env.anchor.x, northEntry.z - env.anchor.z);
+  assert.ok(
+    radialFromAnchor > DEFAULT_GHOST_AI_CONFIG.assetLoadDistanceM,
+    `north entry ${radialFromAnchor.toFixed(1)}m exceeds radial anchor distance`,
+  );
+  assert.ok(
+    (env.measureDistanceFromZone?.(northEntry.x, northEntry.z) ?? radialFromAnchor) <=
+      DEFAULT_GHOST_AI_CONFIG.assetLoadDistanceM,
+    'warehouse zone distance covers northern Warehouse Row corridor',
+  );
+
+  const ai = new GhostAiController(env, DEFAULT_GHOST_AI_CONFIG, 424242);
+  const snap = ai.step({
+    dt: 0.05,
+    activeBySchedule: true,
+    playerX: northEntry.x,
+    playerZ: northEntry.z,
+  });
+  assert.equal(snap.state, 'SPAWNING', 'approaching northern Warehouse Row activates ghost spawn');
+  assert.equal(snap.visible, true);
 });

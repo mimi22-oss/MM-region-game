@@ -1,0 +1,23 @@
+✔ all horror presets remain silent and safe before gesture/context creation (4.9495ms)
+✔ animation starts, contact phases, and stride phase crossings emit once, without timer catch-up (2.1423ms)
+✔ home retreat and fade audio fire once per state, without duplicate fade cues (0.6974ms)
+✔ exact scene circle boundary is inclusive and editor polygon replaces fallback safely (6.2849ms)
+✔ protection precedes same-frame catch, scare windup, and active grab (7.6933ms)
+✔ three independent ghosts retreat, fade over two seconds, return to spawn, and respect exit buffer/cooldown (8.1299ms)
+✔ retreat never crosses blocked geometry or moves closer to protection, and pause does not advance fade (3.7176ms)
+✔ dormant ghosts do not respawn inside protection, including a moved editor boundary over spawn (4.4445ms)
+✔ per-instance fade restores authored material state without changing shared materials or recompiling each frame (3.3191ms)
+✔ extracted dance GLBs contain zero meshes, zero images, zero scale tracks, and match source durations (226.7154ms)
+✔ Special Action Registry manages Play, Stop, Loop, switch, and sync phase cleanly (1.3178ms)
+✔ lazy loader dedupes requests and enforces bounded LRU cache limits (675.4482ms)
+✔ retargets all 6 dances onto boy.glb & girl.glb and blends Idle ↔ Dance ↔ Switch ↔ Walk without conflicts (1327.3791ms)
+✔ categorized Training, Reactions, and Movement registry metadata & extracted GLBs match boy hit fight dive.glb (404.211ms)
+✔ all 17 new motions retarget cleanly onto Boy & Girl, hold/ease non-standing ends, support repeated triggering & bounded cache (1784.3748ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8995.651

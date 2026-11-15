@@ -1,3 +1,4 @@
+import {HOME_RETREAT,isPlayerHomeProtected,stepHomeRetreat} from './playerHomeProtection.ts';
 import type { GhostClipId } from '../animation/ghost/GhostMotionLibrary.ts';
 import {
   findWaypointPath,
@@ -18,6 +19,8 @@ import {
 } from './ghostConfig.ts';
 
 export type GhostAiState =
+  | 'RETREAT'
+  | 'FADE_OUT'
   | 'DORMANT'
   | 'SPAWNING'
   | 'HIDING'
@@ -64,6 +67,11 @@ export interface GhostAiAudioEvent {
 
 export interface GhostAiSnapshot {
   readonly state: GhostAiState;
+  readonly attackEnabled:boolean;
+  readonly collisionEnabled:boolean;
+  readonly homeProtected:boolean;
+  readonly playerKilled:boolean;
+  readonly chaseSpeed:number;
   readonly x: number;
   readonly z: number;
   readonly yaw: number;
@@ -192,6 +200,15 @@ export class GhostAiController {
   private z: number;
   private yaw = 0;
   private opacity = 0;
+  private chaseSpeed=0;
+  private directPath=false;
+  private playerKilled=false;
+  private originalSpawnId:string;
+  private hasSpawned=false;
+  private safeCooldown=false;
+  private homeProtected=false;
+  private fadeStartOpacity=1;
+  private retreatMotion={x:0,z:0};
   private seed: number;
 
   private homeWaypointId: string;
@@ -250,17 +267,21 @@ export class GhostAiController {
     thresholdRng: () => number = Math.random,
   ) {
     this.env = env;
-    this.cfg = config;
+    this.cfg = {...config,hideDurationRangeSec:[...config.hideDurationRangeSec],observeDurationRangeSec:[...config.observeDurationRangeSec],roadCrossCooldownRangeSec:[...config.roadCrossCooldownRangeSec]};
     this.seed = initialSeed >>> 0;
     this.thresholdRng = thresholdRng;
     this.chaseThreshold = rollGhostChaseThreshold(this.thresholdRng);
     const defaultHome = this.pickBestHomeWaypoint(env.anchor.x, env.anchor.z, 999, 999);
+    this.originalSpawnId=defaultHome.id;
     this.homeWaypointId = defaultHome.id;
     this.currentWaypointId = defaultHome.id;
     this.targetWaypointId = defaultHome.id;
     this.x = defaultHome.x;
     this.z = defaultHome.z;
-    this.roadCrossTimer = this.randRange(config.roadCrossCooldownRangeSec[0], config.roadCrossCooldownRangeSec[1]);
+    this.roadCrossTimer = this.randRange(
+      Math.min(4, config.roadCrossCooldownRangeSec[0]),
+      Math.min(10, config.roadCrossCooldownRangeSec[1]),
+    );
   }
 
   private emitAudioCue(cue: GhostAudioCue): void {
@@ -274,6 +295,7 @@ export class GhostAiController {
 
   private isEncounterBusyState(state: GhostAiState): boolean {
     return (
+      state === 'RETREAT' || state === 'FADE_OUT' ||
       state === 'DORMANT' ||
       state === 'SPAWNING' ||
       state === 'DESPAWNING' ||
@@ -334,7 +356,7 @@ export class GhostAiController {
         distPlayer < Math.max(this.cfg.minSpawnPlayerClearanceM, this.cfg.encounterEntryRadiusM + 2)
           ? 150
           : 0;
-      const roleBonus = node.role === 'hiding' ? -4 : 0;
+      const roleBonus = node.role === 'hiding' ? -8 : node.role === 'dark-corner' ? 12 : 0;
       const randomSpread = this.rand() * 24;
       const score = distAnchor * 0.35 + tooClosePenalty + roleBonus + randomSpread;
       if (score < bestScore) {
@@ -414,12 +436,18 @@ export class GhostAiController {
   }
 
   private transitionTo(next: GhostAiState, opts?: { duration?: number }): void {
+    if(next!=='CHASING')this.chaseSpeed=0;
     this.state = next;
     this.stateTimer = 0;
     this.stateDuration = opts?.duration ?? 0;
     this.resetProgressWatch();
 
     switch (next) {
+      case 'RETREAT':
+      case 'FADE_OUT':
+        this.pathQueue=[];this.grabPhase='none';this.grabFallProgress=0;this.lastAudioCue=null;this.playerKilled=false;
+        this.grabSeq++;this.safeCooldown=true;this.fadeStartOpacity=this.opacity;
+        break;
       case 'DORMANT':
         this.opacity = 0;
         this.pathQueue = [];
@@ -516,6 +544,7 @@ export class GhostAiController {
         this.grabFallProgress = 0;
         break;
       case 'CHASING':
+        this.cyclePendingReset=true;
         this.opacity = 1;
         this.pathQueue = [];
         this.chasePathRefreshTimer = 0;
@@ -526,6 +555,7 @@ export class GhostAiController {
         this.grabFallProgress = 0;
         break;
       case 'GRABBING':
+        this.playerKilled=false;
         this.opacity = 1;
         this.pathQueue = [];
         this.grabPhase = 'neck-grab';
@@ -613,6 +643,12 @@ export class GhostAiController {
     return false;
   }
 
+  private traversable(ax:number,az:number,bx:number,bz:number,walk:(x:number,z:number)=>boolean){
+    const steps=Math.max(1,Math.ceil(Math.hypot(bx-ax,bz-az)/.25));
+    for(let i=0;i<=steps;i++)if(!walk(ax+(bx-ax)*i/steps,az+(bz-az)*i/steps))return false;
+    return true;
+  }
+
   /** Steers smoothly toward target point while applying gentle tree avoidance + walkable sliding. */
   private steerToward(
     targetX: number,
@@ -670,10 +706,10 @@ export class GhostAiController {
     const offX = this.x - this.env.anchor.x;
     const offZ = this.z - this.env.anchor.z;
     const offDist = Math.hypot(offX, offZ);
-    if (offDist > this.cfg.patrolRadiusM + 8) {
+    if (this.state!=='CHASING'&&offDist > this.cfg.patrolRadiusM + 8) {
       const clampScale = (this.cfg.patrolRadiusM + 8) / offDist;
-      this.x = this.env.anchor.x + offX * clampScale;
-      this.z = this.env.anchor.z + offZ * clampScale;
+      const x=this.env.anchor.x+offX*clampScale,z=this.env.anchor.z+offZ*clampScale;
+      if(this.traversable(this.x,this.z,x,z,walkCheck)){this.x=x;this.z=z;}
     }
 
     const targetYaw = Math.atan2(dirX, dirZ);
@@ -731,6 +767,9 @@ export class GhostAiController {
 
   public getActiveClipDirective(): GhostClipDirective {
     switch (this.state) {
+      case 'RETREAT':
+      case 'FADE_OUT':
+        return {clipId:'depressed',loop:true,speedScale:.7};
       case 'DORMANT':
       case 'DESPAWNING':
       case 'OBSERVING_PLAYER':
@@ -767,7 +806,7 @@ export class GhostAiController {
         return {
           clipId: this.chaseClipChoice,
           loop: true,
-          speedScale: this.chaseClipChoice === 'flee_01' ? 1.75 : 1.55,
+          speedScale:Math.max(.25,this.chaseSpeed/(this.chaseClipChoice==='flee_01'?3.6:4.1)),
         };
       case 'GRABBING':
         return this.grabPhase === 'player-fall'
@@ -786,36 +825,15 @@ export class GhostAiController {
   ): boolean {
     if (this.isEncounterBusyState(this.state)) return false;
 
-    const exitRadius = this.effectiveExitRadiusM();
-    if (this.playerInsideEncounterZone) {
-      if (this.encounterCooldownTimer <= 0 && distToPlayer >= exitRadius) {
-        this.playerInsideEncounterZone = false;
-      }
-      return false;
-    }
-
-    if (this.encounterCooldownTimer > 0) return false;
-    if (distToPlayer > this.cfg.encounterEntryRadiusM) return false;
-    if (!los) return false;
-
-    this.playerInsideEncounterZone = true;
-    this.encounterCount += 1;
-
-    if (this.encounterCount < this.chaseThreshold) {
-      // Non-threshold encounter: react, play horror audio, and flee to a valid hiding location.
-      this.yaw = Math.atan2(input.playerX - this.x, input.playerZ - this.z);
-      this.emitAudioCue('flee-scare');
-      const esc = this.pickEscapeWaypoint(input.playerX, input.playerZ);
-      this.homeWaypointId = esc.id;
-      this.transitionTo('FLEEING');
-      this.setTargetWaypoint(esc);
-      return true;
-    }
-
-    // Threshold reached: stop fleeing, face player, scream + laugh confrontation -> chase.
-    this.cyclePendingReset = true;
-    this.yaw = Math.atan2(input.playerX - this.x, input.playerZ - this.z);
-    this.transitionTo('SCARING');
+    if(input.playerInVehicle||!los||distToPlayer>(this.state==='OBSERVING_PLAYER'?this.cfg.loseSightRadiusM:this.cfg.detectRadiusM))return false;
+    const observation=this.cfg.observeBeforeChaseSec??0;
+    if(observation>0&&this.state!=='OBSERVING_PLAYER'){this.transitionTo('OBSERVING_PLAYER',{duration:observation});return true;}
+    if(this.state==='OBSERVING_PLAYER'&&this.stateTimer<observation)return true;
+    this.encounterCount++;
+    this.playerInsideEncounterZone=true;
+    this.transitionTo('CHASING');
+    // The old random threshold may vary the chase presentation, never detection eligibility.
+    if(this.encounterCount>0&&this.encounterCount%this.chaseThreshold===0)this.chaseClipChoice='flee_02';
     return true;
   }
 
@@ -828,6 +846,8 @@ export class GhostAiController {
       input.playerX - this.env.anchor.x,
       input.playerZ - this.env.anchor.z,
     );
+    const distFromZone =
+      this.env.measureDistanceFromZone?.(input.playerX, input.playerZ) ?? distFromAnchor;
     this.lastDistToPlayer = distToPlayer;
 
     if (this.scareCooldownTimer > 0) {
@@ -840,18 +860,60 @@ export class GhostAiController {
       this.roadCrossTimer = Math.max(0, this.roadCrossTimer - dt);
     }
 
+    // Highest priority: evaluated before schedule activation, sensing, windup or catch checks.
+    this.homeProtected=isPlayerHomeProtected(input.playerX,input.playerZ);
+    const buffered=isPlayerHomeProtected(input.playerX,input.playerZ,HOME_RETREAT.buffer);
+    if(this.homeProtected){
+      this.grabPhase='none';this.grabFallProgress=0;this.lastAudioCue=null;this.playerKilled=false;
+      this.playerInsideEncounterZone=true;
+      if(this.state==='DORMANT'&&!this.safeCooldown){this.safeCooldown=true;this.transitionTo('COOLDOWN');this.opacity=0;this.stateDuration=HOME_RETREAT.cooldownSec;}
+      if(this.state!=='DORMANT'&&this.state!=='RETREAT'&&this.state!=='FADE_OUT'&&!(this.state==='COOLDOWN'&&this.safeCooldown))this.transitionTo('RETREAT');
+    }
+    if(this.state==='RETREAT'||this.state==='FADE_OUT'){
+      this.stateTimer+=dt;
+      this.yaw=rotateTowardAngle(this.yaw,Math.atan2(input.playerX-this.x,input.playerZ-this.z),this.cfg.turnRateRadPerSec*dt);
+      if(this.state==='FADE_OUT'||this.stateTimer>=HOME_RETREAT.faceSec){
+        this.retreatMotion.x=this.x;this.retreatMotion.z=this.z;
+        stepHomeRetreat(this.retreatMotion,input.playerX,input.playerZ,dt,walkCheck);
+        this.x=this.retreatMotion.x;this.z=this.retreatMotion.z;
+      }
+      if(this.state==='RETREAT'&&this.stateTimer>=HOME_RETREAT.faceSec+HOME_RETREAT.backSec)this.transitionTo('FADE_OUT');
+      else if(this.state==='FADE_OUT'){
+        const t=Math.min(1,this.stateTimer/HOME_RETREAT.fadeSec);
+        this.opacity=this.fadeStartOpacity*(1-t*t*(3-2*t));
+        if(t>=1){
+          this.transitionTo('COOLDOWN');this.opacity=0;this.stateDuration=HOME_RETREAT.cooldownSec;
+          const spawn=this.env.waypointById.get(this.originalSpawnId)!;
+          if(walkCheck(spawn.x,spawn.z)){this.x=spawn.x;this.z=spawn.z;}
+        }
+      }
+      return this.getSnapshot();
+    }
+    if(this.safeCooldown){
+      this.opacity=0;this.stateTimer+=dt;
+      if(buffered||this.stateTimer<HOME_RETREAT.cooldownSec)return this.getSnapshot();
+      const spawn=this.env.waypointById.get(this.originalSpawnId)!;
+      if(!walkCheck(spawn.x,spawn.z)||isPlayerHomeProtected(spawn.x,spawn.z,HOME_RETREAT.buffer))return this.getSnapshot();
+      this.x=spawn.x;this.z=spawn.z;this.currentWaypointId=spawn.id;this.homeWaypointId=spawn.id;
+      this.safeCooldown=false;this.resetEncounterCycle(distToPlayer);this.transitionTo('SPAWNING');
+      if(!input.activeBySchedule)this.transitionTo('DORMANT');
+      return this.getSnapshot();
+    }
+    if(this.homeProtected)return this.getSnapshot();
+
     // Global schedule exit: fade smoothly out unless already DORMANT.
     if (!input.activeBySchedule) {
       if (this.state !== 'DORMANT' && this.state !== 'DESPAWNING') {
         this.transitionTo('DESPAWNING');
       }
-    } else if (this.state === 'DORMANT' && distFromAnchor <= this.cfg.assetLoadDistanceM) {
+    } else if (this.state === 'DORMANT' && distFromZone <= this.cfg.assetLoadDistanceM) {
       const home = this.pickBestHomeWaypoint(
         this.env.anchor.x,
         this.env.anchor.z,
         input.playerX,
         input.playerZ,
       );
+      if(!this.hasSpawned){this.originalSpawnId=home.id;this.hasSpawned=true;}
       this.homeWaypointId = home.id;
       this.currentWaypointId = home.id;
       this.targetWaypointId = home.id;
@@ -875,7 +937,7 @@ export class GhostAiController {
       this.state !== 'DESPAWNING' &&
       this.state !== 'GRABBING' &&
       updatedDistToPlayer > this.cfg.aiSuspendDistanceM &&
-      distFromAnchor > this.cfg.aiSuspendDistanceM
+      distFromZone > this.cfg.aiSuspendDistanceM
     ) {
       this.lastHasLos = false;
       return this.getSnapshot();
@@ -884,6 +946,8 @@ export class GhostAiController {
     const { detected, los } = this.canSensePlayer(updatedDistToPlayer, input.playerX, input.playerZ);
     this.lastHasLos = los;
     this.stateTimer += dt;
+    if(detected&&['HIDING','WANDERING','OBSERVING_PLAYER','ROAD_CROSSING'].includes(this.state))
+      this.tryHandleProximityEncounter(updatedDistToPlayer,los,input);
 
     // Update hysteresis when zone was entered previously and previous encounter + cooldown completed.
     if (
@@ -1098,7 +1162,7 @@ export class GhostAiController {
       }
 
       case 'CHASING': {
-        if (!input.playerInVehicle && distToPlayer <= this.cfg.grabRangeM) {
+        if (!input.playerInVehicle && los && distToPlayer <= this.cfg.grabRangeM&&this.traversable(this.x,this.z,input.playerX,input.playerZ,walkCheck)) {
           this.yaw = Math.atan2(input.playerX - this.x, input.playerZ - this.z);
           this.transitionTo('GRABBING');
           break;
@@ -1114,19 +1178,22 @@ export class GhostAiController {
           this.setTargetWaypoint(esc);
           break;
         }
-        if (los) {
-          this.steerToward(input.playerX, input.playerZ, this.cfg.chaseSpeedMps, dt, walkCheck);
+        this.chaseSpeed=Math.min(this.cfg.chaseSpeedMps,this.chaseSpeed+(this.cfg.chaseAccelerationMps2??8)*dt);
+        this.chasePathRefreshTimer-=dt;
+        if(this.chasePathRefreshTimer<=0){this.chasePathRefreshTimer=.3;this.directPath=los&&this.traversable(this.x,this.z,input.playerX,input.playerZ,walkCheck);}
+        if (this.directPath&&los) {
+          this.steerToward(input.playerX, input.playerZ, this.chaseSpeed, dt, walkCheck);
         } else {
-          this.chasePathRefreshTimer -= dt;
-          if (this.chasePathRefreshTimer <= 0 || this.pathQueue.length === 0) {
+
+          if (this.pathQueue.length === 0 || this.stateTimer% .3<dt) {
             this.chasePathRefreshTimer = 0.45;
             const playerNode = this.findNearestWaypoint(input.playerX, input.playerZ);
             this.setTargetWaypoint(playerNode);
           }
           if (this.pathQueue.length > 0) {
-            this.followCurrentPath(this.cfg.chaseSpeedMps, dt, walkCheck);
+            this.followCurrentPath(this.chaseSpeed, dt, walkCheck);
           } else {
-            this.steerToward(input.playerX, input.playerZ, this.cfg.chaseSpeedMps, dt, walkCheck);
+            this.steerToward(input.playerX, input.playerZ, this.chaseSpeed, dt, walkCheck);
           }
         }
         break;
@@ -1142,11 +1209,10 @@ export class GhostAiController {
             this.cfg.turnRateRadPerSec * 1.6 * dt,
           );
         }
-        // Maintain visual arm-reach standoff distance without overlapping player torso
-        if (distToPlayer > 1.65 && distToPlayer <= this.cfg.grabRangeM + 0.6) {
-          this.steerToward(input.playerX, input.playerZ, 2.2, dt, walkCheck);
+        // Contact locks the interaction in place. Invalid contact cancels pending attack.
+        if(!los||input.playerInVehicle||distToPlayer>this.cfg.grabRangeM+.8||!this.traversable(this.x,this.z,input.playerX,input.playerZ,walkCheck)){
+          this.transitionTo('RECOVERING');break;
         }
-
         if (this.grabPhase === 'neck-grab') {
           if (this.stateTimer >= this.cfg.grabHoldDurationSec) {
             this.grabPhase = 'player-fall';
@@ -1162,6 +1228,7 @@ export class GhostAiController {
             this.stateTimer / Math.max(0.2, this.cfg.playerFallDurationSec * 0.45),
           );
           if (this.stateTimer >= this.cfg.playerFallDurationSec) {
+            this.playerKilled=true;
             const esc = this.pickEscapeWaypoint(input.playerX, input.playerZ);
             this.homeWaypointId = esc.id;
             this.transitionTo('RECOVERING');
@@ -1223,6 +1290,11 @@ export class GhostAiController {
   public getSnapshot(): GhostAiSnapshot {
     return {
       state: this.state,
+      homeProtected:this.homeProtected,
+      playerKilled:this.playerKilled,
+      chaseSpeed:this.chaseSpeed,
+      attackEnabled:!this.homeProtected&&!this.safeCooldown&&(this.state==='CHASING'||this.state==='GRABBING'),
+      collisionEnabled:!this.safeCooldown&&this.state!=='DORMANT'&&this.state!=='DESPAWNING',
       x: this.x,
       z: this.z,
       yaw: this.yaw,

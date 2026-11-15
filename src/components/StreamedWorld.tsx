@@ -1,3 +1,4 @@
+import {HauntedWarehouseAudioZone} from './HauntedWarehouseAudioZone';
 import { GhostNpcs } from './GhostNpc';
 import { CarBots } from './CarBots';
 import type { TimeMode } from '../game/environmentTime';
@@ -379,7 +380,11 @@ const fallbackFocus = { x: 0, z: 0 };
     {!paused && started && !diagnosticConfig.disableNPCs && !hideNpcsDuringHighIntro && <>
       <RobotBots activeRegions={active} />
       <CarBots />
-      <GhostNpcs
+      <HauntedWarehouseAudioZone enabled={active.includes('myothar')} minute={minute} timeMode={timeMode} soundEnabled={soundEnabled}/>
+
+    </>}
+    {started && !diagnosticConfig.disableNPCs && !hideNpcsDuringHighIntro && <>
+      <GhostNpcs paused={paused}
         enabled={active.includes('myothar')}
         minute={minute}
         timeMode={timeMode}

@@ -1,0 +1,21 @@
+✔ all horror presets remain silent and safe before gesture/context creation (2.0588ms)
+✔ animation starts, contact phases, and stride phase crossings emit once, without timer catch-up (2.0039ms)
+✔ home retreat and fade audio fire once per state, without duplicate fade cues (1.023ms)
+✔ IDs assign distinct independent personalities; detect radius and observation use initial tuning (10.2684ms)
+✔ walking players can be caught, sprinting players escape, and valid close contact beats acceleration (17.4501ms)
+✔ grab requires LOS and traversable corridor; ghost contact does not drag/move player or ghost (1.4587ms)
+✔ delta-time chase is comparable at 30/60Hz and never clamps/teleports back to patrol disk (3.761ms)
+✔ lethal contact, safe-home veto, one death, respawn and grace restore the player lifecycle (1.2574ms)
+✔ authored waypoint navigation routes around a wall or tree without crossing blocked geometry (4.6191ms)
+✔ distance bands are hysteretic, gains smooth, and night respects world-time overrides (2.878ms)
+✔ seeded scheduler varies intervals/origins, proximity weights, cooldowns and quiet gaps (26.3445ms)
+✔ no events during daytime, outside zone or overlap cap; ghost activity never gates environmental sounds (4.3051ms)
+✔ warehouse/tree sources match authored Area 5 geometry and skip edited sources (2.4388ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3415.0397

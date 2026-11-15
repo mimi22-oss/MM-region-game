@@ -42,6 +42,16 @@ export const MAP_DESTINATIONS: MapDestination[] = [
 		distance: 8,
 	},
 	{
+		id: "warehouse-row",
+		label: "သိုလှောင်ရုံတန်း (AH1)",
+		title: "သိုလှောင်ရုံတန်း · မြို့သာရပ်ကွက်",
+		subtitle: "AH1 ဂိုဒေါင်များ · မြို့သာ · နယ်မြေ (၅) · ကလေးမြို့",
+		...toWorld(0, 50),
+		yaw: -Math.PI / 4,
+		pitch: -0.14,
+		distance: 10,
+	},
+	{
 		id: "kanbale",
 		label: "ကံပုလဲရွာ",
 		title: "ကံပုလဲရွာ · ကလေးမြို့နယ်",
@@ -594,7 +604,9 @@ export function detectLocation(x: number, z: number): DetectedLocation {
 			subArea = "ဆန်စက်နှင့် စပါးသိုလှောင်ရုံဝင်း · နယ်မြေ (၅)";
 			subtitle = "ဆန်စက်နှင့် စပါးသိုလှောင်ရုံဝင်း · မြို့သာ · နယ်မြေ (၅) · ကလေးမြို့";
 		} else if (Math.abs(u) <= 55 && v >= -95 && v <= 95) {
+			locId = "warehouse-row";
 			subArea = "သိုလှောင်ရုံတန်း · မြို့သာ နယ်မြေ (၅)";
+			title = "သိုလှောင်ရုံတန်း · မြို့သာရပ်ကွက်";
 			subtitle = "AH1 ဂိုဒေါင်များ · မြို့သာ · နယ်မြေ (၅) · ကလေးမြို့";
 		} else if (u >= 15 && u <= 145 && v >= 125 && v <= 255) {
 			subArea = "နယ်မြေ (၅) · ကွင်းဘေးအိမ်တန်း";

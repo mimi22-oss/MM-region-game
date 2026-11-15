@@ -280,6 +280,17 @@ test('Phase 1 & 2 config audit: capacitor.config.ts preserves local bundled entr
   assert.equal(isOfflineManagedAssetPath('/motions/ghost/freaky.glb'), true);
   assert.equal(isOfflineManagedAssetPath('/map/sithar-fields/manifest.json'), true);
   assert.equal(isOfflineManagedAssetPath('/ota/production.json'), false);
+
+  const rootGitignore = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
+  const androidGitignore = fs.readFileSync(path.join(ROOT, 'android', '.gitignore'), 'utf8');
+  const appGradle = fs.readFileSync(path.join(ROOT, 'android', 'app', 'build.gradle'), 'utf8');
+  assert.match(rootGitignore, /\*\.jks/);
+  assert.match(rootGitignore, /android\/keystore\.properties/);
+  assert.match(androidGitignore, /^\*\.jks\r?$/m);
+  assert.match(androidGitignore, /^keystore\.properties\r?$/m);
+  assert.match(appGradle, /signingConfigs\s*\{[\s\S]*release\s*\{/);
+  assert.match(appGradle, /signingConfig\s+signingConfigs\.release/);
+  assert.equal(fs.existsSync(path.join(ROOT, 'android', 'keystore.properties.example')), true);
 });
 
 test('Phase 2 compatibility checks enforce schema, semver native bounds, HTTPS, SHA-256, and downgrade safety', () => {

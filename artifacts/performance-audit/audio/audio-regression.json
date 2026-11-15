@@ -1,9 +1,11 @@
 {
   "passed": true,
   "playing": {
-    "voices": 11,
+    "voices": 22,
     "emitters": 2,
     "contextState": "running"
   },
+  "warehouseZone": true,
+  "noAudioFiles": true,
   "errors": []
 }

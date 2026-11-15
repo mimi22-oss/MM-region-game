@@ -11,3 +11,6 @@ map/
 .env.*
 !.env.example
 *.local
+*.jks
+*.keystore
+android/keystore.properties
