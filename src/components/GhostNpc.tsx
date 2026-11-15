@@ -10,6 +10,7 @@ import {
   MeshStandardMaterial,
   type Texture,
   Vector3,
+  Quaternion,
 } from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
@@ -32,6 +33,7 @@ import {
 } from '../game/ghostAi.ts';
 import {
   clearGhostEncounterInteraction,
+  clearGhostThreat,
   DEFAULT_GHOST_AI_CONFIG,
   DEFAULT_GHOST_COUNT,
   GHOST_MODEL_URL,
@@ -39,13 +41,16 @@ import {
   isGhostNightActive,
   isOtherGhostGrabbingPlayer,
   setGhostEncounterInteraction,
+  setGhostThreatActive,
   useGhostDevSettings,
 } from '../game/ghostConfig.ts';
 import {
+  HorrorAnimationSync,
   acquireSharedGhostAudio,
   releaseSharedGhostAudio,
   type GhostHorrorAudio,
 } from '../game/ghostAudio.ts';
+import {gameAudio} from '../game/gameAudio.ts';
 import { sceneGround } from '../game/groundSurface.ts';
 import { getQualityPreset } from '../game/qualityPreset.ts';
 import { trafficColliders } from '../game/trafficColliders.ts';
@@ -399,11 +404,13 @@ function LoadedGhostNpc({
     currentClipKey: string;
     lastAppliedOpacity: number;
     lastAudioSeq: number;
+    audioSync:HorrorAnimationSync;
     dispose: () => void;
   } | null>(null);
 
   const playerObjRef = useRef<Group | null>(null);
   const playerVecRef = useRef(new Vector3());
+  const audioCamera=useMemo(()=>({position:new Vector3(),rotation:new Quaternion(),forward:new Vector3(),up:new Vector3()}),[]);
   const trafficVecRef = useRef(new Vector3());
   const trafficScratchRef = useRef<Array<{
     x: number;
@@ -528,7 +535,8 @@ function LoadedGhostNpc({
     };
 
     const audio = acquireSharedGhostAudio();
-    const unlockAudio = () => audio.unlock();
+    const detachAudio=gameAudio.attach();
+    const unlockAudio = (event:Event) => {if(event.isTrusted)audio.unlock();};
     if (typeof document !== 'undefined') {
       document.addEventListener('pointerdown', unlockAudio, { passive: true });
       document.addEventListener('keydown', unlockAudio, { passive: true });
@@ -537,10 +545,12 @@ function LoadedGhostNpc({
     const dispose = () => {
       disposed = true;
       clearGhostEncounterInteraction(ghostId);
+      clearGhostThreat(ghostId);
       if (typeof document !== 'undefined') {
         document.removeEventListener('pointerdown', unlockAudio);
         document.removeEventListener('keydown', unlockAudio);
       }
+      audio.release(ghostId);detachAudio();
       releaseSharedGhostAudio();
       controller.dispose();
       for (const mat of materials) mat.dispose();
@@ -565,6 +575,7 @@ function LoadedGhostNpc({
       currentClipKey: '',
       lastAppliedOpacity: -1,
       lastAudioSeq: 0,
+      audioSync:new HorrorAnimationSync(),
       dispose,
     };
 
@@ -658,14 +669,28 @@ function LoadedGhostNpc({
       traffic: trafficList,
     });
 
+    camera.getWorldPosition(audioCamera.position);camera.getWorldQuaternion(audioCamera.rotation);
+    audioCamera.forward.set(0,0,-1).applyQuaternion(audioCamera.rotation);audioCamera.up.set(0,1,0).applyQuaternion(audioCamera.rotation);
+    gameAudio.listener(audioCamera.position.x,audioCamera.position.y,audioCamera.position.z,audioCamera.forward.x,audioCamera.forward.y,audioCamera.forward.z,audioCamera.up.x,audioCamera.up.y,audioCamera.up.z);
     setGhostEncounterInteraction(snap.grabInteraction, ghostId);
+    setGhostThreatActive(
+      ghostId,
+      snap.state === 'SCARING' ||
+        snap.state === 'CHASING' ||
+        snap.state === 'GRABBING' ||
+        snap.state === 'OBSERVING_PLAYER',
+    );
 
-    if (snap.audioCue && snap.audioCue.seq > rig.lastAudioSeq) {
-      rig.lastAudioSeq = snap.audioCue.seq;
-      if (soundRef.current.enabled && snap.distToPlayerM <= 36) {
-        rig.audio.play(snap.audioCue.cue, soundRef.current.volume);
-      }
-    }
+    const audible=soundRef.current.enabled&&shouldRun&&snap.visible&&snap.distToPlayerM<=65;
+    rig.audio.position(ghostId,snap.x,rig.y+1.5,snap.z,audible);
+    rig.audio.sustain(ghostId,'ghost_ambient',audible&&snap.state!=='CHASING');
+    rig.audio.sustain(ghostId,'ghost_chase_tension',audible&&snap.state==='CHASING');
+    const actualClip=rig.currentClipKey.split(':')[0];
+    const clip=cachedGhostClips.get(actualClip as GhostClipId);
+    const action=clip?rig.mixer.existingAction(clip):null;
+    rig.audioSync.step({state:snap.state,clip:action?.isRunning()?actualClip:'',clipTime:action?.time??0,clipDuration:clip?.duration??0,
+      moving:snap.state==='FLEEING'||snap.state==='CHASING'||snap.state==='WANDERING'||snap.state==='ROAD_CROSSING'||snap.state==='RETURNING_HOME',
+      grabPhase:snap.grabInteraction.phase,visible:snap.visible},preset=>{if(audible)rig.audio.play(preset,1,ghostId);});
 
     const withinVis = snap.visible && snap.distToPlayerM <= DEFAULT_GHOST_AI_CONFIG.visibleDistanceM;
     root.visible = withinVis;

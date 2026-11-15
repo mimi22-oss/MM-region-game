@@ -103,6 +103,23 @@ import {
   type DetectedLocation,
 } from "./game/locationDetect";
 import { syncAllWorldEdits } from "./game/editorRegions";
+import { getGhostEncounterInteraction, useGhostThreatActive } from "./game/ghostConfig";
+import { installOfflineAssetInterceptor } from "./services/offlineAssetResolver";
+import { otaCoordinator } from "./services/otaUpdater";
+import {
+  UpdateFloatingBanner,
+  UpdateStatusDialog,
+  UpdateTriggerButton,
+  useOtaAttentionDot,
+} from "./components/UpdateStatusPanel";
+import {
+  AndroidApkDownloadDialog,
+  type AndroidApkDialogMode,
+} from "./components/AndroidApkDownloadDialog";
+import {
+  shouldShowAndroidApkAutoPrompt,
+  writeAndroidApkPromptDismissed,
+} from "./game/androidApkDownload";
 import "./style.css";
 
 const normalizedPathname = window.location.pathname.replace(/\/+$/, '') || '/';
@@ -265,10 +282,23 @@ function App() {
   const guideOpenRef = useRef(false);
   const actionMenuOpenRef = useRef(false);
   const teleportModeRef = useRef(false);
+  const hudMenuOpenRef = useRef(false);
+  const updatesOpenRef = useRef(false);
   const [mapOpen, setMapOpen] = useState(false);
   mapOpenRef.current = mapOpen;
   const [settingsOpen, setSettingsOpen] = useState(false);
   settingsOpenRef.current = settingsOpen;
+  const [updatesOpen, setUpdatesOpen] = useState(false);
+  updatesOpenRef.current = updatesOpen;
+  const [hudMenuOpen, setHudMenuOpen] = useState(false);
+  hudMenuOpenRef.current = hudMenuOpen;
+  const otaNeedsAttention = useOtaAttentionDot();
+  const [apkDialog, setApkDialog] = useState<{ open: boolean; mode: AndroidApkDialogMode }>({
+    open: false,
+    mode: "manual",
+  });
+  const autoApkPromptCheckedRef = useRef(false);
+  const ghostThreatActive = useGhostThreatActive();
   const viewPosition = useCallback(
     (x: number, z: number) => {
       viewPosRef.current.x = x;
@@ -298,10 +328,62 @@ function App() {
   const subscriptionShop = useSubscriptionShop();
 
   useEffect(() => {
+    if (loading || intro.active || autoApkPromptCheckedRef.current) return;
+    autoApkPromptCheckedRef.current = true;
+    if (shouldShowAndroidApkAutoPrompt()) {
+      if (document.pointerLockElement) document.exitPointerLock();
+      setApkDialog({ open: true, mode: "auto-prompt" });
+    }
+  }, [loading, intro.active]);
+
+  useEffect(() => {
     if (subscriptionShop.isOpen) {
       flushSaveNow();
     }
   }, [subscriptionShop.isOpen, flushSaveNow]);
+
+  useEffect(() => {
+    const removeInterceptor = installOfflineAssetInterceptor(otaCoordinator.assetCache);
+    let disposed = false;
+    void otaCoordinator.initialize().then((state) => {
+      if (disposed || !state.online) return;
+      void otaCoordinator.checkForUpdate().then((checked) => {
+        if (!disposed && checked.phase === "update_available" && checked.safety.safeToDownloadInBackground) {
+          void otaCoordinator.downloadAvailableUpdate();
+        }
+      });
+    });
+    return () => {
+      disposed = true;
+      removeInterceptor();
+      otaCoordinator.dispose();
+    };
+  }, []);
+
+  useEffect(() => {
+    otaCoordinator.setSafetyContext(
+      {
+        ghostThreatActive,
+        ghostGrabActive: getGhostEncounterInteraction().active,
+        ridingMotorcycle: rideStatus.riding,
+        drivingCar: carStatus.driving,
+        ridingBalloon: balloonStatus.riding,
+        introActive: intro.active,
+        sceneLoading: loading,
+        activeModalBlocking: subscriptionShop.isOpen,
+      },
+      flushSaveNow,
+    );
+  }, [
+    ghostThreatActive,
+    rideStatus.riding,
+    carStatus.driving,
+    balloonStatus.riding,
+    intro.active,
+    loading,
+    subscriptionShop.isOpen,
+    flushSaveNow,
+  ]);
 
   useEffect(() => {
     const dispose = registerAndroidLifecycle({
@@ -327,12 +409,20 @@ function App() {
           setMapOpen(false);
           return true;
         }
+        if (updatesOpenRef.current) {
+          setUpdatesOpen(false);
+          return true;
+        }
         if (settingsOpenRef.current) {
           setSettingsOpen(false);
           return true;
         }
         if (actionMenuOpenRef.current) {
           setActionMenuOpen(false);
+          return true;
+        }
+        if (hudMenuOpenRef.current) {
+          setHudMenuOpen(false);
           return true;
         }
         if (getIntroState().active) {
@@ -554,7 +644,9 @@ function App() {
         }
         setMapOpen(false);
         setSettingsOpen(false);
+        setUpdatesOpen(false);
         setActionMenuOpen(false);
+        setHudMenuOpen(false);
         setSceneActive(false);
         setTeleportMode(false);
         setTeleportPin(null);
@@ -811,69 +903,6 @@ function App() {
           <span>Restoring 3D graphics context… Your position is saved.</span>
         </div>
       )}
-      {!intro.active && !mapOpen && !settingsOpen && (
-        <div
-          className="location-actions"
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            aria-label="ကင်မရာကို မိမိဇာတ်ကောင်ရှိရာသို့ ပြန်ခေါ်မည်"
-            title="မိမိဇာတ်ကောင်ရှိရာသို့ ကင်မရာ ပြန်ခေါ်မည်"
-            onClick={() => navigate("locate")}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="7" />
-              <circle cx="12" cy="12" r="2" fill="currentColor" />
-              <path d="M12 1v4m0 14v4M1 12h4m14 0h4" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className={teleportMode ? "location-btn-active" : ""}
-            aria-label="Scene ပေါ်တွင် ထောက်၍ သွားလိုသည့်နေရာသို့ Teleport လုပ်မည်"
-            title={teleportMode ? "Teleport ရွေးချယ်မှု ပိတ်မည်" : "Scene ပေါ်တွင် ထောက်၍ သွားလိုသည့်နေရာသို့ Teleport လုပ်မည်"}
-            onClick={handleToggleTeleportMode}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <path d="M12 3v12m-4-4 4 4 4-4M6 14c-3 1-4 2-4 4 0 2 4 3 10 3s10-1 10-3c0-2-1-3-4-4" />
-            </svg>
-          </button>
-          <ActionMenu
-            open={actionMenuOpen}
-            onOpenChange={setActionMenuOpen}
-            character={character}
-            disabledReason={
-              balloonStatus.riding
-                ? "မီးပုံးပျံပေါ်မှ ဆင်းပြီးမှ အကကစားနိုင်ပါမည်။"
-                : carStatus.driving
-                  ? "ကားမောင်းနေစဉ် အကကစား၍ မရပါ။"
-                  : rideStatus.riding
-                    ? "ဆိုင်ကယ်ပေါ်မှ ဆင်းပြီးမှ အကကစားနိုင်ပါမည်။"
-                    : isVehicleWaitingPickupLocked(vehicleWaiting.state) || vehicleWaiting.state === "ENTERING_VEHICLE"
-                      ? "ကားစောင့်နေစဉ် အကကစား၍ မရပါ။"
-                      : null
-            }
-          />
-          {navigationNotice && <p role="status">{navigationNotice}</p>}
-        </div>
-      )}
 
       {/* Floating Confirmation Overlay for Teleport Target */}
       {teleportMode && teleportPin && teleportScreenPos && (
@@ -932,30 +961,155 @@ function App() {
           </div>
         </div>
       )}
-      {!intro.active && <div className={settingsOpen ? "settings-wrap settings-wrap-open" : "settings-wrap"}>
-        <button
-          type="button"
-          className={
-            settingsOpen ? "settings-btn settings-btn-active" : "settings-btn"
-          }
-          aria-label="အသုံးပြုနည်း လမ်းညွှန်နှင့် ဆက်တင်"
-          aria-expanded={settingsOpen}
-          title="အသုံးပြုနည်း လမ်းညွှန်နှင့် ဆက်တင်"
-          onClick={() => {
-            if (document.pointerLockElement) document.exitPointerLock();
-            setSettingsOpen((v) => {
-              const next = !v;
-              if (next) {
-                setRobotYaw(robotYawRef.current);
-                setPos({ x: posRef.current.x, z: posRef.current.z });
-              }
-              return next;
-            });
-          }}
+      {!intro.active && (
+        <div
+          className={settingsOpen ? "settings-wrap settings-wrap-open" : "settings-wrap"}
+          onPointerDown={(e) => e.stopPropagation()}
         >
-          ⚙
-        </button>
-        <SettingsMenu
+          {hudMenuOpen && !mapOpen && !settingsOpen && (
+            <div className="hud-menu-items" role="group" aria-label="Menu actions">
+              <div className="location-actions">
+                <button
+                  type="button"
+                  aria-label="ကင်မရာကို မိမိဇာတ်ကောင်ရှိရာသို့ ပြန်ခေါ်မည်"
+                  title="မိမိဇာတ်ကောင်ရှိရာသို့ ကင်မရာ ပြန်ခေါ်မည်"
+                  onClick={() => navigate("locate")}
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="7" />
+                    <circle cx="12" cy="12" r="2" fill="currentColor" />
+                    <path d="M12 1v4m0 14v4M1 12h4m14 0h4" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className={teleportMode ? "location-btn-active" : ""}
+                  aria-label="Scene ပေါ်တွင် ထောက်၍ သွားလိုသည့်နေရာသို့ Teleport လုပ်မည်"
+                  title={teleportMode ? "Teleport ရွေးချယ်မှု ပိတ်မည်" : "Scene ပေါ်တွင် ထောက်၍ သွားလိုသည့်နေရာသို့ Teleport လုပ်မည်"}
+                  onClick={handleToggleTeleportMode}
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 3v12m-4-4 4 4 4-4M6 14c-3 1-4 2-4 4 0 2 4 3 10 3s10-1 10-3c0-2-1-3-4-4" />
+                  </svg>
+                </button>
+                <ActionMenu
+                  open={actionMenuOpen}
+                  onOpenChange={setActionMenuOpen}
+                  character={character}
+                  disabledReason={
+                    balloonStatus.riding
+                      ? "မီးပုံးပျံပေါ်မှ ဆင်းပြီးမှ အကကစားနိုင်ပါမည်။"
+                      : carStatus.driving
+                        ? "ကားမောင်းနေစဉ် အကကစား၍ မရပါ။"
+                        : rideStatus.riding
+                          ? "ဆိုင်ကယ်ပေါ်မှ ဆင်းပြီးမှ အကကစားနိုင်ပါမည်။"
+                          : isVehicleWaitingPickupLocked(vehicleWaiting.state) || vehicleWaiting.state === "ENTERING_VEHICLE"
+                            ? "ကားစောင့်နေစဉ် အကကစား၍ မရပါ။"
+                            : null
+                  }
+                />
+                {navigationNotice && <p role="status">{navigationNotice}</p>}
+              </div>
+              <UpdateTriggerButton
+                active={updatesOpen}
+                onClick={() => {
+                  if (document.pointerLockElement) document.exitPointerLock();
+                  setSettingsOpen(false);
+                  setActionMenuOpen(false);
+                  setHudMenuOpen(false);
+                  setUpdatesOpen((v) => !v);
+                }}
+              />
+              <button
+                type="button"
+                className={
+                  settingsOpen ? "settings-btn settings-btn-active" : "settings-btn"
+                }
+                aria-label="အသုံးပြုနည်း လမ်းညွှန်နှင့် ဆက်တင်"
+                aria-expanded={settingsOpen}
+                title="အသုံးပြုနည်း လမ်းညွှန်နှင့် ဆက်တင်"
+                onClick={() => {
+                  if (document.pointerLockElement) document.exitPointerLock();
+                  setUpdatesOpen(false);
+                  setActionMenuOpen(false);
+                  setHudMenuOpen(false);
+                  setRobotYaw(robotYawRef.current);
+                  setPos({ x: posRef.current.x, z: posRef.current.z });
+                  setSettingsOpen(true);
+                }}
+              >
+                ⚙
+              </button>
+            </div>
+          )}
+          {!mapOpen && !settingsOpen && (
+            <button
+              type="button"
+              className={
+                hudMenuOpen
+                  ? "settings-btn hud-menu-btn settings-btn-active"
+                  : "settings-btn hud-menu-btn"
+              }
+              aria-label={hudMenuOpen ? "မီနူး ပိတ်မည်" : "မီနူး ဖွင့်မည်"}
+              aria-expanded={hudMenuOpen}
+              title={hudMenuOpen ? "မီနူး ပိတ်မည်" : "မီနူး"}
+              onClick={() => {
+                if (document.pointerLockElement) document.exitPointerLock();
+                setHudMenuOpen((v) => {
+                  if (v) setActionMenuOpen(false);
+                  return !v;
+                });
+              }}
+            >
+              {hudMenuOpen ? (
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.3"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 7h16M4 12h16M4 17h16" />
+                </svg>
+              )}
+              {!hudMenuOpen && otaNeedsAttention && (
+                <span className="ota-trigger-dot" aria-hidden="true" />
+              )}
+            </button>
+          )}
+          <SettingsMenu
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
           character={character}
@@ -983,8 +1137,13 @@ function App() {
             setGuideOpen(true);
           }}
           onReplayIntro={handleReplayIntro}
+          onOpenApkDownload={() => {
+            if (document.pointerLockElement) document.exitPointerLock();
+            setApkDialog({ open: true, mode: "manual" });
+          }}
         />
-      </div>}
+        </div>
+      )}
       {!intro.active && !welcomeDismissed && !mapOpen && !topDown && !rideStatus.riding && !carStatus.driving && !guideOpen && (
         <section className="welcome" aria-label="ကြိုဆိုပါသည်">
           <div className="welcome-actions">
@@ -1158,6 +1317,27 @@ function App() {
         title={subscriptionShop.title}
         onClose={closeSubscriptionShop}
         onBeforeOpenExternal={flushSaveNow}
+      />
+      <UpdateFloatingBanner
+        hidden={loading || intro.active || mapOpen || settingsOpen || updatesOpen || apkDialog.open}
+        onOpenUpdates={() => {
+          if (document.pointerLockElement) document.exitPointerLock();
+          setUpdatesOpen(true);
+        }}
+      />
+      <UpdateStatusDialog
+        open={updatesOpen}
+        onClose={() => setUpdatesOpen(false)}
+      />
+      <AndroidApkDownloadDialog
+        open={apkDialog.open}
+        mode={apkDialog.mode}
+        onClose={(dontShowAgain) => {
+          if (apkDialog.mode === "auto-prompt" && dontShowAgain) {
+            writeAndroidApkPromptDismissed(true);
+          }
+          setApkDialog((prev) => ({ ...prev, open: false }));
+        }}
       />
       <WorldLoading state={sceneLoading} sceneFailed={sceneFailed} />
     </main>

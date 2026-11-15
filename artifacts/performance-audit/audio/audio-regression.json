@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "playing": {
+    "voices": 11,
+    "emitters": 2,
+    "contextState": "running"
+  },
+  "errors": []
+}

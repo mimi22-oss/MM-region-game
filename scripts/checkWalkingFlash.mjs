@@ -5,19 +5,19 @@ import {join,resolve} from 'node:path';
 import assert from 'node:assert/strict';
 const out=resolve('artifacts/performance-audit/walking');await mkdir(out,{recursive:true});
 const profile=await mkdtemp(join(tmpdir(),'walking-flash-')),sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const vite=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','5193','--strictPort'],{windowsHide:true,stdio:'ignore'});
-const chrome=spawn('C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless=new','--no-first-run','--use-angle=swiftshader','--enable-unsafe-swiftshader','--remote-debugging-port=9349',`--user-data-dir=${profile}`,'about:blank'],{windowsHide:true,stdio:'ignore'});
+const vite=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','5197','--strictPort'],{windowsHide:true,stdio:'ignore'});
+const chrome=spawn('C:/Program Files/Google/Chrome/Application/chrome.exe',['--headless=new','--no-first-run','--use-angle=swiftshader','--enable-unsafe-swiftshader','--remote-debugging-port=9357',`--user-data-dir=${profile}`,'about:blank'],{windowsHide:true,stdio:'ignore'});
 let ws;
 try{
- let tabs;for(let i=0;i<100;i++){try{tabs=await(await fetch('http://127.0.0.1:9349/json/list')).json();await fetch('http://127.0.0.1:5193');break;}catch{}await sleep(200);}
- ws=new WebSocket(tabs[0].webSocketDebuggerUrl);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j;});let id=0;const pending=new Map(),errors=[];
+ let tabs;for(let i=0;i<100;i++){try{tabs=await(await fetch('http://127.0.0.1:9357/json/list')).json();await fetch('http://127.0.0.1:5197');break;}catch{}await sleep(200);}
+ ws=new WebSocket(tabs.find(t=>t.type==='page'&&t.url==='about:blank').webSocketDebuggerUrl);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j;});let id=0;const pending=new Map(),errors=[];
  ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.id){const p=pending.get(m.id);if(p){clearTimeout(p.timer);pending.delete(m.id);m.error?p.reject(m.error):p.resolve(m.result);}}else if(m.method==='Runtime.exceptionThrown')errors.push(m.params.exceptionDetails);};
  const call=(method,params={})=>new Promise((resolve,reject)=>{const n=++id,timer=setTimeout(()=>reject(Error(method+' timeout')),60000);pending.set(n,{resolve,reject,timer});ws.send(JSON.stringify({id:n,method,params}));});
  const evaluate=async expression=>(await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true})).result.value;
  await call('Runtime.enable');await call('Page.enable');await call('Emulation.setDeviceMetricsOverride',{width:640,height:480,deviceScaleFactor:1,mobile:false});
  const dprResults=[];
  for(const fixed of [0,1]){
-  await call('Page.navigate',{url:`http://127.0.0.1:5193/tests/fixtures/walkingFlash.html?dprOnly=1&fixed=${fixed}`});
+  await call('Page.navigate',{url:`http://127.0.0.1:5197/tests/fixtures/walkingFlash.html?dprOnly=1&fixed=${fixed}`});
   const end=Date.now()+60000;while(!await evaluate('!!window.flash?.getDpr')){if(Date.now()>end)throw Error('DPR fixture not ready');await sleep(200);}
   const values=[];
   for(let i=0;i<3;i++){
@@ -31,7 +31,7 @@ try{
  console.log('DPR regression passed: '+JSON.stringify(dprResults));
  if(process.argv.includes('--dpr-only'))process.exitCode=0;
  else {
- await call('Page.navigate',{url:'http://127.0.0.1:5193/tests/fixtures/walkingFlash.html'});
+ await call('Page.navigate',{url:'http://127.0.0.1:5197/tests/fixtures/walkingFlash.html'});
  const deadline=Date.now()+180000;
  while(!await evaluate('window.flash && !window.flash.loading')){if(Date.now()>deadline||errors.length)throw Error('Fixture failed: '+JSON.stringify(errors));await sleep(300);}
  await evaluate('window.flash.record=true');

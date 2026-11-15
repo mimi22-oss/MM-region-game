@@ -1,0 +1,172 @@
+name: Release Web & Android OTA
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Target OTA release channel
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+          - staging
+      skip_vercel_deploy:
+        description: Skip Vercel production publish (dry run artifact verification)
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-ota-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-verify-and-release:
+    name: Build, Verify & Publish OTA
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve release version & channel
+        id: meta
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            CHANNEL="${{ github.event.inputs.channel }}"
+          elif [ "${{ github.ref_name }}" = "staging" ]; then
+            CHANNEL="staging"
+          else
+            CHANNEL="production"
+          fi
+          BASE_VER=$(node -e "console.log(JSON.parse(require('fs').readFileSync('package.json','utf8')).version)")
+          IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$BASE_VER"
+          NEXT_PATCH=$(( ${V_PATCH:-0} + ${{ github.run_number }} ))
+          if [ "$CHANNEL" = "staging" ]; then
+            VERSION="${V_MAJOR}.${V_MINOR}.${NEXT_PATCH}-staging"
+          else
+            VERSION="${V_MAJOR}.${V_MINOR}.${NEXT_PATCH}"
+          fi
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "release_tag=ota-v${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Run unit & integration tests
+        run: npm test
+
+      - name: Run map data audit
+        run: npm run map:audit
+
+      - name: Classify native APK vs OTA changes
+        id: changes
+        run: |
+          BASE_SHA="${{ github.event.before }}"
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            BASE_SHA="HEAD~1"
+          fi
+          node --experimental-strip-types scripts/classifyGitChanges.mjs \
+            --base "$BASE_SHA" \
+            --head "${{ github.sha }}" \
+            --out "ota-artifacts/change-classification.json"
+
+      - name: Build web & Capacitor assets
+        env:
+          VITE_APP_VERSION: ${{ steps.meta.outputs.version }}
+          VITE_OTA_CHANNEL: ${{ steps.meta.outputs.channel }}
+        run: npm run build
+
+      - name: Generate versioned asset manifest, checksums & OTA bundle
+        run: |
+          node --experimental-strip-types scripts/generateOtaArtifacts.mjs \
+            --channel "${{ steps.meta.outputs.channel }}" \
+            --version "${{ steps.meta.outputs.version }}" \
+            --release-tag "${{ steps.meta.outputs.release_tag }}" \
+            --commit "${{ github.sha }}" \
+            --repo "${{ github.repository }}" \
+            --requires-native-apk "${{ steps.changes.outputs.requires_native_apk }}"
+
+      - name: Verify OTA manifests, checksums & compatibility
+        id: verify
+        run: |
+          node --experimental-strip-types scripts/verifyOtaArtifacts.mjs \
+            --channel "${{ steps.meta.outputs.channel }}"
+
+      - name: Upload GitHub Release OTA bundle & manifests (gated on verification)
+        if: steps.verify.outputs.ota_publishable == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.release_tag }}
+          name: MM Region OTA v${{ steps.meta.outputs.version }} (${{ steps.meta.outputs.channel }})
+          prerelease: ${{ steps.meta.outputs.channel == 'staging' }}
+          generate_release_notes: true
+          files: |
+            ${{ steps.verify.outputs.bundle_zip }}
+            ota-artifacts/asset-manifest.json
+            ota-artifacts/native-compat.json
+            ota-artifacts/${{ steps.meta.outputs.channel }}.json
+            ota-artifacts/checksums.sha256
+            ota-artifacts/change-classification.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare prebuilt Vercel output & deploy web + OTA metadata
+        if: >
+          inputs.skip_vercel_deploy != true &&
+          secrets.VERCEL_TOKEN != '' &&
+          secrets.VERCEL_ORG_ID != '' &&
+          secrets.VERCEL_PROJECT_ID != ''
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npx --yes vercel@latest pull --yes --environment=${{ steps.meta.outputs.channel == 'production' && 'production' || 'preview' }} --token="$VERCEL_TOKEN"
+          node -e "const fs=require('fs'),path=require('path');fs.rmSync('.vercel/output',{recursive:true,force:true});fs.mkdirSync('.vercel/output/static',{recursive:true});fs.cpSync('dist','.vercel/output/static',{recursive:true});fs.writeFileSync('.vercel/output/config.json',JSON.stringify({version:3,routes:[{src:'^/assets/(.*)$',headers:{'cache-control':'public, max-age=31536000, immutable'},continue:true},{src:'^/ota/(.*)$',headers:{'cache-control':'no-store, no-cache, must-revalidate'},continue:true},{handle:'filesystem'},{src:'^/(?!ota/).*$',dest:'/index.html'}]},null,2));"
+          if [ "${{ steps.meta.outputs.channel }}" = "production" ]; then
+            npx --yes vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+          else
+            npx --yes vercel@latest deploy --prebuilt --token="$VERCEL_TOKEN"
+          fi
+
+      - name: Upload workflow build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ota-artifacts-${{ steps.meta.outputs.channel }}-${{ steps.meta.outputs.version }}
+          path: ota-artifacts/
+          retention-days: 14
+
+      - name: Report deployment & OTA status summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## MM Region Game Release Summary"
+            echo ""
+            echo "- **Channel:** \`${{ steps.meta.outputs.channel }}\`"
+            echo "- **Version:** \`${{ steps.meta.outputs.version }}\`"
+            echo "- **Commit:** \`${{ github.sha }}\`"
+            echo "- **Requires Native APK:** \`${{ steps.changes.outputs.requires_native_apk }}\`"
+            echo "- **Android OTA Publishable:** \`${{ steps.verify.outputs.ota_publishable }}\`"
+            echo "- **Bundle ZIP:** \`${{ steps.verify.outputs.bundle_zip }}\`"
+            echo "- **Bundle SHA-256:** \`${{ steps.verify.outputs.bundle_sha256 }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

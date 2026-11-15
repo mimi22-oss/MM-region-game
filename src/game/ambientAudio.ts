@@ -1,3 +1,4 @@
+import {gameAudio} from './gameAudio.ts';
 import type {TimePeriod} from './environmentTime';
 
 /** Small synthesized rural soundscape; no downloaded files or continuously scheduled hidden-tab audio. */
@@ -14,8 +15,9 @@ export class AmbientAudio {
  private tick=0;
  private period:TimePeriod='day';
  constructor(){
-  this.context=new AudioContext();
-  const ctx=this.context;this.master=ctx.createGain();this.master.gain.value=0;this.master.connect(ctx.destination);
+  if(!gameAudio.context||!gameAudio.ambience)throw new Error('Audio is locked');
+  this.context=gameAudio.context;
+  const ctx=this.context;this.master=ctx.createGain();this.master.gain.value=0;this.master.connect(gameAudio.ambience!);
   const buffer=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate),data=buffer.getChannelData(0);
   let previous=0;for(let i=0;i<data.length;i++){previous=(previous+(Math.random()*2-1)*.025)/1.025;data[i]=previous*3;}
   this.wind=ctx.createBufferSource();this.wind.buffer=buffer;this.wind.loop=true;
@@ -31,8 +33,7 @@ export class AmbientAudio {
   this.master.gain.cancelScheduledValues(ctx.currentTime);
   this.master.gain.setTargetAtTime(active?Math.max(0,Math.min(1,volume))*.6:0,ctx.currentTime,.2);
   this.breeze.gain.setTargetAtTime(period==='night'?.045:.09,ctx.currentTime,.5);
-  if(!active||volume===0){this.clearTimer();this.stopVoices();await ctx.suspend().catch(()=>{});return;}
-  await ctx.resume().catch(()=>{});
+  if(!active||volume===0){this.clearTimer();this.stopVoices();return;}
   if(this.disposed||version!==this.generation||ctx.state!=='running')return;
   if(!this.timer){this.play();this.timer=setInterval(()=>this.play(),2400);}
  }
@@ -65,5 +66,5 @@ export class AmbientAudio {
  }
  private clearTimer(){if(this.timer)clearInterval(this.timer);this.timer=null;}
  private stopVoices(){for(const osc of this.voices){try{osc.stop();}catch{}}this.voices.clear();}
- dispose(){if(this.disposed)return;this.disposed=true;this.generation++;this.clearTimer();this.stopVoices();this.wind.stop();this.wind.disconnect();this.filter.disconnect();this.breeze.disconnect();this.master.disconnect();void this.context.close().catch(()=>{});}
+ dispose(){if(this.disposed)return;this.disposed=true;this.generation++;this.clearTimer();this.stopVoices();this.wind.stop();this.wind.disconnect();this.filter.disconnect();this.breeze.disconnect();this.master.disconnect();}
 }

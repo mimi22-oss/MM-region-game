@@ -1,5 +1,6 @@
 node_modules/
 dist/
+ota-artifacts/
 *.tsbuildinfo
 map/
 !public/map/

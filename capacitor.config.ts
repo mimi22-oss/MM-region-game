@@ -14,6 +14,18 @@ const config: CapacitorConfig = {
     captureInput: true,
     webContentsDebuggingEnabled: false,
   },
+  plugins: {
+    CapacitorUpdater: {
+      autoUpdate: 'off',
+      appReadyTimeout: 10000,
+      autoDeleteFailed: true,
+      autoDeletePrevious: true,
+      resetWhenUpdate: true,
+      httpsOnly: true,
+      statsUrl: '',
+      defaultChannel: 'production',
+    },
+  },
 };
 
 export default config;

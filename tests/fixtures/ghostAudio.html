@@ -1,0 +1,13 @@
+<!doctype html><html><body><button id="unlock">Enable audio</button><script type="module">
+import {gameAudio} from '/src/game/gameAudio.ts';
+import {GhostHorrorAudio,HORROR_PRESETS,acquireSharedGhostAudio,releaseSharedGhostAudio} from '/src/game/ghostAudio.ts';
+import {AmbientAudio} from '/src/game/ambientAudio.ts';
+let ambient;
+const engine=acquireSharedGhostAudio();const second=acquireSharedGhostAudio();const detach=gameAudio.attach();
+window.audit={engine,gameAudio,presets:HORROR_PRESETS,same:engine===second,play:()=>{
+ ambient=new AmbientAudio();ambient.configure('night',1,true);engine.position('a',-3,0,-3);engine.position('b',3,0,-3);
+ for(const preset of HORROR_PRESETS)engine.play(preset,1,'a');
+ gameAudio.listener(0,0,0,0,0,-1,0,1,0);return ambient.context===gameAudio.context;
+},release:()=>{ambient?.dispose();engine.release('a');engine.release('b');releaseSharedGhostAudio();releaseSharedGhostAudio();detach();},stop:()=>engine.stop('a')};
+engine.play('ghost_scream');window.audit.locked=engine.diagnostics;
+</script></body></html>

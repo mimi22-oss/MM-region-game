@@ -39,7 +39,8 @@ type TileIconId =
   | 'introConfig'
   | 'engine3d'
   | 'book'
-  | 'help';
+  | 'help'
+  | 'downloadApk';
 
 type DetailSectionId =
   | 'appearance'
@@ -87,6 +88,7 @@ export interface SettingsMenuProps {
   onOpenMap: () => void;
   onOpenGuide: () => void;
   onReplayIntro: () => void;
+  onOpenApkDownload?: () => void;
 }
 
 const INTRO_MODE_BADGES: Record<string, string> = {
@@ -233,6 +235,14 @@ function renderTileSvgContent(icon: TileIconId): ReactNode {
           <circle cx="12" cy="16.8" r="0.9" fill="currentColor" stroke="none" />
         </>
       );
+    case 'downloadApk':
+      return (
+        <>
+          <rect x="6.5" y="2.8" width="11" height="18.4" rx="2.2" />
+          <path d="M12 7.5v6M9.5 11.2 12 13.8l2.5-2.6" />
+          <circle cx="12" cy="18.2" r="0.8" fill="currentColor" stroke="none" />
+        </>
+      );
   }
 }
 
@@ -278,6 +288,7 @@ export function SettingsMenu({
   onOpenMap,
   onOpenGuide,
   onReplayIntro,
+  onOpenApkDownload,
 }: SettingsMenuProps) {
   const [focusedSection, setFocusedSection] = useState<DetailSectionId | null>(null);
   const festivalConfig = useFestivalConfiguration();
@@ -446,6 +457,18 @@ export function SettingsMenu({
       icon: 'help',
       onClick: onOpenGuide,
     },
+    ...(onOpenApkDownload
+      ? [
+          {
+            id: 'download-apk',
+            label: 'APK ဒေါင်းလုဒ် · QR',
+            icon: 'downloadApk' as TileIconId,
+            badge: 'Telegram',
+            title: 'Android APK Download · t.me/mmregiongame',
+            onClick: onOpenApkDownload,
+          },
+        ]
+      : []),
   ];
 
   return (

@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createBalloonRide,stepBalloon,balloonExitSpot,balloonLanding,balloonFlightFloor,BALLOON_LAUNCH,BALLOON_MAX_Y} from '../src/game/balloonRide.ts';
@@ -53,4 +55,13 @@ test('a newly detected obstacle does not teleport a grounded balloon up forty me
  const b=flying();b.x=0;b.z=0;
  stepBalloon(b,.05,idle,flat,()=>40,100);
  assert.equal(b.y,0);
+});
+test('balloon obstacle warning notice stacks in column layout on small screen devices',()=>{
+ const root=process.cwd();
+ const controls=fs.readFileSync(path.join(root,'src/components/BalloonControls.tsx'),'utf8');
+ const css=fs.readFileSync(path.join(root,'src/style.css'),'utf8');
+ assert.ok(controls.includes('balloon-chat-ribbon-header'));
+ assert.ok(controls.includes('balloon-chat-ribbon-badge">သတိပေးချက်</span>'));
+ assert.ok(controls.includes('balloon-chat-ribbon-text">ရှေ့တွင် အတားအဆီးရှိသည် — အမြင့်တင်ပြီး ကျော်ပါ</span>'));
+ assert.ok(/@media\s*\(max-width:\s*760px\)[\s\S]*?\.balloon-notice-pill\s*\{[\s\S]*?flex-direction:\s*column;/.test(css));
 });

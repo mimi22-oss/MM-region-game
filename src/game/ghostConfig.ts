@@ -194,6 +194,44 @@ export function isOtherGhostGrabbingPlayer(ownerId: string): boolean {
   return false;
 }
 
+const activeGhostThreatOwners = new Set<string>();
+const ghostThreatListeners = new Set<() => void>();
+
+export function setGhostThreatActive(ownerId: string, active: boolean): void {
+  const prevAny = activeGhostThreatOwners.size > 0;
+  if (active) activeGhostThreatOwners.add(ownerId);
+  else activeGhostThreatOwners.delete(ownerId);
+  const nextAny = activeGhostThreatOwners.size > 0;
+  if (prevAny !== nextAny) {
+    for (const listener of ghostThreatListeners) listener();
+  }
+}
+
+export function clearGhostThreat(ownerId?: string): void {
+  const prevAny = activeGhostThreatOwners.size > 0;
+  if (typeof ownerId === 'string') activeGhostThreatOwners.delete(ownerId);
+  else activeGhostThreatOwners.clear();
+  const nextAny = activeGhostThreatOwners.size > 0;
+  if (prevAny !== nextAny) {
+    for (const listener of ghostThreatListeners) listener();
+  }
+}
+
+export function isAnyGhostThreatActive(): boolean {
+  return activeGhostThreatOwners.size > 0;
+}
+
+export function useGhostThreatActive(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      ghostThreatListeners.add(cb);
+      return () => ghostThreatListeners.delete(cb);
+    },
+    isAnyGhostThreatActive,
+    isAnyGhostThreatActive,
+  );
+}
+
 export function getGhostEncounterInteraction(): Readonly<GhostEncounterInteractionState> {
   let fallback: GhostEncounterInteractionState | null = null;
   for (const state of ghostInteractionByOwner.values()) {

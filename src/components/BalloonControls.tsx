@@ -93,8 +93,10 @@ export const BalloonControls = memo(function BalloonControls({
 			{/* အတားအဆီး သတိပေးချက် Chat Ribbon (Character Head Chat Bubble) */}
 			{status.blocked && (
 				<div className="balloon-notice-pill balloon-chat-ribbon" role="status">
-					<span className="balloon-notice-dot" aria-hidden="true" />
-					<span className="balloon-chat-ribbon-badge">သတိပေးချက်</span>
+					<span className="balloon-chat-ribbon-header">
+						<span className="balloon-notice-dot" aria-hidden="true" />
+						<span className="balloon-chat-ribbon-badge">သတိပေးချက်</span>
+					</span>
 					<span className="balloon-chat-ribbon-text">ရှေ့တွင် အတားအဆီးရှိသည် — အမြင့်တင်ပြီး ကျော်ပါ</span>
 				</div>
 			)}

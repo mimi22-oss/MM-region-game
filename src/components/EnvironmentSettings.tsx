@@ -1,3 +1,4 @@
+import {useHorrorMix,setHorrorMix} from '../game/horrorMix';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {ENVIRONMENT_STORAGE_KEY,TIME_PERIODS,environmentMinute,periodAtMinute,savedEnvironmentPreferences,type EnvironmentPreferences,type TimeMode} from '../game/environmentTime';
 import {FestivalSettings} from '../festivals/FestivalSettings';
@@ -31,6 +32,7 @@ export function EnvironmentSettings({value,onChange,onChoose,now,period}:{
  value:EnvironmentPreferences;onChange:(value:EnvironmentPreferences)=>void;onChoose:(mode:TimeMode)=>void;
  now:Date;period:ReturnType<typeof periodAtMinute>;
 }){
+ const mix=useHorrorMix();
  const current=TIME_PERIODS.find(p=>p.id===period)!;
  const ghostDev=useGhostDevSettings();
  const showGhostDev=isGhostDevUiAvailable();
@@ -40,7 +42,8 @@ export function EnvironmentSettings({value,onChange,onChoose,now,period}:{
   <p className="environment-clock">{now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} · {Intl.DateTimeFormat().resolvedOptions().timeZone}<br/>Device နာရီအတိုင်း ပြောင်းမည်။ အောက်တွင်ရွေးလျှင် Manual ဖြစ်မည်။</p>
   <div className="environment-periods">{TIME_PERIODS.map(p=><button key={p.id} type="button" data-period={p.id} className={`time-btn${value.mode===p.id?' time-btn-active':''}`} aria-pressed={value.mode===p.id} onClick={()=>onChoose(p.id)}><span>{p.icon} {p.label}</span><small>{p.range}</small></button>)}</div>
   <label className="environment-sound"><input type="checkbox" checked={value.sound} onChange={e=>onChange({...value,sound:e.target.checked})}/> ပတ်ဝန်းကျင်အသံ</label>
-  <label className="environment-volume">အသံအတိုးအကျယ် <output>{Math.round(value.volume*100)}%</output><input aria-label="ပတ်ဝန်းကျင်အသံ အတိုးအကျယ်" type="range" min="0" max="100" step="5" value={Math.round(value.volume*100)} onChange={e=>onChange({...value,volume:Number(e.target.value)/100})}/></label>
+  <label className="environment-volume">အသံအတိုးအကျယ် Master <output>{Math.round(value.volume*100)}%</output><input aria-label="ပတ်ဝန်းကျင်အသံ အတိုးအကျယ်" type="range" min="0" max="100" step="5" value={Math.round(value.volume*100)} onChange={e=>onChange({...value,volume:Number(e.target.value)/100})}/></label>
+  {(['ghost','ambience'] as const).map(channel=><label key={channel} className="environment-volume">{channel==='ghost'?'Ghost':'Ambience'} <output>{Math.round(mix[channel]*100)}%</output><input aria-label={`${channel} volume`} type="range" min="0" max="100" step="5" value={Math.round(mix[channel]*100)} onChange={e=>setHorrorMix(channel,Number(e.target.value)/100)}/></label>)}
   <FestivalSettings now={now}/>
   {showGhostDev && (
    <label className="environment-sound" style={{ marginTop: '6px' }}>
