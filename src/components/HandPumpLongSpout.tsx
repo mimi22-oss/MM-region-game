@@ -71,7 +71,7 @@ function SpoutDischargeWater() {
 	});
 
 	return (
-		<group position={[0, 0, SPOUT_LENGTH]} name="spout-discharge-water">
+		<group position={[0, 0, SPOUT_LENGTH]} name="spout-discharge-water" userData={{ dynamic: true }}>
 			{/* ၁။ နှုတ်သီးခေါင်းပေါက် အတွင်းပိုင်း ရေပွက်လိုင်း (Water in Spout Mouth at y=0.52) */}
 			<mesh position={[0, 0.52, 0]}>
 				<cylinderGeometry args={[0.038, 0.038, 0.04, 16]} />
@@ -472,6 +472,7 @@ function DrainChannelToCanal() {
 			position={[SPOUT_END_X, 0, SPOUT_END_Z]}
 			rotation={[0, DRAIN_ROT, 0]}
 			name="drain-channel-to-canal"
+			userData={{ dynamic: true }}
 		>
 			{/* ၁။ ရေမြောင်း အောက်ခံကျောက်သားကြမ်းခင်း (Channel Masonry Bed) */}
 			<Box position={[0, 0.02, midZ]} size={[0.44, 0.04, totalLength]} color="#50483c" />

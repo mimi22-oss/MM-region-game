@@ -3,7 +3,7 @@ import { useAppearance } from '../game/appearanceStore';
 import type { CarModel } from '../data/appearance';
 import {useTrafficCollider} from './useTrafficCollider';
 import { windshieldGeometry, windshieldFrameGeometry, roofBoxRibbonGeometry } from '../game/carWindshield';
-import { useMemo,useRef } from 'react';
+import { useMemo,useRef,useState } from 'react';
 import { useRegionFrame as useFrame } from './RegionActivity';
 import {Group} from 'three';
 import {sceneGround,carGroundPose} from '../game/groundSurface';
@@ -360,6 +360,8 @@ function GroundedCar({car}:{car:DriveableCar}){
  const appearance=useAppearance();
  const root=useRef<Group>(null),driver=useRef<Group>(null),motion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0});
  const driving=useRef<DrivingPose>({active:false,wheelAngle:0,interior:true,clutch:false,brake:false,throttle:false});
+ const [driverMounted,setDriverMounted]=useState(()=>carRide.carId===car.id);
+ const lastDriverActive=useRef(carRide.carId===car.id);
  useTrafficCollider(root,car.width*car.size,car.depth*car.size,'car');
  useFrame(({scene,clock})=>{
    if(!root.current)return;
@@ -369,14 +371,16 @@ function GroundedCar({car}:{car:DriveableCar}){
    root.current.rotation.set(p.pitch,car.yaw,p.roll,'YXZ');
    motion.current.speed=car.speed;
    motion.current.distance=car.distance;
-   Object.assign(driving.current,{active:carRide.carId===car.id,wheelAngle:-car.steering*STEERING_RATIO,interior:carRide.interior,clutch:carInput.clutch,brake:carInput.brake,throttle:carInput.throttle});
-   if(driver.current)driver.current.visible=carRide.carId===car.id;
+   const isActive=carRide.carId===car.id;
+   Object.assign(driving.current,{active:isActive,wheelAngle:-car.steering*STEERING_RATIO,interior:carRide.interior,clutch:carInput.clutch,brake:carInput.brake,throttle:carInput.throttle});
+   if(isActive!==lastDriverActive.current){lastDriverActive.current=isActive;setDriverMounted(isActive);}
+   if(driver.current)driver.current.visible=isActive;
  });
  return (
    <group ref={root} name={`driveable-${car.id}`} userData={{dynamic:true,carId:car.id}} position={[car.x,0,car.z]}>
      <Car color={car.color} size={car.size} model={car.model} motion={car}/>
-     <group name="car-driver" ref={driver} visible={false} position={[DRIVER_POSITION[0]*car.size,DRIVER_POSITION[1]*car.size,DRIVER_POSITION[2]*car.size]} scale={DRIVER_SCALE*car.size}>
-       <CartoonCharacter appearance={appearance.human} motion={motion} driving={driving}/>
+     <group name="car-driver" ref={driver} visible={driverMounted} position={[DRIVER_POSITION[0]*car.size,DRIVER_POSITION[1]*car.size,DRIVER_POSITION[2]*car.size]} scale={DRIVER_SCALE*car.size}>
+       {driverMounted&&<CartoonCharacter appearance={appearance.human} motion={motion} driving={driving}/>}
      </group>
    </group>
  );

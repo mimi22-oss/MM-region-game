@@ -36,8 +36,33 @@ function assetVersionPlugin(): Plugin {
 	};
 }
 
+function mapRouteSpaPlugin(): Plugin {
+	const rewriteMapRoute = (req: { url?: string }) => {
+		if (!req.url) return;
+		const [pathname, search = ''] = req.url.split('?');
+		if (pathname === '/map' || pathname === '/map/') {
+			req.url = `/index.html${search ? `?${search}` : ''}`;
+		}
+	};
+	return {
+		name: 'map-route-spa-fallback',
+		configureServer(server) {
+			server.middlewares.use((req, _res, next) => {
+				rewriteMapRoute(req);
+				next();
+			});
+		},
+		configurePreviewServer(server) {
+			server.middlewares.use((req, _res, next) => {
+				rewriteMapRoute(req);
+				next();
+			});
+		},
+	};
+}
+
 export default defineConfig({
-	plugins: [react(), assetVersionPlugin()],
+	plugins: [react(), assetVersionPlugin(), mapRouteSpaPlugin()],
 	base: '/',
 	esbuild: {
 		legalComments: 'none',

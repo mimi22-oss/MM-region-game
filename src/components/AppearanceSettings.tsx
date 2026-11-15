@@ -1,6 +1,11 @@
 import {useState,type ReactNode} from 'react';
 import {CAR_MODELS,HUMAN_PRESETS,defaultAppearance,type HumanPreset,type HumanAppearance,type RobotAppearance,type CarAppearance} from '../data/appearance';
 import {setAppearance,useAppearance} from '../game/appearanceStore';
+import {
+ setCharacterRendererMode,
+ useCharacterRendererMode,
+ type CharacterRendererMode,
+} from '../game/characterRenderer';
 import type {CharacterKind} from './CharacterPicker';
 const labels:Record<HumanPreset,string>={boy:'Boy · လူငယ်',girl:'Girl · မိန်းကလေး',mother:'Mother · အမေ',grandmother:'Grandmother · အဘွား',grandfather:'Grandfather · အဖိုး',father:'Father · အဖေ'};
 function Field({label,children}:{label:string;children:ReactNode}){return <label className="appearance-field"><span>{label}</span>{children}</label>;}
@@ -10,6 +15,7 @@ function Choice<T extends string>({label,value,options,onChange}:{label:string;v
 function Color({label,value,onChange}:{label:string;value:string;onChange:(v:string)=>void}){return <Field label={label}><input type="color" value={value} onChange={e=>onChange(e.target.value)}/></Field>;}
 export function AppearanceSettings({kind,onKindChange,characterLocked=false,carLocked=false}:{kind:CharacterKind;onKindChange:(v:CharacterKind)=>void;characterLocked?:boolean;carLocked?:boolean}){
  const settings=useAppearance(),[tab,setTab]=useState<'human'|'robot'|'car'>(kind==='robot'?'robot':'human');
+ const rendererMode=useCharacterRendererMode();
  const human=(patch:Partial<HumanAppearance>)=>setAppearance({...settings,human:{...settings.human,...patch}});
  const robot=(patch:Partial<RobotAppearance>)=>setAppearance({...settings,robot:{...settings.robot,...patch}});
  const car=(patch:Partial<CarAppearance>)=>setAppearance({...settings,car:{...settings.car,...patch}});
@@ -27,6 +33,7 @@ export function AppearanceSettings({kind,onKindChange,characterLocked=false,carL
     <Field label={`အရပ် · ${Math.round(settings.human.height*100)}%`}><input aria-label="အရပ်" type="range" min=".8" max="1.2" step=".01" value={settings.human.height} onChange={e=>human({height:Number(e.target.value)})}/></Field>
     <Choice label="ဖိနပ်ပုံစံ" value={settings.human.shoes} options={[["sneakers","Sneakers"],["boots","Boots"],["sandals","ခြေညှပ်ဖိနပ်"]]} onChange={shoes=>human({shoes})}/>
     <Color label="ဖိနပ်အရောင်" value={settings.human.shoeColor} onChange={shoeColor=>human({shoeColor})}/>
+    <Choice label="Character Engine" value={rendererMode} options={[['glb','GLB (Boy / Girl)'],['code','Code Character (Procedural)']]} onChange={(mode:CharacterRendererMode)=>setCharacterRendererMode(mode)}/>
     <p>လူဇာတ်ကောင်နှင့် ယာဉ်မောင်းတွင် သုံးပါမည်။ စီးနင်းချိန်တွင် ထိုင်ခုံနှင့် ကိုက်ညီအောင် အရပ်ကို ညှိပေးသည်။</p>
    </>}
    {tab==='robot'&&<>

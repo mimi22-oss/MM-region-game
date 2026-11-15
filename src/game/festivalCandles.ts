@@ -48,10 +48,18 @@ export function decorateFestivalRegion(root:Group){
 export function updateFestivalVisibility(root:Object3D,x:number,z:number,mobile=false,height=0){
  const festival=root.children.find(child=>child.name==='festival-candles');if(!festival)return;
  festival.visible=isThadingyutFestivalActive();
+ const maxRange=Math.max(mobile?300:600,height*1.8+100);
+ const maxRangeSq=maxRange*maxRange;
+ const detailRange=mobile?80:130;
+ const detailRangeSq=detailRange*detailRange;
  for(const tile of festival.children){
-  const distance=Math.hypot(tile.position.x+32-x,tile.position.z+32-z);
-  tile.visible=distance<Math.max(mobile?300:600,height*1.8+100);
-  for(const child of tile.children)child.visible=child.name==='festival-flames'||child.name==='festival-glows'||distance<(mobile?80:130);
+  const dx=tile.position.x+32-x,dz=tile.position.z+32-z;
+  const distSq=dx*dx+dz*dz;
+  const visible=distSq<maxRangeSq;
+  tile.visible=visible;
+  if(!visible)continue;
+  const showDetail=distSq<detailRangeSq;
+  for(const child of tile.children)child.visible=showDetail||child.name==='festival-flames'||child.name==='festival-glows';
  }
 }
 

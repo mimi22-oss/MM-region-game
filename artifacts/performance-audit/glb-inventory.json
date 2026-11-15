@@ -1,0 +1,51 @@
+[
+  {
+    "path": "src/assets/boy.glb",
+    "bytes": 3801836,
+    "sha256": "0ff8e362804b0b4152ea574ac93836831b91b866ddf0d055cb22c71bf89e2e07",
+    "primitives": 1,
+    "triangles": 10962,
+    "skins": 1,
+    "joints": [
+      65
+    ],
+    "textures": 1,
+    "animations": []
+  },
+  {
+    "path": "src/assets/girl.glb",
+    "bytes": 8502652,
+    "sha256": "c45b5887ac170185bc4cec3b0a815c5892ccdca0152e646074a4cb11e7e476d8",
+    "primitives": 1,
+    "triangles": 3173,
+    "skins": 1,
+    "joints": [
+      54
+    ],
+    "textures": 3,
+    "animations": []
+  },
+  {
+    "path": "public/models/canolia-character.glb",
+    "bytes": 2151492,
+    "sha256": "624985bf50d0b02f70506d709c662bb3d4f0ed731f936fcc048fd4530d7b9dfd",
+    "primitives": 19,
+    "triangles": 65720,
+    "skins": 1,
+    "joints": [
+      22
+    ],
+    "textures": 0,
+    "animations": [
+      "Bike_Drive",
+      "Bike_Idle",
+      "Bike_Mount",
+      "Car_Drive",
+      "Idle",
+      "Swim_Forward",
+      "Swim_Idle",
+      "Vault",
+      "Walk"
+    ]
+  }
+]

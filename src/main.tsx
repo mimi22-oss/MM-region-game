@@ -68,15 +68,16 @@ import {
 import { syncAllWorldEdits } from "./game/editorRegions";
 import "./style.css";
 
-const is3DList = window.location.pathname.replace(/\/+$/, '') === '/3dlist';
-if (!is3DList) syncAllWorldEdits();
+const normalizedPathname = window.location.pathname.replace(/\/+$/, '') || '/';
+const is3DList = normalizedPathname === '/3dlist';
+const isMapPortal = normalizedPathname === '/map';
+if (!is3DList && !isMapPortal) syncAllWorldEdits();
 const AssetLibraryPage = lazy(() => import('./components/AssetLibraryPage'));
+const MapPortalPage = lazy(() => import('./components/MapPortalPage'));
 
 const KalayWardsPlan = lazy(() =>
   import("./components/wards").then((m) => ({ default: m.KalayWardsPlan })),
 );
-const MapSelectionTool = lazy(() => import('./components/MapSelectionTool'));
-const WardVillageEditorDialog = lazy(() => import('./components/WardVillageEditorDialog'));
 const KalayVillagesPlan = lazy(() =>
   import("./components/villages").then((m) => ({
     default: m.KalayVillagesPlan,
@@ -181,8 +182,6 @@ function App() {
     },
     [],
   );
-  const [selectionOpen, setSelectionOpen] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [sceneActive, setSceneActive] = useState(false);
@@ -314,7 +313,6 @@ function App() {
   }, []);
   useEffect(() => {
     const close = (e: KeyboardEvent) => {
-      if (selectionOpen || editorOpen) return;
       if (loading) return;
       if (e.code === "Escape") {
         setMapOpen(false);
@@ -330,7 +328,7 @@ function App() {
     };
     document.addEventListener("keydown", close);
     return () => document.removeEventListener("keydown", close);
-  }, [loading, selectionOpen, editorOpen, environment.cycle]);
+  }, [loading, environment.cycle]);
   const position = useCallback((x: number, z: number, yaw?: number) => {
     posRef.current.x = x;
     posRef.current.z = z;
@@ -385,7 +383,7 @@ function App() {
       <div
         className="scene-wrap"
         onClick={() => {
-          if (!mapOpen && !loading && !editorOpen && !selectionOpen) {
+          if (!mapOpen && !loading) {
             setSceneActive(true);
             setSettingsOpen(false);
           }
@@ -433,7 +431,7 @@ function App() {
               onDraggingChange={setTeleportDragging}
             />
             <Player
-              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || selectionOpen || editorOpen} loading={loading}
+              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen} loading={loading}
               onCarStatus={carUpdate}
               onBalloonStatus={balloonUpdate}
               character={character}
@@ -480,7 +478,7 @@ function App() {
         input={mobileInput}
         flying={balloonStatus.riding}
         canJump={!balloonStatus.riding && character === "cartoon" && !rideStatus.riding && !carStatus.driving && !rideStatus.crashed}
-        disabled={mapOpen || settingsOpen || loading || carStatus.driving || editorOpen || selectionOpen}
+        disabled={mapOpen || settingsOpen || loading || carStatus.driving}
         onInteract={activateMobile}
       />
       {!mapOpen && !settingsOpen && (
@@ -552,7 +550,7 @@ function App() {
           <span className="home-guidance-text">{displayedGuidance}</span>
         </div>
       )}
-      <MultiplayerPanel session={multiplayer} hidden={loading || hideHud || mapOpen || editorOpen || selectionOpen} />
+      <MultiplayerPanel session={multiplayer} hidden={loading || hideHud || mapOpen} />
       <header>
         <h1 style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>
           MM Region Game - မြန်မာဒေသ 3D ဂိမ်း
@@ -561,7 +559,7 @@ function App() {
         {/* <h1>{currentLoc.title}</h1> */}
         {/* <p>{currentLoc.subtitle}</p> */}
       </header>
-      {arrivalToast && !mapOpen && !editorOpen && (
+      {arrivalToast && !mapOpen && (
         <div className="location-toast" role="status" aria-live="polite">
           <span className="location-toast-icon">📍</span>
           <div className="location-toast-body">
@@ -722,44 +720,10 @@ function App() {
                 · လက်နှစ်ချောင်းဖြင့် Zoom ချဲ့/ချုံ့ပါ · လက်နှစ်ချောင်းဆွဲ၍ ခရီးသွားပါ
               </p>
             </div>
-            <div className="robot-location-panel map-selection-launch" style={{ marginTop: "14px" }}>
-              <button
-                type="button"
-                className="robot-location-toggle"
-                onClick={() => {
-                  if (document.pointerLockElement) document.exitPointerLock();
-                  setSceneActive(false);
-                  setSelectionOpen(true);
-                }}
-              >
-                နယ်မြေဝိုက်ရွေး · GeoJSON ထုတ်ယူရန် ↗
-              </button>
-              <p>အိမ်၊ အဆောက်အဦ၊ ဌာန၊ သစ်ပင် ဖြည့်လိုသည့်နေရာကို မြေပုံပေါ်မှာ ဝိုက်ရွေးပါ။</p>
-            </div>
-            <div className="robot-location-panel map-selection-launch">
-              <button
-                type="button"
-                className="robot-location-toggle"
-                aria-label="2D Map & 3D Asset Editor"
-                title="2D Map & 3D Asset Editor"
-                onClick={() => {
-                  if (document.pointerLockElement) document.exitPointerLock();
-                  setSceneActive(false);
-                  setSettingsOpen(false);
-                  setSelectionOpen(false);
-                  setMapOpen(false);
-                  setTeleportMode(false);
-                  setEditorOpen(true);
-                }}
-              >
-                🗺️ 2D Map & 3D Asset Editor ဖွင့်ရန် ↗
-              </button>
-              <p>ရပ်ကွက်၊ လမ်း၊ မြေကွက်၊ အိမ်၊ သစ်ပင်များကို ပြင်ဆင်ရန် (Developer Tool)။</p>
-            </div>
           </section>
         )}
       </div>
-      {!welcomeDismissed && !editorOpen && !selectionOpen && !mapOpen && !topDown && !rideStatus.riding && !carStatus.driving && !guideOpen && (
+      {!welcomeDismissed && !mapOpen && !topDown && !rideStatus.riding && !carStatus.driving && !guideOpen && (
         <section className="welcome" aria-label="ကြိုဆိုပါသည်">
           <div className="welcome-actions">
             <button
@@ -795,9 +759,7 @@ function App() {
           document.querySelector("canvas")?.requestPointerLock();
         }}
       />
-      {locked && !editorOpen && !selectionOpen && <div className="crosshair">+</div>}
-      {editorOpen && <Suspense fallback={<div className="selection-loading" role="status">Editor ဖွင့်နေသည်…</div>}><WardVillageEditorDialog focus={viewPos} onClose={() => setEditorOpen(false)} /></Suspense>}
-      {selectionOpen && <Suspense fallback={<div className="selection-loading" role="status">မြေပုံဖွင့်နေသည်…</div>}><MapSelectionTool focus={viewPos} onClose={() => setSelectionOpen(false)} /></Suspense>}
+      {locked && <div className="crosshair">+</div>}
       <aside
         className={mapOpen ? "map map-expanded" : "map"}
         aria-label="Ward plan"
@@ -933,6 +895,16 @@ function App() {
 }
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {is3DList ? <Suspense fallback={<div>Loading 3D library…</div>}><AssetLibraryPage /></Suspense> : <App />}
+    {is3DList ? (
+      <Suspense fallback={<div>Loading 3D library…</div>}>
+        <AssetLibraryPage />
+      </Suspense>
+    ) : isMapPortal ? (
+      <Suspense fallback={<div className="selection-loading" role="status">မြေပုံစာမျက်နှာ ဖွင့်နေသည်…</div>}>
+        <MapPortalPage />
+      </Suspense>
+    ) : (
+      <App />
+    )}
   </React.StrictMode>,
 );

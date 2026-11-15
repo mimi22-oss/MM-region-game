@@ -56,8 +56,40 @@ const routes = buildTrafficRoutes(
 );
 function TrafficCar({route,index,offset}:{route:TrafficRoute;index:number;offset:number}){
  const root=useRef<Group>(null),travel=useRef(offset),appearance=useMemo(()=>carAppearance(index),[index]);
+ const groundCache=useRef<{
+  ground:ReturnType<typeof sceneGround>|null;
+  heightFn:((x:number,z:number)=>number)|null;
+  age:number;
+  grounded:boolean;
+  pose:{y:number;pitch:number;roll:number};
+ }>({ground:null,heightFn:null,age:0,grounded:false,pose:{y:.12,pitch:0,roll:0}});
  useTrafficCollider(root,1.9*appearance.size,3.7*appearance.size,'car');
- useFrame(({scene,clock},dt)=>{travel.current+=Math.min(dt,.05)*8;const p=trafficPose(route,travel.current);if(root.current){const ground=sceneGround(scene,clock.elapsedTime),g=carGroundPose(p.x,p.z,p.yaw,appearance.size,(x,z)=>ground.height(x,z));root.current.position.set(p.x,g.y,p.z);root.current.rotation.set(g.pitch,p.yaw,g.roll,'YXZ')}});
+ useFrame(({scene,clock,camera},dt)=>{
+  const step=Math.min(dt,.05);
+  travel.current+=step*8;
+  const obj=root.current;
+  if(!obj)return;
+  const p=trafficPose(route,travel.current);
+  const focus=camera.userData.viewFocus??camera.position;
+  const dx=p.x-focus.x,dz=p.z-focus.z,distSq=dx*dx+dz*dz;
+  if(distSq>550*550){obj.visible=false;return}
+  obj.visible=true;
+  const cache=groundCache.current;
+  cache.age+=step;
+  if(!cache.grounded||distSq<110*110||cache.age>=.2){
+   const ground=sceneGround(scene,clock.elapsedTime);
+   if(cache.ground!==ground||!cache.heightFn){
+    cache.ground=ground;
+    cache.heightFn=(x:number,z:number)=>ground.height(x,z);
+   }
+   carGroundPose(p.x,p.z,p.yaw,appearance.size,cache.heightFn,cache.pose);
+   cache.age=0;
+   cache.grounded=true;
+  }
+  const g=cache.pose;
+  obj.position.set(p.x,g.y,p.z);
+  obj.rotation.set(g.pitch,p.yaw,g.roll,'YXZ');
+ });
  const p=trafficPose(route,offset);
  return <group ref={root} position={[p.x,.12,p.z]} rotation={[0,p.yaw,0]} userData={{dynamic:true}}><Car {...appearance}/></group>;
 }

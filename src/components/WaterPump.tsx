@@ -67,7 +67,7 @@ function HandPumpWaterStream() {
 	});
 
 	return (
-		<group name="hand-pump-flowing-water">
+		<group name="hand-pump-flowing-water" userData={{ dynamic: true }}>
 			{/* က။ နှုတ်သီးပေါက် အတွင်းပိုင်း ရေပွက်လိုင်း (Gushing Water within the Iron Spout Mouth) */}
 			<mesh position={[0, 0.38, 0.11]} rotation={[Math.PI / 2, 0, 0]}>
 				<cylinderGeometry args={[0.04, 0.04, 0.06, 16]} />

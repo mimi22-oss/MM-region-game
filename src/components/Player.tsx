@@ -1,6 +1,5 @@
 import {PassengerBalloon} from './PassengerBalloon';
 import {balloonRide,balloonInput,BALLOON_DECK,BALLOON_LAUNCH,clearBalloonInput,resetBalloon,balloonFlightFloor,balloonLanding,stepBalloon,balloonExitSpot,type BalloonStatus} from '../game/balloonRide';
-import {isThadingyutFestivalActive} from '../game/thadingyutFestival';
 import {createJumpPose,prepareJump,stepJumpPose,jumpKneeBend} from '../game/humanJumpPose';
 import {createHumanJump,rememberJumpMomentum,startHumanJump,stepHumanJump,steerHumanJump} from '../game/humanJump';
 import {walkWithContacts,createWalkingRecoil,stepWalkingRecoil} from '../game/walkingCollision';
@@ -18,15 +17,16 @@ import { motorcycleRide,tryMount,parkMotorcycle,dismountSpot,stepMotorcycle,type
 import { MotorcycleModel,ParkedMotorcycle } from './Motorcycle';
 import { updateHomeAccess } from '../game/homeAccess';
 import { panCamera, findTeleportSpot } from '../game/cameraNavigation';
+import { createCameraObstructionQuery } from '../game/cameraObstruction';
 import { avatarHeading } from '../game/avatarHeading';
 import { RobotCharacter } from './RobotCharacter';
 import { CartoonCharacter } from './CartoonCharacter';
 import type { CharacterKind } from './CharacterPicker';
-import { useEffect, useRef, useState, memo, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, memo, type RefObject } from 'react';
 const balloonFloorCache = new Map<string, number>();
 import type { MobileInput } from '../game/mobileInput';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Group, Vector3, Raycaster, Object3D, Euler } from 'three';
+import { Group, Vector3, Raycaster, Euler } from 'three';
 import { ward, angle } from '../data/ward';
 import { canStand, treeBlocks, PLAYER_RADIUS } from '../game/collision';
 
@@ -232,6 +232,11 @@ export const Player = memo(function Player({
   onMode(false);onTopDown(false);onZoom(10);onPosition(s.x,s.z,s.bodyYaw);onNavigationResult?.(true);
  },[navigationRequest,onNavigationResult,onMode,onTopDown,onZoom,onPosition]);
  const target=useRef(new Vector3()); const desired=useRef(new Vector3()); const ray=useRef(new Raycaster());
+ const tmpEuler=useRef(new Euler(0,0,0,'YXZ'));
+ const tmpVecA=useRef(new Vector3());
+ const tmpVecB=useRef(new Vector3());
+ const viewFocusScratch=useRef({x:ward.spawn.x,z:ward.spawn.z});
+ const cameraObstruction=useMemo(createCameraObstructionQuery,[]);
  useEffect(()=>{
   if(teleportMode&&document.pointerLockElement===gl.domElement)document.exitPointerLock();
  },[teleportMode,gl]);
@@ -424,7 +429,7 @@ export const Player = memo(function Player({
   if(!balloon.riding){balloon.y=height(balloon.x,balloon.z);balloon.grounded=true;}
   const balloonDistance=Math.hypot(s.x-balloon.x,s.z-balloon.z);
   if(balloon.mustLeave&&balloonDistance>5)balloon.mustLeave=false;
-  const nearBalloon=isThadingyutFestivalActive()&&character==='cartoon'&&!currentCar()&&!ride.riding&&!balloon.riding&&!balloon.mustLeave&&!jump.current.airborne&&jumpPose.current.prepare===0&&balloonDistance<3.6;
+  const nearBalloon=character==='cartoon'&&!currentCar()&&!ride.riding&&!balloon.riding&&!balloon.mustLeave&&!jump.current.airborne&&jumpPose.current.prepare===0&&balloonDistance<3.6;
   if(nearBalloon&&!aerial&&!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0){
    balloon.nearTime+=dt;
    if(balloon.nearTime>.55){
@@ -610,21 +615,24 @@ export const Player = memo(function Player({
   const isBlinking=!car&&rideLife.damage>0&&rideLife.invulnerable>0&&Math.floor(clock.elapsedTime*12)%2===0;
   if(avatar.current){avatar.current.position.set(s.x,groundY+fall*(ride.riding?.18:.28*bodyScale),s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:fall*Math.PI/2,fall&&!ride.riding?fallYaw.current:s.bodyYaw,ride.riding?fall*1.42:0,'YXZ');avatar.current.visible=!car&&!s.first&&!isBlinking;}
   target.current.set(aerial?s.camX:s.x,(aerial?height(s.camX,s.camZ):groundY)+1.65*(car||ride.riding?1:bodyScale),aerial?s.camZ:s.z);
-  if(car&&s.first)target.current.set(DRIVER_EYE[0]*car.size,DRIVER_EYE[1]*car.size,DRIVER_EYE[2]*car.size).applyEuler(new Euler(car.pitch,car.yaw,car.roll,'YXZ')).add(new Vector3(car.x,car.groundY,car.z));
-  camera.userData.viewFocus={x:target.current.x,z:target.current.z};
+  if(car&&s.first){
+   tmpEuler.current.set(car.pitch,car.yaw,car.roll,'YXZ');
+   target.current.set(DRIVER_EYE[0]*car.size,DRIVER_EYE[1]*car.size,DRIVER_EYE[2]*car.size).applyEuler(tmpEuler.current).add(tmpVecA.current.set(car.x,car.groundY,car.z));
+  }
+  viewFocusScratch.current.x=target.current.x;viewFocusScratch.current.z=target.current.z;
+  camera.userData.viewFocus=viewFocusScratch.current;
   const viewPitch=s.pitch+(car&&s.first?car.pitch:0);
-  const direction=new Vector3(-Math.sin(s.yaw)*Math.cos(viewPitch),Math.sin(viewPitch),-Math.cos(s.yaw)*Math.cos(viewPitch));
-  if(s.first){camera.position.copy(target.current);camera.lookAt(target.current.clone().add(direction));}
+  const direction=tmpVecA.current.set(-Math.sin(s.yaw)*Math.cos(viewPitch),Math.sin(viewPitch),-Math.cos(s.yaw)*Math.cos(viewPitch));
+  if(s.first){camera.position.copy(target.current);camera.lookAt(tmpVecB.current.copy(target.current).add(direction));}
   else{
    desired.current.copy(direction).multiplyScalar(-s.distance).add(target.current);desired.current.y=Math.max(0.6,desired.current.y+1.5);
    if(s.distance<=10&&!s.topDown&&s.pitch>-0.85){
-    const offset=desired.current.clone().sub(target.current);const distance=offset.length();
-    ray.current.set(target.current,offset.normalize());ray.current.far=distance;
-    // Ignore the player's own meshes when shortening the chase camera near scenery.
-    const isAvatar=(o:Object3D):boolean=>o===avatar.current || (!!balloon.riding&&o.userData.passengerBalloon===true) || (!!car&&o.userData.carId===car.id) || (!!o.parent&&isAvatar(o.parent));
-    const isHidden=(o:Object3D):boolean=>!o.visible|| (!!o.parent&&isHidden(o.parent));
-    const hit=ray.current.intersectObjects(scene.children,true).find(h=>!isAvatar(h.object)&&!isHidden(h.object));
-    if(hit)desired.current.copy(target.current).addScaledVector(offset,Math.max(0.15,hit.distance-0.3));
+    const offset=tmpVecB.current.copy(desired.current).sub(target.current);const distance=offset.length();
+    if(distance>1e-5){
+     ray.current.set(target.current,offset.multiplyScalar(1/distance));ray.current.far=distance;
+     const hit=cameraObstruction(ray.current,scene,avatar.current,!!balloon.riding,car?.id??null);
+     if(hit)desired.current.copy(target.current).addScaledVector(offset,Math.max(0.15,hit.distance-0.3));
+    }
    }
    camera.position.copy(desired.current);camera.lookAt(target.current);
   }

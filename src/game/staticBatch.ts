@@ -4,6 +4,7 @@ import {
   InstancedMesh,
   Matrix4,
   Mesh,
+  PlaneGeometry,
   Color,
   type BufferGeometry,
   type Material,
@@ -14,7 +15,8 @@ import {
 export function batchStaticMeshes(root: Group) {
   root.updateWorldMatrix(true, true);
   const inverse = root.matrixWorld.clone().invert(),
-    unitBox = new BoxGeometry(1, 1, 1);
+    unitBox = new BoxGeometry(1, 1, 1),
+    unitPlane = new PlaneGeometry(1, 1);
   const groups = new Map<
     string,
     {
@@ -66,6 +68,16 @@ export function batchStaticMeshes(root: Group) {
           parameters.depth,
         ),
       );
+    } else if (
+      geometry.type === "PlaneGeometry" &&
+      (parameters.widthSegments ?? 1) === 1 &&
+      (parameters.heightSegments ?? 1) === 1 &&
+      !("map" in material && (material as { map?: unknown }).map)
+    ) {
+      shape = unitPlane;
+      matrix.multiply(
+        new Matrix4().makeScale(parameters.width, parameters.height, 1),
+      );
     }
     const e = matrix.elements;
     const detail = shape === unitBox && !object.userData.walkable && matrix.getMaxScaleOnAxis() < 2.5 &&
@@ -73,7 +85,7 @@ export function batchStaticMeshes(root: Group) {
     const key = JSON.stringify([
       Math.floor(e[12] / 128),
       Math.floor(e[14] / 128),
-      shape === unitBox ? "box" : [geometry.type, parameters],
+      shape === unitBox ? "box" : shape === unitPlane ? "plane" : [geometry.type, parameters],
       detail,
       materialKey,
       object.castShadow,
@@ -152,6 +164,7 @@ export function batchStaticMeshes(root: Group) {
       for (const { group, parent } of [...emptyGroups].reverse()) parent.add(group);
       for (const { mesh, parent } of removed) parent.add(mesh);
       unitBox.dispose();
+      unitPlane.dispose();
     },
   };
 }

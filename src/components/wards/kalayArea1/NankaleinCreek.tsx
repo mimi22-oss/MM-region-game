@@ -93,7 +93,7 @@ export const NankaleinCreek = memo(function NankaleinCreek() {
 						</mesh>
 
 						{/* Water foam and flow accents */}
-						<group ref={flowRef}>
+						<group ref={flowRef} userData={{ dynamic: true }}>
 							{[-4, 0, 4].map((offset, fIdx) => (
 								<mesh
 									key={`foam-${fIdx}`}

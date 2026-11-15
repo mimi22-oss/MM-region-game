@@ -1,5 +1,5 @@
-import {useLayoutEffect,useMemo,useRef} from 'react';
-import {useFrame} from '@react-three/fiber';
+import {useEffect,useLayoutEffect,useMemo,useRef} from 'react';
+import {useFrame,useThree} from '@react-three/fiber';
 import {BackSide,BufferGeometry,Color,DirectionalLight,Float32BufferAttribute,Fog,Group,HemisphereLight,Mesh,MeshBasicMaterial,MeshStandardMaterial,Object3D,PointLight,ShaderMaterial,Vector3,type PointsMaterial} from 'three';
 import {environmentBlend,type EnvironmentPalette} from '../game/environmentTime';
 import {ward} from '../data/ward';
@@ -8,6 +8,9 @@ import {startupDiagnostics} from '../game/startupDiagnostics';
 import {diagnosticConfig} from '../game/diagnosticMode';
 import {NightEnvironment} from './NightEnvironment';
 import {StaticBatch} from './StaticBatch';
+import {useQualityPreset} from '../game/qualityPreset';
+import {CANDLE_LIGHT_COLOR} from '../game/candleModel';
+import {festivalPoolCountForPreset,registerSceneFestivalLightPool,unregisterSceneFestivalLightPool} from '../game/pointLightPool';
 
 const colorKeys=['sky','horizon','fog','sun','ambient','ground'] as const;
 const numericKeys=['sunlight','ambientLight','elevation','azimuth','fogNear','fogFar','lamps','stars','shadowSoftness'] as const;
@@ -61,7 +64,24 @@ export function TimeEnvironment({minute}:{minute:number}){
    startupDiagnostics.record('lighting-init', { shadows: !mobileQuality && !diagnosticConfig.disableShadows });
    return ()=>{shader.dispose();starGeometry.dispose();};
   },[shader,starGeometry]);
-  const enableShadows = !mobileQuality && !diagnosticConfig.disableShadows;
+  const {scene} = useThree();
+  const preset = useQualityPreset();
+  const enableShadows = preset.characterCastShadow && !diagnosticConfig.disableShadows;
+  const festivalPoolCount = festivalPoolCountForPreset(preset);
+  const festivalPool = useMemo(() => Array.from({length: festivalPoolCount}, () => new PointLight(CANDLE_LIGHT_COLOR, 0, 16, 1.5)), [festivalPoolCount]);
+  useLayoutEffect(() => {
+   registerSceneFestivalLightPool(scene, festivalPool);
+   return () => {
+    unregisterSceneFestivalLightPool(scene, festivalPool);
+    for (let i = 0; i < festivalPool.length; i++) {
+     festivalPool[i].intensity = 0;
+     festivalPool[i].dispose?.();
+    }
+   };
+  }, [scene, festivalPool]);
+  useEffect(() => {
+   for (let i = 0; i < festivalPool.length; i++) festivalPool[i].intensity = 0;
+  }, [festivalPool]);
   useFrame(({camera,scene},dt)=>{
    const c=current.current!,blend=1-Math.exp(-Math.min(dt,.1)*1.5);
    for(const key of colorKeys)c[key].lerp(desired[key],blend);
@@ -94,6 +114,7 @@ export function TimeEnvironment({minute}:{minute:number}){
     shadow-mapSize={[1024,1024]} shadow-camera-left={-110} shadow-camera-right={110} shadow-camera-top={110} shadow-camera-bottom={-110} shadow-camera-near={.5} shadow-camera-far={650} shadow-normalBias={.08} shadow-bias={-.0001}/>
    <mesh position={[0,-.3,0]} receiveShadow={enableShadows}><boxGeometry args={[ward.size,.6,ward.size]}/><meshStandardMaterial ref={ground} color={initial.ground}/></mesh>
   <TimeTownLights state={current}/>
+  {festivalPool.map((light,i)=><primitive key={`festival-pool-${i}`} object={light}/>)}
  </>;
 }
 /** Keep the existing batched windows/street fixtures/temple beacons across all time changes. */
@@ -102,7 +123,7 @@ function TimeTownLights({state}:{state:{current:LightState|null}}){
  const materials=useRef<{material:MeshBasicMaterial;color:Color}[]>([]);
  const anchors=useRef<{position:Vector3;color:Color;intensity:number;distance:number;decay:number}[]>([]);
  const pool=useMemo(()=>Array.from({length:mobileQuality?2:3},()=>new PointLight('#ffd38a',0,26,1.3)),[]);
- const selected=useRef<typeof anchors.current>([]),elapsed=useRef(1);
+ const selected=useRef<typeof anchors.current>([]),elapsed=useRef(1),lastStrength=useRef(-1);
  useLayoutEffect(()=>{
   const unique=new Set<MeshBasicMaterial>();
   root.current!.traverse(object=>{
@@ -110,20 +131,54 @@ function TimeTownLights({state}:{state:{current:LightState|null}}){
    if(object.userData.nightLight){const light=object.userData.nightLight;anchors.current.push({...light,color:new Color(light.color),position:object.getWorldPosition(new Vector3())});}
   });
   materials.current=[...unique].map(material=>({material,color:material.color.clone()}));
-  return ()=>{for(const item of materials.current)item.material.color.copy(item.color);materials.current=[];anchors.current=[];selected.current=[];};
- },[]);
+  return ()=>{for(const item of materials.current)item.material.color.copy(item.color);for(let i=0;i<pool.length;i++)pool[i].dispose?.();materials.current=[];anchors.current=[];selected.current=[];};
+ },[pool]);
  useFrame(({camera},dt)=>{
   const strength=state.current!.lamps;
-  for(const item of materials.current)item.material.color.copy(item.color).multiplyScalar(.04+strength*.96);
+  const strengthChanged=Math.abs(strength-lastStrength.current)>0.002;
+  if(strengthChanged){
+   lastStrength.current=strength;
+   const factor=.04+strength*.96;
+   for(let i=0;i<materials.current.length;i++){
+    const item=materials.current[i];
+    item.material.color.copy(item.color).multiplyScalar(factor);
+   }
+  }
+  if(strength<0.01){
+   if(strengthChanged){for(let i=0;i<pool.length;i++)pool[i].intensity=0;}
+   return;
+  }
   elapsed.current+=dt;
   if(elapsed.current>.5){
    elapsed.current=0;
    const focus=camera.userData.viewFocus??camera.position;
-   const distance=(item:typeof anchors.current[number])=>Math.hypot(item.position.x-focus.x,item.position.z-focus.z);
-   selected.current=anchors.current.filter(item=>distance(item)<item.distance*2).sort((a,b)=>distance(a)-distance(b)).slice(0,pool.length);
-   selected.current.forEach((item,i)=>{pool[i].position.copy(item.position);pool[i].color.copy(item.color);pool[i].distance=item.distance;pool[i].decay=item.decay;});
+   const fx=focus.x,fz=focus.z;
+   const list=anchors.current;
+   const picked=selected.current;
+   picked.length=0;
+   // Select up to pool.length nearest anchors without full array sort or closures
+   for(let slot=0;slot<pool.length;slot++){
+    let bestItem:typeof anchors.current[number]|null=null;
+    let bestDistSq=Infinity;
+    for(let i=0;i<list.length;i++){
+     const item=list[i];
+     let used=false;
+     for(let k=0;k<picked.length;k++){if(picked[k]===item){used=true;break;}}
+     if(used)continue;
+     const dx=item.position.x-fx,dz=item.position.z-fz;
+     const dSq=dx*dx+dz*dz;
+     const maxD=item.distance*2;
+     if(dSq<maxD*maxD&&dSq<bestDistSq){bestDistSq=dSq;bestItem=item;}
+    }
+    if(!bestItem)break;
+    picked.push(bestItem);
+    pool[slot].position.copy(bestItem.position);
+    pool[slot].color.copy(bestItem.color);
+    pool[slot].distance=bestItem.distance;
+    pool[slot].decay=bestItem.decay;
+   }
   }
-  pool.forEach((light,i)=>{light.intensity=(selected.current[i]?.intensity??0)*strength;});
+  for(let i=0;i<pool.length;i++){pool[i].intensity=(selected.current[i]?.intensity??0)*strength;}
  });
  return <group ref={root} name="time-town-lights"><StaticBatch><NightEnvironment sky={false}/></StaticBatch>{pool.map((light,i)=><primitive key={i} object={light}/>)}</group>;
 }

@@ -113,12 +113,69 @@ const nearbyTrees = spatialIndex(
   (t) => ({ id: (t as { id?: string }).id, x: t.x, z: t.z, radius: t.radius + PLAYER_RADIUS }),
 );
 const mountainObstacles = [...ward.mountains, ...ward.weipula.peaks];
+const MOUNTAIN_LIMITS = mountainObstacles.map((m) => {
+  const obstacleRadius = (m as { obstacleRadius?: number }).obstacleRadius ?? m.radius;
+  const r = obstacleRadius + PLAYER_RADIUS;
+  return { x: m.x, z: m.z, limitSq: r * r };
+});
 const polylineCanals = [
   ward.crossCanal,
   ...kalayVillages.flatMap((vl) =>
     vl.connectingCanal ? [vl.connectingCanal] : [],
   ),
 ];
+const WARD_CANAL_COS = Math.cos(ward.canal.rotation);
+const WARD_CANAL_SIN = Math.sin(ward.canal.rotation);
+const WARD_WATER_BOXES = [ward.canal, ...ward.drains].map((water) => ({
+  u: water.u,
+  halfW: water.width / 2 + PLAYER_RADIUS,
+  halfD: water.depth / 2 + PLAYER_RADIUS,
+  centerV: water.x * WARD_CANAL_SIN + water.z * WARD_CANAL_COS,
+  bridges: water.bridges,
+}));
+const POLYLINE_CANAL_ENTRIES = polylineCanals.map((poly) => {
+  const halfR = poly.depth / 2 + PLAYER_RADIUS;
+  let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
+  for (const [pu, pv] of poly.points) {
+    if (pu < minU) minU = pu;
+    if (pu > maxU) maxU = pu;
+    if (pv < minV) minV = pv;
+    if (pv > maxV) maxV = pv;
+  }
+  return { poly, halfR, halfRSq: halfR * halfR, minU: minU - halfR, maxU: maxU + halfR, minV: minV - halfR, maxV: maxV + halfR };
+});
+const NANKALEIN_HALF_R = nankaleinCreek.waterWidth / 2 + PLAYER_RADIUS;
+const NANKALEIN_HALF_R_SQ = NANKALEIN_HALF_R * NANKALEIN_HALF_R;
+let nankaleinMinU = Infinity, nankaleinMaxU = -Infinity, nankaleinMinV = Infinity, nankaleinMaxV = -Infinity;
+for (const [nu, nv] of nankaleinCreek.uvPoints) {
+  if (nu < nankaleinMinU) nankaleinMinU = nu;
+  if (nu > nankaleinMaxU) nankaleinMaxU = nu;
+  if (nv < nankaleinMinV) nankaleinMinV = nv;
+  if (nv > nankaleinMaxV) nankaleinMaxV = nv;
+}
+nankaleinMinU -= NANKALEIN_HALF_R;
+nankaleinMaxU += NANKALEIN_HALF_R;
+nankaleinMinV -= NANKALEIN_HALF_R;
+nankaleinMaxV += NANKALEIN_HALF_R;
+const VILLAGE_CANALS = kalayVillages.flatMap((v) => (v.canal ? [v.canal] : []));
+const nearbyVillagePonds = spatialIndex(
+  kalayVillages.flatMap((v) => v.ponds ?? []),
+  (p) => ({
+    x: p.x,
+    z: p.z,
+    radius: Math.hypot(p.width / 2 + PLAYER_RADIUS, p.depth / 2 + PLAYER_RADIUS),
+  }),
+);
+const MONASTERY_MAX_R_SQ = (() => {
+  let maxR = 0;
+  for (const b of ward.monastery.buildings) {
+    maxR = Math.max(maxR, Math.hypot(Math.abs(b.u) + b.width / 2 + PLAYER_RADIUS, Math.abs(b.v) + b.depth / 2 + PLAYER_RADIUS));
+  }
+  for (const p of ward.monastery.stupas) {
+    maxR = Math.max(maxR, Math.hypot(p.u, p.v) + p.radius + PLAYER_RADIUS);
+  }
+  return (maxR + 1) * (maxR + 1);
+})();
 
 // Farmhouse walk-in character home collision setup
 // Main house expanded to width=12m (lx=-6..6), depth=10m (lz=-5..5).
@@ -337,7 +394,7 @@ const cmtS = Math.sin(-cemeteryRot);
 export function canStandCemetery(x: number, z: number, clearance = 0): boolean {
   const dx = x - cemeteryCx;
   const dz = z - cemeteryCz;
-  if (Math.hypot(dx, dz) > 120) return true;
+  if (dx * dx + dz * dz > 14400) return true;
 
   const lx = dx * cmtC - dz * cmtS;
   const lz = dx * cmtS + dz * cmtC;
@@ -412,28 +469,36 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
     estateFenceBlocks(x, z, PLAYER_RADIUS, clearance)
   )
     return false;
-  const c = Math.cos(ward.canal.rotation),
-    s = Math.sin(ward.canal.rotation);
+  const c = WARD_CANAL_COS,
+    s = WARD_CANAL_SIN;
   const u = x * c - z * s,
     v = x * s + z * c;
   if (!airborne) {
-  for (const water of [ward.canal, ...ward.drains]) {
-    const centerV = water.x * s + water.z * c,
-      localV = v - centerV;
-    if (
-      Math.abs(u - water.u) < water.width / 2 + PLAYER_RADIUS &&
-      Math.abs(localV) < water.depth / 2 + PLAYER_RADIUS &&
-      !water.bridges.some((b) => Math.abs(localV - b) < 2.5 - PLAYER_RADIUS)
-    )
-      return false;
+  for (const water of WARD_WATER_BOXES) {
+    const localV = v - water.centerV;
+    if (Math.abs(u - water.u) < water.halfW && Math.abs(localV) < water.halfD) {
+      let onBridge = false;
+      for (let bi = 0; bi < water.bridges.length; bi++) {
+        if (Math.abs(localV - water.bridges[bi]) < 2.5 - PLAYER_RADIUS) {
+          onBridge = true;
+          break;
+        }
+      }
+      if (!onBridge) return false;
+    }
   }
-  for (const poly of polylineCanals) {
-    const onBridge = poly.bridges.some(
-      (b) =>
-        Math.abs(u - b.u) < b.width / 2 - PLAYER_RADIUS &&
-        Math.abs(v - b.v) < b.depth / 2 - PLAYER_RADIUS,
-    );
-    if (!onBridge)
+  for (const entry of POLYLINE_CANAL_ENTRIES) {
+    if (u < entry.minU || u > entry.maxU || v < entry.minV || v > entry.maxV) continue;
+    const poly = entry.poly;
+    let onBridge = false;
+    for (let bi = 0; bi < poly.bridges.length; bi++) {
+      const b = poly.bridges[bi];
+      if (Math.abs(u - b.u) < b.width / 2 - PLAYER_RADIUS && Math.abs(v - b.v) < b.depth / 2 - PLAYER_RADIUS) {
+        onBridge = true;
+        break;
+      }
+    }
+    if (!onBridge) {
       for (let i = 1; i < poly.points.length; i++) {
         const [a, b] = poly.points[i - 1],
           [d, e] = poly.points[i],
@@ -443,55 +508,59 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
           0,
           Math.min(1, ((u - a) * du + (v - b) * dv) / (du * du + dv * dv)),
         );
-        if (
-          Math.hypot(u - a - t * du, v - b - t * dv) <
-          poly.depth / 2 + PLAYER_RADIUS
-        )
-          return false;
-      }
-  }
-  // နန်းကလိန်ချောင်းနှင့် တံတားကြီး စစ်ဆေးခြင်း
-  const onNankaleinBridge =
-    Math.abs(u - nankaleinBridge.u) < nankaleinBridge.width / 2 - PLAYER_RADIUS &&
-    Math.abs(v - nankaleinBridge.v) < nankaleinBridge.length / 2 - PLAYER_RADIUS;
-  if (!onNankaleinBridge) {
-    for (let i = 1; i < nankaleinCreek.uvPoints.length; i++) {
-      const [a, b] = nankaleinCreek.uvPoints[i - 1];
-      const [d, e] = nankaleinCreek.uvPoints[i];
-      const du = d - a;
-      const dv = e - b;
-      const t = Math.max(0, Math.min(1, ((u - a) * du + (v - b) * dv) / (du * du + dv * dv)));
-      if (Math.hypot(u - a - t * du, v - b - t * dv) < nankaleinCreek.waterWidth / 2 + PLAYER_RADIUS) {
-        return false;
+        const rx = u - a - t * du,
+          rz = v - b - t * dv;
+        if (rx * rx + rz * rz < entry.halfRSq) return false;
       }
     }
   }
-  for (const village of kalayVillages) {
-    const ew = village.canal;
+  // နန်းကလိန်ချောင်းနှင့် တံတားကြီး စစ်ဆေးခြင်း
+  if (u >= nankaleinMinU && u <= nankaleinMaxU && v >= nankaleinMinV && v <= nankaleinMaxV) {
+    const onNankaleinBridge =
+      Math.abs(u - nankaleinBridge.u) < nankaleinBridge.width / 2 - PLAYER_RADIUS &&
+      Math.abs(v - nankaleinBridge.v) < nankaleinBridge.length / 2 - PLAYER_RADIUS;
+    if (!onNankaleinBridge) {
+      for (let i = 1; i < nankaleinCreek.uvPoints.length; i++) {
+        const [a, b] = nankaleinCreek.uvPoints[i - 1];
+        const [d, e] = nankaleinCreek.uvPoints[i];
+        const du = d - a;
+        const dv = e - b;
+        const t = Math.max(0, Math.min(1, ((u - a) * du + (v - b) * dv) / (du * du + dv * dv)));
+        const rx = u - a - t * du;
+        const rz = v - b - t * dv;
+        if (rx * rx + rz * rz < NANKALEIN_HALF_R_SQ) {
+          return false;
+        }
+      }
+    }
+  }
+  for (const ew of VILLAGE_CANALS) {
     if (
-      ew &&
       u >= ew.uMin - PLAYER_RADIUS &&
       u <= ew.uMax + PLAYER_RADIUS &&
       Math.abs(v - ew.v) < ew.width / 2 + PLAYER_RADIUS
     ) {
-      const onEwBridge = ew.bridges.some(
-        (b) => Math.abs(u - b.u) < b.width / 2 - PLAYER_RADIUS,
-      );
+      let onEwBridge = false;
+      for (let bi = 0; bi < ew.bridges.length; bi++) {
+        const b = ew.bridges[bi];
+        if (Math.abs(u - b.u) < b.width / 2 - PLAYER_RADIUS) {
+          onEwBridge = true;
+          break;
+        }
+      }
       if (!onEwBridge) return false;
     }
-    if (village.ponds) {
-      for (const p of village.ponds) {
-        const dx = x - p.x,
-          dz = z - p.z;
-        const lx = dx * c - dz * s,
-          lz = dx * s + dz * c;
-        if (
-          Math.abs(lx) < p.width / 2 + PLAYER_RADIUS &&
-          Math.abs(lz) < p.depth / 2 + PLAYER_RADIUS
-        )
-          return false;
-      }
-    }
+  }
+  for (const p of nearbyVillagePonds(x, z)) {
+    const dx = x - p.x,
+      dz = z - p.z;
+    const lx = dx * c - dz * s,
+      lz = dx * s + dz * c;
+    if (
+      Math.abs(lx) < p.width / 2 + PLAYER_RADIUS &&
+      Math.abs(lz) < p.depth / 2 + PLAYER_RADIUS
+    )
+      return false;
   }
   const pond = ward.pond,
     px = x - pond.x,
@@ -507,22 +576,23 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
     dz = z - m.z;
   const mu = dx * c - dz * s,
     mv = dx * s + dz * c;
-  for (const b of m.buildings)
-    if (
-      Math.abs(mu - b.u) < b.width / 2 + PLAYER_RADIUS &&
-      Math.abs(mv - b.v) < b.depth / 2 + PLAYER_RADIUS
-    )
-      return false;
-  for (const p of m.stupas)
-    if (Math.hypot(mu - p.u, mv - p.v) < p.radius + PLAYER_RADIUS) return false;
-  if (
-    mountainObstacles.some((m) => {
-      const obstacleRadius =
-        (m as { obstacleRadius?: number }).obstacleRadius ?? m.radius;
-      return Math.hypot(x - m.x, z - m.z) < obstacleRadius + PLAYER_RADIUS;
-    })
-  )
-    return false;
+  if (mu * mu + mv * mv <= MONASTERY_MAX_R_SQ) {
+    for (const b of m.buildings)
+      if (
+        Math.abs(mu - b.u) < b.width / 2 + PLAYER_RADIUS &&
+        Math.abs(mv - b.v) < b.depth / 2 + PLAYER_RADIUS
+      )
+        return false;
+    for (const p of m.stupas) {
+      const r = p.radius + PLAYER_RADIUS;
+      const sx = mu - p.u, sz = mv - p.v;
+      if (sx * sx + sz * sz < r * r) return false;
+    }
+  }
+  for (const mt of MOUNTAIN_LIMITS) {
+    const mx = x - mt.x, mz = z - mt.z;
+    if (mx * mx + mz * mz < mt.limitSq) return false;
+  }
   for (const car of driveableCars) {
     if (car.id === carRide.carId) continue;
     const dx = x - car.x,

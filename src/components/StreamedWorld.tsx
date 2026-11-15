@@ -56,6 +56,19 @@ function Overview({ region }: { region: typeof regions[number] }) {
   return <instancedMesh ref={mesh} raycast={ignoreOverviewRay} args={[overviewGeometry, overviewMaterial, plots.length]} />;
 }
 
+/** Freeze transform matrices on static nodes in live regions while preserving dynamic descendants. */
+function freezeStaticMatrices(root: Object3D, parentDynamic = false) {
+  const isDynamic = parentDynamic || Boolean(root.userData.dynamic || root.userData.flowPeriod || root.userData.flowPath);
+  if (!isDynamic) {
+    root.updateMatrix();
+    root.matrixAutoUpdate = false;
+  }
+  const children = root.children;
+  for (let i = 0; i < children.length; i++) {
+    freezeStaticMatrices(children[i], isDynamic);
+  }
+}
+
 /** Build once in a detached portal. Villages retain only the compact batched result. */
 const RegionBuilder = memo(function RegionBuilder({ id, Scene, live = false, active = false, onBuilt }: {
   id: string;
@@ -71,6 +84,7 @@ const RegionBuilder = memo(function RegionBuilder({ id, Scene, live = false, act
     sent.current = true;
     const root = live ? host : snapshotRegion(host);
     decorateFestivalRegion(root);
+    if (live) freezeStaticMatrices(root);
     root.name = `detail-${id}`;
     startupDiagnostics.record('building-geom', { regionId: id });
     onBuilt(id, root);
@@ -98,6 +112,7 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
   const [active, setActive] = useState(spawnRegions);
   const [overviewIds,setOverviewIds]=useState(()=>selectOverviewRegions(bounds,ward.spawn.x,ward.spawn.z,mobileQuality));
   const elapsed = useRef(0);
+  const lastRegionCheck = useRef({ initialized: false, fx: 0, fz: 0, cy: 0, activeCount: -1 });
 
   // Progressive loading: Prioritize active region, then spawn, then idle background
   const building = useMemo(() => {
@@ -256,10 +271,23 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
     onLoadingChange(loading);
   }, [loading, onLoadingChange]);
 
+function sameStringList(a: readonly string[], b: readonly string[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+const fallbackFocus = { x: 0, z: 0 };
+
   useFrame(({ camera, clock }, dt) => {
     if (!started) return;
     for (const id of active) animateRegionFlows(cache.current.get(id)?.flows ?? [], clock.elapsedTime);
-    const focus = camera.userData.viewFocus ?? { x: camera.position.x, z: camera.position.z };
+    let focus = camera.userData.viewFocus as { x: number; z: number } | undefined;
+    if (!focus) {
+      fallbackFocus.x = camera.position.x;
+      fallbackFocus.z = camera.position.z;
+      focus = fallbackFocus;
+    }
     elapsed.current += dt;
     if (elapsed.current < .2) return;
     elapsed.current = 0;
@@ -270,10 +298,24 @@ export function StreamedWorld({ destination, paused = false, onLoadingChange, on
         updateStaticDetails(cached.details,camera.position.x,camera.position.y,camera.position.z,mobileQuality);
       }
     }
-    const next = selectRegions(bounds, focus.x, focus.z, camera.position.y, active, mobileQuality);
-    if (next.join() !== active.join()) setActive(next);
-    const nextOverview=selectOverviewRegions(bounds,focus.x,focus.z,mobileQuality);
-    if(nextOverview.join()!==overviewIds.join())setOverviewIds(nextOverview);
+    const lr = lastRegionCheck.current;
+    if (
+      !lr.initialized ||
+      lr.activeCount !== active.length ||
+      Math.abs(focus.x - lr.fx) > 5 ||
+      Math.abs(focus.z - lr.fz) > 5 ||
+      Math.abs(camera.position.y - lr.cy) > 3
+    ) {
+      const next = selectRegions(bounds, focus.x, focus.z, camera.position.y, active, mobileQuality);
+      if (!sameStringList(next, active)) setActive(next);
+      const nextOverview=selectOverviewRegions(bounds,focus.x,focus.z,mobileQuality);
+      if(!sameStringList(nextOverview,overviewIds))setOverviewIds(nextOverview);
+      lr.initialized = true;
+      lr.fx = focus.x;
+      lr.fz = focus.z;
+      lr.cy = camera.position.y;
+      lr.activeCount = next.length;
+    }
   });
 
   const myothar = downloads.find(item => item.id === 'myothar')?.value;

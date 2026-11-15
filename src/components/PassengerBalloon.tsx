@@ -5,7 +5,6 @@ import {radiusAt} from '../game/fireBalloonModel';
 import {balloonRide,BALLOON_LAUNCH} from '../game/balloonRide';
 import {homeGates} from '../game/homeAccess';
 import {CandleInHolder} from './Candle';
-import {useThadingyutFestival} from '../game/thadingyutFestival';
 function Beam({a,b}:{a:[number,number,number];b:[number,number,number]}){
  const pose=useMemo(()=>{const from=new Vector3(...a),to=new Vector3(...b),delta=to.clone().sub(from);return {position:from.add(to).multiplyScalar(.5),rotation:new Quaternion().setFromUnitVectors(new Vector3(0,1,0),delta.clone().normalize()),length:delta.length()};},[a,b]);
  return <mesh position={pose.position} quaternion={pose.rotation}><cylinderGeometry args={[.045,.045,pose.length,6]}/><meshStandardMaterial color="#715130"/></mesh>;
@@ -18,7 +17,6 @@ function Sign({text}:{text:string}){
 }
 /** One passenger balloon, independent of decorative sky swarms and streamed regions. */
 export function PassengerBalloon(){
- const festivalActive = useThadingyutFestival();
  const root=useRef<Group>(null),marker=useRef<Group>(null),ring=useRef<Mesh>(null),homeArrow=useRef<Group>(null);
  const passengerLights=useRef<(PointLight|null)[]>([]),burnerLight=useRef<PointLight>(null),envelope=useRef<MeshStandardMaterial>(null);
  const profile=useMemo(()=>Array.from({length:81},(_,i)=>{const y=1.5+i/80*3.54;return new Vector2(radiusAt(y)*3.4,y*3.4);}),[]);
@@ -35,7 +33,6 @@ export function PassengerBalloon(){
   if(burnerLight.current)burnerLight.current.intensity=nearby?(8+12*darkness)*flicker:0;
   if(envelope.current)envelope.current.emissiveIntensity=(.25+.55*darkness)*flicker;
  });
- if(!festivalActive)return null;
  return <>
   <group ref={root} name="passenger-balloon" userData={{dynamic:true,passengerBalloon:true}}>
    <mesh name="passenger-balloon-envelope" castShadow><latheGeometry args={[profile,48]}/><meshStandardMaterial ref={envelope} color="#f1a02e" emissive="#ff9e19" emissiveIntensity={.8} side={DoubleSide}/></mesh>

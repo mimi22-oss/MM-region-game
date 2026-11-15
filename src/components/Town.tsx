@@ -8,20 +8,16 @@ import { Box } from './Primitives';
 import {TimeEnvironment} from './TimeEnvironment';
 import {periodAtMinute} from '../game/environmentTime';
 import {CandleAnimation} from './Candle';
-import {FestivalLighting} from './FestivalLighting';
-import {FireBalloonSky} from './FireBalloonSky';
+import {FestivalManager} from '../festivals/FestivalManager';
 
 import { DynamicWorldObjects } from './DynamicWorldObjects';
-import { useThadingyutFestival } from '../game/thadingyutFestival';
 
 export const Town = memo(function Town({ minute = 780, ...streaming }: { minute?: number } & StreamedWorldProps) {
  const period=periodAtMinute(minute),night=period==='night'||period==='evening';
- const festivalActive = useThadingyutFestival();
 	return (
 		<>
-            {festivalActive && <CandleAnimation/>}
-            {festivalActive && <FestivalLighting night={night}/>}
-            <FireBalloonSky active={night && festivalActive} balloonsPerVillage={400} />
+            <CandleAnimation/>
+            <FestivalManager minute={minute}/>
             <TimeEnvironment minute={minute}/>
 
 			<StreamedWorld {...streaming} />

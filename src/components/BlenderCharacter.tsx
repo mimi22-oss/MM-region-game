@@ -8,6 +8,7 @@ import {characterClip,vaultPhase,type CharacterClip} from '../game/blenderCharac
 import type {CharacterMotion,DrivingPose} from './CartoonCharacter';
 import {gameplayClips,createLimbFitter} from '../game/characterRig';
 import {driverGrip} from '../game/carCabin';
+import {useQualityPreset} from '../game/qualityPreset';
 
 export const CHARACTER_MODEL_URL = `${import.meta.env.BASE_URL}models/canolia-character.glb`;
 let modelPromise:Promise<GLTF>|undefined;
@@ -25,16 +26,19 @@ export function BlenderCharacter(props:Props){
  return model?<LoadedCharacter {...props} model={model}/>:null;
 }
 function LoadedCharacter({model,appearance,motion,riding=false,driving}:Props&{model:GLTF}){
+ const quality=useQualityPreset();
  const instance=useMemo(()=>{
   // Skeletons and materials belong to each avatar; buffers stay shared in the loader cache.
   const object=clone(model.scene) as Group;
   const materials:MeshStandardMaterial[]=[];
   const originals=new Map<MeshStandardMaterial,MeshStandardMaterial>();
+  const meshes:Mesh[]=[];
   object.traverse(child=>{
    if(!(child instanceof Mesh))return;
    const copy=(m:MeshStandardMaterial)=>{const result=m.clone();materials.push(result);originals.set(result,m);return result;};
    child.material=Array.isArray(child.material)?child.material.map(m=>copy(m as MeshStandardMaterial)):copy(child.material as MeshStandardMaterial);
-   child.castShadow=true;child.receiveShadow=true;
+   child.castShadow=quality.characterCastShadow;child.receiveShadow=true;
+   meshes.push(child);
    if(child instanceof SkinnedMesh)child.frustumCulled=false;
    if(child.name==='Hoodie_violet_cotton')child.name='human-torso';
   });
@@ -45,8 +49,11 @@ function LoadedCharacter({model,appearance,motion,riding=false,driving}:Props&{m
   }
   const limb=(a:string,b:string,c:string)=>createLimbFitter(object.getObjectByName(a) as Bone,object.getObjectByName(b) as Bone,object.getObjectByName(c) as Bone);
   const arms={L:limb('UpperArm_L','Forearm_L','Hand_L'),R:limb('UpperArm_R','Forearm_R','Hand_R')};
-  return {object,materials,originals,mixer,actions,arms,head:object.getObjectByName('Head')!,target:new Vector3(),pole:new Vector3()};
+  return {object,materials,originals,meshes,mixer,actions,arms,head:object.getObjectByName('Head')!,target:new Vector3(),pole:new Vector3()};
  },[model]);
+ useEffect(()=>{
+  for(let i=0;i<instance.meshes.length;i++)instance.meshes[i].castShadow=quality.characterCastShadow;
+ },[instance,quality.characterCastShadow]);
  useEffect(()=>()=>{
   instance.mixer.stopAllAction();instance.mixer.uncacheRoot(instance.object);
   instance.materials.forEach(m=>m.dispose());

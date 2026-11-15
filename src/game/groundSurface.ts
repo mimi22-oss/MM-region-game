@@ -1,22 +1,27 @@
-import { Box3, Euler, Mesh, Object3D, Raycaster, Vector3 } from 'three';
+import { Box3, Euler, Mesh, Object3D, Raycaster, Vector3, type Intersection } from 'three';
 import { mountainHeight } from './mountainTerrain.ts';
 import { ward, angle } from '../data/ward.ts';
 
 const mountainPeaks = [...ward.mountains, ...ward.weipula.peaks];
 const cosA = Math.cos(angle);
 const sinA = Math.sin(angle);
+const emptyMeshes: Mesh[] = [];
+const poseEuler = new Euler(0, 0, 0, 'YXZ');
+const poseVec = new Vector3();
 
 /** Semantic surfaces only: roofs, railings, plants and water cannot lift the player. */
 export class GroundSurface {
  private cells=new Map<string,Mesh[]>();
  private ray=new Raycaster(new Vector3(),new Vector3(0,-1,0),0,20000);
+ private hits:Intersection[]=[];
+ private box=new Box3();
  refresh(...roots:Object3D[]){
   this.cells.clear();
   for(const root of roots){
   root.updateWorldMatrix(true,true);
   root.traverse(o=>{
    if(!(o instanceof Mesh)||!o.userData.walkable)return;
-   const b=new Box3().setFromObject(o);
+   const b=this.box.setFromObject(o);
    if(b.isEmpty())return;
    for(let x=Math.floor(b.min.x/64);x<=Math.floor(b.max.x/64);x++)
     for(let z=Math.floor(b.min.z/64);z<=Math.floor(b.max.z/64);z++){
@@ -27,7 +32,9 @@ export class GroundSurface {
  }
  height(x:number,z:number){
   this.ray.ray.origin.set(x,10000,z);
-  const hits=this.ray.intersectObjects(this.cells.get(Math.floor(x/64)+','+Math.floor(z/64))||[],false);
+  const hits=this.hits;
+  hits.length=0;
+  this.ray.intersectObjects(this.cells.get(Math.floor(x/64)+','+Math.floor(z/64))||emptyMeshes,false,hits);
   if (hits.length > 0) return Math.max(0, hits[0].point.y);
   const u = x * cosA - z * sinA;
   const v = x * sinA + z * cosA;
@@ -79,13 +86,32 @@ export function sceneGround(scene:Object3D,time:number){
  return entry.surface;
 }
 
-export function carGroundPose(x:number,z:number,yaw:number,size:number,height:(x:number,z:number)=>number){
+export function carGroundPose(
+ x:number,
+ z:number,
+ yaw:number,
+ size:number,
+ height:(x:number,z:number)=>number,
+ out?:{y:number;pitch:number;roll:number}
+){
  const c=Math.cos(yaw),s=Math.sin(yaw),w=.79*size,l=1.04*size,r=.43*size;
- const contacts=[[-w,-l],[w,-l],[-w,l],[w,l]].map(([u,v])=>({u,v,h:height(x+c*u+s*v,z-s*u+c*v)}));
- const pitch=Math.atan2((contacts[0].h+contacts[1].h-contacts[2].h-contacts[3].h)/2,2*l);
- const roll=Math.atan2((contacts[1].h+contacts[3].h-contacts[0].h-contacts[2].h)/2,2*w);
- const rotation=new Euler(pitch,yaw,roll,'YXZ');
- const y=Math.max(...contacts.map(p=>p.h+r-new Vector3(p.u,r,p.v).applyEuler(rotation).y))+.012;
+ const h0=height(x-c*w-s*l,z+s*w-c*l);
+ const h1=height(x+c*w-s*l,z-s*w-c*l);
+ const h2=height(x-c*w+s*l,z+s*w+c*l);
+ const h3=height(x+c*w+s*l,z-s*w+c*l);
+ const pitch=Math.atan2((h0+h1-h2-h3)/2,2*l);
+ const roll=Math.atan2((h1+h3-h0-h2)/2,2*w);
+ poseEuler.set(pitch,yaw,roll,'YXZ');
+ poseVec.set(-w,r,-l).applyEuler(poseEuler);
+ const y0=h0+r-poseVec.y;
+ poseVec.set(w,r,-l).applyEuler(poseEuler);
+ const y1=h1+r-poseVec.y;
+ poseVec.set(-w,r,l).applyEuler(poseEuler);
+ const y2=h2+r-poseVec.y;
+ poseVec.set(w,r,l).applyEuler(poseEuler);
+ const y3=h3+r-poseVec.y;
+ const y=Math.max(y0,y1,y2,y3)+.012;
+ if(out){out.y=y;out.pitch=pitch;out.roll=roll;return out;}
  return {y,pitch,roll};
 }
 

@@ -4,6 +4,13 @@ import {readFile} from 'node:fs/promises';
 import {Box3,SkinnedMesh,Vector3} from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {createGlbHuman,selectBoyClip} from '../src/game/glbHuman.ts';
+import {
+ DEFAULT_CHARACTER_RENDERER,
+ getCharacterRendererMode,
+ setCharacterRendererMode,
+ shouldUseGlbCharacter,
+ toggleCharacterRendererMode,
+} from '../src/game/characterRenderer.ts';
 
 async function parseCharacterGlb(relativePath:string){
  const bytes=await readFile(new URL(relativePath,import.meta.url));
@@ -107,4 +114,16 @@ test('boy.glb matches boy t post.glb and TypeScript animation controller drives 
  assert.equal(damped.clip(),'run');
  avatar.dispose();
  damped.dispose();
+});
+test('characterRenderer defaults to glb for boy/girl and toggles cleanly between glb and code character',()=>{
+ assert.equal(DEFAULT_CHARACTER_RENDERER,'glb');
+ assert.equal(getCharacterRendererMode(),'glb');
+ assert.equal(shouldUseGlbCharacter('boy'),true);
+ assert.equal(shouldUseGlbCharacter('girl'),true);
+ assert.equal(shouldUseGlbCharacter('father'),false);
+ assert.equal(toggleCharacterRendererMode(),'code');
+ assert.equal(shouldUseGlbCharacter('boy'),false);
+ assert.equal(shouldUseGlbCharacter('girl'),false);
+ assert.equal(setCharacterRendererMode('glb'),'glb');
+ assert.equal(shouldUseGlbCharacter('boy'),true);
 });

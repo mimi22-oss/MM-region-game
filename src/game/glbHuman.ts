@@ -1,7 +1,11 @@
-import {Bone,Box3,Group,Matrix4,Mesh,Quaternion,SkinnedMesh,Vector3} from 'three';
+import {Bone,Box3,Group,Matrix4,Mesh,type Object3D,Quaternion,SkinnedMesh,Vector3} from 'three';
 import {clone} from 'three/examples/jsm/utils/SkeletonUtils.js';
 import {createLimbFitter} from './characterRig.ts';
 import {driverGrip} from './carCabin.ts';
+
+export interface GlbHumanOptions {
+ castShadow?: boolean;
+}
 
 export const BOY_CLIPS=['idle','walk','run','jump','sit','motorcycle_idle','motorcycle_ride'] as const;
 export type BoyClip=typeof BOY_CLIPS[number];
@@ -52,7 +56,8 @@ export function selectBoyClip(motion:Motion,riding=false,driving=false):BoyClip{
  * across 52 Mixamo bones including 3-segment spine counter-rotation, pelvic 6-DOF sway,
  * asymmetric multi-harmonic leg gait, phase-delayed forearm follow-through, and palm-centered vehicle grip IK.
  */
-export function createGlbHuman(source:Group){
+export function createGlbHuman(source:Group,options?:GlbHumanOptions){
+ const initialCastShadow=options?.castShadow??true;
  const object=clone(source) as Group,placement=new Group(),root=new Group();
  placement.add(object);root.add(placement);
  object.updateMatrixWorld(true);
@@ -78,18 +83,40 @@ export function createGlbHuman(source:Group){
  const spine=optionalBone('Spine');
  const spine1=optionalBone('Spine1');
  const spine2=optionalBone('Spine2');
+ const spineSegments=[spine,spine1,spine2].filter((b):b is Bone=>b!==null);
  const neck=optionalBone('Neck');
  const head=bone('Head');
 
  const rest=new Map<Bone,Quaternion>();
+ const restList:{bone:Bone;q:Quaternion}[]=[];
+ const meshes:Mesh[]=[];
  object.traverse(child=>{
-  if(child instanceof Bone)rest.set(child,child.quaternion.clone());
-  if(child instanceof Mesh){child.castShadow=true;child.receiveShadow=true;}
+  if(child instanceof Bone){const q=child.quaternion.clone();rest.set(child,q);restList.push({bone:child,q});}
+  if(child instanceof Mesh){child.castShadow=initialCastShadow;child.receiveShadow=true;meshes.push(child);}
   if(child instanceof SkinnedMesh)child.frustumCulled=false;
  });
 
- const point=new Vector3(),target=new Vector3(),pole=new Vector3(),gripWorld=new Vector3(),wristWorld=new Vector3(),gripCenterA=new Vector3(),gripCenterB=new Vector3(),axis=new Vector3(),rotation=new Quaternion(),parentRotation=new Quaternion(),rootRotation=new Quaternion();
- const handU=new Vector3(),handV=new Vector3(),handW=new Vector3(),desU=new Vector3(),desV=new Vector3(),desW=new Vector3();
+ const worldQuatMap=new Map<Object3D,Quaternion>();
+ const getWorldQuatRef=(obj:Object3D):Quaternion=>{
+  let q=worldQuatMap.get(obj);
+  if(!q){q=new Quaternion();worldQuatMap.set(obj,q);}
+  return q;
+ };
+ const hipsAncestors:{obj:Object3D;wq:Quaternion;pwq:Quaternion}[]=[];
+ {
+  const chain:Object3D[]=[];
+  let cur:Object3D|null=hips.parent;
+  while(cur&&cur!==root){chain.push(cur);cur=cur.parent;}
+  chain.reverse();
+  for(const node of chain){
+   hipsAncestors.push({obj:node,wq:getWorldQuatRef(node),pwq:getWorldQuatRef(node.parent??root)});
+  }
+ }
+ // Collect intermediate ancestor path from any tracked bone up to root for fast world-quaternion propagation
+ const ensureParentQuatRef=(obj:Object3D|null)=>getWorldQuatRef(obj??root);
+
+ const point=new Vector3(),target=new Vector3(),pole=new Vector3(),gripWorld=new Vector3(),wristWorld=new Vector3(),gripCenterA=new Vector3(),gripCenterB=new Vector3(),axis=new Vector3(),rotation=new Quaternion(),parentRotation=new Quaternion(),invParentRotation=new Quaternion(),rootRotation=new Quaternion(),fingerWQ1=new Quaternion(),fingerWQ2=new Quaternion();
+ const handU=new Vector3(),handV=new Vector3(),handW=new Vector3(),desU=new Vector3(),desV=new Vector3(),desW=new Vector3(),tempVec=new Vector3();
  const curBasis=new Matrix4(),desBasis=new Matrix4(),basisDelta=new Quaternion();
  const hipHeight=hips.getWorldPosition(point).y;
  const hipsRestZ=point.z;
@@ -113,6 +140,27 @@ export function createGlbHuman(source:Group){
   const restDownAngle=Math.atan2(Math.abs(target.x-point.x),Math.max(.001,point.y-target.y));
   const neutralAdduction=Math.max(0,restDownAngle-.13);
 
+  // Precompute local-space hand anatomical basis axes so standing/walking curlHand avoids matrix reads
+  let hasHandBasis=false;
+  const localFlexAxis=new Vector3(0,0,-s);
+  const localThumbOpposeAxis=new Vector3(0,1,0);
+  const localThumbTuckAxis=new Vector3(-s,0,0);
+  if(mid1&&index1&&pinky1){
+   hand.getWorldPosition(gripCenterA);
+   mid1.getWorldPosition(gripCenterB);
+   handU.subVectors(gripCenterB,gripCenterA).normalize();
+   pinky1.getWorldPosition(gripCenterA);
+   index1.getWorldPosition(gripCenterB);
+   handV.subVectors(gripCenterB,gripCenterA);
+   handV.addScaledVector(handU,-handV.dot(handU)).normalize();
+   handW.crossVectors(handV,handU).normalize();
+   hand.getWorldQuaternion(invParentRotation).invert();
+   localFlexAxis.copy(handV).multiplyScalar(s).applyQuaternion(invParentRotation).normalize();
+   localThumbOpposeAxis.copy(handW).applyQuaternion(invParentRotation).normalize();
+   localThumbTuckAxis.copy(handU).multiplyScalar(-s).applyQuaternion(invParentRotation).normalize();
+   hasHandBasis=true;
+  }
+
   const fingers=FINGER_NAMES.map((fname,fIdx)=>({
    cascade:FINGER_CASCADE[fIdx],
    joints:[1,2,3].map(j=>optionalBone(`${side}Hand${fname}${j}`)).filter((b):b is Bone=>b!==null),
@@ -135,6 +183,10 @@ export function createGlbHuman(source:Group){
    toe,
    armReach,
    neutralAdduction,
+   hasHandBasis,
+   localFlexAxis,
+   localThumbOpposeAxis,
+   localThumbTuckAxis,
    fingers,
    thumb,
    fitArm:createLimbFitter(arm,forearm,hand),
@@ -169,6 +221,23 @@ export function createGlbHuman(source:Group){
   b.updateWorldMatrix(false,true);
  }
 
+ function rotateAxisWithParentQuat(b:Bone|null,parentWQ:Quaternion,ax:number,ay:number,az:number,angle:number){
+  if(!b||Math.abs(angle)<1e-6)return;
+  axis.set(ax,ay,az).normalize().applyQuaternion(rootRotation);
+  invParentRotation.copy(parentWQ).invert();
+  axis.applyQuaternion(invParentRotation);
+  rotation.setFromAxisAngle(axis,angle);
+  b.quaternion.premultiply(rotation);
+ }
+
+ function rotateWorldAxisWithParentQuat(b:Bone|null,parentWQ:Quaternion,worldAxis:Vector3,angle:number){
+  if(!b||Math.abs(angle)<1e-6)return;
+  invParentRotation.copy(parentWQ).invert();
+  axis.copy(worldAxis).applyQuaternion(invParentRotation);
+  rotation.setFromAxisAngle(axis,angle);
+  b.quaternion.premultiply(rotation);
+ }
+
  function rotateWorldAxis(b:Bone|null,worldAxis:Vector3,angle:number){
   if(!b||Math.abs(angle)<1e-6)return;
   b.parent!.getWorldQuaternion(parentRotation);
@@ -176,6 +245,49 @@ export function createGlbHuman(source:Group){
   rotation.setFromAxisAngle(axis,angle);
   b.quaternion.premultiply(rotation);
   b.updateWorldMatrix(false,true);
+ }
+
+ function curlHandFast(limb:typeof limbs[number],handWQ:Quaternion,curlAmount:number){
+  const s=limb.side;
+  if(limb.hasHandBasis){
+   const flexWorld=gripCenterA.copy(limb.localFlexAxis).applyQuaternion(handWQ).normalize();
+   for(let fi=0;fi<limb.fingers.length;fi++){
+    const f=limb.fingers[fi];
+    const angle=curlAmount*f.cascade;
+    let curPWQ=handWQ;
+    for(let ji=0;ji<f.joints.length;ji++){
+     const joint=f.joints[ji];
+     rotateWorldAxisWithParentQuat(joint,curPWQ,flexWorld,angle);
+     const nextQ=ji%2===0?fingerWQ1:fingerWQ2;
+     nextQ.multiplyQuaternions(curPWQ,joint.quaternion);
+     curPWQ=nextQ;
+    }
+   }
+   const opposeWorld=gripCenterB.copy(limb.localThumbOpposeAxis).applyQuaternion(handWQ).normalize();
+   const tuckWorld=tempVec.copy(limb.localThumbTuckAxis).applyQuaternion(handWQ).normalize();
+   let curThumbPWQ=handWQ;
+   for(let ji=0;ji<limb.thumb.length;ji++){
+    const joint=limb.thumb[ji];
+    rotateWorldAxisWithParentQuat(joint,curThumbPWQ,opposeWorld,curlAmount*.42);
+    rotateWorldAxisWithParentQuat(joint,curThumbPWQ,tuckWorld,curlAmount*.62);
+    const nextQ=ji%2===0?fingerWQ1:fingerWQ2;
+    nextQ.multiplyQuaternions(curThumbPWQ,joint.quaternion);
+    curThumbPWQ=nextQ;
+   }
+   return;
+  }
+  for(let fi=0;fi<limb.fingers.length;fi++){
+   const f=limb.fingers[fi];
+   const angle=-s*curlAmount*f.cascade;
+   let curPWQ=handWQ;
+   for(let ji=0;ji<f.joints.length;ji++){
+    const joint=f.joints[ji];
+    rotateAxisWithParentQuat(joint,curPWQ,0,0,1,angle);
+    const nextQ=ji%2===0?fingerWQ1:fingerWQ2;
+    nextQ.multiplyQuaternions(curPWQ,joint.quaternion);
+    curPWQ=nextQ;
+   }
+  }
  }
 
  function fit(fitter:ReturnType<typeof createLimbFitter>,x:number,y:number,z:number,px:number,py:number,pz:number){
@@ -297,7 +409,7 @@ export function createGlbHuman(source:Group){
  }
 
  function update(motion:Motion,riding=false,driving?:Driving,delta?:number){
-  for(const [b,q] of rest)b.quaternion.copy(q);
+  for(let i=0;i<restList.length;i++)restList[i].bone.quaternion.copy(restList[i].q);
 
   currentClip=selectBoyClip(motion,riding,!!driving);
   const seated=riding||!!driving;
@@ -369,15 +481,11 @@ export function createGlbHuman(source:Group){
    seated?seatZ:0,
   );
   head.scale.setScalar(driving?.interior?.001:1);
-  root.updateWorldMatrix(true,true);
 
   // 1. Pelvis (Hips) 3D orientation
   const hipYaw=seated?0:lerp(.068,.125,runWeight)*Math.sin(gaitPhase)*moveWeight+.015*Math.cos(idleClock*.95)*idleWeight;
   const hipRoll=seated?0:lerp(.042,.068,runWeight)*Math.cos(gaitPhase)*moveWeight+.012*idleShift*idleWeight;
   const hipPitch=riding?.22+shortArmFactor*.6:driving?0:lerp(.015,.065,runWeight)*moveWeight-.08*smoothAirborne;
-  rotateAxis(hips,0,1,0,hipYaw);
-  rotateAxis(hips,0,0,1,hipRoll);
-  rotateAxis(hips,1,0,0,-hipPitch);
 
   // 2. Three-segment Spine (Spine, Spine1, Spine2) counter-rotation, forward lean & breathing
   let totalSpinePitch=0;
@@ -397,36 +505,37 @@ export function createGlbHuman(source:Group){
    totalSpineRoll=-lerp(.038,.062,runWeight)*Math.cos(gaitPhase)*moveWeight-.01*idleShift*idleWeight;
   }
 
-  const spineSegments=[spine,spine1,spine2].filter((b):b is Bone=>b!==null);
-  const segCount=Math.max(1,spineSegments.length);
-  for(const seg of spineSegments){
-   rotateAxis(seg,1,0,0,-totalSpinePitch/segCount);
-   rotateAxis(seg,0,1,0,totalSpineYaw/segCount);
-   rotateAxis(seg,0,0,1,totalSpineRoll/segCount);
-  }
-
   // 3. Neck & Head stabilization + natural micro-gaze
   const headCounterPitch=driving?.02:riding?(hipPitch+totalSpinePitch)*.85:totalSpinePitch*.68-.012*breath*idleWeight;
   const headCounterYaw=-totalSpineYaw*.65+.028*Math.sin(idleClock*.55)*idleWeight;
   const headCounterRoll=-totalSpineRoll*.7;
-  rotateAxis(neck,1,0,0,headCounterPitch*.52);
-  rotateAxis(neck,0,1,0,headCounterYaw*.5);
-  rotateAxis(neck,0,0,1,headCounterRoll*.5);
-  rotateAxis(head,1,0,0,headCounterPitch*.44);
-  rotateAxis(head,0,1,0,headCounterYaw*.5);
-  rotateAxis(head,0,0,1,headCounterRoll*.5);
 
-  // 4. Limbs (Legs, Feet, Toes, Clavicles, Arms, Forearms, Hands, and 30 Finger bones)
   const vyFactor=clamp(smoothVy/5.5,-1,1);
-  for(const limb of limbs){
-   const s=limb.side;
-   const legPhase=gaitPhase+(s<0?0:Math.PI);
-   const armPhase=gaitPhase+(s<0?Math.PI:0);
 
-   // Finger curl: relaxed cascade in idle/walk, athletic fist in run, tight grip around handlebar/wheel
-   const fingerCurl=riding?.98:driving?.82:lerp(.28,lerp(.32,.62,runWeight),moveWeight)+.12*jumpWeight;
+  if(seated){
+   // Seated vehicle IK path reads bone world matrices for exact steering/handlebar grip placement
+   root.updateWorldMatrix(true,true);
+   rotateAxis(hips,0,1,0,hipYaw);
+   rotateAxis(hips,0,0,1,hipRoll);
+   rotateAxis(hips,1,0,0,-hipPitch);
+   const segCount=Math.max(1,spineSegments.length);
+   for(let i=0;i<spineSegments.length;i++){
+    const seg=spineSegments[i];
+    rotateAxis(seg,1,0,0,-totalSpinePitch/segCount);
+    rotateAxis(seg,0,1,0,totalSpineYaw/segCount);
+    rotateAxis(seg,0,0,1,totalSpineRoll/segCount);
+   }
+   rotateAxis(neck,1,0,0,headCounterPitch*.52);
+   rotateAxis(neck,0,1,0,headCounterYaw*.5);
+   rotateAxis(neck,0,0,1,headCounterRoll*.5);
+   rotateAxis(head,1,0,0,headCounterPitch*.44);
+   rotateAxis(head,0,1,0,headCounterYaw*.5);
+   rotateAxis(head,0,0,1,headCounterRoll*.5);
 
-   if(seated){
+   for(let li=0;li<limbs.length;li++){
+    const limb=limbs[li];
+    const s=limb.side;
+    const fingerCurl=riding?.98:.82;
     if(driving){
      const x=(s<0?.12:driving.brake?.28:.43)-.28;
      fit(limb.fitLeg,x/.8,.29,-.70,0,0,-1);
@@ -435,100 +544,162 @@ export function createGlbHuman(source:Group){
      driverGrip(s,driving.wheelAngle,point);
      fitPalmToGrip(limb,point.x,point.y,point.z-.025,s*.45,-.55,.50,0,-.2,-1,-s,0,0,fingerCurl);
     }else{
-     // Motorcycle footrests are at [s * 0.215, 0.15, -0.235] in root space; flare knees outward to clear the apron
      fit(limb.fitLeg,s*.21,.255,-.205,s*.45,.04,-1);
      rotateAxis(limb.foot,1,0,0,.03);
-
-     // Protract shoulders FORWARD (+s around +Y) and wrap curled hands around handlebar grips at [s * 0.265, 0.829, -0.500]
      rotateAxis(limb.shoulder,0,0,1,-s*(.08+shortArmFactor*1.2));
      rotateAxis(limb.shoulder,0,1,0,s*(.24+shortArmFactor*2.6));
      fitPalmToGrip(limb,s*.270,.834,-.514,s*.45,-.65,.45,0,-.44,-1,-s,0,0,fingerCurl);
     }
-   }else{
-    curlHand(limb,fingerCurl);
+   }
+   return;
+  }
 
-    // --- LEGS: Multi-harmonic asymmetric stride + dual-peak knee bend + ankle/toe roll-off ---
-    const sinP=Math.sin(legPhase),cos2P=Math.cos(2*legPhase);
-    const walkThigh=.44*sinP-.06*cos2P-.03;
-    const runThigh=.78*sinP-.15*cos2P+.10;
-    const locoThigh=lerp(walkThigh,runThigh,runWeight)*moveWeight;
+  // Fast pure-quaternion standing/walk/run/jump path (zero recursive updateWorldMatrix calls)
+  root.getWorldQuaternion(rootRotation);
+  getWorldQuatRef(root).copy(rootRotation);
+  for(let i=0;i<hipsAncestors.length;i++){
+   const step=hipsAncestors[i];
+   step.wq.multiplyQuaternions(step.pwq,step.obj.quaternion);
+  }
 
-    // Swing-phase knee clearance + stance-phase weight acceptance
-    const swingClear=Math.max(0,Math.cos(legPhase-.28));
-    const stanceAbsorb=Math.max(0,Math.sin(legPhase-.35));
-    const walkKnee=swingClear*swingClear*.66+stanceAbsorb*.10+.04;
-    const runKnee=swingClear*swingClear*1.32+stanceAbsorb*.22+.16;
-    const locoKnee=lerp(walkKnee,runKnee,runWeight)*moveWeight;
+  const hipsPWQ=ensureParentQuatRef(hips.parent);
+  rotateAxisWithParentQuat(hips,hipsPWQ,0,1,0,hipYaw);
+  rotateAxisWithParentQuat(hips,hipsPWQ,0,0,1,hipRoll);
+  rotateAxisWithParentQuat(hips,hipsPWQ,1,0,0,-hipPitch);
+  getWorldQuatRef(hips).multiplyQuaternions(hipsPWQ,hips.quaternion);
 
-    // Ankle dorsiflexion at heel-strike and plantarflexion at toe-off
-    const heelStrike=Math.max(0,Math.sin(legPhase-.1))*lerp(.20,.28,runWeight);
-    const pushOff=Math.max(0,-Math.sin(legPhase+.2))*lerp(.25,.40,runWeight);
-    const locoAnkle=(heelStrike-pushOff+.22*swingClear*swingClear)*moveWeight;
-    const locoToe=Math.max(0,-Math.sin(legPhase+.1))*lerp(.24,.38,runWeight)*moveWeight;
+  const segCount=Math.max(1,spineSegments.length);
+  for(let i=0;i<spineSegments.length;i++){
+   const seg=spineSegments[i];
+   const pwq=ensureParentQuatRef(seg.parent);
+   rotateAxisWithParentQuat(seg,pwq,1,0,0,-totalSpinePitch/segCount);
+   rotateAxisWithParentQuat(seg,pwq,0,1,0,totalSpineYaw/segCount);
+   rotateAxisWithParentQuat(seg,pwq,0,0,1,totalSpineRoll/segCount);
+   getWorldQuatRef(seg).multiplyQuaternions(pwq,seg.quaternion);
+  }
 
-    // Jump crouch & mid-air asymmetric athletic tuck
-    const airAsym=s*.12*smoothAirborne;
-    const airTuck=smoothAirborne*(.68+.18*vyFactor+airAsym);
-    const jumpThigh=smoothJumpBend*.66*(1-smoothAirborne)+airTuck;
-    const jumpKnee=smoothJumpBend*1.32*(1-smoothAirborne)+smoothAirborne*(1.18-.22*vyFactor+s*.15);
-    const jumpAnkle=smoothJumpBend*.52*(1-smoothAirborne)-smoothAirborne*(.24-.15*vyFactor);
+  if(neck){
+   const neckPWQ=ensureParentQuatRef(neck.parent);
+   rotateAxisWithParentQuat(neck,neckPWQ,1,0,0,headCounterPitch*.52);
+   rotateAxisWithParentQuat(neck,neckPWQ,0,1,0,headCounterYaw*.5);
+   rotateAxisWithParentQuat(neck,neckPWQ,0,0,1,headCounterRoll*.5);
+   getWorldQuatRef(neck).multiplyQuaternions(neckPWQ,neck.quaternion);
+  }
+  const headPWQ=ensureParentQuatRef(head.parent);
+  rotateAxisWithParentQuat(head,headPWQ,1,0,0,headCounterPitch*.44);
+  rotateAxisWithParentQuat(head,headPWQ,0,1,0,headCounterYaw*.5);
+  rotateAxisWithParentQuat(head,headPWQ,0,0,1,headCounterRoll*.5);
+  getWorldQuatRef(head).multiplyQuaternions(headPWQ,head.quaternion);
 
-    // Idle soft knee & contraposto balance
-    const idleKnee=(.035+s*.015*idleShift)*idleWeight;
-    const idleThigh=.5*idleKnee;
-    const idleAnkle=.5*idleKnee;
+  for(let li=0;li<limbs.length;li++){
+   const limb=limbs[li];
+   const s=limb.side;
+   const legPhase=gaitPhase+(s<0?0:Math.PI);
+   const armPhase=gaitPhase+(s<0?Math.PI:0);
+   const fingerCurl=lerp(.28,lerp(.32,.62,runWeight),moveWeight)+.12*jumpWeight;
 
-    const thighPitch=locoThigh+jumpThigh+idleThigh;
-    const kneeBend=locoKnee+jumpKnee+idleKnee;
-    const anklePitch=locoAnkle+jumpAnkle+idleAnkle;
+   // --- LEGS ---
+   const sinP=Math.sin(legPhase),cos2P=Math.cos(2*legPhase);
+   const walkThigh=.44*sinP-.06*cos2P-.03;
+   const runThigh=.78*sinP-.15*cos2P+.10;
+   const locoThigh=lerp(walkThigh,runThigh,runWeight)*moveWeight;
 
-    rotateAxis(limb.thigh,1,0,0,thighPitch);
-    rotateAxis(limb.thigh,0,0,1,-hipRoll*.6);
-    rotateAxis(limb.shin,1,0,0,-kneeBend);
-    rotateAxis(limb.foot,1,0,0,anklePitch);
-    rotateAxis(limb.toe,1,0,0,locoToe);
+   const swingClear=Math.max(0,Math.cos(legPhase-.28));
+   const stanceAbsorb=Math.max(0,Math.sin(legPhase-.35));
+   const walkKnee=swingClear*swingClear*.66+stanceAbsorb*.10+.04;
+   const runKnee=swingClear*swingClear*1.32+stanceAbsorb*.22+.16;
+   const locoKnee=lerp(walkKnee,runKnee,runWeight)*moveWeight;
 
-    // --- ARMS: Clavicle + calibrated shoulder adduction + pendulum swing + phase-delayed forearm ---
-    const sinArm=Math.sin(armPhase),cos2Arm=Math.cos(2*armPhase);
-    const delayedSin=Math.sin(armPhase-.32);
+   const heelStrike=Math.max(0,Math.sin(legPhase-.1))*lerp(.20,.28,runWeight);
+   const pushOff=Math.max(0,-Math.sin(legPhase+.2))*lerp(.25,.40,runWeight);
+   const locoAnkle=(heelStrike-pushOff+.22*swingClear*swingClear)*moveWeight;
+   const locoToe=Math.max(0,-Math.sin(legPhase+.1))*lerp(.24,.38,runWeight)*moveWeight;
 
+   const airAsym=s*.12*smoothAirborne;
+   const airTuck=smoothAirborne*(.68+.18*vyFactor+airAsym);
+   const jumpThigh=smoothJumpBend*.66*(1-smoothAirborne)+airTuck;
+   const jumpKnee=smoothJumpBend*1.32*(1-smoothAirborne)+smoothAirborne*(1.18-.22*vyFactor+s*.15);
+   const jumpAnkle=smoothJumpBend*.52*(1-smoothAirborne)-smoothAirborne*(.24-.15*vyFactor);
+
+   const idleKnee=(.035+s*.015*idleShift)*idleWeight;
+   const idleThigh=.5*idleKnee;
+   const idleAnkle=.5*idleKnee;
+
+   const thighPitch=locoThigh+jumpThigh+idleThigh;
+   const kneeBend=locoKnee+jumpKnee+idleKnee;
+   const anklePitch=locoAnkle+jumpAnkle+idleAnkle;
+
+   const thighPWQ=ensureParentQuatRef(limb.thigh.parent);
+   rotateAxisWithParentQuat(limb.thigh,thighPWQ,1,0,0,thighPitch);
+   rotateAxisWithParentQuat(limb.thigh,thighPWQ,0,0,1,-hipRoll*.6);
+   getWorldQuatRef(limb.thigh).multiplyQuaternions(thighPWQ,limb.thigh.quaternion);
+
+   const shinPWQ=ensureParentQuatRef(limb.shin.parent);
+   rotateAxisWithParentQuat(limb.shin,shinPWQ,1,0,0,-kneeBend);
+   getWorldQuatRef(limb.shin).multiplyQuaternions(shinPWQ,limb.shin.quaternion);
+
+   const footPWQ=ensureParentQuatRef(limb.foot.parent);
+   rotateAxisWithParentQuat(limb.foot,footPWQ,1,0,0,anklePitch);
+   getWorldQuatRef(limb.foot).multiplyQuaternions(footPWQ,limb.foot.quaternion);
+
+   if(limb.toe){
+    const toePWQ=ensureParentQuatRef(limb.toe.parent);
+    rotateAxisWithParentQuat(limb.toe,toePWQ,1,0,0,locoToe);
+   }
+
+   // --- ARMS ---
+   const sinArm=Math.sin(armPhase),cos2Arm=Math.cos(2*armPhase);
+   const delayedSin=Math.sin(armPhase-.32);
+
+   if(limb.shoulder){
     const shoulderDrop=-s*(.055-.008*breath*idleWeight);
     const shoulderYaw=-s*lerp(.04,.085,runWeight)*sinArm*moveWeight;
-    rotateAxis(limb.shoulder,0,0,1,shoulderDrop);
-    rotateAxis(limb.shoulder,0,1,0,shoulderYaw);
-
-    // Lower arm from bind pose (T-pose or A-pose) to natural side hang, flaring slightly on run/jump
-    const jumpArmSpread=.24*smoothAirborne+.08*smoothJumpBend;
-    const runArmFlare=lerp(0,.08,runWeight)*moveWeight;
-    const breathFlare=.012*(1+breath)*idleWeight;
-    const adduction=Math.max(0,limb.neutralAdduction-jumpArmSpread-runArmFlare-breathFlare);
-    rotateAxis(limb.arm,0,0,1,-s*adduction);
-
-    // Upper arm forward/backward swing
-    const walkArmPitch=.34*sinArm-.04*cos2Arm+.02;
-    const runArmPitch=.60*sinArm-.10*cos2Arm-.10;
-    const locoArmPitch=lerp(walkArmPitch,runArmPitch,runWeight)*moveWeight;
-    const jumpArmPitch=-.32*smoothJumpBend*(1-smoothAirborne)+smoothAirborne*(.72+.28*vyFactor);
-    const idleArmPitch=(.03+.012*Math.cos(idleClock*2.1))*idleWeight;
-    rotateAxis(limb.arm,1,0,0,locoArmPitch+jumpArmPitch+idleArmPitch);
-
-    // Forearm phase-delayed bend & slight inward cross-body angle
-    const walkElbow=.24+.22*Math.max(0,delayedSin);
-    const runElbow=1.26+.30*delayedSin;
-    const locoElbow=lerp(walkElbow,runElbow,runWeight)*moveWeight;
-    const jumpElbow=(.42*smoothJumpBend+.55*smoothAirborne)*jumpWeight;
-    const idleElbow=(.18+.015*breath)*idleWeight;
-    const crossBody=-s*(lerp(.08,.26,runWeight)*moveWeight+.07*idleWeight);
-
-    rotateAxis(limb.forearm,0,1,0,crossBody);
-    rotateAxis(limb.forearm,1,0,0,locoElbow+jumpElbow+idleElbow);
+    const shoulderPWQ=ensureParentQuatRef(limb.shoulder.parent);
+    rotateAxisWithParentQuat(limb.shoulder,shoulderPWQ,0,0,1,shoulderDrop);
+    rotateAxisWithParentQuat(limb.shoulder,shoulderPWQ,0,1,0,shoulderYaw);
+    getWorldQuatRef(limb.shoulder).multiplyQuaternions(shoulderPWQ,limb.shoulder.quaternion);
    }
+
+   const jumpArmSpread=.24*smoothAirborne+.08*smoothJumpBend;
+   const runArmFlare=lerp(0,.08,runWeight)*moveWeight;
+   const breathFlare=.012*(1+breath)*idleWeight;
+   const adduction=Math.max(0,limb.neutralAdduction-jumpArmSpread-runArmFlare-breathFlare);
+
+   const walkArmPitch=.34*sinArm-.04*cos2Arm+.02;
+   const runArmPitch=.60*sinArm-.10*cos2Arm-.10;
+   const locoArmPitch=lerp(walkArmPitch,runArmPitch,runWeight)*moveWeight;
+   const jumpArmPitch=-.32*smoothJumpBend*(1-smoothAirborne)+smoothAirborne*(.72+.28*vyFactor);
+   const idleArmPitch=(.03+.012*Math.cos(idleClock*2.1))*idleWeight;
+
+   const armPWQ=ensureParentQuatRef(limb.arm.parent);
+   rotateAxisWithParentQuat(limb.arm,armPWQ,0,0,1,-s*adduction);
+   rotateAxisWithParentQuat(limb.arm,armPWQ,1,0,0,locoArmPitch+jumpArmPitch+idleArmPitch);
+   getWorldQuatRef(limb.arm).multiplyQuaternions(armPWQ,limb.arm.quaternion);
+
+   const walkElbow=.24+.22*Math.max(0,delayedSin);
+   const runElbow=1.26+.30*delayedSin;
+   const locoElbow=lerp(walkElbow,runElbow,runWeight)*moveWeight;
+   const jumpElbow=(.42*smoothJumpBend+.55*smoothAirborne)*jumpWeight;
+   const idleElbow=(.18+.015*breath)*idleWeight;
+   const crossBody=-s*(lerp(.08,.26,runWeight)*moveWeight+.07*idleWeight);
+
+   const forePWQ=ensureParentQuatRef(limb.forearm.parent);
+   rotateAxisWithParentQuat(limb.forearm,forePWQ,0,1,0,crossBody);
+   rotateAxisWithParentQuat(limb.forearm,forePWQ,1,0,0,locoElbow+jumpElbow+idleElbow);
+   const forearmWQ=getWorldQuatRef(limb.forearm).multiplyQuaternions(forePWQ,limb.forearm.quaternion);
+
+   const handWQ=getWorldQuatRef(limb.hand).multiplyQuaternions(forearmWQ,limb.hand.quaternion);
+   curlHandFast(limb,handWQ,fingerCurl);
   }
+ }
+
+ function setCastShadow(enabled:boolean){
+  for(let i=0;i<meshes.length;i++)meshes[i].castShadow=enabled;
  }
 
  function dispose(){
   // Geometry, textures and materials remain owned by the shared GLTF cache.
   object.traverse(child=>{if(child instanceof SkinnedMesh)child.skeleton.dispose();});
  }
- return {root,object,update,dispose,clip:()=>currentClip};
+ return {root,object,update,dispose,setCastShadow,clip:()=>currentClip};
 }

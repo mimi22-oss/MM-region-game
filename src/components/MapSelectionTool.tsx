@@ -8,7 +8,7 @@ import { exportMapSelection, SELECTION_OPERATIONS, movedSelectionPoints, type Se
 import WardVillageEditor from './WardVillageEditor';
 
 type Mode = 'draw' | 'polygon' | 'pan' | 'pin' | 'destination';
-export default function MapSelectionTool({ focus, onClose }: { focus: MapPoint; onClose: () => void }) {
+export default function MapSelectionTool({ focus, onClose, embedded = false }: { focus: MapPoint; onClose: () => void; embedded?: boolean }) {
 	const dialog = useRef<HTMLDialogElement>(null), svg = useRef<SVGSVGElement>(null), output = useRef<HTMLTextAreaElement>(null), copyField = useRef<HTMLTextAreaElement>(null);
 	const [copyFallback, setCopyFallback] = useState('');
 	const [draft, setDraft] = useState<MapSelectionDraft>(() => {
@@ -41,13 +41,14 @@ export default function MapSelectionTool({ focus, onClose }: { focus: MapPoint; 
 	}, [view, scale, size]);
 	const centerGeo = selectionGeo(metrics.center, draft.reference);
 	useEffect(() => {
-		const el = dialog.current!; el.showModal();
+		const el = dialog.current;
+		if (!embedded && el && !el.open) el.showModal();
 		const observer = new ResizeObserver(entries => { const r = entries[0].contentRect; if (r.width && r.height) setSize({ width: r.width, height: r.height }); });
 		observer.observe(svg.current!);
 		const map = svg.current!, preventScroll = (event: WheelEvent) => event.preventDefault();
 		map.addEventListener('wheel', preventScroll, { passive: false });
-		return () => { observer.disconnect(); map.removeEventListener('wheel', preventScroll); el.close(); };
-	}, []);
+		return () => { observer.disconnect(); map.removeEventListener('wheel', preventScroll); if (!embedded && el?.open) el.close(); };
+	}, [embedded]);
 	useEffect(() => {
 		const timer = window.setTimeout(() => { try { localStorage.setItem(SELECTION_STORAGE_KEY, savedDraft); } catch { setNotice('မူကြမ်း သိမ်းမရပါ။ GeoJSON ကို ဒေါင်းလုဒ်ယူထားပါ။'); } }, 300);
 		return () => clearTimeout(timer);
@@ -121,8 +122,8 @@ export default function MapSelectionTool({ focus, onClose }: { focus: MapPoint; 
 		const a = document.createElement('a'); a.href = url; a.download = line ? 'map-waterway-request.geojson' : 'map-area-request.geojson'; a.click();
 		setTimeout(() => URL.revokeObjectURL(url), 1000); setNotice('GeoJSON ဖိုင် ထုတ်ပေးပြီးပါပြီ။');
 	};
-	return <dialog ref={dialog} className="map-selection-dialog" aria-labelledby="map-selection-title" onKeyDown={event => { event.stopPropagation(); if (event.key === 'Escape') { event.preventDefault(); close(); } }} onCancel={event => { event.preventDefault(); close(); }}>
-		<header className="map-selection-header"><div><h2 id="map-selection-title">နယ်မြေ / ရေလမ်းဆွဲ · တည်နေရာထုတ်ယူရန်</h2><p>နယ်မြေဝိုက်ပါ သို့မဟုတ် ရေလမ်းဆွဲပြီး AI အတွက် တည်နေရာကူးယူပါ။</p></div><button type="button" onClick={close} aria-label="နယ်မြေရွေးချယ်မှု ပိတ်ရန်">✕ ပိတ်မည်</button></header>
+	const content = <>
+		<header className="map-selection-header"><div><h2 id="map-selection-title">နယ်မြေ / ရေလမ်းဆွဲ · တည်နေရာထုတ်ယူရန်</h2><p>နယ်မြေဝိုက်ပါ သို့မဟုတ် ရေလမ်းဆွဲပြီး AI အတွက် တည်နေရာကူးယူပါ။</p></div>{!embedded && <button type="button" onClick={close} aria-label="နယ်မြေရွေးချယ်မှု ပိတ်ရန်">✕ ပိတ်မည်</button>}</header>
 		<div className="map-selection-body">
 			<section className="map-selection-workspace" aria-label="နယ်မြေရွေးရန် မြေပုံ">
 				<div className="map-selection-operation">
@@ -187,5 +188,9 @@ export default function MapSelectionTool({ focus, onClose }: { focus: MapPoint; 
 				<p className="map-selection-help">မူကြမ်းကို ဒီ browser မှာ သိမ်းထားပေးပါသည်။ Gemini / AI အတွက် ကူးယူမည်ကို နှိပ်ပြီး Gemini chat ထဲ Paste လုပ်၍ ခိုင်းနိုင်ပါသည်။</p>
 			</section>
 		</div>
-	</dialog>;
+	</>;
+	if (embedded) {
+		return <div className="map-selection-dialog map-selection-embedded" role="region" aria-labelledby="map-selection-title">{content}</div>;
+	}
+	return <dialog ref={dialog} className="map-selection-dialog" aria-labelledby="map-selection-title" onKeyDown={event => { event.stopPropagation(); if (event.key === 'Escape') { event.preventDefault(); close(); } }} onCancel={event => { event.preventDefault(); close(); }}>{content}</dialog>;
 }

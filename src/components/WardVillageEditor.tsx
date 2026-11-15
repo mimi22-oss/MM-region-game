@@ -34,6 +34,17 @@ import type { AssetEdit } from '../game/assetAiEdit';
 import { getBuiltInEdit } from '../game/builtInAssetEdits';
 import { getRegionAuthoredFeatures } from '../game/regionObjectsMigration';
 import { deleteSelection, editVertex, expandGroups, extendLine, joinLines, removeVertex, transformSelection } from '../game/layoutTransforms';
+import {
+	canCreateMapFeature,
+	canDeleteMapFeature,
+	canEditAssetLibrary,
+	canEditMapFeature,
+	canImportOrModifyRegion,
+	createMapAccessContext,
+	filterPermittedLayoutChanges,
+	isOwnHomeFeature,
+	type MapAccessContext,
+} from '../game/mapPermissions';
 
 const icons: Record<FeatureKind, string> = {
 	ward: '🗺️',
@@ -167,10 +178,14 @@ function AssetCardThumbnail({ def }: { def: AssetDefinition }) {
 export default function WardVillageEditor({
 	initialCenter = { x: 0, z: 0 },
 	onClose,
+	accessContext,
 }: {
 	initialCenter?: Point2;
 	onClose?: () => void;
+	accessContext?: MapAccessContext;
 }) {
+	const access = useMemo(() => accessContext ?? createMapAccessContext('admin'), [accessContext]);
+	const isAdmin = access.role === 'admin';
 	const [region, setRegion] = useState('myothar');
 	const [layout, setLayout] = useState<WorldLayout>(() => loadRegionLayout('myothar'));
 	const [reference, setReference] = useState<{
@@ -252,12 +267,25 @@ export default function WardVillageEditor({
 
 	const commit = (next: WorldLayout, before = layoutRef.current) => {
 		if (next === before) return;
+		const { layout: permitted, blockedCount } = filterPermittedLayoutChanges(next, before, access);
+		const unchanged =
+			permitted.name === before.name &&
+			permitted.features.length === before.features.length &&
+			permitted.features.every((f, idx) => f === before.features[idx]) &&
+			(permitted.deletedSourceIds?.length ?? 0) === (before.deletedSourceIds?.length ?? 0);
+		if (unchanged) {
+			setMessage('🔒 Admin သာ ပြုပြင်ခွင့်ရှိပါသည် (မိမိအိမ်ကိုသာ ပြုပြင်နိုင်ပါသည်)။');
+			return;
+		}
+		if (blockedCount > 0) {
+			setMessage('🔒 မိမိအိမ်မှလွဲ၍ အခြားအရာများကို Admin ကသာ ပြုပြင်နိုင်ပါသည်။');
+		}
 		setHistory((h) => [...h.slice(-49), before]);
 		setFuture([]);
-		updateLayout(next);
-		setSavedLayout(next);
+		updateLayout(permitted);
+		setSavedLayout(permitted);
 		try {
-			saveRegionLayout(region, next);
+			saveRegionLayout(region, permitted);
 		} catch (e) {
 			console.warn('Auto-save error:', e);
 		}
@@ -265,8 +293,10 @@ export default function WardVillageEditor({
 
 	const save = () => {
 		try {
-			saveRegionLayout(region, layoutRef.current);
-			setSavedLayout(layoutRef.current);
+			const { layout: safeLayout } = filterPermittedLayoutChanges(layoutRef.current, savedLayout, access);
+			saveRegionLayout(region, safeLayout);
+			updateLayout(safeLayout);
+			setSavedLayout(safeLayout);
 			setMessage('သိမ်းပြီးပါပြီ — 3D မြေပုံကို ပြောင်းလဲပြီးပါပြီ။ Saved to this device.');
 		} catch {
 			setMessage('Local save failed. Export JSON to keep your work.');
@@ -312,9 +342,52 @@ export default function WardVillageEditor({
 	};
 
 	const current = layout.features.find((f) => f.id === selected);
+	const canEditFeature = (f?: LayoutFeature | null) => Boolean(f && canEditMapFeature(f, access));
+	const canModifySelected = canEditFeature(current);
+	const allSelectionEditable =
+		selection.length > 0 &&
+		selection.every((id) => canEditFeature(layout.features.find((f) => f.id === id)));
+
+	const focusMyHome = () => {
+		const targetRegion = 'myothar';
+		const targetLayout = region === targetRegion ? layoutRef.current : loadRegionLayout(targetRegion);
+		if (region !== targetRegion) {
+			if (dirty && !window.confirm('Save မလုပ်ရသေးသော အပြောင်းအလဲများကို ပယ်ဖျက်ပြီး မိမိအိမ်သို့ သွားမလား?')) return;
+			setRegion(targetRegion);
+			updateLayout(targetLayout);
+			setSavedLayout(targetLayout);
+			setHistory([]);
+			setFuture([]);
+		}
+		const ownHome = targetLayout.features.find((f) => isOwnHomeFeature(f, access));
+		if (ownHome && ownHome.points.length > 0) {
+			const c = centroid(ownHome.points);
+			setView({ x: c.x, z: c.z, span: 120 });
+			setSelection([ownHome.id]);
+			setMode('select');
+			setPlacingAssetId(null);
+			setMessage(`🏠 မိမိအိမ် (${ownHome.name}) ကို ရွေးချယ်ပြီးပါပြီ — ပြုပြင်ပြီး Save နှိပ်နိုင်ပါသည်။`);
+		} else {
+			setMessage('မိမိအိမ်ကို ဤမြေပုံတွင် ရှာမတွေ့ပါ။');
+		}
+	};
+
+	// If switching into User mode while on draw/placing mode, reset safely to select
+	useEffect(() => {
+		if (!isAdmin) {
+			if (sidebarTab === 'draw') setSidebarTab('assets');
+			if (mode === 'draw') setMode('select');
+			if (placingAssetId) setPlacingAssetId(null);
+			if (extendEnd) setExtendEnd(null);
+		}
+	}, [isAdmin]);
 
 	// Create drawn feature
 	const create = (points: Point2[], type = kind) => {
+		if (!canCreateMapFeature(access)) {
+			setMessage('🔒 အသစ်ထည့်သွင်းခြင်းကို Admin ကသာ ပြုလုပ်နိုင်ပါသည်။');
+			return;
+		}
 		const minimum = isShape(type) ? 3 : isLine(type) ? 2 : 1;
 		if (points.length < minimum) {
 			setMessage(`Need at least ${minimum} point(s).`);
@@ -338,6 +411,12 @@ export default function WardVillageEditor({
 
 	// Place 3D asset instance
 	const placeAssetInstance = (point: Point2, assetId: string) => {
+		if (!canCreateMapFeature(access)) {
+			setPlacingAssetId(null);
+			setMode('select');
+			setMessage('🔒 3D Asset အသစ်ထည့်သွင်းခြင်းကို Admin ကသာ ပြုလုပ်နိုင်ပါသည်။');
+			return;
+		}
 		const def = getAssetDefinition(assetId);
 		if (!def) return;
 
@@ -394,6 +473,11 @@ export default function WardVillageEditor({
 		}
 
 		if (extendEnd && current && isPathOrLine(current)) {
+			if (!canEditFeature(current)) {
+				setExtendEnd(null);
+				setMessage('🔒 လမ်းနှင့် ရေမြောင်းများကို Admin ကသာ ပြုပြင်နိုင်ပါသည်။');
+				return;
+			}
 			patch(extendLine(current, p, extendEnd));
 			setVertex(extendEnd === 'start' ? 0 : current.points.length);
 			return;
@@ -415,6 +499,13 @@ export default function WardVillageEditor({
 			const id = target?.getAttribute('data-feature-id') || null;
 			const vertexElement = (e.target as Element).closest('[data-vertex]');
 			if (id && vertexElement) {
+				const targetFeature = layout.features.find((f) => f.id === id);
+				if (!canEditFeature(targetFeature)) {
+					setSelection([id]);
+					setVertex(null);
+					setMessage('🔒 Admin သာ ပြုပြင်နိုင်ပါသည် (မိမိအိမ်ကိုသာ ပြုပြင်နိုင်ပါသည်)။');
+					return;
+				}
 				const index = Number(vertexElement.getAttribute('data-vertex'));
 				setVertex(index);
 				begin({ ids: [id], vertex: index });
@@ -429,8 +520,16 @@ export default function WardVillageEditor({
 					return;
 				}
 				const moving = selection.includes(id) ? selection : ids;
+				const editableMoving = moving.filter((fid) => canEditFeature(layout.features.find((f) => f.id === fid)));
 				setSelection(moving);
-				begin({ ids: moving });
+				if (!editableMoving.length) {
+					if (!isAdmin) {
+						const clicked = layout.features.find((f) => f.id === id);
+						setMessage(`👁️ ${clicked?.name ?? 'Object'} — Admin သာ ပြုပြင်နိုင်ပါသည် (မိမိအိမ်ကိုသာ ပြုပြင်နိုင်ပါသည်)။`);
+					}
+					return;
+				}
+				begin({ ids: editableMoving });
 			} else {
 				// On mobile touch on empty canvas, pan the map!
 				if (e.pointerType === 'touch') {
@@ -513,11 +612,23 @@ export default function WardVillageEditor({
 
 	const deleteSelected = () => {
 		if (!selection.length) return;
-		commit(deleteSelection(layout, selection));
+		const deletable = selection.filter((id) => {
+			const f = layout.features.find((item) => item.id === id);
+			return f && canDeleteMapFeature(f, access);
+		});
+		if (!deletable.length) {
+			setMessage('🔒 ဖျက်ပစ်ခြင်းကို Admin ကသာ ပြုလုပ်နိုင်ပါသည်။');
+			return;
+		}
+		commit(deleteSelection(layout, deletable));
 		setSelected(null);
 	};
 
 	const duplicateSelected = () => {
+		if (!canCreateMapFeature(access)) {
+			setMessage('🔒 မိတ္တူပွားခြင်းကို Admin ကသာ ပြုလုပ်နိုင်ပါသည်။');
+			return;
+		}
 		const groups = new Map<string, string>();
 		const copies = layout.features.filter(f => selection.includes(f.id)).map(f => {
 			if (f.groupId && !groups.has(f.groupId)) groups.set(f.groupId, uid());
@@ -586,6 +697,11 @@ export default function WardVillageEditor({
 	}, [assetSearchQuery, assetCategory, assetRevision]);
 
 	const importFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		if (!canImportOrModifyRegion(access)) {
+			setMessage('🔒 Layout Import ကို Admin ကသာ ပြုလုပ်နိုင်ပါသည်။');
+			e.target.value = '';
+			return;
+		}
 		const f = e.target.files?.[0];
 		if (!f) return;
 		try {
@@ -602,6 +718,10 @@ export default function WardVillageEditor({
 	};
 
 	const handleImportAuthoredObjects = () => {
+		if (!canImportOrModifyRegion(access)) {
+			setMessage('🔒 3D Objects Import ကို Admin ကသာ ပြုလုပ်နိုင်ပါသည်။');
+			return;
+		}
 		const authored = getRegionAuthoredFeatures(region);
 		if (!authored.length) {
 			setMessage(`No authored objects configured for region '${region}'.`);
@@ -655,6 +775,7 @@ export default function WardVillageEditor({
 							<input
 								className="wve-name-input"
 								aria-label="Village name"
+								disabled={!isAdmin}
 								value={layout.name}
 								onChange={(e) => commit({ ...layout, name: e.target.value })}
 								placeholder="Village Name"
@@ -715,9 +836,22 @@ export default function WardVillageEditor({
 						<button className="wve-btn-export" title="Export layout as JSON file" onClick={() => downloadLayout(layout)}>
 							📤 Export
 						</button>
-						<button className="wve-btn-import" title="Import village layout JSON" onClick={() => file.current?.click()}>
-							📥 Import
-						</button>
+						{isAdmin && (
+							<button className="wve-btn-import" title="Import village layout JSON" onClick={() => file.current?.click()}>
+								📥 Import
+							</button>
+						)}
+						{!isAdmin && (
+							<button
+								type="button"
+								className="wve-btn-primary"
+								style={{ background: '#0f766e', borderColor: '#115e59' }}
+								onClick={focusMyHome}
+								title="မိမိအိမ်သို့ တိုက်ရိုက်သွား၍ ပြုပြင်ရန်"
+							>
+								🏠 မိမိအိမ်သို့
+							</button>
+						)}
 						<button
 							className="wve-btn-ai"
 							title="Copy prompt for AI village recreation"
@@ -756,34 +890,38 @@ export default function WardVillageEditor({
 						>
 							📤 Export
 						</button>
-						<button
-							className="wve-tool-btn wve-mobile-only"
-							title="Import village layout JSON"
-							onClick={() => file.current?.click()}
-						>
-							📥 Import
-						</button>
-						<button
-							className="wve-tool-btn wve-mobile-only"
-							title="Copy prompt for AI village recreation"
-							onClick={() =>
-								navigator.clipboard.writeText(aiLayoutPrompt(layout)).then(
-									() => setMessage('AI prompt copied.'),
-									() => setMessage('Clipboard blocked; export JSON instead.')
-								)
-							}
-						>
-							✨ AI
-						</button>
+						{isAdmin && (
+							<>
+								<button
+									className="wve-tool-btn wve-mobile-only"
+									title="Import village layout JSON"
+									onClick={() => file.current?.click()}
+								>
+									📥 Import
+								</button>
+								<button
+									className="wve-tool-btn wve-mobile-only"
+									title="Copy prompt for AI village recreation"
+									onClick={() =>
+										navigator.clipboard.writeText(aiLayoutPrompt(layout)).then(
+											() => setMessage('AI prompt copied.'),
+											() => setMessage('Clipboard blocked; export JSON instead.')
+										)
+									}
+								>
+									✨ AI
+								</button>
 
-						<button
-							className="wve-tool-btn highlight"
-							title="Import authored 3D buildings, roads and trees for this region into editable features"
-							onClick={handleImportAuthoredObjects}
-						>
-							<span className="wve-label-full">📥 Import Region 3D Objects</span>
-							<span className="wve-label-short">📥 3D Objects</span>
-						</button>
+								<button
+									className="wve-tool-btn highlight"
+									title="Import authored 3D buildings, roads and trees for this region into editable features"
+									onClick={handleImportAuthoredObjects}
+								>
+									<span className="wve-label-full">📥 Import Region 3D Objects</span>
+									<span className="wve-label-short">📥 3D Objects</span>
+								</button>
+							</>
+						)}
 
 						<button
 							className={`wve-tool-btn ${groupSelectMode ? 'active' : ''}`}
@@ -797,14 +935,16 @@ export default function WardVillageEditor({
 							<span className="wve-label-short">{groupSelectMode ? '🔗 Group' : '🎯 Part'}</span>
 						</button>
 
-						<button
-							className="wve-tool-btn"
-							title="Import GeoJSON features"
-							onClick={() => geoFile.current?.click()}
-						>
-							<span className="wve-label-full">📂 Import GeoJSON</span>
-							<span className="wve-label-short">📂 GeoJSON</span>
-						</button>
+						{isAdmin && (
+							<button
+								className="wve-tool-btn"
+								title="Import GeoJSON features"
+								onClick={() => geoFile.current?.click()}
+							>
+								<span className="wve-label-full">📂 Import GeoJSON</span>
+								<span className="wve-label-short">📂 GeoJSON</span>
+							</button>
+						)}
 
 						<button
 							className={`wve-tool-btn ${reference ? 'active' : ''}`}
@@ -921,6 +1061,15 @@ export default function WardVillageEditor({
 			<div className="wve-main">
 				{/* Left Sidebar */}
 				<aside className="wve-sidebar">
+					{!isAdmin && (
+						<div style={{ padding: '8px 10px', marginBottom: '10px', borderRadius: '6px', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e3a8a', fontSize: '11px', lineHeight: 1.5 }}>
+							<strong>👤 User Access (မိမိအိမ်သာ ပြုပြင်ခွင့်)</strong>
+							<div>မိမိအိမ်ကိုသာ ပြုပြင်နိုင်ပါသည်။ ကျန်အရာအားလုံးကို Admin ကသာ ပြုပြင်နိုင်ပါသည်။</div>
+							<button type="button" onClick={focusMyHome} style={{ width: '100%', marginTop: '6px', background: '#0f766e', color: '#fff', borderColor: '#115e59' }}>
+								🏠 မိမိအိမ် ရွေးချယ်ရန်
+							</button>
+						</div>
+					)}
 					{/* Tab Switcher */}
 					<div className="wve-tabs">
 						<button
@@ -929,15 +1078,17 @@ export default function WardVillageEditor({
 						>
 							📦 3D Asset Library
 						</button>
-						<button
-							className={sidebarTab === 'draw' ? 'active' : ''}
-							onClick={() => {
-								setSidebarTab('draw');
-								setPlacingAssetId(null);
-							}}
-						>
-							✏️ Draw Shapes
-						</button>
+						{isAdmin && (
+							<button
+								className={sidebarTab === 'draw' ? 'active' : ''}
+								onClick={() => {
+									setSidebarTab('draw');
+									setPlacingAssetId(null);
+								}}
+							>
+								✏️ Draw Shapes
+							</button>
+						)}
 					</div>
 
 					{/* Mode Controls */}
@@ -1011,7 +1162,9 @@ export default function WardVillageEditor({
 							)}
 
 							{/* Search Box */}
-							<button onClick={() => setShowAssetAdd(true)} style={{ width: '100%', marginBottom: 10 }}>✨ AI 3D Add · Asset အသစ်ဖန်တီးရန်</button>
+							{canEditAssetLibrary(access) && (
+								<button onClick={() => setShowAssetAdd(true)} style={{ width: '100%', marginBottom: 10 }}>✨ AI 3D Add · Asset အသစ်ဖန်တီးရန်</button>
+							)}
 							<div className="wve-asset-search">
 								<input
 									type="text"
@@ -1070,19 +1223,21 @@ export default function WardVillageEditor({
 											>
 												👁️ 3D
 											</button>
-											<button
-												className={placingAssetId === def.assetId ? 'active' : ''}
-												title="Place instance on 2D Map"
-												onClick={(e) => {
-													e.stopPropagation();
-													setPlacingEdit(null);
-													setPlacingAssetId(def.assetId);
-													setMode('draw');
-													setMessage(`Click on 2D map to place instance of: ${def.name}`);
-												}}
-											>
-												➕ Place
-											</button>
+											{isAdmin && (
+												<button
+													className={placingAssetId === def.assetId ? 'active' : ''}
+													title="Place instance on 2D Map"
+													onClick={(e) => {
+														e.stopPropagation();
+														setPlacingEdit(null);
+														setPlacingAssetId(def.assetId);
+														setMode('draw');
+														setMessage(`Click on 2D map to place instance of: ${def.name}`);
+													}}
+												>
+													➕ Place
+												</button>
+											)}
 										</div>
 									</div>
 								))}
@@ -1555,6 +1710,30 @@ export default function WardVillageEditor({
 							⬆️ မြေပုံသို့
 						</button>
 					</div>
+					{!isAdmin && current && (
+						<div
+							role="status"
+							style={{
+								padding: '8px 10px',
+								marginBottom: '10px',
+								borderRadius: '6px',
+								background: canModifySelected ? '#ecfdf5' : '#fef2f2',
+								border: `1px solid ${canModifySelected ? '#6ee7b7' : '#fecaca'}`,
+								color: canModifySelected ? '#065f46' : '#991b1b',
+								fontSize: '11px',
+								fontWeight: 600,
+								lineHeight: 1.5,
+							}}
+						>
+							{canModifySelected
+								? '🏠 မိမိအိမ် (Own Home) — ပြုပြင်ပြီး 💾 Save လုပ်နိုင်ပါသည်။'
+								: '🔒 Read-Only — Admin သာ ပြုပြင်နိုင်ပါသည် (User သည် မိမိအိမ်ကိုသာ ပြုပြင်နိုင်ပါသည်)။'}
+						</div>
+					)}
+					<fieldset
+						disabled={selection.length > 1 ? (!isAdmin || !allSelectionEditable) : Boolean(current && !canModifySelected)}
+						style={{ border: 0, padding: 0, margin: 0, minWidth: 0, opacity: current && !canModifySelected ? 0.65 : 1 }}
+					>
 					{/* Multi-selection tools when more than 1 feature is selected */}
 					{selection.length > 1 && (
 						<section className="wve-selection-tools" aria-label="Multi-selection tools">
@@ -1660,10 +1839,12 @@ export default function WardVillageEditor({
 							</div>
 
 							{/* Quick Actions */}
-							<div className="wve-tool-grid">
-								<button onClick={duplicateSelected}>📋 Duplicate / မိတ္တူပွား</button>
-								<button style={{ backgroundColor: '#fee2e2', borderColor: '#fca5a5', color: '#991b1b' }} onClick={deleteSelected}>🗑 Delete / ဖျက်ရန်</button>
-							</div>
+							{isAdmin && (
+								<div className="wve-tool-grid">
+									<button onClick={duplicateSelected}>📋 Duplicate / မိတ္တူပွား</button>
+									<button style={{ backgroundColor: '#fee2e2', borderColor: '#fca5a5', color: '#991b1b' }} onClick={deleteSelected}>🗑 Delete / ဖျက်ရန်</button>
+								</div>
+							)}
 						</section>
 					)}
 
@@ -2002,20 +2183,22 @@ export default function WardVillageEditor({
 							)}
 
 							{/* Action Buttons */}
-							<div style={{ display: 'flex', gap: '6px', marginTop: '14px' }}>
-								<button
-									style={{ flex: 1 }}
-									onClick={duplicateSelected}
-								>
-									📋 Duplicate
-								</button>
-								<button
-									style={{ flex: 1, backgroundColor: '#fee2e2', borderColor: '#fca5a5', color: '#991b1b' }}
-									onClick={deleteSelected}
-								>
-									🗑️ Delete
-								</button>
-							</div>
+							{isAdmin && (
+								<div style={{ display: 'flex', gap: '6px', marginTop: '14px' }}>
+									<button
+										style={{ flex: 1 }}
+										onClick={duplicateSelected}
+									>
+										📋 Duplicate
+									</button>
+									<button
+										style={{ flex: 1, backgroundColor: '#fee2e2', borderColor: '#fca5a5', color: '#991b1b' }}
+										onClick={deleteSelected}
+									>
+										🗑️ Delete
+									</button>
+								</div>
+							)}
 						</>
 					) : (
 						<p className="wve-help">
@@ -2023,20 +2206,25 @@ export default function WardVillageEditor({
 							coordinates, or to duplicate/delete it.
 						</p>
 					)}
+					</fieldset>
 
-					<hr />
-					<button
-						onClick={() => {
-							if (window.confirm('Clear all features in this village layout?')) {
-								commit(deleteSelection(layout, layout.features.map(f => f.id)));
-								setSelected(null);
-								setDraft([]);
-							}
-						}}
-						style={{ width: '100%', color: '#dc2626' }}
-					>
-						Clear layout
-					</button>
+					{isAdmin && (
+						<>
+							<hr />
+							<button
+								onClick={() => {
+									if (window.confirm('Clear all features in this village layout?')) {
+										commit(deleteSelection(layout, layout.features.map(f => f.id)));
+										setSelected(null);
+										setDraft([]);
+									}
+								}}
+								style={{ width: '100%', color: '#dc2626' }}
+							>
+								Clear layout
+							</button>
+						</>
+					)}
 				</aside>
 			</div>
 
