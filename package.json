@@ -8,7 +8,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --experimental-strip-types --test tests/collision.test.ts tests/performance.test.ts tests/ground.test.ts tests/rideLife.test.ts tests/regionLoading.test.ts tests/preparedScene.test.ts tests/carRide.test.ts tests/appearance.test.ts tests/blenderCharacter.test.ts tests/glbHuman.test.ts tests/specialActions.test.ts tests/vehicleWaiting.test.ts tests/sharedMotion.test.ts tests/actorImpact.test.ts tests/candles.test.ts tests/mapLabels.test.ts tests/mapSelection.test.ts tests/humanJump.test.ts tests/humanJumpPose.test.ts tests/balloonRide.test.ts tests/mobileAuto.test.ts tests/environmentTime.test.ts tests/mapTiles.test.ts tests/separationFields.test.ts tests/assetAiEdit.test.ts tests/customAssets.test.ts tests/builtInAssetEdits.test.ts tests/multiplayer.test.ts tests/tazaungdaingFestival.test.ts tests/mapPermissions.test.ts tests/festivalPerformance.test.ts tests/cinematicIntro.test.ts tests/subscriptionShop.test.ts",
+    "test": "node --experimental-strip-types --test tests/collision.test.ts tests/performance.test.ts tests/ground.test.ts tests/rideLife.test.ts tests/regionLoading.test.ts tests/preparedScene.test.ts tests/carRide.test.ts tests/appearance.test.ts tests/blenderCharacter.test.ts tests/glbHuman.test.ts tests/specialActions.test.ts tests/vehicleWaiting.test.ts tests/sharedMotion.test.ts tests/actorImpact.test.ts tests/candles.test.ts tests/mapLabels.test.ts tests/mapSelection.test.ts tests/humanJump.test.ts tests/humanJumpPose.test.ts tests/balloonRide.test.ts tests/mobileAuto.test.ts tests/environmentTime.test.ts tests/mapTiles.test.ts tests/separationFields.test.ts tests/assetAiEdit.test.ts tests/customAssets.test.ts tests/builtInAssetEdits.test.ts tests/multiplayer.test.ts tests/tazaungdaingFestival.test.ts tests/mapPermissions.test.ts tests/festivalPerformance.test.ts tests/cinematicIntro.test.ts tests/subscriptionShop.test.ts tests/offlineAssets.test.ts tests/hybridAndroid.test.ts tests/ghostNpc.test.ts",
     "motions:extract": "node scripts/extract-motions/index.mjs",
     "dance:extract": "node scripts/extractDanceAnimations.mjs",
     "wait:extract": "node scripts/extractWaitingAnimation.mjs",
@@ -19,13 +19,21 @@
     "server:start": "node --experimental-strip-types server/index.ts",
     "server:check": "tsc -p server/tsconfig.json",
     "test:multiplayer": "node --experimental-strip-types --test tests/multiplayer.test.ts",
-    "perf:festival": "node scripts/benchmarkFestivalAudit.mjs"
+    "perf:festival": "node scripts/benchmarkFestivalAudit.mjs",
+    "cap:sync": "npm run build && npx cap sync android",
+    "android:sync": "npx cap sync android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/browser": "^8.0.5",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/network": "^8.0.1",
     "@colyseus/core": "0.17.56",
     "@colyseus/schema": "4.0.31",
     "@colyseus/sdk": "0.17.43",
     "@colyseus/ws-transport": "0.17.13",
+    "@fontsource/noto-sans-myanmar": "^5.3.0",
     "@react-three/fiber": "^9.0.0",
     "express": "5.3.0",
     "react": "^19.0.0",
@@ -33,6 +41,7 @@
     "three": "^0.180.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.2",
     "@types/express": "5.0.6",
     "@types/node": "24.19.2",
     "@types/react": "^19.0.0",

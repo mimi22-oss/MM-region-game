@@ -20,7 +20,7 @@ export const Town = memo(function Town({ minute = 780, ...streaming }: { minute?
             <FestivalManager minute={minute}/>
             <TimeEnvironment minute={minute}/>
 
-			<StreamedWorld {...streaming} />
+			<StreamedWorld minute={minute} {...streaming} />
             <SeparationFieldTiles/>
             <Mountains />
             <DynamicWorldObjects />

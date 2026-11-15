@@ -338,47 +338,66 @@ try {
   await sleep(40);
   await page.call('Input.dispatchMouseEvent', { type: 'mouseReleased', x: hitDesktopPoint[0], y: hitDesktopPoint[1], button: 'left', clickCount: 1 });
   await waitUntil(`!!document.querySelector('.subshop-iframe')`, 'embed dialog re-opened', 10000);
+  await sleep(300);
 
   // Point the mounted iframe inside the dialog to the embeddable local storefront fixture
-  const docRoot = (await page.call('DOM.getDocument', { depth: -1, pierce: true })).root;
-  const iframeNodeInitial = findDomNode(docRoot, (n) => n.nodeName === 'IFRAME' && n.attributes?.includes('subshop-iframe'));
-  assert.ok(iframeNodeInitial?.nodeId, 'Expected iframe DOM nodeId');
-  await page.call('DOM.setAttributeValue', { nodeId: iframeNodeInitial.nodeId, name: 'src', value: mockShopUrl });
+  const getIframeContextId = async () => {
+    const updatedRoot = (await page.call('DOM.getDocument', { depth: -1, pierce: true })).root;
+    const iframeNode = findDomNode(updatedRoot, (n) => n.nodeName === 'IFRAME' && n.attributes?.includes('subshop-iframe'));
+    if (!iframeNode?.frameId) return null;
+    const world = await page.call('Page.createIsolatedWorld', { frameId: iframeNode.frameId, worldName: 'subshop-qa' });
+    return world.executionContextId;
+  };
+  const evalInIframe = async (expr) => {
+    try {
+      return await evalInPage(expr, iframeContextId);
+    } catch (err) {
+      if (err && err.code === -32000) {
+        iframeContextId = await getIframeContextId();
+        return await evalInPage(expr, iframeContextId);
+      }
+      throw err;
+    }
+  };
 
   let iframeContextId = null;
   let lastIframeDebug = null;
-  const iframeDeadline = Date.now() + 10000;
+  let lastIframeError = null;
+  const iframeDeadline = Date.now() + 20000;
   while (Date.now() < iframeDeadline) {
-    const updatedRoot = (await page.call('DOM.getDocument', { depth: -1, pierce: true })).root;
-    const iframeNode = findDomNode(updatedRoot, (n) => n.nodeName === 'IFRAME' && n.attributes?.includes('subshop-iframe'));
-    if (iframeNode?.frameId) {
-      try {
-        const world = await page.call('Page.createIsolatedWorld', { frameId: iframeNode.frameId, worldName: 'subshop-qa' });
+    await evalInPage(`(() => {
+      const f = document.querySelector('.subshop-iframe');
+      if (f && f.getAttribute('src') !== ${JSON.stringify(mockShopUrl)}) {
+        f.setAttribute('src', ${JSON.stringify(mockShopUrl)});
+      }
+    })()`).catch(() => {});
+    try {
+      const ctxId = await getIframeContextId();
+      if (ctxId) {
         lastIframeDebug = await evalInPage(
           `({ href: location.href, ready: document.readyState, heading: document.getElementById('shop-heading')?.textContent ?? null })`,
-          world.executionContextId,
+          ctxId,
         );
-        if (lastIframeDebug.heading === 'Subscription Link Storefront') {
-          iframeContextId = world.executionContextId;
+        if (lastIframeDebug.href.startsWith(mockShopUrl) && lastIframeDebug.ready === 'complete' && lastIframeDebug.heading === 'Subscription Link Storefront') {
+          iframeContextId = ctxId;
           break;
         }
-      } catch {
-        // Iframe may still be committing
       }
+    } catch (err) {
+      lastIframeError = String(err?.message ?? err);
     }
-    await sleep(150);
+    await sleep(250);
   }
-  assert.ok(iframeContextId, `Expected embeddable storefront iframe to load, last state: ${JSON.stringify(lastIframeDebug)}`);
+  assert.ok(iframeContextId, `Expected embeddable storefront iframe to load, last state: ${JSON.stringify(lastIframeDebug)}, last error: ${lastIframeError}`);
 
   const isNightBefore = await evalInPage(`document.querySelector('main')?.classList.contains('night-mode') ?? false`);
 
   // Focus #account-input inside iframe using real bounding coordinates + real CDP typing ("wasd nm")
   const inputPos = await evalInPage(`(() => {
     const frame = document.querySelector('.subshop-iframe').getBoundingClientRect();
-    const inp = document.querySelector('.subshop-iframe');
     return { fl: frame.left, ft: frame.top };
   })()`);
-  const innerCoords = await evalInPage(`(() => {
+  const innerCoords = await evalInIframe(`(() => {
     const r = document.getElementById('account-input').getBoundingClientRect();
     const btn = document.getElementById('login-btn').getBoundingClientRect();
     const ord = document.getElementById('order-btn').getBoundingClientRect();
@@ -390,7 +409,7 @@ try {
       ox: Math.round(ord.left + ord.width / 2),
       oy: Math.round(ord.top + ord.height / 2),
     };
-  })()`, iframeContextId);
+  })()`);
 
   const clickViewport = async (vx, vy) => {
     await page.call('Input.dispatchMouseEvent', { type: 'mousePressed', x: vx, y: vy, button: 'left', clickCount: 1 });
@@ -402,7 +421,7 @@ try {
   await sleep(120);
   await typeKeys('wasd nm');
   for (let i = 0; i < 10; i++) {
-    const val = await evalInPage(`document.getElementById('account-input')?.value`, iframeContextId);
+    const val = await evalInIframe(`document.getElementById('account-input')?.value`);
     if (val === 'wasd nm') break;
     await sleep(50);
   }
@@ -415,10 +434,10 @@ try {
   await page.call('Input.dispatchKeyEvent', { type: 'keyDown', code: 'KeyN', key: 'n', windowsVirtualKeyCode: 78 });
   await page.call('Input.dispatchKeyEvent', { type: 'keyUp', code: 'KeyN', key: 'n', windowsVirtualKeyCode: 78 });
 
-  const iframeResult = await evalInPage(`({
+  const iframeResult = await evalInIframe(`({
     session: document.getElementById('session-status')?.textContent,
     order: document.getElementById('order-status')?.textContent,
-  })`, iframeContextId);
+  })`);
   assert.equal(iframeResult.session, 'Signed in: wasd nm');
   assert.equal(iframeResult.order, 'Ordered: ChatGPT Plus');
 
@@ -477,12 +496,12 @@ try {
   assert.ok(mobileOpened, 'Mobile tap should open Subscription Shop dialog');
 
   await waitUntil(`!!document.querySelector('.subshop-iframe')`, 'mobile dialog opened', 8000);
-  const mobRoot = (await page.call('DOM.getDocument', { depth: -1, pierce: true })).root;
-  const mobIframe = findDomNode(mobRoot, (n) => n.nodeName === 'IFRAME' && n.attributes?.includes('subshop-iframe'));
-  if (mobIframe?.nodeId) {
-    await page.call('DOM.setAttributeValue', { nodeId: mobIframe.nodeId, name: 'src', value: mockShopUrl });
-  }
-  await sleep(600);
+  await sleep(250);
+  await evalInPage(`(() => {
+    const f = document.querySelector('.subshop-iframe');
+    if (f) f.setAttribute('src', ${JSON.stringify(mockShopUrl)});
+  })()`);
+  await sleep(900);
 
   const mobileDims = await evalInPage(`(() => {
     const m = document.querySelector('.subshop-modal').getBoundingClientRect();
@@ -519,5 +538,6 @@ try {
     // Ignore close errors
   }
   browser.ws.close();
+  mockServer.closeAllConnections?.();
   mockServer.close();
 }

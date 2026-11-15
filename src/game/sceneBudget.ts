@@ -1,6 +1,8 @@
+import { isNativeAndroid } from "../services/platform.ts";
+
 export const mobileQuality =
   typeof window !== "undefined" &&
-  (matchMedia("(pointer: coarse)").matches || window.innerWidth <= 760);
+  (isNativeAndroid() || matchMedia("(pointer: coarse)").matches || window.innerWidth <= 760);
 export type RegionBounds = {
   id: string;
   minX: number;

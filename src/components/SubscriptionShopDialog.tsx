@@ -5,12 +5,16 @@ import {
   openSubscriptionShop,
   type SubscriptionShopState,
 } from '../game/subscriptionShop';
+import { refreshNetworkState, useNetworkState } from '../services/networkStatus';
+import { openOnlineSubscriptionStore } from '../services/onlineServices';
+import { isNativeApp } from '../services/platform';
 
 interface SubscriptionShopDialogProps {
   isOpen: boolean;
   url: string;
   title: string;
   onClose: () => void;
+  onBeforeOpenExternal?: () => void;
 }
 
 export function SubscriptionShopDialog({
@@ -18,20 +22,26 @@ export function SubscriptionShopDialog({
   url,
   title,
   onClose,
+  onBeforeOpenExternal,
 }: SubscriptionShopDialogProps) {
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const safeUrl = isAllowedShopUrl(url) ? url : SUBSCRIPTION_WEBSITE_URL;
+  const network = useNetworkState();
 
   const [reloadNonce, setReloadNonce] = useState(0);
   const [embedStatus, setEmbedStatus] = useState<'loading' | 'loaded' | 'fallback'>('loading');
   const [noticeDismissed, setNoticeDismissed] = useState(false);
+  const [retryingNetwork, setRetryingNetwork] = useState(false);
+  const [externalNotice, setExternalNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     setEmbedStatus('loading');
     setNoticeDismissed(false);
+    setExternalNotice(null);
+    void refreshNetworkState();
 
     previousFocusRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -69,14 +79,44 @@ export function SubscriptionShopDialog({
     };
   }, [isOpen, onClose]);
 
-  const handleReload = useCallback(() => {
-    setEmbedStatus('loading');
-    setReloadNonce((n) => n + 1);
+  const handleRetryConnection = useCallback(async () => {
+    setRetryingNetwork(true);
+    setExternalNotice(null);
+    try {
+      const next = await refreshNetworkState();
+      if (next.connected) {
+        setEmbedStatus('loading');
+        setReloadNonce((n) => n + 1);
+      } else {
+        setExternalNotice('Still offline. Check Wi-Fi or mobile data and try again.');
+      }
+    } finally {
+      setRetryingNetwork(false);
+    }
   }, []);
 
-  const handleOpenExternal = useCallback(() => {
-    window.open(safeUrl, '_blank', 'noopener,noreferrer');
-  }, [safeUrl]);
+  const handleReload = useCallback(() => {
+    if (!network.connected) {
+      void handleRetryConnection();
+      return;
+    }
+    setExternalNotice(null);
+    setEmbedStatus('loading');
+    setReloadNonce((n) => n + 1);
+  }, [network.connected, handleRetryConnection]);
+
+  const handleOpenExternal = useCallback(async () => {
+    setExternalNotice(null);
+    onBeforeOpenExternal?.();
+    const res = await openOnlineSubscriptionStore(safeUrl, {
+      onNativeBrowserFinished: () => {
+        window.requestAnimationFrame(() => closeBtnRef.current?.focus());
+      },
+    });
+    if (!res.opened) {
+      setExternalNotice(res.message);
+    }
+  }, [safeUrl, onBeforeOpenExternal]);
 
   if (!isOpen) return null;
 
@@ -141,6 +181,19 @@ export function SubscriptionShopDialog({
               rel="noopener noreferrer"
               className="subshop-btn subshop-btn-primary"
               aria-label="Open Subscription Shop in external browser tab"
+              onClick={(e) => {
+                if (!network.connected) {
+                  e.preventDefault();
+                  setExternalNotice('No internet connection. Reconnect to open the online Subscription Shop.');
+                  return;
+                }
+                if (isNativeApp()) {
+                  e.preventDefault();
+                  void handleOpenExternal();
+                } else {
+                  onBeforeOpenExternal?.();
+                }
+              }}
             >
               <span>Open in Browser</span>
               <span aria-hidden="true">↗</span>
@@ -159,7 +212,7 @@ export function SubscriptionShopDialog({
           </div>
         </div>
 
-        {!noticeDismissed && embedStatus !== 'fallback' && (
+        {network.connected && !noticeDismissed && embedStatus !== 'fallback' && (
           <div className="subshop-notice" role="status">
             <span className="subshop-notice-text">
               {embedStatus === 'loading'
@@ -187,7 +240,41 @@ export function SubscriptionShopDialog({
         )}
 
         <div className="subshop-body">
-          {embedStatus === 'fallback' ? (
+          {!network.connected ? (
+            <div className="subshop-offline-card" role="status" aria-live="polite">
+              <div className="subshop-fallback-badge">Offline Mode · Online Service Unavailable</div>
+              <h3 className="subshop-fallback-heading">{title} Requires Internet</h3>
+              <p className="subshop-fallback-desc">
+                You are currently offline. You can continue exploring Virtual Myanmar Town normally
+                without internet, and reconnect whenever you want to browse products or submit orders on{' '}
+                <strong>{displayHost}</strong>.
+              </p>
+              {externalNotice && (
+                <p className="subshop-offline-note" role="status">
+                  {externalNotice}
+                </p>
+              )}
+              <div className="subshop-fallback-cta">
+                <button
+                  type="button"
+                  className="subshop-btn subshop-btn-primary subshop-btn-lg"
+                  onClick={() => {
+                    void handleRetryConnection();
+                  }}
+                  disabled={retryingNetwork}
+                >
+                  {retryingNetwork ? 'Checking Connection…' : 'Retry Connection'}
+                </button>
+                <button
+                  type="button"
+                  className="subshop-btn subshop-btn-close subshop-btn-lg"
+                  onClick={onClose}
+                >
+                  Return to Game
+                </button>
+              </div>
+            </div>
+          ) : embedStatus === 'fallback' ? (
             <div className="subshop-fallback-card">
               <div className="subshop-fallback-badge">External Storefront Mode</div>
               <h3 className="subshop-fallback-heading">{title}</h3>
@@ -196,13 +283,20 @@ export function SubscriptionShopDialog({
                 (<code>Content-Security-Policy: frame-ancestors</code>) or third-party session
                 cookie rules. Your player location in Myanmar Town remains saved while you shop.
               </p>
+              {externalNotice && (
+                <p className="subshop-offline-note" role="status">
+                  {externalNotice}
+                </p>
+              )}
               <div className="subshop-fallback-cta">
                 <button
                   type="button"
                   className="subshop-btn subshop-btn-primary subshop-btn-lg"
-                  onClick={handleOpenExternal}
+                  onClick={() => {
+                    void handleOpenExternal();
+                  }}
                 >
-                  Open Subscription Shop in New Tab ↗
+                  Open Subscription Shop in Browser ↗
                 </button>
                 <button
                   type="button"

@@ -14,9 +14,9 @@ import { RobotCharacter } from './RobotCharacter';
 
 const regions=[{id:'myothar',roads:ward.roads},...kalayVillages];
 const clear=(x:number,z:number)=>canStand(x,z)&&canStand(x+0.08,z)&&canStand(x-0.08,z)&&canStand(x,z+0.08)&&canStand(x,z-0.08);
-const BOT_DETAIL_DIST_SQ = 100 * 100;
+const BOT_DETAIL_DIST_SQ = mobileQuality ? 65 * 65 : 100 * 100;
 const BOT_GROUND_NEAR_DIST_SQ = 140 * 140;
-const BOT_VISIBLE_DIST_SQ = 1000 * 1000;
+const BOT_VISIBLE_DIST_SQ = mobileQuality ? 650 * 650 : 1000 * 1000;
 function Bot({graph,start,index}:{graph:RouteNode[];start:number;index:number}){
  const root=useRef<Group>(null),wheels=useRef<Group>(null),[detail,setDetail]=useState(false);
  const appearance=useMemo(()=>botAppearance(index),[index]);
@@ -42,7 +42,7 @@ function Bot({graph,start,index}:{graph:RouteNode[];start:number;index:number}){
    }
    root.current.position.set(s.x,s.y,s.z);
   }
-  if(wheels.current)wheels.current.rotation.x=-s.travel/(0.24*0.95*appearance.size);
+  if(detail&&wheels.current)wheels.current.rotation.x=-s.travel/(0.24*0.95*appearance.size);
   s.elapsed+=dt;if(s.elapsed>0.4){s.elapsed=0;const nearby=camDistSq<BOT_DETAIL_DIST_SQ;if(nearby!==detail)setDetail(nearby);if(root.current)root.current.visible=camDistSq<BOT_VISIBLE_DIST_SQ}
  });
  return <group ref={root} position={[state.current.x,0,state.current.z]} name={`village-robot-${index}`} userData={{dynamic:true}}>

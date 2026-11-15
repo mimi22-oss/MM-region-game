@@ -186,7 +186,7 @@ export function MobileControls({
                     gesture.current.fingers.size <= 1 &&
                     !gesture.current.pinching &&
                     !gesture.current.tick &&
-                    performance.now() - tap.t <= 900 &&
+                    performance.now() - tap.t <= 3000 &&
                     Math.hypot(e.clientX - tap.x, e.clientY - tap.y) <= 10 &&
                     !(e.target instanceof Element && e.target.closest('button')) &&
                     tryTapSubscriptionBillboard(e.clientX, e.clientY)

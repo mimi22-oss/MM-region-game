@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MM Region Game</string>
+    <string name="title_activity_main">MM Region Game</string>
+    <string name="package_name">com.mmregion.town3d</string>
+    <string name="custom_url_scheme">com.mmregion.town3d</string>
+</resources>

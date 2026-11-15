@@ -9,8 +9,10 @@ import {isIntroHighAltitude,isIntroOwningCamera} from '../game/IntroStateMachine
 import {
   getSpecialActionState,
   isWaitingMotionId,
+  playSpecialAction,
   stopSpecialAction,
 } from '../game/specialActions';
+import { getGhostEncounterInteraction } from '../game/ghostConfig';
 import {
   getSubscriptionShopState,
   tryCenterClickSubscriptionBillboard,
@@ -87,6 +89,8 @@ export const Player = memo(function Player({
  onLock,
  onViewPosition,
  onPosition,
+ initialSave,
+ onSaveSnapshot,
 }:{
  character?:CharacterKind;
  speedLimit?:number;braking?:boolean;accelerating?:boolean;controlsBlocked?:boolean;dismountRequest?:number;onRideStatus?:(s:RideStatus)=>void;
@@ -109,6 +113,8 @@ export const Player = memo(function Player({
  onLock:(v:boolean)=>void;
  onViewPosition?:(x:number,z:number)=>void;
  onPosition:(x:number,z:number,yaw?:number)=>void;
+ initialSave?:import('../game/gameSave').GameSaveData|null;
+ onSaveSnapshot?:(snap:{x:number;z:number;yaw:number;pitch:number;zoom:number;topDown:boolean;first:boolean})=>void;
 }){
  const appearance=useAppearance();
  const {camera,gl,scene}=useThree();
@@ -117,26 +123,34 @@ export const Player = memo(function Player({
  const [riding,setRiding]=useState(false);
  const rideNotice=useRef(''),fallYaw=useRef(0);
  const pickupAnchor=useRef<{requestId:number;x:number;z:number}|null>(null);
+ const ghostGrabFallSeq=useRef(0);
  const walkingRecoil=useRef(createWalkingRecoil(0));
  const jump=useRef(createHumanJump());
  const jumpPose=useRef(createJumpPose());
  const characterMotion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0,airborne:false,jumpBend:0,jumpVelocity:0});
+ const initX=initialSave?.x??ward.spawn.x;
+ const initZ=initialSave?.z??ward.spawn.z;
+ const initYaw=initialSave?.yaw??ward.spawnYaw;
+ const initPitch=initialSave?.pitch??-0.12;
+ const initZoom=initialSave?.zoom??ward.spawnZoom;
+ const initTopDown=initialSave?.topDown??false;
+ const initFirst=initialSave?.first??false;
 
  const state=useRef({
-  x:ward.spawn.x,
-  z:ward.spawn.z,
-  camX:ward.spawn.x,
-  camZ:ward.spawn.z,
-  yaw:ward.spawnYaw,
-  bodyYaw:ward.spawnYaw,
+  x:initX,
+  z:initZ,
+  camX:initX,
+  camZ:initZ,
+  yaw:initYaw,
+  bodyYaw:initYaw,
   mobileSession:-1,
   autoHeadingSession:-1,
-  autoHeadingYaw:ward.spawnYaw,
-  pitch:-0.12,
-  distance:ward.spawnZoom,
-  targetDistance:ward.spawnZoom,
-  first:false,
-  topDown:false,
+  autoHeadingYaw:initYaw,
+  pitch:initPitch,
+  distance:initZoom,
+  targetDistance:initZoom,
+  first:initFirst,
+  topDown:initTopDown,
   dragging:false,
   shiftDrag:false,
   panning:false,
@@ -354,6 +368,7 @@ export const Player = memo(function Player({
      s.x=ward.spawn.x;s.z=ward.spawn.z;s.camX=ward.spawn.x;s.camZ=ward.spawn.z;
      s.yaw=ward.spawnYaw;s.bodyYaw=ward.spawnYaw;s.pitch=-0.12;s.topDown=false;s.panning=false;s.targetDistance=ward.spawnZoom;
      onTopDown(false);onZoom(ward.spawnZoom);onPosition(s.x,s.z,s.bodyYaw);
+     onSaveSnapshot?.({x:s.x,z:s.z,yaw:s.bodyYaw,pitch:s.pitch,zoom:s.targetDistance,topDown:false,first:false});
     }
    }
   };
@@ -463,7 +478,9 @@ export const Player = memo(function Player({
    balloonRide.autoCruise=false;balloonRide.autoReturn=false;balloonRide.vx=0;balloonRide.vz=0;balloonRide.vy=0;balloonRide.cruiseVx=0;balloonRide.cruiseVz=0;
    balloonInput.stopCruise=true;
   }
-  const wantsJump=!pickupLocked&&!enteringVehicle&&(s.jumpRequested||!!touch?.jump);s.jumpRequested=false;if(touch)touch.jump=false;
+  const ghostInteraction=getGhostEncounterInteraction();
+  const ghostGrabbedOnFoot=ghostInteraction.active&&!balloonRide.riding&&!motorcycleRide.riding&&!currentCar();
+  const wantsJump=!pickupLocked&&!enteringVehicle&&!ghostGrabbedOnFoot&&(s.jumpRequested||!!touch?.jump);s.jumpRequested=false;if(touch)touch.jump=false;
   if(touch){
    if(touch.panX||touch.panY){panView(touch.panX,touch.panY);touch.panX=0;touch.panY=0;}
    if(touch.zoomFactor!==1){applyZoom(s.targetDistance*touch.zoomFactor);touch.zoomFactor=1;}
@@ -474,9 +491,22 @@ export const Player = memo(function Player({
   let forward=Number(s.keys.has('KeyW')||s.keys.has('ArrowUp'))-Number(s.keys.has('KeyS')||s.keys.has('ArrowDown'));
   let right=Number(s.keys.has('KeyD')||s.keys.has('ArrowRight'))-Number(s.keys.has('KeyA')||s.keys.has('ArrowLeft'));
   if(touch?.active){forward=touch.forward;right=touch.right;}
-  if(controlsBlocked||introOwnsCamera||mapOpen||rideLife.crashTime>0||enteringVehicle){forward=0;right=0;}
+  if(controlsBlocked||introOwnsCamera||mapOpen||rideLife.crashTime>0||enteringVehicle||ghostGrabbedOnFoot){forward=0;right=0;}
   const aerial=!balloonRide.riding&&!currentCar()&&!touch?.active&&!s.first&&(s.distance>20||s.topDown||s.panning);
   if(pickupLocked&&!aerial){forward=0;right=0;}
+  if(ghostGrabbedOnFoot){
+   const gx=ghostInteraction.ghostX-s.x,gz=ghostInteraction.ghostZ-s.z;
+   if(Math.hypot(gx,gz)>0.05){
+    const faceGhostYaw=Math.atan2(-gx,-gz);
+    const yawDiff=Math.atan2(Math.sin(faceGhostYaw-s.bodyYaw),Math.cos(faceGhostYaw-s.bodyYaw));
+    s.bodyYaw+=yawDiff*Math.min(1,dt*10);
+   }
+   if(ghostInteraction.phase==='player-fall'&&ghostInteraction.seq!==ghostGrabFallSeq.current){
+    ghostGrabFallSeq.current=ghostInteraction.seq;
+    fallYaw.current=s.bodyYaw;
+    if(glbCapable&&character==='cartoon'){playSpecialAction('fall',{loop:false,force:true});}
+   }
+  }
   const len=Math.hypot(forward,right);if(len){forward/=len;right/=len;}
   const fast=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight')||!!touch?.sprint;
   const mobileScale=touch?.active?touch.moveScale:1;
@@ -690,6 +720,7 @@ export const Player = memo(function Player({
   const activeSpecialId=getSpecialActionState().activeActionId;
   if(activeSpecialId!==null){
    const isWaitingClip=isWaitingMotionId(activeSpecialId);
+   const isGhostFall=activeSpecialId==='fall'&&ghostGrabbedOnFoot&&ghostInteraction.phase==='player-fall';
    const baseConflict=
     !glbCapable||
     balloon.riding||
@@ -701,6 +732,8 @@ export const Player = memo(function Player({
     jumpPose.current.prepare>0;
    const cantDance=isWaitingClip
     ? baseConflict||!isVehicleWaitingActiveState(waitingSnapshot.state)||travelled>0.05
+    : isGhostFall
+    ? baseConflict
     : baseConflict||pickupLocked||enteringVehicle||(!aerial&&(len>0.01||wantsJump))||travelled>0.015;
    if(cantDance)stopSpecialAction();
   }
@@ -728,9 +761,11 @@ export const Player = memo(function Player({
   characterMotion.current.rightFoot=(rightHeight-groundY+.012)/bodyScale;
   characterMotion.current.stepLift=Math.min(.32,Math.abs(height(s.x-sn*.4,s.z-c*.4)-center)+.04);
   if(jump.current.airborne||balloon.riding){characterMotion.current.leftFoot=0;characterMotion.current.rightFoot=0;characterMotion.current.stepLift=0;}
-  const fall=!car?actorFallProgress():0;
+  const ghostProceduralFall=ghostGrabbedOnFoot&&ghostInteraction.phase==='player-fall'&&(!glbCapable||character!=='cartoon')?ghostInteraction.fallProgress:0;
+  const fall=!car?Math.max(actorFallProgress(),ghostProceduralFall):0;
   const isBlinking=!car&&rideLife.damage>0&&rideLife.invulnerable>0&&Math.floor(clock.elapsedTime*12)%2===0;
   if(avatar.current){avatar.current.position.set(s.x,groundY+fall*(ride.riding?.18:.28*bodyScale),s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:fall*Math.PI/2,fall&&!ride.riding?fallYaw.current:s.bodyYaw,ride.riding?fall*1.42:0,'YXZ');avatar.current.visible=!car&&!s.first&&!isBlinking&&!introHighAlt;}
+  camera.userData.playerOccupied=!!(car||balloon.riding||ride.riding);
   target.current.set(aerial?s.camX:s.x,(aerial?height(s.camX,s.camZ):groundY)+1.65*(car||ride.riding?1:bodyScale),aerial?s.camZ:s.z);
   if(car&&s.first){
    tmpEuler.current.set(car.pitch,car.yaw,car.roll,'YXZ');
@@ -755,7 +790,7 @@ export const Player = memo(function Player({
     camera.position.copy(desired.current);camera.lookAt(target.current);
    }
   }
-  s.time+=dt;if(s.time>0.08){s.time=0;onBalloonStatus?.({riding:balloon.riding,near:nearBalloon,altitude:Math.max(0,Math.round(balloon.y-height(balloon.x,balloon.z))),kmh:Math.round(Math.hypot(balloon.vx,balloon.vz)*3.6),grounded:balloon.grounded,blocked:balloon.blocked,autoCruise:balloon.autoCruise,autoReturn:balloon.autoReturn,returnDist:balloon.returnDist});onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car||balloon.riding,ride.riding),summonStatus:carSummonState.status,lives:rideLife.lives});onRideStatus?.({riding:ride.riding,near:!balloon.riding&&!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0,impactMode:rideLife.mode,damage:rideLife.damage});onPosition(s.x,s.z,s.bodyYaw);onViewPosition?.(target.current.x,target.current.z);}
+  s.time+=dt;if(s.time>0.08){s.time=0;onBalloonStatus?.({riding:balloon.riding,near:nearBalloon,altitude:Math.max(0,Math.round(balloon.y-height(balloon.x,balloon.z))),kmh:Math.round(Math.hypot(balloon.vx,balloon.vz)*3.6),grounded:balloon.grounded,blocked:balloon.blocked,autoCruise:balloon.autoCruise,autoReturn:balloon.autoReturn,returnDist:balloon.returnDist});onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car||balloon.riding,ride.riding),summonStatus:carSummonState.status,lives:rideLife.lives});onRideStatus?.({riding:ride.riding,near:!balloon.riding&&!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0,impactMode:rideLife.mode,damage:rideLife.damage});onPosition(s.x,s.z,s.bodyYaw);onSaveSnapshot?.({x:s.x,z:s.z,yaw:s.bodyYaw,pitch:s.pitch,zoom:s.targetDistance,topDown:s.topDown,first:s.first});onViewPosition?.(target.current.x,target.current.z);}
  },-1);
  return <><PassengerBalloon/><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar">{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb} riding/></group></>:character==='cartoon'?<CartoonCharacter appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
 

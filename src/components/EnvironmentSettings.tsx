@@ -1,6 +1,11 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {ENVIRONMENT_STORAGE_KEY,TIME_PERIODS,environmentMinute,periodAtMinute,savedEnvironmentPreferences,type EnvironmentPreferences,type TimeMode} from '../game/environmentTime';
 import {FestivalSettings} from '../festivals/FestivalSettings';
+import {
+ isGhostDevUiAvailable,
+ setGhostDevForceActive,
+ useGhostDevSettings,
+} from '../game/ghostConfig';
 
 export function useEnvironmentTime(){
  const [preferences,setPreferences]=useState(savedEnvironmentPreferences);
@@ -27,6 +32,8 @@ export function EnvironmentSettings({value,onChange,onChoose,now,period}:{
  now:Date;period:ReturnType<typeof periodAtMinute>;
 }){
  const current=TIME_PERIODS.find(p=>p.id===period)!;
+ const ghostDev=useGhostDevSettings();
+ const showGhostDev=isGhostDevUiAvailable();
  return <section className="time-controls environment-settings" aria-label="အချိန်နှင့် ပတ်ဝန်းကျင်">
   <div className="time-header"><span className="time-title">အချိန်နှင့် ပတ်ဝန်းကျင်</span><span className="time-status-pill">{current.icon} {current.label}</span></div>
   <button type="button" className={`time-btn${value.mode==='auto'?' time-btn-active':''}`} aria-pressed={value.mode==='auto'} onClick={()=>onChoose('auto')}>🕒 Auto · Device Local Time</button>
@@ -35,6 +42,16 @@ export function EnvironmentSettings({value,onChange,onChoose,now,period}:{
   <label className="environment-sound"><input type="checkbox" checked={value.sound} onChange={e=>onChange({...value,sound:e.target.checked})}/> ပတ်ဝန်းကျင်အသံ</label>
   <label className="environment-volume">အသံအတိုးအကျယ် <output>{Math.round(value.volume*100)}%</output><input aria-label="ပတ်ဝန်းကျင်အသံ အတိုးအကျယ်" type="range" min="0" max="100" step="5" value={Math.round(value.volume*100)} onChange={e=>onChange({...value,volume:Number(e.target.value)/100})}/></label>
   <FestivalSettings now={now}/>
+  {showGhostDev && (
+   <label className="environment-sound" style={{ marginTop: '6px' }}>
+    <input
+     type="checkbox"
+     checked={ghostDev.forceActive}
+     onChange={e => setGhostDevForceActive(e.target.checked)}
+    />{' '}
+    Dev · ညသရဲ စမ်းသပ်ရန် (Warehouse)
+   </label>
+  )}
   <small style={{ display: 'block', marginTop: '6px' }}>ဂိမ်းထဲကို နှိပ်ပြီးနောက် အသံစပါမည်။ N နှိပ်၍ Manual အချိန်ပြောင်းနိုင်သည်။</small>
  </section>;
 }

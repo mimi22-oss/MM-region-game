@@ -1,4 +1,6 @@
+import { GhostNpcs } from './GhostNpc';
 import { CarBots } from './CarBots';
+import type { TimeMode } from '../game/environmentTime';
 import {staticDetails,updateStaticDetails} from '../game/staticVisibility';
 import {decorateFestivalRegion,updateFestivalVisibility,createFestivalOverview} from '../game/festivalCandles';
 import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect, useSyncExternalStore, memo, type ComponentType } from 'react';
@@ -96,6 +98,10 @@ const RegionBuilder = memo(function RegionBuilder({ id, Scene, live = false, act
 export type StreamedWorldProps = {
   destination?: WorldDestination | null;
   paused?: boolean;
+  minute?: number;
+  timeMode?: TimeMode;
+  soundEnabled?: boolean;
+  soundVolume?: number;
   onLoadingChange: (state: WorldLoadingState) => void;
   onSceneError: () => void;
 };
@@ -103,7 +109,16 @@ export type StreamedWorldProps = {
 type CachedRegion = { root: Group; flows: Object3D[]; festivalOverview: Group; details:ReturnType<typeof staticDetails> };
 const MAX_CACHED_REGIONS = mobileQuality ? 2 : 5;
 
-export function StreamedWorld({ destination, paused = false, onLoadingChange, onSceneError }: StreamedWorldProps) {
+export function StreamedWorld({
+  destination,
+  paused = false,
+  minute = 780,
+  timeMode = 'auto',
+  soundEnabled = true,
+  soundVolume = 0.3,
+  onLoadingChange,
+  onSceneError,
+}: StreamedWorldProps) {
   const { gl, scene, invalidate } = useThree();
   const intro = useIntroState();
   const downloads = useSyncExternalStore(regionAssets.subscribe, regionAssets.getSnapshot);
@@ -361,6 +376,16 @@ const fallbackFocus = { x: 0, z: 0 };
     {building && building !== 'myothar' && Scene && !cache.current.has(building) &&
       <RegionBuilder key={building} id={building} Scene={Scene} onBuilt={onBuilt} />}
     {regions.filter(region=>overviewIds.includes(region.id)).map(region => <group key={region.id} visible={!active.includes(region.id) || !prepared.includes(region.id)}><Overview region={region} /></group>)}
-    {!paused && started && !diagnosticConfig.disableNPCs && !hideNpcsDuringHighIntro && <><RobotBots activeRegions={active} /><CarBots /></>}
+    {!paused && started && !diagnosticConfig.disableNPCs && !hideNpcsDuringHighIntro && <>
+      <RobotBots activeRegions={active} />
+      <CarBots />
+      <GhostNpcs
+        enabled={active.includes('myothar')}
+        minute={minute}
+        timeMode={timeMode}
+        soundEnabled={soundEnabled}
+        soundVolume={soundVolume}
+      />
+    </>}
   </>;
 }

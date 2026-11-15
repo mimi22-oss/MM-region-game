@@ -1,3 +1,5 @@
+import { isNetworkOnline } from '../services/networkStatus.ts';
+
 export const SUPPORTED_SHAPES = [
   'box',
   'cylinder',
@@ -245,6 +247,7 @@ export function deleteCustomAsset(id: string): void {
 export async function generateCustomAsset(opts: { key: string; model: string; prompt: string; signal?: AbortSignal; onRetry?: () => void }): Promise<CustomAsset> {
   const model = opts.model.trim().replace(/^models\//, '');
   if (!/^[a-zA-Z0-9._-]+$/.test(model) || !opts.key.trim() || !opts.prompt.trim()) throw new Error('Enter a valid model, API key and prompt.');
+  if (!isNetworkOnline()) throw new Error('Offline mode: Gemini AI 3D asset generation requires an internet connection.');
   const textPrompt = `Create a 3D model from simple geometric parts for this request: ${opts.prompt}\nReturn JSON with name, nameMm, category, dimensions [width,height,depth] and parts [{shape,position,size,color}]. Category must be one of ${categories.join(', ')}; shape must be box, cylinder, sphere or cone. Dimensions are in metres, 0.1 to 100. Part coordinates and sizes are relative to dimensions: x and z centred at 0, ground y=0. Position components must be -1 to 1; size components must be 0.01 to 2. All colors must be six-digit hexadecimal, for example #ff8800. Use at most 40 parts.`;
   let retriedUnavailable = false;
   const send = async (useSchema: boolean) => {

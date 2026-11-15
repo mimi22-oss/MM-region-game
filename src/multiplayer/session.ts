@@ -1,4 +1,5 @@
 import type { Room } from '@colyseus/sdk';
+import { isNetworkOnline, refreshNetworkState } from '../services/networkStatus.ts';
 import {
   PRESENCE_ROOM, PROTOCOL_ERROR, PROTOCOL_VERSION,
   type JoinPresence, type PresencePlayer, type PresenceState,
@@ -62,6 +63,11 @@ export class MultiplayerSession {
   async join(endpoint: string, name: string, avatar: JoinPresence['avatar'] = 'mint') {
     this.leave();
     const generation = this.generation;
+    void refreshNetworkState();
+    if (!isNetworkOnline()) {
+      this.publish(empty('offline', 'You are offline. Local gameplay remains available; reconnect to join multiplayer.'));
+      return;
+    }
     this.publish(empty('connecting'));
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {

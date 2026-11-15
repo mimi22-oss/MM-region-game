@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import { mobileQuality } from './sceneBudget';
+import { isNativeAndroid } from '../services/platform.ts';
+import { mobileQuality } from './sceneBudget.ts';
 
 export type QualityPresetMode = 'auto' | 'mobile' | 'low' | 'medium' | 'high';
 export type ResolvedQualityPresetId = 'mobile' | 'low' | 'medium' | 'high';
@@ -125,7 +126,7 @@ const listeners = new Set<() => void>();
 export function detectMobileViewport(): boolean {
   if (typeof window === 'undefined') return mobileQuality;
   const coarse = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
-  return mobileQuality || coarse || window.innerWidth <= 760;
+  return mobileQuality || isNativeAndroid() || coarse || window.innerWidth <= 760;
 }
 
 export function resolveQualityPresetId(mode: QualityPresetMode = currentMode): ResolvedQualityPresetId {

@@ -5,7 +5,7 @@ import { Raycaster, Vector3, type Group } from 'three';
 
 const api=window as any, params=new URLSearchParams(location.search);
 const before=params.get('version')==='before', count=Number(params.get('characters')??1), enabled=params.get('festival')!=='0', riding=params.get('mode')==='ride';
-const base=before?'/artifacts/performance-audit/before/src':'/src';
+const base=before?'/artifacts/performance-audit/before/src':'/artifacts/performance-audit/after/src';
 const load=(path:string)=>import(/* @vite-ignore */ `${base}/${path}`);
 const [{TazaungdaingScene},{createDefaultFestivalConfig,MYOTHAR_FESTIVAL_HUB},{GlbHuman},{HUMAN_PRESETS},{TimeEnvironment}]=await Promise.all([
   load('festivals/TazaungdaingScene.tsx'),load('festivals/FestivalConfiguration.ts'),load('components/GlbHuman.tsx'),load('data/appearance.ts'),load('components/TimeEnvironment.tsx'),

@@ -1,3 +1,13 @@
+import '@fontsource/noto-sans-myanmar/400.css';
+import '@fontsource/noto-sans-myanmar/600.css';
+import '@fontsource/noto-sans-myanmar/700.css';
+import {
+  loadGameSave,
+  scheduleGameSave,
+  flushGameSave,
+  type GameSaveData,
+} from './game/gameSave';
+import { registerAndroidLifecycle } from './services/androidLifecycle';
 import { useEnvironmentTime } from './components/EnvironmentSettings';
 import { ActionMenu } from './components/ActionMenu';
 import { MultiplayerSession } from './multiplayer/session';
@@ -138,6 +148,7 @@ class SceneError extends Component<
   }
 }
 function App() {
+  const [renderDpr,setRenderDpr]=useState(()=>mobileQuality?1:Math.max(1,Math.min(window.devicePixelRatio||1,1.25)));
   const [multiplayer] = useState(() => new MultiplayerSession());
   useEffect(() => () => multiplayer.leave(), [multiplayer]);
   const mapLabelsHost = useRef<HTMLDivElement>(null);
@@ -174,22 +185,86 @@ function App() {
     setAccelerating(false);
   }, [loading]);
   const activateMobile = useCallback(() => setSceneActive(true), []);
-  const [visible, setVisible] = useState(!document.hidden);
+  const saveBounds = useMemo(
+    () => ({ halfWorldSize: ward.size / 2, minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM }),
+    [],
+  );
+  const [initialSave] = useState<GameSaveData | null>(() => loadGameSave(saveBounds));
+  const initialSpawn = useMemo(
+    () => (initialSave ? { x: initialSave.x, z: initialSave.z } : { x: ward.spawn.x, z: ward.spawn.z }),
+    [initialSave],
+  );
+  const initialYaw = initialSave?.yaw ?? ward.spawnYaw;
+  const currentLocIdRef = useRef(initialSave?.areaId ?? ward.id);
+  const latestSaveRef = useRef<Omit<GameSaveData, 'version' | 'savedAt'>>({
+    x: initialSpawn.x,
+    z: initialSpawn.z,
+    yaw: initialYaw,
+    pitch: initialSave?.pitch ?? -0.12,
+    zoom: initialSave?.zoom ?? ward.spawnZoom,
+    topDown: initialSave?.topDown ?? false,
+    first: initialSave?.first ?? false,
+    areaId: initialSave?.areaId ?? ward.id,
+  });
+
+  const handleSaveSnapshot = useCallback(
+    (snap: { x: number; z: number; yaw: number; pitch: number; zoom: number; topDown: boolean; first: boolean }) => {
+      latestSaveRef.current = {
+        ...snap,
+        areaId: currentLocIdRef.current,
+      };
+      scheduleGameSave(latestSaveRef.current, saveBounds);
+    },
+    [saveBounds],
+  );
+
+  const flushSaveNow = useCallback(() => {
+    flushGameSave(latestSaveRef.current, saveBounds);
+  }, [saveBounds]);
+
+  const [docVisible, setDocVisible] = useState(!document.hidden);
+  const [appActive, setAppActive] = useState(true);
+  const [webglLost, setWebglLost] = useState(false);
+  const canvasCleanupRef = useRef<(() => void) | null>(null);
+  const invalidateRef = useRef<(() => void) | null>(null);
+  const visible = docVisible && appActive;
+
   useEffect(() => {
-    const changed = () => setVisible(!document.hidden);
+    const changed = () => {
+      const next = !document.hidden;
+      setDocVisible(next);
+      if (!next) {
+        flushSaveNow();
+      } else {
+        try {
+          invalidateRef.current?.();
+        } catch {}
+      }
+    };
+    const onPageHide = () => flushSaveNow();
     document.addEventListener("visibilitychange", changed);
-    return () => document.removeEventListener("visibilitychange", changed);
-  }, []);
-  const [first, setFirst] = useState(false);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("beforeunload", onPageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", changed);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("beforeunload", onPageHide);
+    };
+  }, [flushSaveNow]);
+
+  const [first, setFirst] = useState(initialSave?.first ?? false);
   const [locked, setLocked] = useState(false);
-  const [pos, setPos] = useState(ward.spawn);
-  const [robotYaw, setRobotYaw] = useState(ward.spawnYaw);
-  const [viewPos, setViewPos] = useState(ward.spawn);
-  const robotYawRef = useRef(ward.spawnYaw);
-  const posRef = useRef(ward.spawn);
-  const viewPosRef = useRef(ward.spawn);
+  const [pos, setPos] = useState(initialSpawn);
+  const [robotYaw, setRobotYaw] = useState(initialYaw);
+  const [viewPos, setViewPos] = useState(initialSpawn);
+  const robotYawRef = useRef(initialYaw);
+  const posRef = useRef({ x: initialSpawn.x, z: initialSpawn.z });
+  const viewPosRef = useRef({ x: initialSpawn.x, z: initialSpawn.z });
   const settingsOpenRef = useRef(false);
   const mapOpenRef = useRef(false);
+  const guideOpenRef = useRef(false);
+  const actionMenuOpenRef = useRef(false);
+  const teleportModeRef = useRef(false);
   const [mapOpen, setMapOpen] = useState(false);
   mapOpenRef.current = mapOpen;
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -210,15 +285,75 @@ function App() {
     [],
   );
   const [guideOpen, setGuideOpen] = useState(false);
+  guideOpenRef.current = guideOpen;
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
+  actionMenuOpenRef.current = actionMenuOpen;
   const [sceneActive, setSceneActive] = useState(false);
-  const [topDown, setTopDown] = useState(false);
-  const [zoom, setZoom] = useState(ward.spawnZoom);
+  const [topDown, setTopDown] = useState(initialSave?.topDown ?? false);
+  const [zoom, setZoom] = useState(initialSave?.zoom ?? ward.spawnZoom);
   const environment=useEnvironmentTime();
   const night=environment.period==='night'||environment.period==='evening';
   const intro = useIntroState();
   const subscriptionShop = useSubscriptionShop();
+
+  useEffect(() => {
+    if (subscriptionShop.isOpen) {
+      flushSaveNow();
+    }
+  }, [subscriptionShop.isOpen, flushSaveNow]);
+
+  useEffect(() => {
+    const dispose = registerAndroidLifecycle({
+      onActiveChange: (isActive) => {
+        setAppActive(isActive);
+        if (isActive) {
+          try {
+            invalidateRef.current?.();
+          } catch {}
+        }
+      },
+      onBackgroundFlush: flushSaveNow,
+      onBackButton: () => {
+        if (getSubscriptionShopState().isOpen) {
+          closeSubscriptionShop();
+          return true;
+        }
+        if (guideOpenRef.current) {
+          setGuideOpen(false);
+          return true;
+        }
+        if (mapOpenRef.current) {
+          setMapOpen(false);
+          return true;
+        }
+        if (settingsOpenRef.current) {
+          setSettingsOpen(false);
+          return true;
+        }
+        if (actionMenuOpenRef.current) {
+          setActionMenuOpen(false);
+          return true;
+        }
+        if (getIntroState().active) {
+          skipIntro();
+          return true;
+        }
+        if (teleportModeRef.current) {
+          setTeleportPin(null);
+          setTeleportScreenPos(null);
+          setTeleportMode(false);
+          return true;
+        }
+        return false;
+      },
+    });
+    return () => {
+      dispose();
+      canvasCleanupRef.current?.();
+      canvasCleanupRef.current = null;
+    };
+  }, [flushSaveNow]);
 
   useEffect(() => {
     const onShopKeyDown = (e: KeyboardEvent) => {
@@ -269,6 +404,7 @@ function App() {
     null,
   );
   const [teleportMode, setTeleportMode] = useState(false);
+  teleportModeRef.current = teleportMode;
   const [teleportPin, setTeleportPin] = useState<TeleportPin | null>(null);
   const [teleportScreenPos, setTeleportScreenPos] = useState<ScreenPosition | null>(null);
   const [teleportDragging, setTeleportDragging] = useState(false);
@@ -300,6 +436,16 @@ function App() {
     setTeleportScreenPos(null);
     const loc = detectLocation(targetX, targetZ);
     setArrivalToast(loc);
+    currentLocIdRef.current = loc.id;
+    latestSaveRef.current = {
+      ...latestSaveRef.current,
+      x: targetX,
+      z: targetZ,
+      areaId: loc.id,
+      topDown: false,
+      first: false,
+    };
+    flushSaveNow();
   };
 
   const handleCancelTeleport = () => {
@@ -315,6 +461,7 @@ function App() {
     () => detectLocation(viewPos.x, viewPos.z),
     [viewPos.x, viewPos.z],
   );
+  currentLocIdRef.current = currentLoc.id;
   const prevLocKey = useRef(`${currentLoc.id}:${currentLoc.subArea ?? ""}`);
 
   useEffect(() => {
@@ -476,22 +623,27 @@ function App() {
       diagnosticDisabled: diagnosticConfig.enabled,
     });
     if (behavior === "skip") return;
-    const spawnLoc = detectLocation(ward.spawn.x, ward.spawn.z);
+    const startX = initialSpawn.x;
+    const startZ = initialSpawn.z;
+    const startYaw = initialYaw;
+    const startPitch = initialSave?.pitch ?? -0.12;
+    const startZoom = initialSave?.zoom ?? ward.spawnZoom;
+    const spawnLoc = detectLocation(startX, startZ);
     setWelcomeDismissed(true);
     setFirst(false);
     setTopDown(false);
-    setZoom(ward.spawnZoom);
+    setZoom(startZoom);
     startIntro(
       {
         id: spawnLoc.id,
         label: spawnLoc.label || ward.currentArea,
         title: spawnLoc.title || `${ward.currentArea}`,
         subtitle: spawnLoc.subArea ?? spawnLoc.subtitle,
-        x: ward.spawn.x,
-        z: ward.spawn.z,
-        yaw: ward.spawnYaw,
-        pitch: -0.12,
-        distance: ward.spawnZoom,
+        x: startX,
+        z: startZ,
+        yaw: startYaw,
+        pitch: startPitch,
+        distance: startZoom,
       },
       "entry",
       {
@@ -499,7 +651,7 @@ function App() {
         reducedMotion: behavior === "reduced-settle",
       },
     );
-  }, [loading]);
+  }, [loading, initialSpawn, initialYaw, initialSave]);
 
   const handleReplayIntro = useCallback(() => {
     if (document.pointerLockElement) document.exitPointerLock();
@@ -558,8 +710,10 @@ function App() {
               powerPreference: "default",
             }}
             camera={{ position: [0, 5, 33], fov: 65, near: 0.1, far: 9000 }}
-            dpr={mobileQuality ? 1 : [1, 1.25]}
-            onCreated={({ gl }) => {
+            dpr={renderDpr}
+            onCreated={({ gl, invalidate }) => {
+              canvasCleanupRef.current?.();
+              invalidateRef.current = invalidate;
               startupDiagnostics.record('canvas-init');
               startupDiagnostics.record('webgl-created', {
                 dpr: gl.getPixelRatio(),
@@ -569,19 +723,27 @@ function App() {
               const handleContextLost = (e: Event) => {
                 e.preventDefault();
                 console.warn('[WebGL] Context lost!');
+                flushSaveNow();
+                setWebglLost(true);
                 startupDiagnostics.record('webgl-context-lost');
               };
               const handleContextRestored = () => {
                 console.info('[WebGL] Context restored!');
+                setWebglLost(false);
+                invalidate();
                 startupDiagnostics.record('webgl-context-restored');
               };
               canvas.addEventListener('webglcontextlost', handleContextLost, false);
               canvas.addEventListener('webglcontextrestored', handleContextRestored, false);
+              canvasCleanupRef.current = () => {
+                canvas.removeEventListener('webglcontextlost', handleContextLost, false);
+                canvas.removeEventListener('webglcontextrestored', handleContextRestored, false);
+              };
             }}
           >
-            <FrameBudget paused={loading}/>
+            <FrameBudget paused={loading || !visible} onDprChange={setRenderDpr}/>
             <RemotePlayers session={multiplayer} />
-            <Town minute={environment.minute} destination={teleportTarget} paused={loading} onLoadingChange={setSceneLoading} onSceneError={sceneError} />
+            <Town minute={environment.minute} timeMode={environment.preferences.mode} soundEnabled={environment.preferences.sound} soundVolume={environment.preferences.volume} destination={teleportTarget} paused={loading || !visible} onLoadingChange={setSceneLoading} onSceneError={sceneError} />
             <TeleportPicker
               active={teleportMode}
               pin={teleportPin}
@@ -591,7 +753,7 @@ function App() {
             />
             <CinematicIntroController />
             <Player
-              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || intro.active || subscriptionShop.isOpen} loading={loading}
+              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || intro.active || subscriptionShop.isOpen || !visible} loading={loading}
               deferGlb={(loading && shouldPlayIntro("entry", introSettings, { diagnosticDisabled: diagnosticConfig.enabled }) && !(introSettings.respectReducedMotion && isReducedMotionPreferred())) || (intro.active && isIntroHighAltitude(intro))}
               onCarStatus={carUpdate}
               onBalloonStatus={balloonUpdate}
@@ -611,6 +773,8 @@ function App() {
               onLock={handleLock}
               onPosition={position}
               onViewPosition={viewPosition}
+              initialSave={initialSave}
+              onSaveSnapshot={handleSaveSnapshot}
             />
             <MapLabelsProjection host={mapLabelsHost} enabled={!loading && !mapOpen && !first && !intro.active} />
           </Canvas>
@@ -639,9 +803,14 @@ function App() {
         input={mobileInput}
         flying={balloonStatus.riding}
         canJump={!balloonStatus.riding && character === "cartoon" && !rideStatus.riding && !carStatus.driving && !rideStatus.crashed}
-        disabled={mapOpen || settingsOpen || loading || carStatus.driving || subscriptionShop.isOpen}
+        disabled={mapOpen || settingsOpen || loading || carStatus.driving || subscriptionShop.isOpen || !visible}
         onInteract={activateMobile}
       />}
+      {webglLost && (
+        <div className="webgl-recovery-banner" role="alert" aria-live="assertive">
+          <span>Restoring 3D graphics context… Your position is saved.</span>
+        </div>
+      )}
       {!intro.active && !mapOpen && !settingsOpen && (
         <div
           className="location-actions"
@@ -988,6 +1157,7 @@ function App() {
         url={subscriptionShop.url}
         title={subscriptionShop.title}
         onClose={closeSubscriptionShop}
+        onBeforeOpenExternal={flushSaveNow}
       />
       <WorldLoading state={sceneLoading} sceneFailed={sceneFailed} />
     </main>

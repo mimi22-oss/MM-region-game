@@ -1,3 +1,5 @@
+import { isNetworkOnline } from '../services/networkStatus.ts';
+
 export type AssetEdit = { scale: [number, number, number]; color?: string; roofColor?: string };
 
 /** Only data, never executable code, is accepted from the model. */
@@ -24,6 +26,7 @@ export async function requestAssetEdit(options: { apiKey: string; model: string;
   const model = options.model.trim().replace(/^models\//, '');
   if (!/^[a-zA-Z0-9._-]+$/.test(model)) throw new Error('Invalid Gemini model name.');
   if (!options.apiKey.trim() || !options.prompt.trim()) throw new Error('Enter an API key and prompt.');
+  if (!isNetworkOnline()) throw new Error('Offline mode: Gemini AI asset editing requires an internet connection.');
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST', signal: options.signal,
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': options.apiKey.trim() },
