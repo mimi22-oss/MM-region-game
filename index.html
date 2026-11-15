@@ -103,14 +103,31 @@
 			position: fixed;
 			inset: 0;
 			display: flex;
+			flex-direction: column;
 			align-items: center;
 			justify-content: center;
-			gap: 16px;
+			gap: 14px;
 			padding: 24px;
-			background: #143d36;
+			background: radial-gradient(ellipse at top, #285f50, #143d36 72%);
 			color: #fff7e7;
 			font-family: system-ui, sans-serif;
-			line-height: 2;
+			line-height: 1.6;
+		}
+
+		.boot-logo {
+			width: 128px;
+			height: 128px;
+			border-radius: 28px;
+			object-fit: cover;
+			box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+		}
+
+		.boot-status {
+			display: inline-flex;
+			align-items: center;
+			gap: 12px;
+			font-size: 18px;
+			font-weight: 600;
 		}
 
 		.boot-dots {
@@ -160,8 +177,11 @@
 <body>
 	<div id="root">
 		<div id="boot-loading" role="status" aria-live="polite">
-			<span className="boot-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-			<span>MM Region 3D Game</span>
+			<img class="boot-logo" src="/app-icon.webp" alt="MM Region Game" width="128" height="128" decoding="async" />
+			<div class="boot-status">
+				<span class="boot-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+				<span>MM Region Game</span>
+			</div>
 		</div>
 		<noscript>
 			<main style="padding:24px;background:#143d36;color:#fff;font-family:system-ui,sans-serif">

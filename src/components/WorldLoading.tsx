@@ -9,6 +9,14 @@ export function WorldLoading({ state, sceneFailed = false }: {
  const current = error ?? state.required.find(item => item.phase !== 'ready') ?? state.required[0];
  return <div className="world-loading" data-world-loading="blocking">
   <section className="world-loading-card" aria-label="မြို့ပြင်ဆင်မှု">
+   <img
+    className="world-loading-logo"
+    src="/app-icon.webp"
+    alt="MM Region Game"
+    width={116}
+    height={116}
+    decoding="async"
+   />
    <div className="world-loading-name" role="status" aria-live="polite" aria-atomic="true">
     {!error && !sceneFailed && <span className="loading-dots" aria-hidden="true"><i /><i /><i /></span>}
     <span>{current?.name.split(' · ')[0] ?? 'ကလေးမြို့'}</span>

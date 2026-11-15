@@ -3137,6 +3137,16 @@ main.night-mode .home-guidance-pill {
 	line-height: 2;
 }
 
+.world-loading-logo {
+	display: block;
+	width: 116px;
+	height: 116px;
+	margin: 0 auto 14px;
+	border-radius: 26px;
+	object-fit: cover;
+	box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+}
+
 .world-loading-name {
 	display: flex;
 	align-items: center;

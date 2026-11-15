@@ -29,6 +29,7 @@
     "@capacitor/browser": "^8.0.5",
     "@capacitor/core": "^8.6.2",
     "@capacitor/network": "^8.0.1",
+    "@capgo/capacitor-updater": "^8.54.2",
     "@colyseus/core": "0.17.56",
     "@colyseus/schema": "4.0.31",
     "@colyseus/sdk": "0.17.43",

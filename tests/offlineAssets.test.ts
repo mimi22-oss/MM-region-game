@@ -52,7 +52,10 @@ test('core character models and static media assets are bundled locally', () => 
     'src/assets/burmese_lion_emblem.png',
     'public/kalay_sign_face.png',
     'public/burmese_lion_emblem.png',
+    'public/favicon.ico',
+    'public/favicon.jpg',
     'public/favicon.png',
+    'public/ogp.png',
     'public/app-icon.webp',
   ];
   for (const rel of localImages) {
@@ -60,6 +63,48 @@ test('core character models and static media assets are bundled locally', () => 
     assert.ok(existsSync(abs), `Missing local image asset: ${rel}`);
     assert.ok(statSync(abs).size > 100, `Empty local image asset: ${rel}`);
   }
+});
+
+test('Android splash screens use branded PNG artwork and splash theme resources exist', () => {
+  const splashDirs = [
+    'drawable',
+    'drawable-land-mdpi',
+    'drawable-land-hdpi',
+    'drawable-land-xhdpi',
+    'drawable-land-xxhdpi',
+    'drawable-land-xxxhdpi',
+    'drawable-port-mdpi',
+    'drawable-port-hdpi',
+    'drawable-port-xhdpi',
+    'drawable-port-xxhdpi',
+    'drawable-port-xxxhdpi',
+  ];
+  for (const dir of splashDirs) {
+    const splashPng = join(ROOT, 'android/app/src/main/res', dir, 'splash.png');
+    assert.ok(existsSync(splashPng), `Missing Android splash image: ${splashPng}`);
+    const hdr = readFileSync(splashPng);
+    assert.equal(hdr.subarray(1, 4).toString('ascii'), 'PNG', `Invalid PNG signature in ${splashPng}`);
+    // Branded emerald + icon splash is substantially richer than Capacitor's default ~4-17KB white cross
+    assert.ok(hdr.byteLength > 25_000, `Unexpectedly tiny default splash PNG (${hdr.byteLength} bytes): ${splashPng}`);
+  }
+
+  for (const extraPng of ['drawable/splash_badge.png', 'drawable/splash_icon.png']) {
+    const abs = join(ROOT, 'android/app/src/main/res', extraPng);
+    assert.ok(existsSync(abs), `Missing splash badge asset: ${extraPng}`);
+    assert.equal(readFileSync(abs).subarray(1, 4).toString('ascii'), 'PNG');
+  }
+
+  for (const xmlPath of [
+    'android/app/src/main/res/drawable/splash_screen.xml',
+    'android/app/src/main/res/values/colors.xml',
+    'android/app/src/main/res/values-v31/styles.xml',
+  ]) {
+    assert.ok(existsSync(join(ROOT, xmlPath)), `Missing Android splash resource XML: ${xmlPath}`);
+  }
+
+  const indexHtml = readFileSync(join(ROOT, 'index.html'), 'utf8');
+  assert.ok(indexHtml.includes('src="/app-icon.webp"'), 'Web boot splash should render /app-icon.webp');
+  assert.ok(!indexHtml.includes('className="boot-dots"'), 'index.html boot splash must use HTML class attribute');
 });
 
 test('Android launcher icons use WebP across all mipmap densities without legacy PNG duplicates', () => {
