@@ -383,7 +383,9 @@ export function isGhostDevUiAvailable(): boolean {
   } catch {
     // Node fallback
   }
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {
+    return devSnapshot.forceActive || devSnapshot.showDebugHud;
+  }
   try {
     const params = new URLSearchParams(window.location.search);
     return (

@@ -43,6 +43,7 @@ import {
   GHOST_MODEL_URL,
   GHOST_TARGET_HEIGHT_M,
   isGhostNightActive,
+  isGhostDevUiAvailable,
   isOtherGhostGrabbingPlayer,
   setActiveGhostZones,
   setGhostEncounterInteraction,
@@ -53,7 +54,11 @@ import {
   HorrorAnimationSync,
   acquireSharedGhostAudio,
   releaseSharedGhostAudio,
+  shouldTriggerDetectionSting,
+  createGhostScareAudioState,
+  checkAndCommitScareCue,
   type GhostHorrorAudio,
+  type GhostScareAudioState,
 } from '../game/ghostAudio.ts';
 import {
   acquireSharedHorrorMixer,
@@ -66,14 +71,11 @@ import {gameAudio} from '../game/gameAudio.ts';
 import { sceneGround } from '../game/groundSurface.ts';
 import { getQualityPreset } from '../game/qualityPreset.ts';
 import { trafficColliders } from '../game/trafficColliders.ts';
-
-interface GhostDebugEntry {
-  ghostId: string;
-  zoneId: GhostHauntZoneId;
-  getSnapshot: () => GhostAiSnapshot | null;
-  forceState: (next: Parameters<GhostAiController['forceStateForTest']>[0]) => void;
-  preloadAllClips: () => Promise<(AnimationClip | null)[]>;
-}
+import {
+  registerGhostDebugProvider,
+  unregisterGhostDebugProvider,
+  type GhostDebugEntry,
+} from '../game/audio/ghostDebugStore.ts';
 
 const ghostDebugRegistry = new Map<string, GhostDebugEntry>();
 let activeRerollHandler: (() => void) | null = null;
@@ -113,61 +115,23 @@ function syncGhostDebugWindow() {
   };
 }
 
-let cachedGhostModelPromise: Promise<GLTF> | null = null;
 const cachedGhostClips = new Map<GhostClipId, AnimationClip>();
 const inFlightGhostClipUi = new Map<GhostClipId, Promise<AnimationClip | null>>();
 
-function clampGhostGltfTextures(gltf: GLTF, maxSize: number): GLTF {
-  if (typeof document === 'undefined') return gltf;
-  const seen = new Set<Texture>();
-  const texKeys = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap', 'aoMap'] as const;
+import {
+  GHOST_LOAD_RETRY_DELAYS_MS,
+  loadGhostModelOnce,
+  clampGhostGltfTextures,
+  setGhostModelLoaderForTest,
+  resetGhostModelCacheForTest,
+} from '../game/ghostModelLoader';
 
-  gltf.scene.traverse((obj) => {
-    if (!(obj instanceof Mesh)) return;
-    const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-    for (const mat of mats) {
-      if (!(mat instanceof MeshStandardMaterial)) continue;
-      for (const key of texKeys) {
-        const tex = mat[key];
-        if (!tex || seen.has(tex)) continue;
-        seen.add(tex);
-        tex.anisotropy = Math.min(tex.anisotropy || 1, maxSize <= 1024 ? 2 : 4);
-        const img = tex.image as { width?: number; height?: number } | undefined;
-        if (!img || typeof img.width !== 'number' || typeof img.height !== 'number') continue;
-        const maxDim = Math.max(img.width, img.height);
-        if (maxDim <= maxSize) continue;
-        const scale = maxSize / maxDim;
-        const w = Math.max(1, Math.round(img.width * scale));
-        const h = Math.max(1, Math.round(img.height * scale));
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img as CanvasImageSource, 0, 0, w, h);
-          tex.image = canvas;
-          tex.needsUpdate = true;
-        }
-      }
-    }
-  });
-  return gltf;
-}
-
-function loadGhostModelOnce(): Promise<GLTF> {
-  if (!cachedGhostModelPromise) {
-    cachedGhostModelPromise = new GLTFLoader()
-      .loadAsync(GHOST_MODEL_URL)
-      .then((gltf) => clampGhostGltfTextures(gltf, getQualityPreset().glbMaxTextureSize))
-      .catch((error) => {
-        cachedGhostModelPromise = null;
-        throw error;
-      });
-  }
-  return cachedGhostModelPromise;
-}
+export {
+  GHOST_LOAD_RETRY_DELAYS_MS,
+  setGhostModelLoaderForTest,
+  resetGhostModelCacheForTest,
+  loadGhostModelOnce,
+};
 
 export interface GhostNpcProps {
   readonly enabled: boolean;
@@ -336,15 +300,17 @@ export function GhostNpc({
 
   const [loadArmed, setLoadArmed] = useState(false);
   const [modelGltf, setModelGltf] = useState<GLTF | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const { camera } = useThree();
 
   const checkTimerRef = useRef(0);
   const playerObjRef = useRef<Mesh | Group | null>(null);
   const playerVecRef = useRef(new Vector3());
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Wait before fetching 3.7MB model until player is both active-hours (or dev forced) & near this ghost zone.
   useFrame(({ scene }, dt) => {
-    if (paused || loadArmed || !enabled || !scheduleActive) return;
+    if (paused || !enabled || !scheduleActive) return;
     checkTimerRef.current += Math.min(dt, 0.1);
     if (checkTimerRef.current < 0.4) return;
     checkTimerRef.current = 0;
@@ -372,12 +338,21 @@ export function GhostNpc({
       zoneEnv.measureDistanceFromZone?.(px, pz) ??
       Math.hypot(px - zoneEnv.anchor.x, pz - zoneEnv.anchor.z);
     if (dist <= DEFAULT_GHOST_AI_CONFIG.assetLoadDistanceM) {
-      setLoadArmed(true);
+      if (!loadArmed) {
+        setLoadArmed(true);
+      }
+    } else if (dist > DEFAULT_GHOST_AI_CONFIG.assetLoadDistanceM + 15 && !modelGltf) {
+      // F05: Player moved away from haunt zone while model was still unloaded.
+      // Disarm so that re-approaching triggers an immediate fresh load attempt.
+      if (loadArmed) {
+        setLoadArmed(false);
+        setLoadAttempt(0);
+      }
     }
   });
 
   useEffect(() => {
-    if (!loadArmed) return;
+    if (!loadArmed || modelGltf) return;
     void sharedHorrorAssetLoader.preload([
       'ghost-whisper',
       'spectral-cackle',
@@ -387,17 +362,51 @@ export function GhostNpc({
       'ghost-grab-impact',
     ]);
     let live = true;
+
     loadGhostModelOnce()
       .then((gltf) => {
-        if (live) setModelGltf(gltf);
+        if (live) {
+          setModelGltf(gltf);
+        }
       })
       .catch((error) => {
-        console.warn('[GhostNpc] Failed to load ghost model:', error);
+        if (!live) return;
+        console.warn(`[GhostNpc] Failed to load ghost model (attempt ${loadAttempt + 1}):`, error);
+        // F05: Bounded exponential backoff retry (5s, 15s, 30s)
+        const delay = GHOST_LOAD_RETRY_DELAYS_MS[Math.min(loadAttempt, GHOST_LOAD_RETRY_DELAYS_MS.length - 1)];
+        retryTimeoutRef.current = setTimeout(() => {
+          if (live) {
+            setLoadAttempt((prev) => prev + 1);
+          }
+        }, delay);
       });
+
+    // F05: Immediate retry on network recovery
+    const handleOnline = () => {
+      if (live && !modelGltf) {
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+          retryTimeoutRef.current = null;
+        }
+        setLoadAttempt((prev) => prev + 1);
+      }
+    };
+
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      window.addEventListener('online', handleOnline);
+    }
+
     return () => {
       live = false;
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+      if (typeof window !== 'undefined' && window.removeEventListener) {
+        window.removeEventListener('online', handleOnline);
+      }
     };
-  }, [loadArmed]);
+  }, [loadArmed, loadAttempt, modelGltf]);
 
   if (!modelGltf) return null;
 
@@ -465,6 +474,9 @@ function LoadedGhostNpc({
     lastGrabImpactSeq: number;
     lastClipCueAt: number;
     lastKillSeq:number;
+    lastStateTransition: { from: string; to: string; atSec: number } | null;
+    microTimings: { aiMs: number; audioMs: number };
+    scareAudioState: GhostScareAudioState;
     grabPose:ReturnType<typeof createGhostGrabPose>;
     audioSync:HorrorAnimationSync;
     dispose: () => void;
@@ -653,21 +665,45 @@ function LoadedGhostNpc({
       lastGrabImpactSeq: -1,
       lastClipCueAt: -Infinity,
       lastKillSeq:-1,
+      lastStateTransition: null,
+      microTimings: { aiMs: 0, audioMs: 0 },
+      scareAudioState: createGhostScareAudioState(),
       grabPose:createGhostGrabPose(cloned),
       audioSync:new HorrorAnimationSync(),
       dispose,
     };
 
-    ghostDebugRegistry.set(ghostId, {
+    const debugEntry: GhostDebugEntry = {
       ghostId,
       zoneId,
+      personality: ghostPersonalityForId(ghostId),
       getSnapshot: (): GhostAiSnapshot | null => rigRef.current?.ai.getSnapshot() ?? null,
       forceState: (next) => {
         rigRef.current?.ai.forceStateForTest(next);
       },
       preloadAllClips: () =>
         Promise.all((Object.keys(GHOST_CLIP_SPECS) as GhostClipId[]).map((id) => ensureClip(id))),
-    });
+      getMicroTimings: () => rigRef.current?.microTimings ?? { aiMs: 0, audioMs: 0 },
+      getModelStatus: () => 'ready',
+      getInactivityReason: () => {
+        if (!enabledRef.current || !scheduleActiveRef.current) return 'schedule-day';
+        if (paused) return 'paused';
+        const s = rigRef.current?.ai.getSnapshot();
+        if (s?.homeProtected) return 'home-protected';
+        return 'active';
+      },
+      getLastStateTransition: () => {
+        const trans = rigRef.current?.lastStateTransition;
+        if (!trans) return null;
+        return {
+          from: trans.from,
+          to: trans.to,
+          ageSec: Math.max(0, Math.round(((rigRef.current?.audioClockSec ?? 0) - trans.atSec) * 10) / 10),
+        };
+      },
+    };
+    ghostDebugRegistry.set(ghostId, debugEntry);
+    registerGhostDebugProvider(ghostId, debugEntry);
     syncGhostDebugWindow();
 
     // Attach clip loader callback onto ref instance
@@ -675,6 +711,7 @@ function LoadedGhostNpc({
 
     return () => {
       ghostDebugRegistry.delete(ghostId);
+      unregisterGhostDebugProvider(ghostId);
       syncGhostDebugWindow();
       rigRef.current?.dispose();
       rigRef.current = null;
@@ -686,7 +723,9 @@ function LoadedGhostNpc({
     const root = rootRef.current;
     if (!rig || !root || paused) return;
 
-    const dt = Math.min(delta, 0.05);
+    // F03: allow up to 0.25s per frame so low-FPS devices (<20 FPS) don't lose time;
+    // rig.ai.step internally subdivides dt into <=0.05s fixed substeps.
+    const dt = Math.min(delta, 0.25);
     const shouldRun = enabledRef.current && scheduleActiveRef.current;
 
     if (!playerObjRef.current || !playerObjRef.current.parent) {
@@ -736,6 +775,8 @@ function LoadedGhostNpc({
     }
     trafficList.length = trafficLen;
 
+    const isDev = isGhostDevUiAvailable();
+    const tAi0 = isDev ? performance.now() : 0;
     const snap = rig.ai.step({
       dt,
       activeBySchedule: shouldRun,
@@ -747,6 +788,7 @@ function LoadedGhostNpc({
         isOtherGhostGrabbingPlayer(ghostId),
       traffic: trafficList,
     });
+    const tAi1 = isDev ? performance.now() : 0;
 
     camera.getWorldPosition(audioCamera.position);camera.getWorldQuaternion(audioCamera.rotation);
     audioCamera.forward.set(0,0,-1).applyQuaternion(audioCamera.rotation);audioCamera.up.set(0,1,0).applyQuaternion(audioCamera.rotation);
@@ -785,9 +827,16 @@ function LoadedGhostNpc({
      rig.mixerAudio.setChaseTension(ghostId,false,0,dt);
     }
 
-    // DETECTED: brief horror sting once on detection transition with cooldown.
-    const enteredDetected=(snap.state==='OBSERVING_PLAYER'||snap.state==='SCARING')&&rig.lastAiState!=='OBSERVING_PLAYER'&&rig.lastAiState!=='SCARING';
-    if(audible&&enteredDetected&&rig.audioClockSec-rig.lastStingAt>=10){
+    // DETECTED: brief horror sting once on detection transition with cooldown (F11: includes Hunter direct chase).
+    const enteredDetected = shouldTriggerDetectionSting(
+      snap.state,
+      rig.lastAiState,
+      rig.lastStingAt,
+      rig.audioClockSec,
+      retreating,
+      10,
+    );
+    if(audible&&enteredDetected){
      rig.lastStingAt=rig.audioClockSec;
      rig.mixerAudio.playCue({assetId:'horror-sting',fallbackPreset:'ghost_warning',bus:'horrorEvents',owner:ghostId,position:ghostPos,volume:0.78});
     }
@@ -798,16 +847,20 @@ function LoadedGhostNpc({
      rig.mixerAudio.playCue({assetId:'ghost-grab-impact',fallbackPreset:'ghost_grab',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.92});
     }
 
-    // Existing Ghost AI discrete cue events (scream / evil-laugh / flee-scare).
+    // Existing Ghost AI discrete cue events (scream / evil-laugh / flee-scare) - sequence deduplicated (F11).
     if(snap.audioCue&&snap.audioCue.seq!==rig.lastAudioSeq){
      rig.lastAudioSeq=snap.audioCue.seq;
      if(audible){
       if(snap.audioCue.cue==='scream'){
-       rig.lastClipCueAt=rig.audioClockSec;
-       rig.mixerAudio.playCue({assetId:'spectral-shriek',fallbackPreset:'ghost_scream',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.88});
+       if(checkAndCommitScareCue('scream','ai_event',{state:snap.state,scareTriggerCount:snap.scareTriggerCount,grabSeq:snap.grabInteraction.seq,audioClockSec:rig.audioClockSec},rig.scareAudioState)){
+        rig.lastClipCueAt=rig.audioClockSec;
+        rig.mixerAudio.playCue({assetId:'spectral-shriek',fallbackPreset:'ghost_scream',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.88});
+       }
       }else if(snap.audioCue.cue==='evil-laugh'){
-       rig.lastClipCueAt=rig.audioClockSec;
-       rig.mixerAudio.playCue({assetId:'spectral-cackle',fallbackPreset:'ghost_evil_laugh',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.85});
+       if(checkAndCommitScareCue('evil-laugh','ai_event',{state:snap.state,scareTriggerCount:snap.scareTriggerCount,grabSeq:snap.grabInteraction.seq,audioClockSec:rig.audioClockSec},rig.scareAudioState)){
+        rig.lastClipCueAt=rig.audioClockSec;
+        rig.mixerAudio.playCue({assetId:'spectral-cackle',fallbackPreset:'ghost_evil_laugh',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.85});
+       }
       }else if(snap.audioCue.cue==='flee-scare'){
        rig.mixerAudio.playCue({assetId:'horror-sting',fallbackPreset:'ghost_warning',bus:'horrorEvents',owner:ghostId,volume:0.78});
       }
@@ -837,7 +890,6 @@ function LoadedGhostNpc({
       grabPhase:snap.grabInteraction.phase,visible:snap.visible},preset=>{
       if(!audible)return;
       if(preset==='ghost_grab')return;
-      if((preset==='ghost_scream'||preset==='ghost_evil_laugh')&&rig.audioClockSec-rig.lastClipCueAt<0.35)return;
       if(preset==='ghost_footsteps'){
        rig.mixerAudio.playCue({assetId:'distant-footsteps',fallbackPreset:'ghost_footsteps',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.42});
        return;
@@ -851,11 +903,19 @@ function LoadedGhostNpc({
        return;
       }
       if(preset==='ghost_scream'){
-       rig.mixerAudio.playCue({assetId:'spectral-shriek',fallbackPreset:'ghost_scream',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.86});
+       // F11: Deduplicate against GhostAiController scream event and delayed clip arrivals
+       if(checkAndCommitScareCue('scream','animation_sync',{state:snap.state,scareTriggerCount:snap.scareTriggerCount,grabSeq:snap.grabInteraction.seq,audioClockSec:rig.audioClockSec},rig.scareAudioState)){
+        rig.lastClipCueAt=rig.audioClockSec;
+        rig.mixerAudio.playCue({assetId:'spectral-shriek',fallbackPreset:'ghost_scream',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.86});
+       }
        return;
       }
       if(preset==='ghost_evil_laugh'){
-       rig.mixerAudio.playCue({assetId:'spectral-cackle',fallbackPreset:'ghost_evil_laugh',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.82});
+       // F11: Deduplicate against GhostAiController laugh event and delayed clip arrivals
+       if(checkAndCommitScareCue('evil-laugh','animation_sync',{state:snap.state,scareTriggerCount:snap.scareTriggerCount,grabSeq:snap.grabInteraction.seq,audioClockSec:rig.audioClockSec},rig.scareAudioState)){
+        rig.lastClipCueAt=rig.audioClockSec;
+        rig.mixerAudio.playCue({assetId:'spectral-cackle',fallbackPreset:'ghost_evil_laugh',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.82});
+       }
        return;
       }
       rig.audio.play(preset,1,ghostId);
@@ -863,6 +923,18 @@ function LoadedGhostNpc({
 
     if(snap.state==='CHASING'||snap.state==='GRABBING'||snap.state==='SCARING'||snap.state==='OBSERVING_PLAYER'||ghostId==='ghost-1'){
      setGhostAudioDiagnostics({ghostId,state:snap.state,distToPlayerM:Math.round(snap.distToPlayerM*10)/10,chaseActive:chasingActive});
+    }
+    const tAud1 = isDev ? performance.now() : 0;
+    if (isDev) {
+      rig.microTimings.aiMs = Math.round((tAi1 - tAi0) * 100) / 100;
+      rig.microTimings.audioMs = Math.round((tAud1 - tAi1) * 100) / 100;
+    }
+    if (rig.lastAiState && snap.state !== rig.lastAiState) {
+      rig.lastStateTransition = {
+        from: rig.lastAiState,
+        to: snap.state,
+        atSec: rig.audioClockSec,
+      };
     }
     rig.lastAiState=snap.state;
 

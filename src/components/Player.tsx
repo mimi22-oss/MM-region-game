@@ -441,7 +441,8 @@ export const Player = memo(function Player({
  useFrame(({clock},delta)=>{
   const introOwnsCamera=isIntroOwningCamera();
   const introHighAlt=introOwnsCamera&&isIntroHighAltitude();
-  const s=state.current;const dt=loading?0:Math.min(delta,0.05);
+  // F03: bounded frame step up to 0.25s so low-FPS devices (<20 FPS) don't lose displacement
+  const s=state.current;const dt=loading?0:Math.min(delta,0.25);
   if(introOwnsCamera){s.keys.clear();s.panning=false;s.dragging=false;}
   const ground=sceneGround(scene,clock.elapsedTime);
   const height=(x:number,z:number)=>ground.height(x,z);
@@ -738,7 +739,7 @@ export const Player = memo(function Player({
     if((!contact||contact==='obstacle')&&rideLife.crashTime<=0)rideLife.contact=false;
     if(reconcilePlayer&&!j.airborne){
      const fix=reconcilePlayer(s.x,s.z);
-     if(fix&&clear(fix.x,fix.z)){s.x=fix.x;s.z=fix.z;}
+     if(fix&&clear(fix.x,fix.z)){s.x=fix.x;s.z=fix.z;s.camX=fix.x;s.camZ=fix.z;}
     }
     if(hitWalkingContact(contact)){
      if(j.airborne){s.x=j.safeX;s.z=j.safeZ;}jump.current=createHumanJump();jumpPose.current=createJumpPose();

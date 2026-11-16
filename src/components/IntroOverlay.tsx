@@ -62,7 +62,7 @@ export function IntroOverlay({ hidden = false }: { hidden?: boolean }) {
           skipIntro();
         }}
       >
-        <span>ကျော်မည် · Skip Intro</span>
+        <span>ကျော်မည် </span>
         <kbd>Esc</kbd>
       </button>
     </div>

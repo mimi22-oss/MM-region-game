@@ -1,5 +1,6 @@
 import {HauntedWarehouseAudioZone} from './HauntedWarehouseAudioZone';
 import { GhostNpcs } from './GhostNpc';
+import { Ghost3DDebugGizmos } from './Ghost3DDebugGizmos';
 import { CarBots } from './CarBots';
 import type { TimeMode } from '../game/environmentTime';
 import {staticDetails,updateStaticDetails} from '../game/staticVisibility';
@@ -116,6 +117,7 @@ export type StreamedWorldProps = {
   timeMode?: TimeMode;
   soundEnabled?: boolean;
   soundVolume?: number;
+  isAuthoritativeOnline?: boolean;
   onLoadingChange: (state: WorldLoadingState) => void;
   onSceneError: () => void;
 };
@@ -130,6 +132,7 @@ export function StreamedWorld({
   timeMode = 'auto',
   soundEnabled = true,
   soundVolume = 0.3,
+  isAuthoritativeOnline = false,
   onLoadingChange,
   onSceneError,
 }: StreamedWorldProps) {
@@ -394,10 +397,20 @@ const fallbackFocus = { x: 0, z: 0 };
     {!paused && started && !diagnosticConfig.disableNPCs && !hideNpcsDuringHighIntro && <>
       <RobotBots activeRegions={active} />
       <CarBots />
-      <HauntedWarehouseAudioZone enabled={active.includes('myothar')} minute={minute} timeMode={timeMode} soundEnabled={soundEnabled} soundVolume={soundVolume}/>
-
     </>}
-    {started && !diagnosticConfig.disableNPCs && !hideNpcsDuringHighIntro && <>
+    {/* F07: HauntedWarehouseAudioZone operates independently of NPC rendering / diagnostic toggles */}
+    {started && !hideNpcsDuringHighIntro && (
+      <HauntedWarehouseAudioZone
+        enabled={active.includes('myothar')}
+        minute={minute}
+        timeMode={timeMode}
+        soundEnabled={soundEnabled}
+        soundVolume={soundVolume}
+        paused={paused}
+      />
+    )}
+    {/* F04: in authoritative-v2 online multiplayer, server owns ghost simulation; local GhostNpcs is disabled. */}
+    {started && !diagnosticConfig.disableNPCs && !hideNpcsDuringHighIntro && !isAuthoritativeOnline && <>
       <GhostNpcs paused={paused}
         enabled={active.includes('myothar')}
         minute={minute}
@@ -405,6 +418,7 @@ const fallbackFocus = { x: 0, z: 0 };
         soundEnabled={soundEnabled}
         soundVolume={soundVolume}
       />
+      <Ghost3DDebugGizmos />
     </>}
   </>;
 }

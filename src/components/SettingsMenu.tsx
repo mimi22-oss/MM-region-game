@@ -20,6 +20,8 @@ import {
 } from '../game/environmentTime';
 import { useIntroSettings } from '../game/IntroSettings';
 import type { DetectedLocation } from '../game/locationDetect';
+import { isNativeApp } from '../services/platform';
+import { useFullscreen } from '../game/useFullscreen';
 
 type TileIconId =
   | 'human'
@@ -40,7 +42,8 @@ type TileIconId =
   | 'engine3d'
   | 'book'
   | 'help'
-  | 'downloadApk';
+  | 'downloadApk'
+  | 'fullscreen';
 
 type DetailSectionId =
   | 'appearance'
@@ -243,6 +246,12 @@ function renderTileSvgContent(icon: TileIconId): ReactNode {
           <circle cx="12" cy="18.2" r="0.8" fill="currentColor" stroke="none" />
         </>
       );
+    case 'fullscreen':
+      return (
+        <>
+          <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+        </>
+      );
   }
 }
 
@@ -294,6 +303,7 @@ export function SettingsMenu({
   const festivalConfig = useFestivalConfiguration();
   const introSettings = useIntroSettings();
   const rendererMode = useCharacterRendererMode();
+  const { isSupported: fullscreenSupported, isFullscreen, toggleFullscreen } = useFullscreen();
 
   const bodyRef = useRef<HTMLDivElement>(null);
   const appearanceRef = useRef<HTMLDivElement>(null);
@@ -466,6 +476,19 @@ export function SettingsMenu({
             badge: 'Telegram',
             title: 'Android APK Download · t.me/mmregiongame',
             onClick: onOpenApkDownload,
+          },
+        ]
+      : []),
+    ...(!isNativeApp() && fullscreenSupported
+      ? [
+          {
+            id: 'fullscreen-toggle',
+            label: isFullscreen ? 'မျက်နှာပြင် ပုံမှန်' : 'မျက်နှာပြင် အပြည့်',
+            icon: 'fullscreen' as TileIconId,
+            active: isFullscreen,
+            badge: isFullscreen ? 'ON' : 'OFF',
+            title: isFullscreen ? 'ပုံမှန် မျက်နှာပြင်သို့ ပြန်သွားမည်' : 'မျက်နှာပြင် အပြည့်ဖြင့် ကစားမည် (Fullscreen)',
+            onClick: toggleFullscreen,
           },
         ]
       : []),

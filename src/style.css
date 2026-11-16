@@ -11,11 +11,19 @@
 	box-sizing: border-box;
 }
 
+html,
 body {
 	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
 }
 
 main {
+	width: 100vw;
+	width: 100dvw;
+	height: 100vh;
 	height: 100dvh;
 	min-height: 540px;
 	position: relative;
@@ -113,8 +121,8 @@ header p {
 
 .settings-wrap {
 	position: absolute;
-	top: 24px;
-	right: 24px;
+	top: max(24px, calc(env(safe-area-inset-top, 0px) + 16px));
+	right: max(24px, calc(env(safe-area-inset-right, 0px) + 16px));
 	z-index: 15;
 	display: flex;
 }
@@ -444,7 +452,7 @@ footer {
 	bottom: 0;
 	left: 0;
 	right: 0;
-	padding: 12px 24px;
+	padding: 12px max(24px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px));
 	display: flex;
 	justify-content: flex-end;
 	align-items: center;
@@ -1969,12 +1977,15 @@ main.night-mode .home-guidance-pill {
 (hover: none) and (pointer: coarse) {
 	main {
 		min-height: 0;
+		width: 100vw;
+		width: 100dvw;
+		height: 100vh;
 		height: 100dvh;
 	}
 
 	header {
-		top: 16px;
-		left: 16px;
+		top: max(14px, calc(env(safe-area-inset-top, 0px) + 8px));
+		left: max(16px, calc(env(safe-area-inset-left, 0px) + 8px));
 		max-width: calc(100% - 165px);
 	}
 
@@ -1999,8 +2010,8 @@ main.night-mode .home-guidance-pill {
 
 	.location-toast {
 		display: flex !important;
-		top: max(4px, calc(env(safe-area-inset-top) + 10px)) !important;
-		left: 5% !important;
+		top: max(4px, calc(env(safe-area-inset-top, 0px) + 8px)) !important;
+		left: max(5%, calc(env(safe-area-inset-left, 0px) + 12px)) !important;
 		transform: translateX(-5%) !important;
 		width: auto;
 		max-width: calc(100vw - 28px);
@@ -2058,8 +2069,8 @@ main.night-mode .home-guidance-pill {
 	}
 
 	.settings-wrap {
-		top: 14px;
-		right: 14px;
+		top: max(14px, calc(env(safe-area-inset-top, 0px) + 8px));
+		right: max(14px, calc(env(safe-area-inset-right, 0px) + 8px));
 		gap: 6px;
 		max-width: calc(100vw - 24px);
 	}
@@ -2614,6 +2625,17 @@ main.night-mode .home-guidance-pill {
 	kbd {
 		margin-left: 4px;
 		padding: 2px 4px;
+	}
+}
+
+/* Landscape Mobile Viewport Override */
+@media (orientation: landscape) and (max-height: 540px) {
+	main {
+		min-height: 0;
+		width: 100vw;
+		width: 100dvw;
+		height: 100vh;
+		height: 100dvh;
 	}
 }
 

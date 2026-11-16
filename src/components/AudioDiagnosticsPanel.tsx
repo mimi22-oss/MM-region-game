@@ -5,6 +5,7 @@ import {
   runDiagnosticTestAudio,
   useAudioDiagnostics,
 } from '../game/audio/horrorAudioDiagnostics';
+import { toggleGhostDebugOverlay } from '../game/audio/ghostDebugStore';
 
 export function isAudioDiagnosticsAvailable(): boolean {
   return isGhostDevUiAvailable() || diagnosticConfig.enabled;
@@ -197,6 +198,26 @@ function AudioDiagnosticsOverlay({ defaultOpen = false }: { defaultOpen?: boolea
       {open && (
         <div style={{ marginTop: '8px' }}>
           <AudioDiagnosticsContent compact />
+          <div style={{ marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px' }}>
+            <button
+              type="button"
+              data-testid="toggle-ghost-ai-overlay-btn"
+              onClick={() => toggleGhostDebugOverlay()}
+              style={{
+                width: '100%',
+                background: 'rgba(56, 189, 248, 0.15)',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                borderRadius: '6px',
+                color: '#38bdf8',
+                fontSize: '11px',
+                fontWeight: 600,
+                padding: '4px 8px',
+                cursor: 'pointer',
+              }}
+            >
+              👻 Ghost AI Telemetry & 3D Gizmos
+            </button>
+          </div>
         </div>
       )}
     </aside>

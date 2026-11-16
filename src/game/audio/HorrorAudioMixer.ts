@@ -48,8 +48,16 @@ interface LoopChannel {
   disposed: boolean;
 }
 
-const MAX_MIXER_VOICES = 18;
-const MAX_EMITTERS = 12;
+export const MAX_MIXER_VOICES = 18;
+export const MAX_EMITTERS = 12;
+
+export function getCuePriority(assetId?: HorrorAudioId, fallbackPreset?: HorrorPreset): number {
+  if (assetId === 'ghost-grab-impact' || assetId === 'horror-sting') return 3;
+  if (fallbackPreset === 'ghost_grab' || fallbackPreset === 'ghost_warning') return 3;
+  if (assetId === 'spectral-shriek' || assetId === 'spectral-cackle') return 2;
+  if (fallbackPreset === 'ghost_scream' || fallbackPreset === 'ghost_evil_laugh') return 2;
+  return 1;
+}
 
 function clamp01(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
@@ -88,6 +96,8 @@ export class HorrorAudioMixer {
   private droneChannel: LoopChannel | null = null;
   private windChannel: LoopChannel | null = null;
   private proceduralBed: WarehouseAmbientBed | null = null;
+  private proceduralFadingBed: WarehouseAmbientBed | null = null;
+  private proceduralHandoverTimerSec = 0;
   private chaseChannel: LoopChannel | null = null;
   private chaseOwners = new Map<string, number>();
   private proceduralChaseOwner: string | null = null;
@@ -169,23 +179,25 @@ export class HorrorAudioMixer {
     notifyHorrorAudioDiagnosticsChanged();
   }
 
-  private getOrCreateEmitter(owner: string): MixerEmitter | null {
+  private getOrCreateEmitter(owner: string, bus: HorrorAudioBusId): MixerEmitter | null {
     const ctx = gameAudio.context;
-    const dest = this.getBusDestination('ghostEffects');
+    const dest = this.getBusDestination(bus);
     if (!ctx || !dest) return null;
-    const existing = this.emitters.get(owner);
+    const key = `${owner}:${bus}`;
+    const existing = this.emitters.get(key);
     if (existing) return existing;
 
     if (this.emitters.size >= MAX_EMITTERS) {
-      for (const id of this.emitters.keys()) {
-        if (!this.hasActiveVoice(id)) {
-          this.releaseEmitter(id);
+      for (const [k] of this.emitters) {
+        const emitterOwner = k.split(':')[0];
+        if (!this.hasActiveVoice(emitterOwner)) {
+          this.releaseEmitter(k);
           break;
         }
       }
       if (this.emitters.size >= MAX_EMITTERS) {
-        const oldest = this.emitters.keys().next().value;
-        if (oldest) this.releaseEmitter(oldest);
+        const oldestKey = this.emitters.keys().next().value;
+        if (oldestKey) this.releaseEmitter(oldestKey);
       }
     }
 
@@ -205,21 +217,23 @@ export class HorrorAudioMixer {
 
     panner.connect(filter);
     filter.connect(gain);
-    // Emitter gain connects per-voice to panner; bus routing occurs after emitter or direct.
+    // Emitter connects directly to its bus destination without swapping buses
     gain.connect(dest);
 
-    const created: MixerEmitter = { panner, filter, gain, currentBus: 'ghostEffects' };
-    this.emitters.set(owner, created);
+    const created: MixerEmitter = { panner, filter, gain, currentBus: bus };
+    this.emitters.set(key, created);
     return created;
   }
 
-  private releaseEmitter(owner: string): void {
-    const e = this.emitters.get(owner);
-    if (!e) return;
-    e.panner.disconnect();
-    e.filter.disconnect();
-    e.gain.disconnect();
-    this.emitters.delete(owner);
+  private releaseEmitter(ownerOrKey: string): void {
+    for (const [key, e] of [...this.emitters]) {
+      if (key === ownerOrKey || key.startsWith(`${ownerOrKey}:`)) {
+        e.panner.disconnect();
+        e.filter.disconnect();
+        e.gain.disconnect();
+        this.emitters.delete(key);
+      }
+    }
   }
 
   hasActiveVoice(owner: string): boolean {
@@ -240,14 +254,17 @@ export class HorrorAudioMixer {
   ): void {
     this.synth?.position(owner, x, y, z, enabled, level, occluded);
     const ctx = gameAudio.context;
-    const e = this.emitters.get(owner);
-    if (!ctx || !e) return;
+    if (!ctx) return;
     const t = ctx.currentTime;
-    e.panner.positionX.value = x;
-    e.panner.positionY.value = y;
-    e.panner.positionZ.value = z;
-    e.gain.gain.setTargetAtTime(enabled ? clamp01(level) : 0, t, 0.12);
-    e.filter.frequency.setTargetAtTime(occluded ? 950 : 18000, t, 0.12);
+    for (const [key, e] of this.emitters) {
+      if (key === owner || key.startsWith(`${owner}:`)) {
+        e.panner.positionX.value = x;
+        e.panner.positionY.value = y;
+        e.panner.positionZ.value = z;
+        e.gain.gain.setTargetAtTime(enabled ? clamp01(level) : 0, t, 0.12);
+        e.filter.frequency.setTargetAtTime(occluded ? 950 : 18000, t, 0.12);
+      }
+    }
     if (!enabled) {
       this.stopOwner(owner);
     }
@@ -268,6 +285,22 @@ export class HorrorAudioMixer {
     notifyHorrorAudioDiagnosticsChanged();
   }
 
+  private findEvictableVoice(incomingPriority: number): MixerVoice | null {
+    let candidate: MixerVoice | null = null;
+    let lowestPriority = incomingPriority;
+    for (const v of this.voices) {
+      if (v.done || v.stopping) continue;
+      const prio = getCuePriority(v.assetId);
+      if (prio < lowestPriority) {
+        lowestPriority = prio;
+        candidate = v;
+      } else if (candidate && prio === lowestPriority && v.id < candidate.id) {
+        candidate = v;
+      }
+    }
+    return candidate;
+  }
+
   /**
    * Plays an Opus buffer from the audio pack if cached & supported, automatically falling back
    * to procedural synthesis if Opus is unsupported, failed to decode, or not yet downloaded.
@@ -285,9 +318,24 @@ export class HorrorAudioMixer {
     const pitch = Number.isFinite(options.pitch) ? Math.max(0.65, Math.min(1.5, options.pitch!)) : 1;
     const fallbackPreset = options.fallbackPreset ?? descriptor?.fallbackPreset;
 
+    // F08: Enforce unified admission budget before allocating any voices (Opus or Procedural).
+    const incomingPriority = getCuePriority(assetId, fallbackPreset);
+    let totalVoices = this.activeVoiceCount();
+
+    if (totalVoices >= MAX_MIXER_VOICES) {
+      const evictable = this.findEvictableVoice(incomingPriority);
+      if (evictable) {
+        this.cleanupVoice(evictable);
+        totalVoices = this.activeVoiceCount();
+      }
+      if (totalVoices >= MAX_MIXER_VOICES) {
+        return 'skipped';
+      }
+    }
+
     if (assetId && descriptor) {
       const buffer = this.loader.getCachedBuffer(assetId);
-      if (buffer && this.voices.size < MAX_MIXER_VOICES) {
+      if (buffer) {
         const ctx = gameAudio.context;
         const busDest = this.getBusDestination(bus);
         if (ctx && busDest) {
@@ -302,18 +350,13 @@ export class HorrorAudioMixer {
           voiceGain.gain.linearRampToValueAtTime(peak, now + 0.015);
 
           if (descriptor.spatial && options.position) {
-            const emitter = this.getOrCreateEmitter(owner);
+            const emitter = this.getOrCreateEmitter(owner, bus);
             if (emitter) {
               emitter.panner.positionX.value = options.position.x;
               emitter.panner.positionY.value = options.position.y;
               emitter.panner.positionZ.value = options.position.z;
               emitter.filter.frequency.value = options.occluded ? 950 : 18000;
               emitter.gain.gain.value = 1;
-              if (emitter.currentBus !== bus) {
-                emitter.gain.disconnect();
-                emitter.gain.connect(busDest);
-                emitter.currentBus = bus;
-              }
               source.connect(voiceGain).connect(emitter.panner);
             } else {
               source.connect(voiceGain).connect(busDest);
@@ -425,6 +468,9 @@ export class HorrorAudioMixer {
     this.chaseChannel = this.disposeLoopChannel(this.chaseChannel);
     this.proceduralBed?.dispose();
     this.proceduralBed = null;
+    this.proceduralFadingBed?.dispose();
+    this.proceduralFadingBed = null;
+    this.proceduralHandoverTimerSec = 0;
     if (this.proceduralChaseOwner && this.synth) {
       this.synth.stop(this.proceduralChaseOwner, 'ghost_chase_tension');
     }
@@ -444,6 +490,16 @@ export class HorrorAudioMixer {
     disposed: boolean;
     bedMode: 'opus' | 'procedural' | 'inactive';
   } {
+    // Step crossfade handover timer for previous procedural bed if active
+    if (this.proceduralFadingBed) {
+      this.proceduralHandoverTimerSec -= Math.max(0, dt);
+      if (this.proceduralHandoverTimerSec <= 0) {
+        this.proceduralFadingBed.dispose();
+        this.proceduralFadingBed = null;
+        this.proceduralHandoverTimerSec = 0;
+      }
+    }
+
     const cleanLevel = clamp01(level);
     const shouldPlay = active && cleanLevel > 0.001 && this.isAudioRunning();
 
@@ -456,11 +512,15 @@ export class HorrorAudioMixer {
         const drone = this.ensureLoopChannel('warehouse-drone', 'ambience');
         const wind = this.ensureLoopChannel('eerie-wind', 'ambience');
         if (drone && wind) {
-          // Crossfade out procedural fallback cleanly once Opus stems are live.
+          // F10: Crossfade out procedural fallback cleanly with overlap tail once Opus stems are live.
           if (this.proceduralBed) {
             this.proceduralBed.setLevel(0);
-            this.proceduralBed.dispose();
+            if (this.proceduralFadingBed && this.proceduralFadingBed !== this.proceduralBed) {
+              this.proceduralFadingBed.dispose();
+            }
+            this.proceduralFadingBed = this.proceduralBed;
             this.proceduralBed = null;
+            this.proceduralHandoverTimerSec = 0.55;
           }
           // Subtle by day, ominous & full by night
           const dayNightScale = isNight ? 1.0 : 0.28;

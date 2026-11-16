@@ -228,6 +228,29 @@ export class WorldSimulation {
     return true;
   }
 
+  /**
+   * Samples N+1 evenly-spaced points along the segment (x1,z1)→(x2,z2) and
+   * returns false if any sample lands on an impassable cell.
+   * Falls through to true when no walkability provider is wired (offline / test default).
+   * F02 fix: used to block ghost grabs across walls/barriers.
+   */
+  private isSegmentWalkable(
+    x1: number,
+    z1: number,
+    x2: number,
+    z2: number,
+    steps = 6,
+  ): boolean {
+    if (!this.walkability) return true;
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      if (!this.walkability.isPointWalkable(x1 + (x2 - x1) * t, z1 + (z2 - z1) * t)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   private syncPlayerToGrid(p: MutablePlayer): void {
     this.playerGrid.upsert(Object.assign(p, { id: p.sessionId }));
   }
@@ -522,27 +545,34 @@ export class WorldSimulation {
       g.yaw = Math.atan2(dx, dz);
 
       if (dist <= cfg.grabRangeM) {
-        g.state = 'GRABBING';
-        if (nowMs >= g.nextAttackAtMs) {
-          g.nextAttackAtMs = nowMs + cfg.grabCooldownMs;
-          target.hp = Math.max(0, target.hp - cfg.grabDamage);
-          const targetHpAfter = target.hp;
-          const defeated = targetHpAfter === 0;
-          if (defeated) {
-            this.respawnPlayerAtProtectedHome(target);
-            g.targetPlayerId = null;
-            g.state = 'WANDERING';
+        // F02: check that no impassable barrier lies between ghost and player.
+        // If the grab corridor is blocked, treat the state as CHASING so the
+        // ghost tries to path around rather than dealing damage through walls.
+        if (!this.isSegmentWalkable(g.x, g.z, target.x, target.z)) {
+          g.state = 'CHASING';
+        } else {
+          g.state = 'GRABBING';
+          if (nowMs >= g.nextAttackAtMs) {
+            g.nextAttackAtMs = nowMs + cfg.grabCooldownMs;
+            target.hp = Math.max(0, target.hp - cfg.grabDamage);
+            const targetHpAfter = target.hp;
+            const defeated = targetHpAfter === 0;
+            if (defeated) {
+              this.respawnPlayerAtProtectedHome(target);
+              g.targetPlayerId = null;
+              g.state = 'WANDERING';
+            }
+            this.recordCombatEvent({
+              attackerId: g.id,
+              attackerKind: 'ghost',
+              targetId: target.sessionId,
+              targetKind: 'player',
+              abilityId: 'ghost-grab',
+              damage: cfg.grabDamage,
+              targetHpAfter,
+              defeated,
+            });
           }
-          this.recordCombatEvent({
-            attackerId: g.id,
-            attackerKind: 'ghost',
-            targetId: target.sessionId,
-            targetKind: 'player',
-            abilityId: 'ghost-grab',
-            damage: cfg.grabDamage,
-            targetHpAfter,
-            defeated,
-          });
         }
       } else {
         g.state = 'CHASING';

@@ -37,6 +37,8 @@ export type GhostAiState =
   | 'COOLDOWN'
   | 'DESPAWNING';
 
+export const CHASE_PATH_REFRESH_INTERVAL_SEC = 0.35;
+
 export interface GhostTrafficSample {
   readonly x: number;
   readonly z: number;
@@ -94,6 +96,15 @@ export interface GhostAiSnapshot {
   readonly grabInteraction: Readonly<GhostEncounterInteractionState>;
   readonly distToPlayerM: number;
   readonly hasLineOfSight: boolean;
+  readonly directPath: boolean;
+  readonly replanCount: number;
+  readonly scareCooldownTimer: number;
+  readonly encounterCooldownTimer: number;
+  readonly pathQueue: readonly string[];
+  readonly pathWaypoints: readonly GhostWaypoint[];
+  readonly safeCooldown: boolean;
+  readonly targetX: number;
+  readonly targetZ: number;
 }
 
 /** Deterministic PRNG step (LCG) for reproducible AI variation across runs & unit tests. */
@@ -256,6 +267,7 @@ export class GhostAiController {
   private fallTriggerCount = 0;
   private chaseTriggerCount = 0;
   private grabCount = 0;
+  private replanCount = 0;
   private audioSeq = 0;
   private lastAudioCue: GhostAiAudioEvent | null = null;
   private lastDistToPlayer = 999;
@@ -408,7 +420,8 @@ export class GhostAiController {
     return best;
   }
 
-  private setTargetWaypoint(goal: GhostWaypoint): void {
+  public setTargetWaypoint(goal: GhostWaypoint): void {
+    this.replanCount++;
     const nearestCur = this.findNearestWaypoint(this.x, this.z);
     this.currentWaypointId = nearestCur.id;
     this.targetWaypointId = goal.id;
@@ -551,6 +564,8 @@ export class GhostAiController {
         this.cyclePendingReset=true;
         this.opacity = 1;
         this.pathQueue = [];
+        this.targetWaypointId = '';
+        this.directPath = false;
         this.chasePathRefreshTimer = 0;
         this.chaseClipChoice = this.rand() < 0.45 ? 'flee_02' : 'flee_01';
         this.stateDuration = this.cfg.maxChaseDurationSec;
@@ -842,7 +857,25 @@ export class GhostAiController {
   }
 
   public step(input: GhostAiStepInput): GhostAiSnapshot {
-    const dt = Math.max(0, Math.min(0.05, input.dt));
+    // F03: Bounded fixed-substep accumulator.
+    // Cap total elapsed time per frame at 0.25s (250ms) to prevent spiral-of-death
+    // or giant teleports on tab resumption, while subdividing low-FPS frames
+    // (e.g. 5Hz) into <= 0.05s substeps so displacement, timers, and speeds
+    // remain consistent across 5Hz, 15Hz, 30Hz, and 60Hz.
+    const totalDt = Math.max(0, Math.min(0.25, input.dt));
+    if (totalDt <= 0) {
+      return this.getSnapshot();
+    }
+    const MAX_SUBSTEP = 0.05;
+    const substeps = Math.max(1, Math.ceil(totalDt / MAX_SUBSTEP));
+    const dt = totalDt / substeps;
+    for (let s = 0; s < substeps; s++) {
+      this.stepSubstep(dt, input);
+    }
+    return this.getSnapshot();
+  }
+
+  private stepSubstep(dt: number, input: GhostAiStepInput): void {
     const port = this.spatialPort;
     const walkCheck = input.walkCheck ?? (port ? (x, z) => port.isPointWalkable(x, z) : isGhostPointWalkable);
     const checkHomeProtected = (x: number, z: number, buffer = 0) =>
@@ -894,19 +927,19 @@ export class GhostAiController {
           if(walkCheck(spawn.x,spawn.z)){this.x=spawn.x;this.z=spawn.z;}
         }
       }
-      return this.getSnapshot();
+      return;
     }
     if(this.safeCooldown){
       this.opacity=0;this.stateTimer+=dt;
-      if(buffered||this.stateTimer<HOME_RETREAT.cooldownSec)return this.getSnapshot();
+      if(buffered||this.stateTimer<HOME_RETREAT.cooldownSec)return;
       const spawn=this.env.waypointById.get(this.originalSpawnId)!;
-      if(!walkCheck(spawn.x,spawn.z)||checkHomeProtected(spawn.x,spawn.z,HOME_RETREAT.buffer))return this.getSnapshot();
+      if(!walkCheck(spawn.x,spawn.z)||checkHomeProtected(spawn.x,spawn.z,HOME_RETREAT.buffer))return;
       this.x=spawn.x;this.z=spawn.z;this.currentWaypointId=spawn.id;this.homeWaypointId=spawn.id;
       this.safeCooldown=false;this.resetEncounterCycle(distToPlayer);this.transitionTo('SPAWNING');
       if(!input.activeBySchedule)this.transitionTo('DORMANT');
-      return this.getSnapshot();
+      return;
     }
-    if(this.homeProtected)return this.getSnapshot();
+    if(this.homeProtected)return;
 
     // Global schedule exit: fade smoothly out unless already DORMANT.
     if (!input.activeBySchedule) {
@@ -947,7 +980,7 @@ export class GhostAiController {
       distFromZone > this.cfg.aiSuspendDistanceM
     ) {
       this.lastHasLos = false;
-      return this.getSnapshot();
+      return;
     }
 
     const { detected, los } = this.canSensePlayer(updatedDistToPlayer, input.playerX, input.playerZ);
@@ -1185,16 +1218,24 @@ export class GhostAiController {
           this.setTargetWaypoint(esc);
           break;
         }
-        this.chaseSpeed=Math.min(this.cfg.chaseSpeedMps,this.chaseSpeed+(this.cfg.chaseAccelerationMps2??8)*dt);
-        this.chasePathRefreshTimer-=dt;
-        if(this.chasePathRefreshTimer<=0){this.chasePathRefreshTimer=.3;this.directPath=los&&this.traversable(this.x,this.z,input.playerX,input.playerZ,walkCheck);}
-        if (this.directPath&&los) {
+        this.chaseSpeed = Math.min(this.cfg.chaseSpeedMps, this.chaseSpeed + (this.cfg.chaseAccelerationMps2 ?? 8) * dt);
+        this.chasePathRefreshTimer -= dt;
+        const refreshTimerExpired = this.chasePathRefreshTimer <= 0;
+        if (refreshTimerExpired) {
+          this.chasePathRefreshTimer = CHASE_PATH_REFRESH_INTERVAL_SEC;
+          this.directPath = los && this.traversable(this.x, this.z, input.playerX, input.playerZ, walkCheck);
+        }
+        if (this.directPath && los) {
           this.steerToward(input.playerX, input.playerZ, this.chaseSpeed, dt, walkCheck);
         } else {
-
-          if (this.pathQueue.length === 0 || this.stateTimer% .3<dt) {
-            this.chasePathRefreshTimer = 0.45;
-            const playerNode = this.findNearestWaypoint(input.playerX, input.playerZ);
+          const directLost = this.directPath && !los;
+          if (directLost) {
+            this.directPath = false;
+          }
+          const playerNode = this.findNearestWaypoint(input.playerX, input.playerZ);
+          const targetWaypointChanged = playerNode.id !== this.targetWaypointId;
+          if (targetWaypointChanged || refreshTimerExpired || directLost) {
+            this.chasePathRefreshTimer = CHASE_PATH_REFRESH_INTERVAL_SEC;
             this.setTargetWaypoint(playerNode);
           }
           if (this.pathQueue.length > 0) {
@@ -1285,8 +1326,6 @@ export class GhostAiController {
         break;
       }
     }
-
-    return this.getSnapshot();
   }
 
   /** Programmatic trigger helper for automated verification tests and dev diagnostics. */
@@ -1330,6 +1369,15 @@ export class GhostAiController {
       },
       distToPlayerM: this.lastDistToPlayer,
       hasLineOfSight: this.lastHasLos,
+      directPath: this.directPath,
+      replanCount: this.replanCount,
+      scareCooldownTimer: this.scareCooldownTimer,
+      encounterCooldownTimer: this.encounterCooldownTimer,
+      pathQueue: this.pathQueue,
+      pathWaypoints: this.pathQueue.map((id) => this.env.waypointById.get(id)).filter((w): w is GhostWaypoint => Boolean(w)),
+      safeCooldown: this.safeCooldown,
+      targetX: this.env.waypointById.get(this.targetWaypointId)?.x ?? this.x,
+      targetZ: this.env.waypointById.get(this.targetWaypointId)?.z ?? this.z,
     };
   }
 }

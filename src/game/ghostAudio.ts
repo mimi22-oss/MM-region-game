@@ -27,6 +27,87 @@ export class HorrorAnimationSync {
   this.state=frame.state;this.clip=frame.clip;this.time=frame.clipTime;this.phase=frame.grabPhase;
  }
 }
+
+/** F11: Evaluates whether an encounter transition warrants an immediate horror detection sting. */
+export function shouldTriggerDetectionSting(
+  state: string,
+  lastAiState: string,
+  lastStingAt: number,
+  audioClockSec: number,
+  retreating = false,
+  cooldownSec = 10,
+): boolean {
+  if (retreating) return false;
+  const isDetectionState = state === 'OBSERVING_PLAYER' || state === 'SCARING' || state === 'CHASING';
+  const wasEncounterState =
+    lastAiState === 'OBSERVING_PLAYER' ||
+    lastAiState === 'SCARING' ||
+    lastAiState === 'CHASING' ||
+    lastAiState === 'GRABBING';
+  const enteredDetected = isDetectionState && !wasEncounterState;
+  return enteredDetected && (audioClockSec - lastStingAt >= cooldownSec);
+}
+
+/** F11: Sequence-keyed encounter audio deduplication state to prevent double-firing on cold clip loads. */
+export interface GhostScareAudioState {
+  lastAudioSeq: number;
+  lastScreamScareSeq: number;
+  lastLaughScareSeq: number;
+  lastLaughGrabSeq: number;
+  lastClipCueAt: number;
+}
+
+export function createGhostScareAudioState(): GhostScareAudioState {
+  return {
+    lastAudioSeq: 0,
+    lastScreamScareSeq: -1,
+    lastLaughScareSeq: -1,
+    lastLaughGrabSeq: -1,
+    lastClipCueAt: -Infinity,
+  };
+}
+
+/**
+ * F11: Atomically checks and commits a scare cue (scream or evil-laugh), deduplicating between
+ * GhostAiController discrete events and HorrorAnimationSync clip callbacks.
+ */
+export function checkAndCommitScareCue(
+  cueType: 'scream' | 'evil-laugh',
+  source: 'ai_event' | 'animation_sync',
+  ctx: {
+    state: string;
+    scareTriggerCount: number;
+    grabSeq: number;
+    audioClockSec: number;
+  },
+  state: GhostScareAudioState,
+): boolean {
+  if (cueType === 'scream') {
+    if (ctx.state !== 'SCARING') return false;
+    if (ctx.scareTriggerCount === state.lastScreamScareSeq) return false;
+    state.lastScreamScareSeq = ctx.scareTriggerCount;
+    state.lastClipCueAt = ctx.audioClockSec;
+    return true;
+  }
+
+  if (cueType === 'evil-laugh') {
+    if (ctx.state === 'SCARING') {
+      if (ctx.scareTriggerCount === state.lastLaughScareSeq) return false;
+      state.lastLaughScareSeq = ctx.scareTriggerCount;
+      state.lastClipCueAt = ctx.audioClockSec;
+      return true;
+    }
+    if (ctx.state === 'GRABBING') {
+      if (ctx.grabSeq === state.lastLaughGrabSeq) return false;
+      state.lastLaughGrabSeq = ctx.grabSeq;
+      state.lastClipCueAt = ctx.audioClockSec;
+      return true;
+    }
+    return false;
+  }
+
+  return false;
+}
 /** Runtime synthesis only. Bounded voices, shared noise/graph, independent spatial emitters. */
 export class GhostHorrorAudio {
  private noise:AudioBuffer|null=null;

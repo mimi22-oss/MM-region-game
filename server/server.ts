@@ -10,6 +10,7 @@ import {
   type AuthoritativeRoomRuntimeConfig,
 } from './TownAuthoritativeRoom.ts';
 import type { WorldSimulation } from './worldSimulation.ts';
+import { createDefaultWalkabilityPort } from './walkabilityProviders.ts';
 
 export interface TownServerOptions {
   readonly authSecret?: string;
@@ -30,6 +31,9 @@ export function createTownServer(options: TownServerOptions = {}) {
     maxPlayers: options.maxAuthoritativePlayers,
     interestRadiusM: options.interestRadiusM,
     combatEnabled: options.combatEnabled ?? true,
+    // F02: provide default warehouse collision + home protection so the
+    // authoritative ghost cannot grab players through impassable walls.
+    walkability: createDefaultWalkabilityPort(),
     onSimulationCreated: options.onAuthoritativeRoomCreated,
   };
 

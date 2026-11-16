@@ -16,6 +16,7 @@ import { MultiplayerPanel } from './multiplayer/MultiplayerPanel';
 import { RemotePlayers } from './multiplayer/RemotePlayers';
 import { EnvironmentAudio } from './components/EnvironmentAudio';
 import { AudioDiagnosticsPanel } from './components/AudioDiagnosticsPanel';
+import { GhostAiDebugOverlay } from './components/GhostAiDebugOverlay';
 import { BalloonControls } from './components/BalloonControls';
 import { emptyBalloonStatus, clearBalloonInput, type BalloonStatus } from './game/balloonRide';
 import { isVehicleWaitingPickupLocked, useVehicleWaiting } from './game/vehicleWaiting';
@@ -64,6 +65,8 @@ import { startupDiagnostics } from "./game/startupDiagnostics";
 import { diagnosticConfig } from "./game/diagnosticMode";
 import { MobileControls } from "./components/MobileControls";
 import { createMobileInput, resetMobileInput } from "./game/mobileInput";
+import { isNativeApp } from "./services/platform";
+import { useFullscreen } from "./game/useFullscreen";
 import React, {
   Component,
   lazy,
@@ -75,6 +78,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { createRoot } from "react-dom/client";
@@ -171,9 +175,12 @@ class SceneError extends Component<
   }
 }
 function App() {
+  const { isSupported: fullscreenSupported, isFullscreen, toggleFullscreen } = useFullscreen();
   const [renderDpr,setRenderDpr]=useState(()=>mobileQuality?1:Math.max(1,Math.min(window.devicePixelRatio||1,1.25)));
   const [multiplayer] = useState(() => new MultiplayerSession());
   useEffect(() => () => multiplayer.leave(), [multiplayer]);
+  const mpSnapshot = useSyncExternalStore(multiplayer.subscribe, multiplayer.getSnapshot);
+  const isAuthoritativeOnline = mpSnapshot.mode === 'authoritative-v2' && mpSnapshot.status === 'connected';
   const mapLabelsHost = useRef<HTMLDivElement>(null);
   const [sceneLoading, setSceneLoading] = useState<WorldLoadingState>({
     blocking: true,
@@ -795,6 +802,7 @@ function App() {
       <GhostGameOver/>
       <EnvironmentAudio period={environment.period} volume={environment.preferences.volume} enabled={environment.preferences.sound} active={visible&&!loading}/>
       <AudioDiagnosticsPanel />
+      <GhostAiDebugOverlay />
       <div className="game-content" inert={loading}>
       <div
         className="scene-wrap"
@@ -848,7 +856,7 @@ function App() {
           >
             <FrameBudget paused={loading || !visible} onDprChange={setRenderDpr}/>
             <RemotePlayers session={multiplayer} />
-            <Town minute={environment.minute} timeMode={environment.preferences.mode} soundEnabled={environment.preferences.sound} soundVolume={environment.preferences.volume} destination={teleportTarget} paused={loading || !visible} onLoadingChange={setSceneLoading} onSceneError={sceneError} />
+            <Town isAuthoritativeOnline={isAuthoritativeOnline} minute={environment.minute} timeMode={environment.preferences.mode} soundEnabled={environment.preferences.sound} soundVolume={environment.preferences.volume} destination={teleportTarget} paused={loading || !visible} onLoadingChange={setSceneLoading} onSceneError={sceneError} />
             <TeleportPicker
               active={teleportMode}
               pin={teleportPin}
@@ -1041,6 +1049,43 @@ function App() {
                             : null
                   }
                 />
+                {!isNativeApp() && fullscreenSupported && (
+                  <button
+                    type="button"
+                    className={isFullscreen ? "location-btn-active" : ""}
+                    aria-label={isFullscreen ? "မျက်နှာပြင်ပြည့် (Fullscreen) မှ ထွက်မည်" : "မျက်နှာပြင်ပြည့် (Fullscreen) ဖွင့်မည်"}
+                    title={isFullscreen ? "မျက်နှာပြင်ပြည့် ပိတ်မည်" : "မျက်နှာပြင်ပြည့် (Fullscreen)"}
+                    onClick={() => {
+                      toggleFullscreen();
+                    }}
+                  >
+                    {isFullscreen ? (
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        aria-hidden="true"
+                      >
+                        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        aria-hidden="true"
+                      >
+                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                      </svg>
+                    )}
+                  </button>
+                )}
                 {navigationNotice && <p role="status">{navigationNotice}</p>}
               </div>
               <UpdateTriggerButton
