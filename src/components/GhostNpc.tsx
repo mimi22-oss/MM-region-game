@@ -1,3 +1,11 @@
+import {combatLineClear,registerCombatTarget,playerCombat} from '../game/combat/combatRuntime';
+import {ghostCombatReaction,requestGhostReaction,finishGhostReaction,clearGhostCombatReaction,setGhostCombatEngaged} from '../game/combat/GhostCombatReactions';
+import {GuardMeleeController} from '../game/combat/GuardMeleeController';
+import {isPlayerHomeProtected} from '../game/playerHomeProtection';
+import {isGhostSegmentWalkable} from '../data/ghostWarehouseWaypoints';
+import { getGhostRuntime, registerGhostRuntime } from '../game/missions/ghostRuntimeRegistry';
+import { guardMissionActive, updateGhostGuard, getGuardGhost, seedGuardGhost } from '../game/missions/ghostGuardCoordinator';
+import { GHOST_STATS, isGhostDefeated } from '../game/missions/threeGhostsMission';
 import {killPlayerFromGhost,playerUnavailableForGhost} from '../game/playerDeath';
 import {createGhostGrabPose} from '../game/ghostGrabPose';
 import {createGhostPersonalityConfig,ghostPersonalityForId} from '../game/ghostPersonalities';
@@ -451,6 +459,8 @@ function LoadedGhostNpc({
   initialSeed?: number;
 }) {
   const rootRef = useRef<Group>(null);
+  const runtimeRef = useRef<ReturnType<typeof registerGhostRuntime> | null>(null);
+  const runtimeWorld = useMemo(() => new Vector3(), []);
   const rigRef = useRef<{
     rigObject: Group;
     mixer: AnimationMixer;
@@ -478,6 +488,12 @@ function LoadedGhostNpc({
     microTimings: { aiMs: number; audioMs: number };
     scareAudioState: GhostScareAudioState;
     grabPose:ReturnType<typeof createGhostGrabPose>;
+    guardMelee:GuardMeleeController;
+    reactionSeq:number;
+    playerReactionSeq:number;
+    reactionClip:string|null;
+    deathComplete:boolean;
+    playCombat:(name:string)=>void;
     audioSync:HorrorAnimationSync;
     dispose: () => void;
   } | null>(null);
@@ -509,7 +525,7 @@ function LoadedGhostNpc({
     cloned.updateMatrixWorld(true);
     const bounds = new Box3().setFromObject(cloned);
     const size = bounds.getSize(new Vector3());
-    const scale = GHOST_TARGET_HEIGHT_M / Math.max(0.05, size.y);
+    const scale = (GHOST_TARGET_HEIGHT_M / 2) * (GHOST_STATS[ghostId as keyof typeof GHOST_STATS]?.scale ?? 2) / Math.max(0.05, size.y);
     cloned.scale.multiplyScalar(scale);
     cloned.position.set(
       (-(bounds.min.x + bounds.max.x) * scale) * 0.5,
@@ -545,8 +561,22 @@ function LoadedGhostNpc({
 
     group.add(cloned);
     group.visible = false;
+    const runtime = registerGhostRuntime(ghostId);
+    runtimeRef.current = runtime;
 
     let disposed = false;
+    const releaseTarget=registerCombatTarget(ghostId,{root:group,height:size.y*scale,radius:Math.min(.65,Math.max(.3,size.x*scale*.3))});
+    const playCombat=(name:string)=>{
+      const clip=modelGltf.animations.find(c=>c.name===name);
+      if(!clip){console.warn('Missing ghost combat clip',name);return;}
+      if(rigRef.current)rigRef.current.reactionClip=name;
+      controller.play(clip,{loop:false,crossFadeSec:.08,endHoldSec:0,fadeOutSec:.12});
+    };
+    controller.onFinished(()=>{
+      const rig=rigRef.current;if(!rig?.reactionClip)return;
+      if(rig.reactionClip==='Ghost_Death')rig.deathComplete=true;
+      finishGhostReaction(ghostId,rig.reactionSeq);rig.reactionClip=null;rig.currentClipKey='';
+    });
 
     const ensureClip = (clipId: GhostClipId): Promise<AnimationClip | null> => {
       const existing = cachedGhostClips.get(clipId);
@@ -580,6 +610,7 @@ function LoadedGhostNpc({
     ]);
 
     const applyClip = (clipId: GhostClipId, loop: boolean, speedScale: number) => {
+      if(rigRef.current?.reactionClip)return;
       const spec = GHOST_CLIP_SPECS[clipId];
       const finalSpeed = spec.basePlaybackSpeed * speedScale;
       const cached = cachedGhostClips.get(clipId);
@@ -594,7 +625,7 @@ function LoadedGhostNpc({
         return;
       }
       void ensureClip(clipId).then((loadedClip) => {
-        if (disposed || !loadedClip) return;
+        if (disposed || !loadedClip || rigRef.current?.reactionClip) return;
         const curState = rigRef.current?.ai.getActiveClipDirective();
         if (curState && curState.clipId === clipId) {
           controller.play(loadedClip, {
@@ -618,7 +649,7 @@ function LoadedGhostNpc({
     }
 
     const dispose = () => {
-      disposed = true;
+      disposed = true;releaseTarget();clearGhostCombatReaction(ghostId);
       clearGhostEncounterInteraction(ghostId);
       clearGhostThreat(ghostId);
       if (typeof document !== 'undefined') {
@@ -669,6 +700,8 @@ function LoadedGhostNpc({
       microTimings: { aiMs: 0, audioMs: 0 },
       scareAudioState: createGhostScareAudioState(),
       grabPose:createGhostGrabPose(cloned),
+      guardMelee:new GuardMeleeController(DEFAULT_GHOST_AI_CONFIG.grabHoldDurationSec,DEFAULT_GHOST_AI_CONFIG.playerFallDurationSec),
+      playerReactionSeq:-1,reactionSeq:0,reactionClip:null,deathComplete:isGhostDefeated(ghostId),playCombat,
       audioSync:new HorrorAnimationSync(),
       dispose,
     };
@@ -710,6 +743,8 @@ function LoadedGhostNpc({
     (rigRef.current as unknown as { applyClip: typeof applyClip }).applyClip = applyClip;
 
     return () => {
+      runtime.release();
+      if (runtimeRef.current === runtime) runtimeRef.current = null;
       ghostDebugRegistry.delete(ghostId);
       unregisterGhostDebugProvider(ghostId);
       syncGhostDebugWindow();
@@ -721,12 +756,38 @@ function LoadedGhostNpc({
   useFrame(({ scene, clock, camera }, delta) => {
     const rig = rigRef.current;
     const root = rootRef.current;
-    if (!rig || !root || paused) return;
+    if (!rig || !root) return;
+    if (paused) {
+      const previous = getGhostRuntime(ghostId);
+      const snap = rig.ai.getSnapshot();
+      runtimeRef.current?.report(previous?.x ?? snap.x, previous?.z ?? snap.z, false, 'PAUSED', previous?.source ?? 'ai');
+      return;
+    }
+    if (isGhostDefeated(ghostId)) {
+      runtimeRef.current?.clear();root.userData.ghostAttackEnabled=false;root.userData.ghostCollisionEnabled=false;
+      clearGhostEncounterInteraction(ghostId);clearGhostThreat(ghostId);rig.guardMelee.cancel();
+      rig.audio.stop(ghostId);rig.mixerAudio.stopOwner(ghostId);
+      if(rig.deathComplete){root.visible=false;return;}
+      if(rig.reactionClip!=='Ghost_Death'){const e=ghostCombatReaction(ghostId);rig.reactionSeq=e?.seq??0;rig.playCombat('Ghost_Death');}
+      root.visible=true;rig.controller.stepBlend(false,false,Math.min(delta,.25));rig.mixer.update(Math.min(delta,.25));
+      const clip=modelGltf.animations.find(c=>c.name==='Ghost_Death');
+      const normalized=clip?(rig.mixer.existingAction(clip,rig.rigObject)?.time??0)/clip.duration:1;
+      const opacity=Math.min(1,(1-normalized)/.2);
+      for(const material of rig.materials)applyGhostOpacity(material,opacity);
+      if(!clip)rig.deathComplete=true;
+      return;
+    }
+    const reaction=ghostCombatReaction(ghostId);
+    if(reaction&&reaction.seq!==rig.reactionSeq){
+      rig.reactionSeq=reaction.seq;rig.guardMelee.cancel();clearGhostEncounterInteraction(ghostId);rig.playCombat(reaction.clip);
+    }
+    root.visible = true;
 
     // F03: allow up to 0.25s per frame so low-FPS devices (<20 FPS) don't lose time;
     // rig.ai.step internally subdivides dt into <=0.05s fixed substeps.
     const dt = Math.min(delta, 0.25);
-    const shouldRun = enabledRef.current && scheduleActiveRef.current;
+    const missionGuard = guardMissionActive();
+    const shouldRun = enabledRef.current && scheduleActiveRef.current && !missionGuard;
 
     if (!playerObjRef.current || !playerObjRef.current.parent) {
       playerObjRef.current = (scene.getObjectByName('player-avatar') as Group | null) ?? null;
@@ -778,7 +839,7 @@ function LoadedGhostNpc({
     const isDev = isGhostDevUiAvailable();
     const tAi0 = isDev ? performance.now() : 0;
     const snap = rig.ai.step({
-      dt,
+      dt:rig.reactionClip&&rig.reactionClip!=='Ghost_Attack'?0:dt,
       activeBySchedule: shouldRun,
       playerX: px,
       playerZ: pz,
@@ -794,7 +855,8 @@ function LoadedGhostNpc({
     audioCamera.forward.set(0,0,-1).applyQuaternion(audioCamera.rotation);audioCamera.up.set(0,1,0).applyQuaternion(audioCamera.rotation);
     gameAudio.listener(audioCamera.position.x,audioCamera.position.y,audioCamera.position.z,audioCamera.forward.x,audioCamera.forward.y,audioCamera.forward.z,audioCamera.up.x,audioCamera.up.y,audioCamera.up.z);
     if(snap.playerKilled&&rig.lastKillSeq!==snap.grabInteraction.seq){rig.lastKillSeq=snap.grabInteraction.seq;killPlayerFromGhost(ghostId,snap.grabInteraction.seq,px,pz);}
-    setGhostEncounterInteraction(snap.grabInteraction, ghostId);
+    if(!missionGuard)setGhostEncounterInteraction(snap.grabInteraction, ghostId);
+    if(!missionGuard&&snap.state==='GRABBING'&&snap.grabInteraction.phase==='neck-grab'&&rig.lastAiState!=='GRABBING')rig.playCombat('Ghost_Attack');
     setGhostThreatActive(
       ghostId,
       snap.state === 'SCARING' ||
@@ -938,6 +1000,59 @@ function LoadedGhostNpc({
     }
     rig.lastAiState=snap.state;
 
+    // Record the authoritative AI position even when distance culling hides the mesh.
+    // A spawn-zone anchor must NEVER count as an encounter.
+    if (!missionGuard) runtimeRef.current?.report(snap.x, snap.z, shouldRun && snap.visible, snap.state);
+    if (missionGuard && (ghostId === 'ghost-1' || ghostId === 'ghost-2' || ghostId === 'ghost-3')) {
+      const id = ghostId as 'ghost-1' | 'ghost-2' | 'ghost-3';
+      seedGuardGhost(id, snap.x, snap.z);
+      updateGhostGuard(clock.elapsedTime, px, pz);
+      const guard = getGuardGhost(id);
+      runtimeRef.current?.report(guard.x, guard.z, true, guard.mode);
+      if (rig.lastAppliedOpacity !== 1) {
+        rig.lastAppliedOpacity = 1;
+        for (const material of rig.materials) applyGhostOpacity(material, 1);
+      }
+      const distanceToPlayer = Math.hypot(guard.x-px, guard.z-pz);
+      const attackClip=modelGltf.animations.find(c=>c.name==='Ghost_Attack');
+      const attackNormalized=attackClip?(rig.mixer.existingAction(attackClip,rig.rigObject)?.time??0)/attackClip.duration:0;
+      let defence=playerCombat.defend();
+      if(defence==='block'||defence==='parry'){
+        const heading=playerObjRef.current?.rotation.y??0;
+        if((-Math.sin(heading)*(guard.x-px)-Math.cos(heading)*(guard.z-pz))/Math.max(.001,distanceToPlayer)<.3)defence='none';
+      }
+      const interaction=rig.guardMelee.step({dt,x:guard.x,z:guard.z,distance:distanceToPlayer,protected:isPlayerHomeProtected(px,pz),
+        valid:distanceToPlayer<=2.45&&guard.mode==='chase'&&combatLineClear(guard.x,guard.z,px,pz)&&!playerUnavailableForGhost()&&!camera.userData.playerOccupied&&(!rig.reactionClip||rig.reactionClip==='Ghost_Attack')&&isGhostSegmentWalkable(guard.x,guard.z,px,pz,.25),
+        attackNormalized,defence});
+      if(rig.guardMelee.started)rig.playCombat('Ghost_Attack');
+      if(interaction.active&&interaction.phase==='neck-grab'&&rig.playerReactionSeq!==interaction.seq){rig.playerReactionSeq=interaction.seq;playerCombat.interrupt(ghostId==='ghost-3'?'Knockback':'Hit_React');}
+      if(rig.guardMelee.parried)requestGhostReaction(ghostId,'Ghost_Stagger');
+      setGhostCombatEngaged(ghostId,rig.guardMelee.engaged);
+      setGhostEncounterInteraction(interaction,ghostId);
+      if(rig.guardMelee.killed)killPlayerFromGhost(ghostId,interaction.seq,px,pz);
+      root.userData.ghostAttackEnabled=rig.guardMelee.engaged&&!isPlayerHomeProtected(px,pz);
+      runtimeRef.current?.report(guard.x,guard.z,true,rig.guardMelee.engaged?'GRABBING':guard.mode);
+      if(!rig.reactionClip){
+        const guardClip=guard.mode==='chase'||guard.mode==='gather'||guard.mode==='return'?'flee_01':'depressed';
+        const key='guard:'+guardClip;
+        if(rig.currentClipKey!==key){rig.currentClipKey=key;(rig as unknown as {applyClip:(id:GhostClipId,loop:boolean,speed:number)=>void}).applyClip(guardClip,true,1);}
+      }
+      root.visible = distanceToPlayer < DEFAULT_GHOST_AI_CONFIG.visibleDistanceM;
+      if (!root.visible) return;
+      rig.groundTimer += dt;
+      if (!rig.grounded || rig.groundTimer >= 0.35) {
+        rig.groundTimer = 0; rig.grounded = true;
+        rig.y = sceneGround(scene, clock.elapsedTime).height(guard.x,guard.z)+0.01;
+      }
+      root.position.set(guard.x,rig.y,guard.z);
+      root.getWorldPosition(runtimeWorld);
+      runtimeRef.current?.report(runtimeWorld.x, runtimeWorld.z, true, rig.guardMelee.engaged?'GRABBING':guard.mode, 'entity');
+      if (guard.mode === 'chase') root.rotation.y = Math.atan2(px-guard.x,pz-guard.z);
+      rig.controller.stepBlend(false,false,dt);
+      rig.mixer.update(dt);
+      if(interaction.active&&interaction.phase==='neck-grab'&&!rig.reactionClip)rig.grabPose.update(px,py+1.35,pz,root.rotation.y);
+      return;
+    }
     const withinVis = snap.visible && snap.distToPlayerM <= DEFAULT_GHOST_AI_CONFIG.visibleDistanceM;
     root.visible = withinVis;
     if (!withinVis) return;
@@ -953,6 +1068,8 @@ function LoadedGhostNpc({
 
     root.position.set(snap.x, rig.y, snap.z);
     root.rotation.set(0, snap.yaw, 0);
+    root.getWorldPosition(runtimeWorld);
+    runtimeRef.current?.report(runtimeWorld.x, runtimeWorld.z, shouldRun && snap.visible, snap.state, 'entity');
 
     // Apply opacity fade transitions cleanly without dirtying materials every frame
     if (Math.abs(snap.opacity - rig.lastAppliedOpacity) > 0.003) {
@@ -965,7 +1082,7 @@ function LoadedGhostNpc({
 
     // Update active animation clip cleanly when directive changes
     const clipKey = `${snap.activeClip.clipId}:${snap.activeClip.loop ? 1 : 0}`;
-    if (clipKey !== rig.currentClipKey) {
+    if (!rig.reactionClip&&clipKey !== rig.currentClipKey) {
       rig.currentClipKey = clipKey;
       const applyFn = (
         rig as unknown as {
@@ -973,7 +1090,7 @@ function LoadedGhostNpc({
         }
       ).applyClip;
       applyFn?.(snap.activeClip.clipId, snap.activeClip.loop, snap.activeClip.speedScale);
-    } else {
+    } else if(!rig.reactionClip) {
       const spec = GHOST_CLIP_SPECS[snap.activeClip.clipId];
       rig.controller.setSpeed(spec.basePlaybackSpeed * snap.activeClip.speedScale);
     }
@@ -982,7 +1099,7 @@ function LoadedGhostNpc({
     if (snap.distToPlayerM <= DEFAULT_GHOST_AI_CONFIG.aiSuspendDistanceM) {
       rig.controller.stepBlend(false, false, dt);
       rig.mixer.update(dt);
-      if(snap.grabInteraction.phase==='neck-grab')rig.grabPose.update(px,py+1.35,pz,snap.yaw);
+      if(snap.grabInteraction.phase==='neck-grab'&&!rig.reactionClip)rig.grabPose.update(px,py+1.35,pz,snap.yaw);
     }
   });
 

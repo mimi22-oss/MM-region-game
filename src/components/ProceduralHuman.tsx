@@ -165,7 +165,7 @@ function Arm({ side, innerRef }: { side: number; innerRef: RefObject<Group | nul
 	return <group ref={innerRef} position={[side * .219, 1.175, 0]} rotation={[0, 0, side * .14]}>
 		<mesh geometry={sleeve} material={materials.hoodie} castShadow />
 		<mesh geometry={cuff} material={materials.rib} castShadow />
-		<group position={[0, -.515, -.006]} rotation={[.08, 0, side * .07]}>
+		<group name={side>0?'equipment-right-hand':'equipment-left-hand'} position={[0, -.515, -.006]} rotation={[.08, 0, side * .07]}>
 			{/* Flattened, slightly tapered palm reads as a real open hand instead of a ball. */}
 			<Ellipsoid position={[0, .006, -.004]} scale={[.052, .066, .024]} material={materials.skin} />
 			<Ellipsoid position={[0, -.03, .008]} scale={[.046, .032, .021]} material={materials.skin} />

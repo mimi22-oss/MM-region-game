@@ -1,3 +1,4 @@
+import React, { Suspense } from 'react';
 import { FarmEstate } from './FarmEstate';
 import { HomeGate, HomeDirections } from './HomeGate';
 import { farmhouse } from '../data/ward';
@@ -8,6 +9,7 @@ import { DoubleSide } from 'three';
 import { CarCallSpotMarker } from './CarCallSpotMarker';
 import { sourceIsEdited } from '../game/worldEdits';
 import { SubscriptionBillboard } from './SubscriptionBillboard';
+import { CatCompanion } from './CatCompanion';
 
 /**
  * Character's walk-in Farmhouse (စိုက်ခင်းအိမ်):
@@ -30,6 +32,9 @@ export function FarmhouseBuilding({ ignoreEdits = false }: { ignoreEdits?: boole
 
 	return (
 		<group position={[h.x, 0, h.z]} rotation={[0, rot, 0]} name="character-farmhouse">
+            <Suspense fallback={null}>
+                <CatCompanion />
+            </Suspense>
             <PorchCandles width={3.6} front={5} y={.23}/>
             <FestivalAnchor items={[
                 {x: 0, y: .88, z: 0, holder: true},

@@ -1,3 +1,4 @@
+import { hasCompletedThreeGhostsMission } from './missions/threeGhostsMission.ts';
 import { parkedCars } from '../data/cars.ts';
 import type {CarAppearance,CarModel} from '../data/appearance';
 
@@ -66,6 +67,7 @@ export function nearbyCar(x: number, z: number, clear: (x: number, z: number) =>
  });
 }
 export function enterCar(car: DriveableCar) {
+  if (!hasCompletedThreeGhostsMission()) { carRide.notice = 'Ghost Mission ပြီးမှ ကားစီးနိုင်ပါမယ်'; return; }
  carRide.carId = car.id; carRide.automaticRange='P'; carRide.gear = 0; carRide.nearTime = 0; carRide.nearId = null; carRide.notice = '';
  car.speed = 0; clearCarInput();
 }

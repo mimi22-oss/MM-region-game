@@ -18,7 +18,7 @@ export const GHOST_WAREHOUSE_ANCHOR = {
   referenceYawRad: 1.186194,
 } as const;
 
-export const GHOST_MODEL_URL = '/models/ghost-woman.glb';
+export const GHOST_MODEL_URL = '/models/enemies/ghost-woman-combat-animated.glb';
 
 /** Default autonomous night ghost count distributed across randomized haunt zones. */
 export const DEFAULT_GHOST_COUNT = 3;

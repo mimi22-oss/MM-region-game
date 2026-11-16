@@ -1,0 +1,474 @@
+{
+  "before": {
+    "kind": "boy",
+    "state": {
+      "phase": "IDLE",
+      "clip": null,
+      "sequence": 0,
+      "normalized": 0,
+      "capable": true,
+      "ready": true,
+      "busy": false,
+      "locked": false
+    },
+    "hand": "mixamorigRightHand",
+    "swords": 1,
+    "player": {
+      "x": 124.45079348883236,
+      "y": 0,
+      "z": -33.941125496954264
+    },
+    "base": {
+      "x": 124.5517532266199,
+      "y": 1.1911249039102614,
+      "z": -34.23479315857729
+    },
+    "tip": {
+      "x": 124.71669548462563,
+      "y": 1.627302795725431,
+      "z": -34.6818490660827
+    },
+    "progress": {
+      "version": 1,
+      "encountered": [
+        "ghost-1",
+        "ghost-2",
+        "ghost-3"
+      ],
+      "swordCollected": true,
+      "hp": {
+        "ghost-1": 100,
+        "ghost-2": 150,
+        "ghost-3": 200
+      },
+      "completed": false
+    },
+    "death": {
+      "phase": "alive",
+      "ghostId": null,
+      "generation": 0
+    },
+    "trailHead": 0,
+    "impactHead": 0,
+    "trails": [],
+    "ghosts": [
+      {
+        "id": "ghost-1",
+        "runtime": {
+          "id": "ghost-1",
+          "x": 124.45079348883236,
+          "z": -35.041125496954265,
+          "active": true,
+          "state": "return",
+          "source": "entity",
+          "updatedAt": 32874
+        },
+        "visible": true
+      },
+      {
+        "id": "ghost-2",
+        "runtime": {
+          "id": "ghost-2",
+          "x": 179.45079348883235,
+          "z": 1.058874503045736,
+          "active": true,
+          "state": "return",
+          "source": "entity",
+          "updatedAt": 32874
+        },
+        "visible": true
+      },
+      {
+        "id": "ghost-3",
+        "runtime": {
+          "id": "ghost-3",
+          "x": 189.45079348883235,
+          "z": 1.058874503045736,
+          "active": true,
+          "state": "return",
+          "source": "entity",
+          "updatedAt": 32874
+        },
+        "visible": true
+      }
+    ],
+    "renders": {
+      "calls": 30,
+      "triangles": 173582,
+      "textures": 8
+    },
+    "rigCount": 1
+  },
+  "startup": {
+    "kind": "boy",
+    "state": {
+      "phase": "STARTUP",
+      "clip": "Slash_Left",
+      "sequence": 1,
+      "normalized": 0,
+      "capable": true,
+      "ready": true,
+      "busy": true,
+      "locked": true
+    },
+    "hand": "mixamorigRightHand",
+    "swords": 1,
+    "player": {
+      "x": 124.45079348883236,
+      "y": 0,
+      "z": -33.941125496954264
+    },
+    "base": {
+      "x": 124.55177959618732,
+      "y": 1.191100139403426,
+      "z": -34.23545317194834
+    },
+    "tip": {
+      "x": 124.71684315773565,
+      "y": 1.6272777704938708,
+      "z": -34.68246455405894
+    },
+    "progress": {
+      "version": 1,
+      "encountered": [
+        "ghost-1",
+        "ghost-2",
+        "ghost-3"
+      ],
+      "swordCollected": true,
+      "hp": {
+        "ghost-1": 100,
+        "ghost-2": 150,
+        "ghost-3": 200
+      },
+      "completed": false
+    },
+    "death": {
+      "phase": "alive",
+      "ghostId": null,
+      "generation": 0
+    },
+    "trailHead": 0,
+    "impactHead": 0,
+    "trails": [],
+    "ghosts": [
+      {
+        "id": "ghost-1",
+        "runtime": {
+          "id": "ghost-1",
+          "x": 124.45079348883236,
+          "z": -35.041125496954265,
+          "active": true,
+          "state": "return",
+          "source": "entity",
+          "updatedAt": 33000.69999999553
+        },
+        "visible": true
+      },
+      {
+        "id": "ghost-2",
+        "runtime": {
+          "id": "ghost-2",
+          "x": 179.45079348883235,
+          "z": 1.058874503045736,
+          "active": true,
+          "state": "return",
+          "source": "entity",
+          "updatedAt": 33000.69999999553
+        },
+        "visible": true
+      },
+      {
+        "id": "ghost-3",
+        "runtime": {
+          "id": "ghost-3",
+          "x": 189.45079348883235,
+          "z": 1.058874503045736,
+          "active": true,
+          "state": "return",
+          "source": "entity",
+          "updatedAt": 33000.69999999553
+        },
+        "visible": true
+      }
+    ],
+    "renders": {
+      "calls": 30,
+      "triangles": 173582,
+      "textures": 8
+    },
+    "rigCount": 1
+  },
+  "active": {
+    "kind": "boy",
+    "state": {
+      "phase": "ACTIVE",
+      "clip": "Slash_Left",
+      "sequence": 1,
+      "normalized": 0.3562903198380407,
+      "capable": true,
+      "ready": true,
+      "busy": true,
+      "locked": true
+    },
+    "hand": "mixamorigRightHand",
+    "swords": 1,
+    "player": {
+      "x": 124.45079348883236,
+      "y": 0,
+      "z": -33.941125496954264
+    },
+    "base": {
+      "x": 124.16182893875855,
+      "y": 1.1731443381661864,
+      "z": -34.222574147918365
+    },
+    "tip": {
+      "x": 123.6342725498647,
+      "y": 1.2718339447542284,
+      "z": -34.582102462737375
+    },
+    "progress": {
+      "version": 1,
+      "encountered": [
+        "ghost-1",
+        "ghost-2",
+        "ghost-3"
+      ],
+      "swordCollected": true,
+      "hp": {
+        "ghost-1": 100,
+        "ghost-2": 150,
+        "ghost-3": 200
+      },
+      "completed": false
+    },
+    "death": {
+      "phase": "alive",
+      "ghostId": null,
+      "generation": 0
+    },
+    "trailHead": 5,
+    "impactHead": 0,
+    "trails": [
+      {
+        "base": {
+          "x": 124.09832746888335,
+          "y": 1.178337903161673,
+          "z": -34.15737049425514
+        },
+        "tip": {
+          "x": 123.47506855684775,
+          "y": 1.2883877153163301,
+          "z": -34.28680541182154
+        },
+        "seq": 1
+      },
+      {
+        "base": {
+          "x": 124.105315128196,
+          "y": 1.173813381263742,
+          "z": -34.17204129410165
+        },
+        "tip": {
+          "x": 123.49200725061222,
+          "y": 1.2764427333130777,
+          "z": -34.34707463232534
+        },
+        "seq": 1
+      },
+      {
+        "base": {
+          "x": 124.11662821559628,
+          "y": 1.1789207074633765,
+          "z": -34.18194890565451
+        },
+        "tip": {
+          "x": 123.51900342495844,
+          "y": 1.287956922531062,
+          "z": -34.40165702144553
+        },
+        "seq": 1
+      },
+      {
+        "base": {
+          "x": 124.14060127725031,
+          "y": 1.1721958392649836,
+          "z": -34.20521994047057
+        },
+        "tip": {
+          "x": 123.57708810700733,
+          "y": 1.270602589156191,
+          "z": -34.50536156302546
+        },
+        "seq": 1
+      },
+      {
+        "base": {
+          "x": 124.16182893875855,
+          "y": 1.1731443381661864,
+          "z": -34.222574147918365
+        },
+        "tip": {
+          "x": 123.6342725498647,
+          "y": 1.2718339447542284,
+          "z": -34.582102462737375
+        },
+        "seq": 1
+      }
+    ],
+    "ghosts": [
+      {
+        "id": "ghost-1",
+        "runtime": {
+          "id": "ghost-1",
+          "x": 124.45079348883236,
+          "z": -35.041125496954265,
+          "active": true,
+          "state": "return",
+          "source": "entity",
+          "updatedAt": 33223.60000000149
+        },
+        "visible": true
+      },
+      {
+        "id": "ghost-2",
+        "runtime": {
+          "id": "ghost-2",
+          "x": 179.45079348883235,
+          "z": 1.058874503045736,
+          "active": true,
+          "state": "return",
+          "source": "entity",
+          "updatedAt": 33223.69999999553
+        },
+        "visible": true
+      },
+      {
+        "id": "ghost-3",
+        "runtime": {
+          "id": "ghost-3",
+          "x": 189.45079348883235,
+          "z": 1.058874503045736,
+          "active": true,
+          "state": "return",
+          "source": "entity",
+          "updatedAt": 33223.79999999702
+        },
+        "visible": true
+      }
+    ],
+    "renders": {
+      "calls": 30,
+      "triangles": 173582,
+      "textures": 8
+    },
+    "rigCount": 1
+  },
+  "hit": {
+    "kind": "boy",
+    "state": {
+      "phase": "IDLE",
+      "clip": null,
+      "sequence": 1,
+      "normalized": 1,
+      "capable": true,
+      "ready": true,
+      "busy": false,
+      "locked": false
+    },
+    "hand": "mixamorigRightHand",
+    "swords": 1,
+    "player": {
+      "x": 124.45079348883236,
+      "y": 0,
+      "z": -33.941125496954264
+    },
+    "base": {
+      "x": 124.55176103964405,
+      "y": 1.1911179766380549,
+      "z": -34.23498849195386
+    },
+    "tip": {
+      "x": 124.71673927205703,
+      "y": 1.6272957637453664,
+      "z": -34.682031222092036
+    },
+    "progress": {
+      "version": 1,
+      "encountered": [
+        "ghost-1",
+        "ghost-2",
+        "ghost-3"
+      ],
+      "swordCollected": true,
+      "hp": {
+        "ghost-1": 90,
+        "ghost-2": 150,
+        "ghost-3": 200
+      },
+      "completed": false
+    },
+    "death": {
+      "phase": "alive",
+      "ghostId": null,
+      "generation": 0
+    },
+    "trailHead": 18,
+    "impactHead": 1,
+    "trails": [],
+    "ghosts": [
+      {
+        "id": "ghost-1",
+        "runtime": {
+          "id": "ghost-1",
+          "x": 124.45079348883236,
+          "z": -35.041125496954265,
+          "active": true,
+          "state": "return",
+          "source": "entity",
+          "updatedAt": 34285.89999999851
+        },
+        "visible": true,
+        "reaction": {
+          "seq": 1,
+          "clip": "Ghost_Hit",
+          "stunned": false,
+          "engaged": false
+        }
+      },
+      {
+        "id": "ghost-2",
+        "runtime": {
+          "id": "ghost-2",
+          "x": 179.45079348883235,
+          "z": 1.058874503045736,
+          "active": true,
+          "state": "return",
+          "source": "entity",
+          "updatedAt": 34286.19999999553
+        },
+        "visible": true
+      },
+      {
+        "id": "ghost-3",
+        "runtime": {
+          "id": "ghost-3",
+          "x": 189.45079348883235,
+          "z": 1.058874503045736,
+          "active": true,
+          "state": "return",
+          "source": "entity",
+          "updatedAt": 34286.29999999702
+        },
+        "visible": true
+      }
+    ],
+    "renders": {
+      "calls": 30,
+      "triangles": 173582,
+      "textures": 8
+    },
+    "rigCount": 1
+  }
+}

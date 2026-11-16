@@ -1,3 +1,4 @@
+import { ThreeGhostsMissionHud } from './components/ThreeGhostsMissionHud';
 import {GhostGameOver} from './components/GhostGameOver';
 import '@fontsource/noto-sans-myanmar/400.css';
 import '@fontsource/noto-sans-myanmar/600.css';
@@ -800,6 +801,7 @@ function App() {
   return (
     <main className={night ? "night-mode" : ""} data-time-period={environment.period}>
       <GhostGameOver/>
+      {!loading && <ThreeGhostsMissionHud />}
       <EnvironmentAudio period={environment.period} volume={environment.preferences.volume} enabled={environment.preferences.sound} active={visible&&!loading}/>
       <AudioDiagnosticsPanel />
       <GhostAiDebugOverlay />

@@ -1,0 +1,47 @@
+✔ runtime mount replacement cannot inherit data or be deleted/updated by the old mount (2.2886ms)
+✔ all ghost IDs move independently; invalid values cannot poison fresh positions (1.7537ms)
+✔ fresh movement beats guard/spawn; stale data and unseeded guard never appear LIVE (0.6728ms)
+✔ map uses uniform X/Z scale; resizing SVG does not change world projection (0.8169ms)
+✔ equipped sword resolves real GLB/procedural hand anchors and detects detached rigs (1.6659ms)
+✔ held GLB hierarchy has a grip pivot and human-size blade without changing shared resources (5.5102ms)
+✔ blade grip points forward/down on rotated rigs and then follows hand animation (1.6876ms)
+✔ saved mission progress survives load; unique encounters and live sword distances preserve progression (59.0532ms)
+✔ bundled ghost character GLB and 7 extracted motion GLBs are valid, compatible, and duplicate-free (871.573ms)
+✔ isGhostNightActive enforces 18:00-05:00 schedule plus manual night and dev force overrides (1.3822ms)
+✔ warehouse waypoint graph aligns with Area 5 geometry, LOS wall blocking, and editor overrides (287.4912ms)
+✔ GhostAiController transitions deterministically across spawn, hide, observe, scare, flee, cooldown, road crossing, and despawn (146.9695ms)
+✔ rollGhostChaseThreshold covers 2..6 inclusive and persists unchanged during an active cycle (78.3044ms)
+✔ thresholds 2..6 never gate first chase, neck-grab, fall and lethal completion (209.7738ms)
+✔ all 8 haunt zones build connected, obstacle-clear waypoint graphs across myothar (1698.7787ms)
+✔ selectRandomGhostZones distributes 3 ghosts cleanly and non-warehouse anchors run independently (488.0144ms)
+✔ multi-owner ghost grab interaction preserves active grab when idle ghosts publish state (1.5106ms)
+✔ selectActiveGhostZones always guarantees warehouse-row while northern corridor entry spawns cleanly (2564.1715ms)
+✔ IDs assign distinct independent personalities; detect radius and observation use initial tuning (28.8528ms)
+✔ walking players can be caught, sprinting players escape, and valid close contact beats acceleration (22.2754ms)
+✔ grab requires LOS and traversable corridor; ghost contact does not drag/move player or ghost (1.1313ms)
+✔ delta-time chase is comparable at 30/60Hz and never clamps/teleports back to patrol disk (2.097ms)
+✔ lethal contact, safe-home veto, one death, respawn and grace restore the player lifecycle (0.9963ms)
+✔ authored waypoint navigation routes around a wall or tree without crossing blocked geometry (5.8503ms)
+✔ exact scene circle boundary is inclusive and editor polygon replaces fallback safely (10.7562ms)
+✔ protection precedes same-frame catch, scare windup, and active grab (10.7694ms)
+✔ three independent ghosts retreat, fade over two seconds, return to spawn, and respect exit buffer/cooldown (33.5843ms)
+✔ retreat never crosses blocked geometry or moves closer to protection, and pause does not advance fade (17.5783ms)
+✔ dormant ghosts do not respawn inside protection, including a moved editor boundary over spawn (7.3414ms)
+✔ per-instance fade restores authored material state without changing shared materials or recompiling each frame (5.4989ms)
+✔ buffered six-hit combo advances once in its window; timeout, early input and recovery are enforced (3.4109ms)
+✔ death, incapacitation, pause and unequip suppress attacks; defensive windows are bounded (0.6441ms)
+✔ one mixer finishes actions, never restarts on renders, and samples only active clip time at 15/30/60Hz (21.7101ms)
+✔ replacement animation owners and cleanup cannot disable a new character driver (1.9146ms)
+✔ swept blade hits across a frame and misses remote/behind volumes, including point segments (1.6221ms)
+✔ guard contact follows animation marker; protection, parry and invalid contact preempt death (2.0997ms)
+✔ ghost reaction and engagement state stays independent; stale completion cannot clear a newer stun (0.9307ms)
+✔ real damage resolver requires active blade contact, facing and group clearance; hits once, emits impacts and death (17.6154ms)
+✔ all supplied GLBs load: counts, bindings, finite transforms and every exact combat clip playback (254.3742ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9521.1822

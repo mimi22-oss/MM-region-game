@@ -1,0 +1,3 @@
+× Copying web assets from dist to android\app\src\main\assets\public - failed!
+× copy android - failed!
+[error] Error: ENOSPC: no space left on device, copyfile 'C:\Users\EBPMyanmar\Desktop\Myanmar-Town-Prototype\dist\map\kanbale\68bfa30f429b9d52b602\tiles\000005.1e2bffccd288c1c8ed88.json' -> 'C:\Users\EBPMyanmar\Desktop\Myanmar-Town-Prototype\android\app\src\main\assets\public\map\kanbale\68bfa30f429b9d52b602\tiles\000005.1e2bffccd288c1c8ed88.json'

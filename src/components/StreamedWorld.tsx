@@ -1,3 +1,4 @@
+import { ThreeGhostsMissionScene } from './ThreeGhostsMissionScene';
 import {HauntedWarehouseAudioZone} from './HauntedWarehouseAudioZone';
 import { GhostNpcs } from './GhostNpc';
 import { Ghost3DDebugGizmos } from './Ghost3DDebugGizmos';
@@ -389,6 +390,7 @@ const fallbackFocus = { x: 0, z: 0 };
   const hideNpcsDuringHighIntro = intro.active && isIntroHighAltitude(intro);
 
   return <>
+    {started && active.includes('myothar') && <ThreeGhostsMissionScene />}
     {myothar && <RegionBuilder id="myothar" Scene={myothar} live active={started && active.includes('myothar')} onBuilt={onBuilt} />}
     {building && building !== 'myothar' && Scene && !cache.current.has(building) &&
       <RegionBuilder key={building} id={building} Scene={Scene} onBuilt={onBuilt} />}

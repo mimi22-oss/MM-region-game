@@ -1,4 +1,5 @@
-import { test, beforeEach } from 'node:test';
+import {completeVehicleMission} from './fixtures/completedVehicleMission.ts';
+import { test, before, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
 import { Box3, Vector3 } from 'three';
@@ -77,6 +78,7 @@ async function parseAnimationOnlyGlb(
 	return { gltf, byteLength: bytes.length, json };
 }
 
+before(completeVehicleMission);
 beforeEach(() => {
 	parkCar();
 	Object.assign(car, {

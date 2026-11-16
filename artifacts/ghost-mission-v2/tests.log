@@ -1,0 +1,40 @@
+
+> mm-region-game@1.0.0 test:ghost-mission
+> node --experimental-strip-types --test tests/ghostMissionRuntime.test.ts tests/ghostNpc.test.ts tests/ghostProximity.test.ts tests/ghostPersonalities.test.ts tests/playerHomeProtection.test.ts
+
+✔ runtime mount replacement cannot inherit data or be deleted/updated by the old mount (2.6156ms)
+✔ all ghost IDs move independently; invalid values cannot poison fresh positions (1.5915ms)
+✔ fresh movement beats guard/spawn; stale data and unseeded guard never appear LIVE (0.8348ms)
+✔ map uses uniform X/Z scale; resizing SVG does not change world projection (0.6568ms)
+✔ saved mission progress survives load; unique encounters and live sword distances preserve progression (45.5706ms)
+✔ bundled ghost character GLB and 7 extracted motion GLBs are valid, compatible, and duplicate-free (1037.0527ms)
+✔ isGhostNightActive enforces 18:00-05:00 schedule plus manual night and dev force overrides (1.9776ms)
+✔ warehouse waypoint graph aligns with Area 5 geometry, LOS wall blocking, and editor overrides (376.5762ms)
+✔ GhostAiController transitions deterministically across spawn, hide, observe, scare, flee, cooldown, road crossing, and despawn (214.9597ms)
+✔ rollGhostChaseThreshold covers 2..6 inclusive and persists unchanged during an active cycle (77.6457ms)
+✔ thresholds 2..6 never gate first chase, neck-grab, fall and lethal completion (164.5428ms)
+✔ all 8 haunt zones build connected, obstacle-clear waypoint graphs across myothar (1039.8206ms)
+✔ selectRandomGhostZones distributes 3 ghosts cleanly and non-warehouse anchors run independently (254.9704ms)
+✔ multi-owner ghost grab interaction preserves active grab when idle ghosts publish state (1.0866ms)
+✔ selectActiveGhostZones always guarantees warehouse-row while northern corridor entry spawns cleanly (1913.9446ms)
+✔ IDs assign distinct independent personalities; detect radius and observation use initial tuning (16.8112ms)
+✔ walking players can be caught, sprinting players escape, and valid close contact beats acceleration (24.7175ms)
+✔ grab requires LOS and traversable corridor; ghost contact does not drag/move player or ghost (1.0336ms)
+✔ delta-time chase is comparable at 30/60Hz and never clamps/teleports back to patrol disk (2.0374ms)
+✔ lethal contact, safe-home veto, one death, respawn and grace restore the player lifecycle (1.5947ms)
+✔ authored waypoint navigation routes around a wall or tree without crossing blocked geometry (4.584ms)
+✔ first continuous visible proximity chases even when random approach threshold is six (13.5863ms)
+✔ exact scene circle boundary is inclusive and editor polygon replaces fallback safely (3.9409ms)
+✔ protection precedes same-frame catch, scare windup, and active grab (7.8113ms)
+✔ three independent ghosts retreat, fade over two seconds, return to spawn, and respect exit buffer/cooldown (18.0597ms)
+✔ retreat never crosses blocked geometry or moves closer to protection, and pause does not advance fade (6.6816ms)
+✔ dormant ghosts do not respawn inside protection, including a moved editor boundary over spawn (5.4745ms)
+✔ per-instance fade restores authored material state without changing shared materials or recompiling each frame (4.456ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10127.2209

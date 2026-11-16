@@ -4,6 +4,7 @@ import {Mesh,MeshStandardMaterial,type Texture} from 'three';
 import {GLTFLoader,type GLTF} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type {HumanAppearance} from '../data/appearance';
 import {createGlbHuman} from '../game/glbHuman';
+import {COMBAT_MODEL_URLS} from '../game/combat/AttackDefinitions';
 import {getQualityPreset,useQualityPreset} from '../game/qualityPreset';
 import {
  getSpecialAction,
@@ -19,8 +20,8 @@ import type {CharacterMotion,DrivingPose} from './CartoonCharacter';
 
 // 3D boy/girl model files: Vite emits these URLs in production as well as development.
 export const HUMAN_MODEL_URLS={
- boy:new URL('../assets/boy.glb',import.meta.url).href,
- girl:new URL('../assets/girl.glb',import.meta.url).href,
+ boy:COMBAT_MODEL_URLS.boy,
+ girl:COMBAT_MODEL_URLS.girl,
 };
 const models=new Map<string,Promise<GLTF>>();
 
@@ -73,7 +74,7 @@ function loadModel(url:string){
  }
  return pending;
 }
-type Props={preset:'boy'|'girl';appearance:HumanAppearance;motion:RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>;onError:()=>void};
+type Props={preset:'boy'|'girl';appearance:HumanAppearance;motion:RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>;combat?:boolean;onError:()=>void};
 export function GlbHuman(props:Props){
  const url=HUMAN_MODEL_URLS[props.preset];
  const [model,setModel]=useState<GLTF>();
@@ -84,7 +85,7 @@ export function GlbHuman(props:Props){
  },[url]);
  return model?<LoadedHuman {...props} model={model}/>:null;
 }
-function LoadedHuman({model,preset,appearance,motion,riding=false,driving}:Props&{model:GLTF}){
+function LoadedHuman({model,preset,appearance,motion,riding=false,driving,combat=false}:Props&{model:GLTF}){
  const quality=useQualityPreset();
  const special=useSpecialAction();
  const canPlaySpecial=!riding&&!driving;
@@ -92,13 +93,13 @@ function LoadedHuman({model,preset,appearance,motion,riding=false,driving}:Props
  const [instance,setInstance]=useState<ReturnType<typeof createGlbHuman>|null>(null);
  // Manage the imperative Three.js controller inside useLayoutEffect so StrictMode remounts create a fresh instance instead of reusing a disposed useMemo instance.
  useLayoutEffect(()=>{
-  const created=createGlbHuman(model.scene,{castShadow:getQualityPreset().characterCastShadow,preset});
+  const created=createGlbHuman(model.scene,{castShadow:getQualityPreset().characterCastShadow,preset,combatClips:combat?model.animations:undefined});
   setInstance(created);
   return ()=>{
    setInstance(current=>current===created?null:current);
    created.dispose();
   };
- },[model,preset]);
+ },[model,preset,combat]);
  useEffect(()=>{instance?.setCastShadow(quality.characterCastShadow);},[instance,quality.characterCastShadow]);
  useEffect(()=>{
   if(!instance)return;
@@ -149,7 +150,7 @@ function LoadedHuman({model,preset,appearance,motion,riding=false,driving}:Props
    });
   return ()=>{cancelled=true;};
  },[instance,activeSpecialId,special.startedAtMs,special.generation,preset,model]);
- useFrame((_,delta)=>{if(instance&&(!driving||driving.current.active))instance.update(motion.current,riding,driving?.current,delta);});
+ useFrame((_,delta)=>{if(instance&&(!driving||driving.current.active))instance.update(motion.current,riding,driving?.current,delta);},combat?-.5:0);
  if(!instance)return null;
  // Preserve the supplied texture artwork; height remains adjustable in Appearance.
  return <group name={`glb-${preset}-character`} scale={riding||driving?1:appearance.height} userData={{humanPreset:preset,model:HUMAN_MODEL_URLS[preset]}}>

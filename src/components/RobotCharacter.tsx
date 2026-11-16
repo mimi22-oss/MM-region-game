@@ -375,7 +375,7 @@ export function RobotCharacter({
 						<cylinderGeometry args={[0.033, 0.033, 0.09, 10]} />
 						<meshStandardMaterial color={dark} />
 					</mesh>
-					<group position={[side*.34,.6,-.01]}><RobotHand style={appearance?.hands??'rounded'} color={mint} accent={orange}/></group>
+					<group name={side>0?'equipment-right-hand':'equipment-left-hand'} position={[side*.34,.6,-.01]}><RobotHand style={appearance?.hands??'rounded'} color={mint} accent={orange}/></group>
 				</group>
 			))}
 

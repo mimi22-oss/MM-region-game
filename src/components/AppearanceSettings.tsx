@@ -33,7 +33,7 @@ export function AppearanceSettings({kind,onKindChange,characterLocked=false,carL
     <Field label={`အရပ် · ${Math.round(settings.human.height*100)}%`}><input aria-label="အရပ်" type="range" min=".8" max="1.2" step=".01" value={settings.human.height} onChange={e=>human({height:Number(e.target.value)})}/></Field>
     <Choice label="ဖိနပ်ပုံစံ" value={settings.human.shoes} options={[["sneakers","Sneakers"],["boots","Boots"],["sandals","ခြေညှပ်ဖိနပ်"]]} onChange={shoes=>human({shoes})}/>
     <Color label="ဖိနပ်အရောင်" value={settings.human.shoeColor} onChange={shoeColor=>human({shoeColor})}/>
-    <Choice label="Character Engine" value={rendererMode} options={[['glb','GLB (Boy / Girl)'],['code','Code Character (Procedural)']]} onChange={(mode:CharacterRendererMode)=>setCharacterRendererMode(mode)}/>
+    <Choice label="Character Engine" value={rendererMode} options={[['glb','GLB (Boy / Girl)'],['canolia','Canolia GLB'],['code','Code Character (Procedural)']]} onChange={(mode:CharacterRendererMode)=>setCharacterRendererMode(mode)}/>
     <p>လူဇာတ်ကောင်နှင့် ယာဉ်မောင်းတွင် သုံးပါမည်။ စီးနင်းချိန်တွင် ထိုင်ခုံနှင့် ကိုက်ညီအောင် အရပ်ကို ညှိပေးသည်။</p>
    </>}
    {tab==='robot'&&<>

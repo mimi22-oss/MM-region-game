@@ -1,3 +1,7 @@
+import {playerCombat} from '../game/combat/combatRuntime';
+import {getThreeGhostsProgress} from '../game/missions/threeGhostsMission';
+import {HeldGhostSword} from './HeldGhostSword';
+import { hasCompletedThreeGhostsMission } from '../game/missions/threeGhostsMission';
 import {getPlayerDeathState,findProtectedRespawn,completePlayerRespawn,stepPlayerRespawnGrace} from '../game/playerDeath';
 import {PLAYER_ON_FOOT_SPEED} from '../game/ghostPersonalities';
 import {PassengerBalloon} from './PassengerBalloon';
@@ -459,7 +463,7 @@ export const Player = memo(function Player({
     if(mobileInput?.current)resetMobileInput(mobileInput.current);onMode(false);onTopDown(false);onZoom(6);completePlayerRespawn();
    }
   }
-  if(life.phase==='dead'){s.keys.clear();s.jumpRequested=false;if(mobileInput?.current)resetMobileInput(mobileInput.current);return;}
+  if(life.phase==='dead'){playerCombat.context(getThreeGhostsProgress().swordCollected,false,false,true);s.keys.clear();s.jumpRequested=false;if(mobileInput?.current)resetMobileInput(mobileInput.current);return;}
   if(tickRideLife(mapOpen||controlsBlocked?0:dt)){
    interruptVehicleWaiting();
    if(balloonRide.riding)resetBalloon();
@@ -508,7 +512,10 @@ export const Player = memo(function Player({
   }
   const ghostInteraction=getGhostEncounterInteraction();
   const ghostGrabbedOnFoot=ghostInteraction.active&&!balloonRide.riding&&!motorcycleRide.riding&&!currentCar();
-  const wantsJump=!pickupLocked&&!enteringVehicle&&!ghostGrabbedOnFoot&&(s.jumpRequested||!!touch?.jump);s.jumpRequested=false;if(touch)touch.jump=false;
+  const combatReaction=playerCombat.clip==='Hit_React'||playerCombat.clip==='Knockback';
+  const combatAllowed=!loading&&!controlsBlocked&&!mapOpen&&!introOwnsCamera&&!rideLife.crashTime&&(!ghostGrabbedOnFoot||combatReaction)&&!enteringVehicle&&!pickupLocked&&!balloonRide.riding&&!motorcycleRide.riding&&!currentCar()&&!jump.current.airborne;
+  playerCombat.context(getThreeGhostsProgress().swordCollected,combatAllowed,controlsBlocked||mapOpen||document.hidden,false);
+  const wantsJump=!playerCombat.movementLocked&&!pickupLocked&&!enteringVehicle&&!ghostGrabbedOnFoot&&(s.jumpRequested||!!touch?.jump);s.jumpRequested=false;if(touch)touch.jump=false;
   if(touch){
    if(touch.panX||touch.panY){panView(touch.panX,touch.panY);touch.panX=0;touch.panY=0;}
    if(touch.zoomFactor!==1){applyZoom(s.targetDistance*touch.zoomFactor);touch.zoomFactor=1;}
@@ -519,7 +526,7 @@ export const Player = memo(function Player({
   let forward=Number(s.keys.has('KeyW')||s.keys.has('ArrowUp'))-Number(s.keys.has('KeyS')||s.keys.has('ArrowDown'));
   let right=Number(s.keys.has('KeyD')||s.keys.has('ArrowRight'))-Number(s.keys.has('KeyA')||s.keys.has('ArrowLeft'));
   if(touch?.active){forward=touch.forward;right=touch.right;}
-  if(controlsBlocked||introOwnsCamera||mapOpen||rideLife.crashTime>0||enteringVehicle||ghostGrabbedOnFoot){forward=0;right=0;}
+  if(playerCombat.movementLocked||controlsBlocked||introOwnsCamera||mapOpen||rideLife.crashTime>0||enteringVehicle||ghostGrabbedOnFoot){forward=0;right=0;}
   const aerial=!balloonRide.riding&&!currentCar()&&!touch?.active&&!s.first&&(s.distance>20||s.topDown||s.panning);
   if(pickupLocked&&!aerial){forward=0;right=0;}
   if(ghostGrabbedOnFoot){
@@ -555,7 +562,7 @@ export const Player = memo(function Player({
   if(!balloon.riding){balloon.y=height(balloon.x,balloon.z);balloon.grounded=true;}
   const balloonDistance=Math.hypot(s.x-balloon.x,s.z-balloon.z);
   if(balloon.mustLeave&&balloonDistance>5)balloon.mustLeave=false;
-  const nearBalloon=character==='cartoon'&&!currentCar()&&!ride.riding&&!balloon.riding&&!balloon.mustLeave&&!jump.current.airborne&&jumpPose.current.prepare===0&&balloonDistance<3.6;
+  const nearBalloon=hasCompletedThreeGhostsMission()&&character==='cartoon'&&!currentCar()&&!ride.riding&&!balloon.riding&&!balloon.mustLeave&&!jump.current.airborne&&jumpPose.current.prepare===0&&balloonDistance<3.6;
   if(nearBalloon&&!aerial&&!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0){
    balloon.nearTime+=dt;
    if(balloon.nearTime>.55){
@@ -567,6 +574,7 @@ export const Player = memo(function Player({
    }
   }else if(!balloon.riding)balloon.nearTime=0;
   const boardCarTarget=(targetCar:DriveableCar)=>{
+    if (!hasCompletedThreeGhostsMission()) return;
    carSummonState.status='idle';
    enterCar(targetCar);
    completeVehicleBoarding();
@@ -574,7 +582,7 @@ export const Player = memo(function Player({
    if(touch)resetMobileInput(touch);
    onMode(true);onTopDown(false);onZoom(8);oldX=s.x;oldZ=s.z;
   };
-  const nearCar=!balloon.riding&&!nearBalloon&&!jump.current.airborne&&jumpPose.current.prepare===0&&!wantsJump&&rideLife.crashTime<=0&&!ride.riding&&!currentCar()&&!aerial&&!controlsBlocked&&!mapOpen&&!loading&&!pickupLocked&&!enteringVehicle?nearbyCar(s.x,s.z,clear):undefined;
+  const nearCar=hasCompletedThreeGhostsMission()&&!balloon.riding&&!nearBalloon&&!jump.current.airborne&&jumpPose.current.prepare===0&&!wantsJump&&rideLife.crashTime<=0&&!ride.riding&&!currentCar()&&!aerial&&!controlsBlocked&&!mapOpen&&!loading&&!pickupLocked&&!enteringVehicle?nearbyCar(s.x,s.z,clear):undefined;
   if(nearCar){
    carRide.nearTime=carRide.nearId===nearCar.id?carRide.nearTime+dt:0;carRide.nearId=nearCar.id;
    if(carRide.nearTime>.65)boardCarTarget(nearCar);
@@ -707,7 +715,9 @@ export const Player = memo(function Player({
   }else{
    const speed=fast?PLAYER_ON_FOOT_SPEED.run:touch?.active?Math.min(PLAYER_ON_FOOT_SPEED.run,PLAYER_ON_FOOT_SPEED.walk*mobileScale):PLAYER_ON_FOOT_SPEED.walk;
    const dirX=-Math.sin(yaw)*forward+Math.cos(yaw)*right,dirZ=-Math.cos(yaw)*forward-Math.sin(yaw)*right;
-   const vx=dirX*speed,vz=dirZ*speed;
+   const dodge=playerCombat.phase==='DODGE'&&playerCombat.normalized>=.15&&playerCombat.normalized<=.75;
+   const dodgeSide=playerCombat.clip==='Dodge_Left'?-1:1;
+   const vx=dodge?Math.cos(s.bodyYaw)*dodgeSide*5:dirX*speed,vz=dodge?-Math.sin(s.bodyYaw)*dodgeSide*5:dirZ*speed;
    const mx=vx*dt,mz=vz*dt;
    if(!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0){
     const hasMove=forward!==0||right!==0;
@@ -827,6 +837,6 @@ export const Player = memo(function Player({
   }
   s.time+=dt;if(s.time>0.08){s.time=0;onBalloonStatus?.({riding:balloon.riding,near:nearBalloon,altitude:Math.max(0,Math.round(balloon.y-height(balloon.x,balloon.z))),kmh:Math.round(Math.hypot(balloon.vx,balloon.vz)*3.6),grounded:balloon.grounded,blocked:balloon.blocked,autoCruise:balloon.autoCruise,autoReturn:balloon.autoReturn,returnDist:balloon.returnDist});onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car||balloon.riding,ride.riding),summonStatus:carSummonState.status,lives:rideLife.lives});onRideStatus?.({riding:ride.riding,near:!balloon.riding&&!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0,impactMode:rideLife.mode,damage:rideLife.damage});onPosition(s.x,s.z,s.bodyYaw);onSaveSnapshot?.({x:s.x,z:s.z,yaw:s.bodyYaw,pitch:s.pitch,zoom:s.targetDistance,topDown:s.topDown,first:s.first});onViewPosition?.(target.current.x,target.current.z);}
  },-1);
- return <><PassengerBalloon/><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar">{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb} riding/></group></>:character==='cartoon'?<CartoonCharacter appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
+ return <><PassengerBalloon/><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar"><HeldGhostSword avatar={avatar}/>{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter combat appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb} riding/></group></>:character==='cartoon'?<CartoonCharacter combat appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
 
 });

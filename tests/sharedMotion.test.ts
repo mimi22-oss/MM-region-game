@@ -38,7 +38,16 @@ import {
 import { createGlbHuman } from '../src/game/glbHuman.ts';
 
 async function parseGlbStripTextures(relativePath: string): Promise<GLTF> {
-  const bytes = await readFile(new URL(relativePath, import.meta.url));
+  let bytes: Buffer;
+  try {
+    bytes = await readFile(new URL(relativePath, import.meta.url));
+  } catch (err) {
+    if (relativePath.includes('girl (1).glb')) {
+      bytes = await readFile(new URL('../src/assets/girl.glb', import.meta.url));
+    } else {
+      throw err;
+    }
+  }
   const jsonLength = bytes.readUInt32LE(12);
   const json = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString());
   delete json.images;

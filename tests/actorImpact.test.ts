@@ -1,3 +1,4 @@
+import {completeVehicleMission} from './fixtures/completedVehicleMission.ts';
 import {test,beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
 import {Group,Mesh,MeshBasicMaterial,Raycaster,Vector3} from 'three';
@@ -81,6 +82,7 @@ test('recoil can escape an initially overlapping robot but stops at the next rob
 });
 
 test('car impacts cost exactly 1.5 lives per distinct collision and a second crash restarts',()=>{
+ completeVehicleMission();
  const car=driveableCars[0];Object.assign(car,{x:0,z:0,yaw:0,speed:0,model:'compact',transmission:'manual',wheelTravel:[0,0,0,0]});enterCar(car);shiftCar(1,true);car.speed=4;
  const impact=stepCar(.05,1,0,false,false,false,(_x,z)=>z> -1.95);
  assert.equal(impact.blocked,true);assert.ok(impact.speed>0);assert.equal(car.speed,0);

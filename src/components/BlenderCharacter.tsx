@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useRef,useState,type RefObject} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState,type RefObject} from 'react';
 import {useFrame} from '@react-three/fiber';
 import {AnimationMixer,Bone,LoopRepeat,Mesh,MeshStandardMaterial,SkinnedMesh,Vector3,type AnimationAction,type Group} from 'three';
 import {GLTFLoader,type GLTF} from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -8,14 +8,17 @@ import {characterClip,vaultPhase,type CharacterClip} from '../game/blenderCharac
 import type {CharacterMotion,DrivingPose} from './CartoonCharacter';
 import {gameplayClips,createLimbFitter} from '../game/characterRig';
 import {driverGrip} from '../game/carCabin';
-import {useQualityPreset} from '../game/qualityPreset';
+import {useQualityPreset,getQualityPreset} from '../game/qualityPreset';
+import {CombatAnimationDriver} from '../game/combat/CombatAnimationDriver';
+import {playerCombat,sampleCombatBlade} from '../game/combat/combatRuntime';
+import {COMBAT_MODEL_URLS} from '../game/combat/AttackDefinitions';
 
-export const CHARACTER_MODEL_URL = `${import.meta.env.BASE_URL}models/canolia-character.glb`;
+export const CHARACTER_MODEL_URL = COMBAT_MODEL_URLS.canolia;
 let modelPromise:Promise<GLTF>|undefined;
 function loadModel(){
  return modelPromise??=(new GLTFLoader().loadAsync(CHARACTER_MODEL_URL).catch(error=>{modelPromise=undefined;throw error;}));
 }
-type Props={appearance:HumanAppearance;motion:RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>;onError?:()=>void};
+type Props={appearance:HumanAppearance;motion:RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>;combat?:boolean;onError?:()=>void};
 export function BlenderCharacter(props:Props){
  const [model,setModel]=useState<GLTF>();
  useEffect(()=>{
@@ -25,9 +28,8 @@ export function BlenderCharacter(props:Props){
  },[]);
  return model?<LoadedCharacter {...props} model={model}/>:null;
 }
-function LoadedCharacter({model,appearance,motion,riding=false,driving}:Props&{model:GLTF}){
- const quality=useQualityPreset();
- const instance=useMemo(()=>{
+function createInstance(model:GLTF,combat:boolean){
+  const quality=getQualityPreset();
   // Skeletons and materials belong to each avatar; buffers stay shared in the loader cache.
   const object=clone(model.scene) as Group;
   const materials:MeshStandardMaterial[]=[];
@@ -49,17 +51,22 @@ function LoadedCharacter({model,appearance,motion,riding=false,driving}:Props&{m
   }
   const limb=(a:string,b:string,c:string)=>createLimbFitter(object.getObjectByName(a) as Bone,object.getObjectByName(b) as Bone,object.getObjectByName(c) as Bone);
   const arms={L:limb('UpperArm_L','Forearm_L','Hand_L'),R:limb('UpperArm_R','Forearm_R','Hand_R')};
-  return {object,materials,originals,meshes,mixer,actions,arms,head:object.getObjectByName('Head')!,target:new Vector3(),pole:new Vector3()};
- },[model]);
+  const driver=combat?new CombatAnimationDriver(mixer,object,model.animations,playerCombat,sampleCombatBlade,()=>{for(const action of Object.values(actions))action.stop();}):null;
+  return {object,materials,originals,meshes,mixer,actions,arms,head:object.getObjectByName('Head')!,target:new Vector3(),pole:new Vector3(),driver};
+}
+function LoadedCharacter({model,appearance,motion,riding=false,driving,combat=false}:Props&{model:GLTF}){
+ const quality=useQualityPreset();
+ const [instance,setInstance]=useState<ReturnType<typeof createInstance>|null>(null);
+ useLayoutEffect(()=>{
+  const created=createInstance(model,combat);setInstance(created);
+  return()=>{created.driver?.dispose();created.mixer.stopAllAction();created.mixer.uncacheRoot(created.object);created.materials.forEach(m=>m.dispose());created.object.traverse(o=>{if(o instanceof SkinnedMesh)o.skeleton.dispose();});};
+ },[model,combat]);
  useEffect(()=>{
+  if(!instance)return;
   for(let i=0;i<instance.meshes.length;i++)instance.meshes[i].castShadow=quality.characterCastShadow;
  },[instance,quality.characterCastShadow]);
- useEffect(()=>()=>{
-  instance.mixer.stopAllAction();instance.mixer.uncacheRoot(instance.object);
-  instance.materials.forEach(m=>m.dispose());
-  instance.object.traverse(o=>{if(o instanceof SkinnedMesh)o.skeleton.dispose();});
- },[instance]);
  useEffect(()=>{
+  if(!instance)return;
   const defaults=HUMAN_PRESETS.boy;
   for(const m of instance.materials){
    m.color.copy(instance.originals.get(m)!.color);
@@ -69,7 +76,9 @@ function LoadedCharacter({model,appearance,motion,riding=false,driving}:Props&{m
  },[appearance,instance]);
  const current=useRef<CharacterClip|null>(null),placement=useRef<Group>(null),container=useRef<Group>(null);
  useFrame((_,delta)=>{
-  if(driving&&!driving.current.active)return;
+  if(!instance||driving&&!driving.current.active)return;
+  if(instance.driver?.enabled&&!riding&&!driving&&!motion.current.swimming){playerCombat.speed=motion.current.speed;instance.driver.update(delta);current.current=null;return;}
+  instance.driver?.stop();
   const name=characterClip(motion.current,riding,!!driving),action=instance.actions[name];
   if(current.current!==name){
    if(current.current)instance.actions[current.current]?.fadeOut(.16);
@@ -93,7 +102,8 @@ function LoadedCharacter({model,appearance,motion,riding=false,driving}:Props&{m
     instance.arms[side<0?'R':'L'](instance.target,instance.pole);
    }
   }
- });
+ },combat?-.5:0);
+ if(!instance)return null;
  return <group ref={container} name="blender-character" scale={riding||driving?1:appearance.height} userData={{humanPreset:appearance.preset,model:CHARACTER_MODEL_URL}}>
   <group ref={placement} rotation={[0,Math.PI,0]}><primitive object={instance.object} dispose={null}/></group>
  </group>;

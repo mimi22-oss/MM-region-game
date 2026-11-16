@@ -1,4 +1,5 @@
-import { test, beforeEach } from 'node:test';
+import {completeVehicleMission} from './fixtures/completedVehicleMission.ts';
+import { test, before, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { parkedCars } from '../src/data/cars.ts';
 import { carRide, carInput, driveableCars, enterCar, parkCar, shiftCar, stepCar, nearbyCar, carExitSpot, gearSpeed, frontWheelAngle, wheelStepDistances, selectAutomaticRange, configurePlayerCar, type CarGear } from '../src/game/carRide.ts';
@@ -9,6 +10,7 @@ import { windshieldFrameGeometry, windshieldGeometry, cabinCurvePoint } from '..
 import { Mesh, MeshBasicMaterial, DoubleSide, Raycaster, Vector3 } from 'three';
 import { carBodyShellGeometry, driverGrip, DRIVER_POSITION, DRIVER_SCALE, STEERING_POSITION, STEERING_RADIUS, STEERING_TILT } from '../src/game/carCabin.ts';
 const car=driveableCars[0],free=()=>true;
+before(completeVehicleMission);
 beforeEach(()=>{parkCar();Object.assign(car,{...parkedCars[0],model:'compact',transmission:'manual',yaw:0,speed:0,distance:0,steering:0,wheelTravel:[0,0,0,0],mustLeave:false});});
 
 test('car shell leaves the lap and footwell empty while preserving solid doors, hood and boot',()=>{

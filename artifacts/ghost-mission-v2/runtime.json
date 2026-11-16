@@ -1,0 +1,532 @@
+{
+  "results": [
+    {
+      "id": "ghost-1",
+      "before": {
+        "id": "ghost-1",
+        "runtime": {
+          "id": "ghost-1",
+          "x": 52.61316711765616,
+          "z": 27.248590380693898,
+          "active": true,
+          "state": "CHASING",
+          "source": "entity",
+          "updatedAt": 39664.40000000596
+        },
+        "root": {
+          "x": 52.61316711765616,
+          "z": 27.248590380693898,
+          "visible": true
+        }
+      },
+      "after": {
+        "id": "ghost-1",
+        "runtime": {
+          "id": "ghost-1",
+          "x": 55.80606031709028,
+          "z": 29.382013409713586,
+          "active": true,
+          "state": "CHASING",
+          "source": "entity",
+          "updatedAt": 40578.80000000447
+        },
+        "root": {
+          "x": 55.80606031709028,
+          "z": 29.382013409713586,
+          "visible": true
+        }
+      }
+    },
+    {
+      "id": "ghost-2",
+      "before": {
+        "id": "ghost-2",
+        "runtime": {
+          "id": "ghost-2",
+          "x": 25.061111011655065,
+          "z": 50.55029305242363,
+          "active": true,
+          "state": "CHASING",
+          "source": "entity",
+          "updatedAt": 41312.5
+        },
+        "root": {
+          "x": 25.061111011655065,
+          "z": 50.55029305242363,
+          "visible": true
+        }
+      },
+      "after": {
+        "id": "ghost-2",
+        "runtime": {
+          "id": "ghost-2",
+          "x": 27.697705901431636,
+          "z": 50.80997498320207,
+          "active": true,
+          "state": "GRABBING",
+          "source": "entity",
+          "updatedAt": 42316.40000000596
+        },
+        "root": {
+          "x": 27.697705901431636,
+          "z": 50.80997498320207,
+          "visible": true
+        }
+      }
+    },
+    {
+      "id": "ghost-3",
+      "before": {
+        "id": "ghost-3",
+        "runtime": {
+          "id": "ghost-3",
+          "x": 50.59393528573031,
+          "z": 24.813382357400304,
+          "active": true,
+          "state": "CHASING",
+          "source": "entity",
+          "updatedAt": 43330
+        },
+        "root": {
+          "x": 50.59393528573031,
+          "z": 24.813382357400304,
+          "visible": true
+        }
+      },
+      "after": {
+        "id": "ghost-3",
+        "runtime": {
+          "id": "ghost-3",
+          "x": 53.00812115042344,
+          "z": 25.8133708846456,
+          "active": true,
+          "state": "CHASING",
+          "source": "entity",
+          "updatedAt": 44396
+        },
+        "root": {
+          "x": 53.00812115042344,
+          "z": 25.8133708846456,
+          "visible": true
+        }
+      }
+    }
+  ],
+  "paused": [
+    {
+      "id": "ghost-1",
+      "runtime": {
+        "id": "ghost-1",
+        "x": 55.92409574324234,
+        "z": 29.460882159986095,
+        "active": false,
+        "state": "PAUSED",
+        "source": "ai",
+        "updatedAt": 45399
+      },
+      "root": {
+        "x": 55.92409574324234,
+        "z": 29.460882159986095,
+        "visible": false
+      }
+    },
+    {
+      "id": "ghost-2",
+      "runtime": {
+        "id": "ghost-2",
+        "x": 27.697705901431636,
+        "z": 50.80997498320207,
+        "active": false,
+        "state": "PAUSED",
+        "source": "ai",
+        "updatedAt": 45399
+      },
+      "root": {
+        "x": 27.697705901431636,
+        "z": 50.80997498320207,
+        "visible": false
+      }
+    },
+    {
+      "id": "ghost-3",
+      "runtime": {
+        "id": "ghost-3",
+        "x": 52.48323560798704,
+        "z": 25.071801808819295,
+        "active": false,
+        "state": "PAUSED",
+        "source": "entity",
+        "updatedAt": 45399
+      },
+      "root": {
+        "x": 52.48323560798704,
+        "z": 25.071801808819295,
+        "visible": true
+      }
+    }
+  ],
+  "hidden": {
+    "id": "ghost-1",
+    "runtime": {
+      "id": "ghost-1",
+      "x": 55.92409574324234,
+      "z": 29.460882159986095,
+      "active": false,
+      "state": "DORMANT",
+      "source": "ai",
+      "updatedAt": 45830.30000000447
+    },
+    "root": {
+      "x": 999,
+      "z": 999,
+      "visible": false
+    }
+  },
+  "modes": [
+    {
+      "mode": "chase",
+      "before": [
+        {
+          "id": "ghost-1",
+          "runtime": {
+            "id": "ghost-1",
+            "x": 156.07974035796886,
+            "z": -29.348362214238392,
+            "active": true,
+            "state": "chase",
+            "source": "entity",
+            "updatedAt": 46605.60000000149
+          },
+          "root": {
+            "x": 156.07974035796886,
+            "z": -29.348362214238392,
+            "visible": true
+          }
+        },
+        {
+          "id": "ghost-2",
+          "runtime": {
+            "id": "ghost-2",
+            "x": 155.92311085132107,
+            "z": -29.30920483757646,
+            "active": true,
+            "state": "chase",
+            "source": "entity",
+            "updatedAt": 46605.90000000596
+          },
+          "root": {
+            "x": 155.92311085132107,
+            "z": -29.30920483757646,
+            "visible": true
+          }
+        },
+        {
+          "id": "ghost-3",
+          "runtime": {
+            "id": "ghost-3",
+            "x": 155.73515544334384,
+            "z": -29.26221598558213,
+            "active": true,
+            "state": "chase",
+            "source": "entity",
+            "updatedAt": 46606
+          },
+          "root": {
+            "x": 155.73515544334384,
+            "z": -29.26221598558213,
+            "visible": true
+          }
+        }
+      ],
+      "after": [
+        {
+          "id": "ghost-1",
+          "runtime": {
+            "id": "ghost-1",
+            "x": 158.88411188028147,
+            "z": -30.04945509481654,
+            "active": true,
+            "state": "chase",
+            "source": "entity",
+            "updatedAt": 47536.80000000447
+          },
+          "root": {
+            "x": 158.88411188028147,
+            "z": -30.04945509481654,
+            "visible": true
+          }
+        },
+        {
+          "id": "ghost-2",
+          "runtime": {
+            "id": "ghost-2",
+            "x": 158.45783126571902,
+            "z": -29.942884941175933,
+            "active": true,
+            "state": "chase",
+            "source": "entity",
+            "updatedAt": 47536.90000000596
+          },
+          "root": {
+            "x": 158.45783126571902,
+            "z": -29.942884941175933,
+            "visible": true
+          }
+        },
+        {
+          "id": "ghost-3",
+          "runtime": {
+            "id": "ghost-3",
+            "x": 157.94629452824418,
+            "z": -29.815000756807205,
+            "active": true,
+            "state": "chase",
+            "source": "entity",
+            "updatedAt": 47537
+          },
+          "root": {
+            "x": 157.94629452824418,
+            "z": -29.815000756807205,
+            "visible": true
+          }
+        }
+      ]
+    },
+    {
+      "mode": "search",
+      "before": [
+        {
+          "id": "ghost-1",
+          "runtime": {
+            "id": "ghost-1",
+            "x": 154.45079348883235,
+            "z": -28.941125496954264,
+            "active": true,
+            "state": "search",
+            "source": "entity",
+            "updatedAt": 47830.20000000298
+          },
+          "root": {
+            "x": 154.45079348883235,
+            "z": -28.941125496954264,
+            "visible": true
+          }
+        },
+        {
+          "id": "ghost-2",
+          "runtime": {
+            "id": "ghost-2",
+            "x": 154.45079348883235,
+            "z": -28.941125496954264,
+            "active": true,
+            "state": "search",
+            "source": "entity",
+            "updatedAt": 47830.40000000596
+          },
+          "root": {
+            "x": 154.45079348883235,
+            "z": -28.941125496954264,
+            "visible": true
+          }
+        },
+        {
+          "id": "ghost-3",
+          "runtime": {
+            "id": "ghost-3",
+            "x": 154.45079348883235,
+            "z": -28.941125496954264,
+            "active": true,
+            "state": "search",
+            "source": "entity",
+            "updatedAt": 47830.5
+          },
+          "root": {
+            "x": 154.45079348883235,
+            "z": -28.941125496954264,
+            "visible": true
+          }
+        }
+      ],
+      "after": [
+        {
+          "id": "ghost-1",
+          "runtime": {
+            "id": "ghost-1",
+            "x": 154.45079348883235,
+            "z": -28.941125496954264,
+            "active": true,
+            "state": "search",
+            "source": "entity",
+            "updatedAt": 48670.10000000149
+          },
+          "root": {
+            "x": 154.45079348883235,
+            "z": -28.941125496954264,
+            "visible": true
+          }
+        },
+        {
+          "id": "ghost-2",
+          "runtime": {
+            "id": "ghost-2",
+            "x": 154.45079348883235,
+            "z": -28.941125496954264,
+            "active": true,
+            "state": "search",
+            "source": "entity",
+            "updatedAt": 48670.60000000149
+          },
+          "root": {
+            "x": 154.45079348883235,
+            "z": -28.941125496954264,
+            "visible": true
+          }
+        },
+        {
+          "id": "ghost-3",
+          "runtime": {
+            "id": "ghost-3",
+            "x": 154.45079348883235,
+            "z": -28.941125496954264,
+            "active": true,
+            "state": "search",
+            "source": "entity",
+            "updatedAt": 48670.80000000447
+          },
+          "root": {
+            "x": 154.45079348883235,
+            "z": -28.941125496954264,
+            "visible": true
+          }
+        }
+      ]
+    },
+    {
+      "mode": "return",
+      "before": [
+        {
+          "id": "ghost-1",
+          "runtime": {
+            "id": "ghost-1",
+            "x": 153.74393741725513,
+            "z": -29.170853720216854,
+            "active": true,
+            "state": "return",
+            "source": "entity",
+            "updatedAt": 49205.80000000447
+          },
+          "root": {
+            "x": 153.74393741725513,
+            "z": -29.170853720216854,
+            "visible": true
+          }
+        },
+        {
+          "id": "ghost-2",
+          "runtime": {
+            "id": "ghost-2",
+            "x": 153.82762027102316,
+            "z": -29.346188088530248,
+            "active": true,
+            "state": "return",
+            "source": "entity",
+            "updatedAt": 49205.80000000447
+          },
+          "root": {
+            "x": 153.82762027102316,
+            "z": -29.346188088530248,
+            "visible": true
+          }
+        },
+        {
+          "id": "ghost-3",
+          "runtime": {
+            "id": "ghost-3",
+            "x": 153.71406335165733,
+            "z": -28.842894811997596,
+            "active": true,
+            "state": "return",
+            "source": "entity",
+            "updatedAt": 49205.90000000596
+          },
+          "root": {
+            "x": 153.71406335165733,
+            "z": -28.842894811997596,
+            "visible": true
+          }
+        }
+      ],
+      "after": [
+        {
+          "id": "ghost-1",
+          "runtime": {
+            "id": "ghost-1",
+            "x": 152.75628853688153,
+            "z": -29.491839606338264,
+            "active": true,
+            "state": "return",
+            "source": "entity",
+            "updatedAt": 51040.70000000298
+          },
+          "root": {
+            "x": 152.75628853688153,
+            "z": -29.491839606338264,
+            "visible": true
+          }
+        },
+        {
+          "id": "ghost-2",
+          "runtime": {
+            "id": "ghost-2",
+            "x": 152.9568965754981,
+            "z": -29.91215849062156,
+            "active": true,
+            "state": "return",
+            "source": "entity",
+            "updatedAt": 51040.90000000596
+          },
+          "root": {
+            "x": 152.9568965754981,
+            "z": -29.91215849062156,
+            "visible": true
+          }
+        },
+        {
+          "id": "ghost-3",
+          "runtime": {
+            "id": "ghost-3",
+            "x": 152.68467317680208,
+            "z": -28.705642788683562,
+            "active": true,
+            "state": "return",
+            "source": "entity",
+            "updatedAt": 51041
+          },
+          "root": {
+            "x": 152.68467317680208,
+            "z": -28.705642788683562,
+            "visible": true
+          }
+        }
+      ]
+    }
+  ],
+  "progress": {
+    "version": 1,
+    "encountered": [
+      "ghost-2",
+      "ghost-3",
+      "ghost-1"
+    ],
+    "swordCollected": false,
+    "hp": {
+      "ghost-1": 100,
+      "ghost-2": 150,
+      "ghost-3": 200
+    },
+    "completed": false
+  },
+  "registryReleased": true,
+  "errors": [],
+  "note": "Current production GhostNpc/GLB/AI and mission scene, nested player proxy, headless Chrome SwiftShader. Not physical Android."
+}

@@ -1,3 +1,4 @@
+import { hasCompletedThreeGhostsMission } from './missions/threeGhostsMission.ts';
 import { driveableCars } from './carRide.ts';
 import { angle, farmhouse, toWorld } from '../data/ward.ts';
 
@@ -63,6 +64,7 @@ export function updateSummonStand(dt: number, px: number, pz: number, isMoving: 
 }
 
 export function canSummonCar(px: number, pz: number, driving: boolean, riding: boolean): boolean {
+  if (!hasCompletedThreeGhostsMission()) return false;
 	if (driving || riding) return false;
 	if (carSummonState.status === 'calling' || carSummonState.status === 'driving' || carSummonState.status === 'arrived') {
 		return true;

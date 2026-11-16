@@ -2,10 +2,10 @@
 *.blend filter=lfs diff=lfs merge=lfs -text
 
 # Raw / archival GLB sources (runtime bundles should consume optimized published manifests)
-/boy hit fight dive.glb filter=lfs diff=lfs merge=lfs -text
-/boy t post.glb filter=lfs diff=lfs merge=lfs -text
-/boy wait.glb filter=lfs diff=lfs merge=lfs -text
-/dance group.glb filter=lfs diff=lfs merge=lfs -text
-/girl (1).glb filter=lfs diff=lfs merge=lfs -text
+"/boy hit fight dive.glb" filter=lfs diff=lfs merge=lfs -text
+"/boy t post.glb" filter=lfs diff=lfs merge=lfs -text
+"/boy wait.glb" filter=lfs diff=lfs merge=lfs -text
+"/dance group.glb" filter=lfs diff=lfs merge=lfs -text
+"/girl (1).glb" filter=lfs diff=lfs merge=lfs -text
 characters/**/*.glb filter=lfs diff=lfs merge=lfs -text
 artifacts/**/*.glb filter=lfs diff=lfs merge=lfs -text

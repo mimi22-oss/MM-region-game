@@ -1,0 +1,1575 @@
+[
+  {
+    "id": "boy",
+    "file": "public/models/characters/boy-combat-animated.glb",
+    "bytes": 3831796,
+    "sha256": "f5a4a022ab7fd62d685aa0f782888cd2c9c04180692eccef384a21e9391d80de",
+    "clips": [
+      {
+        "name": "Combat_Idle",
+        "duration": 1.399999976158142,
+        "channels": 5,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm",
+          "mixamorig:LeftForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Walk",
+        "duration": 0.8500000238418579,
+        "channels": 5,
+        "targets": [
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:RightUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Run",
+        "duration": 0.6499999761581421,
+        "channels": 5,
+        "targets": [
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:RightUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Combat_Strafe_Left",
+        "duration": 0.8500000238418579,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:RightUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Combat_Strafe_Right",
+        "duration": 0.8500000238418579,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:RightUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Left",
+        "duration": 0.6200000047683716,
+        "channels": 4,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Right",
+        "duration": 0.6200000047683716,
+        "channels": 4,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Diagonal_Left",
+        "duration": 0.7200000286102295,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Diagonal_Right",
+        "duration": 0.7200000286102295,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Overhead",
+        "duration": 0.8799999952316284,
+        "channels": 4,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Rising",
+        "duration": 0.75,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Middle",
+        "duration": 0.6000000238418579,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Thrust",
+        "duration": 0.6499999761581421,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Block",
+        "duration": 0.8500000238418579,
+        "channels": 3,
+        "targets": [
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Parry",
+        "duration": 0.6800000071525574,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Dodge_Left",
+        "duration": 0.6000000238418579,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:Hips",
+          "mixamorig:LeftUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Dodge_Right",
+        "duration": 0.6000000238418579,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:Hips",
+          "mixamorig:RightUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Hit_React",
+        "duration": 0.6200000047683716,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:Head",
+          "mixamorig:RightArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Knockback",
+        "duration": 0.8199999928474426,
+        "channels": 4,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:Head",
+          "mixamorig:LeftArm",
+          "mixamorig:RightArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Spin_Slash",
+        "duration": 1.100000023841858,
+        "channels": 2,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Jump_Slash",
+        "duration": 0.949999988079071,
+        "channels": 4,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:RightUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Heavy_Slash",
+        "duration": 1.100000023841858,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Combo_Finisher",
+        "duration": 1.2999999523162842,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      }
+    ],
+    "bones": [
+      "mixamorig:Hips",
+      "mixamorig:LeftUpLeg",
+      "mixamorig:LeftLeg",
+      "mixamorig:LeftFoot",
+      "mixamorig:LeftToeBase",
+      "mixamorig:LeftToe_End",
+      "mixamorig:RightUpLeg",
+      "mixamorig:RightLeg",
+      "mixamorig:RightFoot",
+      "mixamorig:RightToeBase",
+      "mixamorig:RightToe_End",
+      "mixamorig:Spine",
+      "mixamorig:Spine1",
+      "mixamorig:Spine2",
+      "mixamorig:LeftShoulder",
+      "mixamorig:LeftArm",
+      "mixamorig:LeftForeArm",
+      "mixamorig:LeftHand",
+      "mixamorig:LeftHandIndex1",
+      "mixamorig:LeftHandIndex2",
+      "mixamorig:LeftHandIndex3",
+      "mixamorig:LeftHandIndex4",
+      "mixamorig:LeftHandMiddle1",
+      "mixamorig:LeftHandMiddle2",
+      "mixamorig:LeftHandMiddle3",
+      "mixamorig:LeftHandMiddle4",
+      "mixamorig:LeftHandPinky1",
+      "mixamorig:LeftHandPinky2",
+      "mixamorig:LeftHandPinky3",
+      "mixamorig:LeftHandPinky4",
+      "mixamorig:LeftHandRing1",
+      "mixamorig:LeftHandRing2",
+      "mixamorig:LeftHandRing3",
+      "mixamorig:LeftHandRing4",
+      "mixamorig:LeftHandThumb1",
+      "mixamorig:LeftHandThumb2",
+      "mixamorig:LeftHandThumb3",
+      "mixamorig:LeftHandThumb4",
+      "mixamorig:Neck",
+      "mixamorig:Head",
+      "mixamorig:HeadTop_End",
+      "mixamorig:RightShoulder",
+      "mixamorig:RightArm",
+      "mixamorig:RightForeArm",
+      "mixamorig:RightHand",
+      "mixamorig:RightHandIndex1",
+      "mixamorig:RightHandIndex2",
+      "mixamorig:RightHandIndex3",
+      "mixamorig:RightHandIndex4",
+      "mixamorig:RightHandMiddle1",
+      "mixamorig:RightHandMiddle2",
+      "mixamorig:RightHandMiddle3",
+      "mixamorig:RightHandMiddle4",
+      "mixamorig:RightHandPinky1",
+      "mixamorig:RightHandPinky2",
+      "mixamorig:RightHandPinky3",
+      "mixamorig:RightHandPinky4",
+      "mixamorig:RightHandRing1",
+      "mixamorig:RightHandRing2",
+      "mixamorig:RightHandRing3",
+      "mixamorig:RightHandRing4",
+      "mixamorig:RightHandThumb1",
+      "mixamorig:RightHandThumb2",
+      "mixamorig:RightHandThumb3",
+      "mixamorig:RightHandThumb4"
+    ],
+    "meshCount": 1,
+    "textureCount": 1,
+    "unchanged": {
+      "nodes": true,
+      "skins": true,
+      "meshes": true,
+      "materials": true,
+      "images": true,
+      "originalBufferPrefix": true
+    }
+  },
+  {
+    "id": "girl",
+    "file": "public/models/characters/girl-combat-animated.glb",
+    "bytes": 8532700,
+    "sha256": "569ab110b5c372a9e779d5c06ae6435ac54028d0b9705eb94547ad7cecccc4ed",
+    "clips": [
+      {
+        "name": "Combat_Idle",
+        "duration": 1.399999976158142,
+        "channels": 5,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm",
+          "mixamorig:LeftForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Walk",
+        "duration": 0.8500000238418579,
+        "channels": 5,
+        "targets": [
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:RightUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Run",
+        "duration": 0.6499999761581421,
+        "channels": 5,
+        "targets": [
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:RightUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Combat_Strafe_Left",
+        "duration": 0.8500000238418579,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:RightUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Combat_Strafe_Right",
+        "duration": 0.8500000238418579,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:RightUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Left",
+        "duration": 0.6200000047683716,
+        "channels": 4,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Right",
+        "duration": 0.6200000047683716,
+        "channels": 4,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Diagonal_Left",
+        "duration": 0.7200000286102295,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Diagonal_Right",
+        "duration": 0.7200000286102295,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Overhead",
+        "duration": 0.8799999952316284,
+        "channels": 4,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Rising",
+        "duration": 0.75,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Middle",
+        "duration": 0.6000000238418579,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Thrust",
+        "duration": 0.6499999761581421,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Block",
+        "duration": 0.8500000238418579,
+        "channels": 3,
+        "targets": [
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:LeftArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Parry",
+        "duration": 0.6800000071525574,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Dodge_Left",
+        "duration": 0.6000000238418579,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:Hips",
+          "mixamorig:LeftUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Dodge_Right",
+        "duration": 0.6000000238418579,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:Hips",
+          "mixamorig:RightUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Hit_React",
+        "duration": 0.6200000047683716,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:Head",
+          "mixamorig:RightArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Knockback",
+        "duration": 0.8199999928474426,
+        "channels": 4,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:Head",
+          "mixamorig:LeftArm",
+          "mixamorig:RightArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Spin_Slash",
+        "duration": 1.100000023841858,
+        "channels": 2,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Jump_Slash",
+        "duration": 0.949999988079071,
+        "channels": 4,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:RightUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Heavy_Slash",
+        "duration": 1.100000023841858,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Combo_Finisher",
+        "duration": 1.2999999523162842,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      }
+    ],
+    "bones": [
+      "mixamorig:Hips",
+      "mixamorig:LeftUpLeg",
+      "mixamorig:LeftLeg",
+      "mixamorig:LeftFoot",
+      "mixamorig:LeftToeBase",
+      "mixamorig:LeftToe_End",
+      "mixamorig:RightUpLeg",
+      "mixamorig:RightLeg",
+      "mixamorig:RightFoot",
+      "mixamorig:RightToeBase",
+      "mixamorig:RightToe_End",
+      "mixamorig:Spine",
+      "mixamorig:Spine1",
+      "mixamorig:Spine2",
+      "mixamorig:LeftShoulder",
+      "mixamorig:LeftArm",
+      "mixamorig:LeftForeArm",
+      "mixamorig:LeftHand",
+      "mixamorig:LeftHandIndex1",
+      "mixamorig:LeftHandIndex2",
+      "mixamorig:LeftHandIndex3",
+      "mixamorig:LeftHandMiddle1",
+      "mixamorig:LeftHandMiddle2",
+      "mixamorig:LeftHandMiddle3",
+      "mixamorig:LeftHandPinky1",
+      "mixamorig:LeftHandPinky2",
+      "mixamorig:LeftHandPinky3",
+      "mixamorig:LeftHandRing1",
+      "mixamorig:LeftHandRing2",
+      "mixamorig:LeftHandRing3",
+      "mixamorig:LeftHandThumb1",
+      "mixamorig:LeftHandThumb2",
+      "mixamorig:LeftHandThumb3",
+      "mixamorig:Neck",
+      "mixamorig:Head",
+      "mixamorig:RightShoulder",
+      "mixamorig:RightArm",
+      "mixamorig:RightForeArm",
+      "mixamorig:RightHand",
+      "mixamorig:RightHandIndex1",
+      "mixamorig:RightHandIndex2",
+      "mixamorig:RightHandIndex3",
+      "mixamorig:RightHandMiddle1",
+      "mixamorig:RightHandMiddle2",
+      "mixamorig:RightHandMiddle3",
+      "mixamorig:RightHandPinky1",
+      "mixamorig:RightHandPinky2",
+      "mixamorig:RightHandPinky3",
+      "mixamorig:RightHandRing1",
+      "mixamorig:RightHandRing2",
+      "mixamorig:RightHandRing3",
+      "mixamorig:RightHandThumb1",
+      "mixamorig:RightHandThumb2",
+      "mixamorig:RightHandThumb3"
+    ],
+    "meshCount": 1,
+    "textureCount": 3,
+    "unchanged": {
+      "nodes": true,
+      "skins": true,
+      "meshes": true,
+      "materials": true,
+      "images": true,
+      "originalBufferPrefix": true
+    }
+  },
+  {
+    "id": "canolia",
+    "file": "public/models/characters/canolia-character-combat-animated.glb",
+    "bytes": 2181588,
+    "sha256": "e2178e68ccf31e472d631d8dc077a822b176f8caaf69a17cdb4d0d365a18287a",
+    "clips": [
+      {
+        "name": "Bike_Drive",
+        "duration": 1,
+        "channels": 66,
+        "targets": [
+          "Root",
+          "Hips",
+          "Spine",
+          "Chest",
+          "Clavicle_L",
+          "UpperArm_L",
+          "Forearm_L",
+          "Hand_L",
+          "Clavicle_R",
+          "UpperArm_R",
+          "Forearm_R",
+          "Hand_R",
+          "Neck",
+          "Head",
+          "Thigh_L",
+          "Shin_L",
+          "Foot_L",
+          "Toe_L",
+          "Thigh_R",
+          "Shin_R",
+          "Foot_R",
+          "Toe_R"
+        ],
+        "paths": [
+          "translation",
+          "rotation",
+          "scale"
+        ]
+      },
+      {
+        "name": "Bike_Idle",
+        "duration": 2,
+        "channels": 66,
+        "targets": [
+          "Root",
+          "Hips",
+          "Spine",
+          "Chest",
+          "Clavicle_L",
+          "UpperArm_L",
+          "Forearm_L",
+          "Hand_L",
+          "Clavicle_R",
+          "UpperArm_R",
+          "Forearm_R",
+          "Hand_R",
+          "Neck",
+          "Head",
+          "Thigh_L",
+          "Shin_L",
+          "Foot_L",
+          "Toe_L",
+          "Thigh_R",
+          "Shin_R",
+          "Foot_R",
+          "Toe_R"
+        ],
+        "paths": [
+          "translation",
+          "rotation",
+          "scale"
+        ]
+      },
+      {
+        "name": "Bike_Mount",
+        "duration": 2.2,
+        "channels": 66,
+        "targets": [
+          "Root",
+          "Hips",
+          "Spine",
+          "Chest",
+          "Clavicle_L",
+          "UpperArm_L",
+          "Forearm_L",
+          "Hand_L",
+          "Clavicle_R",
+          "UpperArm_R",
+          "Forearm_R",
+          "Hand_R",
+          "Neck",
+          "Head",
+          "Thigh_L",
+          "Shin_L",
+          "Foot_L",
+          "Toe_L",
+          "Thigh_R",
+          "Shin_R",
+          "Foot_R",
+          "Toe_R"
+        ],
+        "paths": [
+          "translation",
+          "rotation",
+          "scale"
+        ]
+      },
+      {
+        "name": "Car_Drive",
+        "duration": 2,
+        "channels": 66,
+        "targets": [
+          "Root",
+          "Hips",
+          "Spine",
+          "Chest",
+          "Clavicle_L",
+          "UpperArm_L",
+          "Forearm_L",
+          "Hand_L",
+          "Clavicle_R",
+          "UpperArm_R",
+          "Forearm_R",
+          "Hand_R",
+          "Neck",
+          "Head",
+          "Thigh_L",
+          "Shin_L",
+          "Foot_L",
+          "Toe_L",
+          "Thigh_R",
+          "Shin_R",
+          "Foot_R",
+          "Toe_R"
+        ],
+        "paths": [
+          "translation",
+          "rotation",
+          "scale"
+        ]
+      },
+      {
+        "name": "Idle",
+        "duration": 2.4,
+        "channels": 66,
+        "targets": [
+          "Root",
+          "Hips",
+          "Spine",
+          "Chest",
+          "Clavicle_L",
+          "UpperArm_L",
+          "Forearm_L",
+          "Hand_L",
+          "Clavicle_R",
+          "UpperArm_R",
+          "Forearm_R",
+          "Hand_R",
+          "Neck",
+          "Head",
+          "Thigh_L",
+          "Shin_L",
+          "Foot_L",
+          "Toe_L",
+          "Thigh_R",
+          "Shin_R",
+          "Foot_R",
+          "Toe_R"
+        ],
+        "paths": [
+          "translation",
+          "rotation",
+          "scale"
+        ]
+      },
+      {
+        "name": "Swim_Forward",
+        "duration": 1.6,
+        "channels": 66,
+        "targets": [
+          "Root",
+          "Hips",
+          "Spine",
+          "Chest",
+          "Clavicle_L",
+          "UpperArm_L",
+          "Forearm_L",
+          "Hand_L",
+          "Clavicle_R",
+          "UpperArm_R",
+          "Forearm_R",
+          "Hand_R",
+          "Neck",
+          "Head",
+          "Thigh_L",
+          "Shin_L",
+          "Foot_L",
+          "Toe_L",
+          "Thigh_R",
+          "Shin_R",
+          "Foot_R",
+          "Toe_R"
+        ],
+        "paths": [
+          "translation",
+          "rotation",
+          "scale"
+        ]
+      },
+      {
+        "name": "Swim_Idle",
+        "duration": 2,
+        "channels": 66,
+        "targets": [
+          "Root",
+          "Hips",
+          "Spine",
+          "Chest",
+          "Clavicle_L",
+          "UpperArm_L",
+          "Forearm_L",
+          "Hand_L",
+          "Clavicle_R",
+          "UpperArm_R",
+          "Forearm_R",
+          "Hand_R",
+          "Neck",
+          "Head",
+          "Thigh_L",
+          "Shin_L",
+          "Foot_L",
+          "Toe_L",
+          "Thigh_R",
+          "Shin_R",
+          "Foot_R",
+          "Toe_R"
+        ],
+        "paths": [
+          "translation",
+          "rotation",
+          "scale"
+        ]
+      },
+      {
+        "name": "Vault",
+        "duration": 1.8,
+        "channels": 66,
+        "targets": [
+          "Root",
+          "Hips",
+          "Spine",
+          "Chest",
+          "Clavicle_L",
+          "UpperArm_L",
+          "Forearm_L",
+          "Hand_L",
+          "Clavicle_R",
+          "UpperArm_R",
+          "Forearm_R",
+          "Hand_R",
+          "Neck",
+          "Head",
+          "Thigh_L",
+          "Shin_L",
+          "Foot_L",
+          "Toe_L",
+          "Thigh_R",
+          "Shin_R",
+          "Foot_R",
+          "Toe_R"
+        ],
+        "paths": [
+          "translation",
+          "rotation",
+          "scale"
+        ]
+      },
+      {
+        "name": "Walk",
+        "duration": 1,
+        "channels": 66,
+        "targets": [
+          "Root",
+          "Hips",
+          "Spine",
+          "Chest",
+          "Clavicle_L",
+          "UpperArm_L",
+          "Forearm_L",
+          "Hand_L",
+          "Clavicle_R",
+          "UpperArm_R",
+          "Forearm_R",
+          "Hand_R",
+          "Neck",
+          "Head",
+          "Thigh_L",
+          "Shin_L",
+          "Foot_L",
+          "Toe_L",
+          "Thigh_R",
+          "Shin_R",
+          "Foot_R",
+          "Toe_R"
+        ],
+        "paths": [
+          "translation",
+          "rotation",
+          "scale"
+        ]
+      },
+      {
+        "name": "Combat_Idle",
+        "duration": 1.399999976158142,
+        "channels": 5,
+        "targets": [
+          "Chest",
+          "UpperArm_R",
+          "Forearm_R",
+          "UpperArm_L",
+          "Forearm_L"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Walk",
+        "duration": 0.8500000238418579,
+        "channels": 5,
+        "targets": [
+          "UpperArm_R",
+          "Forearm_R",
+          "UpperArm_L",
+          "Thigh_L",
+          "Thigh_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Run",
+        "duration": 0.6499999761581421,
+        "channels": 5,
+        "targets": [
+          "UpperArm_R",
+          "Forearm_R",
+          "UpperArm_L",
+          "Thigh_L",
+          "Thigh_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Combat_Strafe_Left",
+        "duration": 0.8500000238418579,
+        "channels": 3,
+        "targets": [
+          "Chest",
+          "Thigh_L",
+          "Thigh_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Combat_Strafe_Right",
+        "duration": 0.8500000238418579,
+        "channels": 3,
+        "targets": [
+          "Chest",
+          "Thigh_L",
+          "Thigh_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Left",
+        "duration": 0.6200000047683716,
+        "channels": 4,
+        "targets": [
+          "Chest",
+          "UpperArm_R",
+          "Forearm_R",
+          "UpperArm_L"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Right",
+        "duration": 0.6200000047683716,
+        "channels": 4,
+        "targets": [
+          "Chest",
+          "UpperArm_R",
+          "Forearm_R",
+          "UpperArm_L"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Diagonal_Left",
+        "duration": 0.7200000286102295,
+        "channels": 3,
+        "targets": [
+          "Chest",
+          "UpperArm_R",
+          "Forearm_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Diagonal_Right",
+        "duration": 0.7200000286102295,
+        "channels": 3,
+        "targets": [
+          "Chest",
+          "UpperArm_R",
+          "Forearm_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Overhead",
+        "duration": 0.8799999952316284,
+        "channels": 4,
+        "targets": [
+          "Chest",
+          "UpperArm_R",
+          "Forearm_R",
+          "UpperArm_L"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Rising",
+        "duration": 0.75,
+        "channels": 3,
+        "targets": [
+          "Chest",
+          "UpperArm_R",
+          "Forearm_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Slash_Middle",
+        "duration": 0.6000000238418579,
+        "channels": 3,
+        "targets": [
+          "Chest",
+          "UpperArm_R",
+          "Forearm_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Thrust",
+        "duration": 0.6499999761581421,
+        "channels": 3,
+        "targets": [
+          "Chest",
+          "UpperArm_R",
+          "Forearm_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Block",
+        "duration": 0.8500000238418579,
+        "channels": 3,
+        "targets": [
+          "UpperArm_R",
+          "Forearm_R",
+          "UpperArm_L"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Sword_Parry",
+        "duration": 0.6800000071525574,
+        "channels": 3,
+        "targets": [
+          "Chest",
+          "UpperArm_R",
+          "Forearm_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Dodge_Left",
+        "duration": 0.6000000238418579,
+        "channels": 3,
+        "targets": [
+          "Chest",
+          "Hips",
+          "Thigh_L"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Dodge_Right",
+        "duration": 0.6000000238418579,
+        "channels": 3,
+        "targets": [
+          "Chest",
+          "Hips",
+          "Thigh_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Hit_React",
+        "duration": 0.6200000047683716,
+        "channels": 3,
+        "targets": [
+          "Chest",
+          "Head",
+          "UpperArm_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Knockback",
+        "duration": 0.8199999928474426,
+        "channels": 4,
+        "targets": [
+          "Chest",
+          "Head",
+          "UpperArm_L",
+          "UpperArm_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Spin_Slash",
+        "duration": 1.100000023841858,
+        "channels": 2,
+        "targets": [
+          "Chest",
+          "UpperArm_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Jump_Slash",
+        "duration": 0.949999988079071,
+        "channels": 4,
+        "targets": [
+          "Chest",
+          "UpperArm_R",
+          "Thigh_L",
+          "Thigh_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Heavy_Slash",
+        "duration": 1.100000023841858,
+        "channels": 3,
+        "targets": [
+          "Chest",
+          "UpperArm_R",
+          "Forearm_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Combo_Finisher",
+        "duration": 1.2999999523162842,
+        "channels": 3,
+        "targets": [
+          "Chest",
+          "UpperArm_R",
+          "Forearm_R"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      }
+    ],
+    "bones": [
+      "Root",
+      "Hips",
+      "Spine",
+      "Chest",
+      "Clavicle_L",
+      "UpperArm_L",
+      "Forearm_L",
+      "Hand_L",
+      "Clavicle_R",
+      "UpperArm_R",
+      "Forearm_R",
+      "Hand_R",
+      "Neck",
+      "Head",
+      "Thigh_L",
+      "Shin_L",
+      "Foot_L",
+      "Toe_L",
+      "Thigh_R",
+      "Shin_R",
+      "Foot_R",
+      "Toe_R"
+    ],
+    "meshCount": 19,
+    "textureCount": 0,
+    "unchanged": {
+      "nodes": true,
+      "skins": true,
+      "meshes": true,
+      "materials": true,
+      "images": true,
+      "originalBufferPrefix": true
+    }
+  },
+  {
+    "id": "ghost",
+    "file": "public/models/enemies/ghost-woman-combat-animated.glb",
+    "bytes": 3750840,
+    "sha256": "4fa0bdee3f0a493d562d08a6dedbe063f8e89fe08439936f63fa1be34792c992",
+    "clips": [
+      {
+        "name": "Ghost_Attack",
+        "duration": 0.800000011920929,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:RightArm",
+          "mixamorig:LeftArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Ghost_Hit",
+        "duration": 0.6499999761581421,
+        "channels": 3,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:Head",
+          "mixamorig:RightArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Ghost_Stagger",
+        "duration": 1.0499999523162842,
+        "channels": 4,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:Head",
+          "mixamorig:LeftArm",
+          "mixamorig:RightArm"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      },
+      {
+        "name": "Ghost_Death",
+        "duration": 1.5499999523162842,
+        "channels": 4,
+        "targets": [
+          "mixamorig:Spine2",
+          "mixamorig:Head",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:RightUpLeg"
+        ],
+        "paths": [
+          "rotation"
+        ]
+      }
+    ],
+    "bones": [
+      "mixamorig:Hips",
+      "mixamorig:LeftUpLeg",
+      "mixamorig:LeftLeg",
+      "mixamorig:LeftFoot",
+      "mixamorig:LeftToeBase",
+      "mixamorig:LeftToe_End",
+      "mixamorig:RightUpLeg",
+      "mixamorig:RightLeg",
+      "mixamorig:RightFoot",
+      "mixamorig:RightToeBase",
+      "mixamorig:RightToe_End",
+      "mixamorig:Spine",
+      "mixamorig:Spine1",
+      "mixamorig:Spine2",
+      "mixamorig:LeftShoulder",
+      "mixamorig:LeftArm",
+      "mixamorig:LeftForeArm",
+      "mixamorig:LeftHand",
+      "mixamorig:LeftHandIndex1",
+      "mixamorig:LeftHandIndex2",
+      "mixamorig:LeftHandIndex3",
+      "mixamorig:LeftHandIndex4",
+      "mixamorig:LeftHandMiddle1",
+      "mixamorig:LeftHandMiddle2",
+      "mixamorig:LeftHandMiddle3",
+      "mixamorig:LeftHandMiddle4",
+      "mixamorig:LeftHandPinky1",
+      "mixamorig:LeftHandPinky2",
+      "mixamorig:LeftHandPinky3",
+      "mixamorig:LeftHandPinky4",
+      "mixamorig:LeftHandRing1",
+      "mixamorig:LeftHandRing2",
+      "mixamorig:LeftHandRing3",
+      "mixamorig:LeftHandRing4",
+      "mixamorig:LeftHandThumb1",
+      "mixamorig:LeftHandThumb2",
+      "mixamorig:LeftHandThumb3",
+      "mixamorig:LeftHandThumb4",
+      "mixamorig:Neck",
+      "mixamorig:Head",
+      "mixamorig:HeadTop_End",
+      "mixamorig:RightShoulder",
+      "mixamorig:RightArm",
+      "mixamorig:RightForeArm",
+      "mixamorig:RightHand",
+      "mixamorig:RightHandIndex1",
+      "mixamorig:RightHandIndex2",
+      "mixamorig:RightHandIndex3",
+      "mixamorig:RightHandIndex4",
+      "mixamorig:RightHandMiddle1",
+      "mixamorig:RightHandMiddle2",
+      "mixamorig:RightHandMiddle3",
+      "mixamorig:RightHandMiddle4",
+      "mixamorig:RightHandPinky1",
+      "mixamorig:RightHandPinky2",
+      "mixamorig:RightHandPinky3",
+      "mixamorig:RightHandPinky4",
+      "mixamorig:RightHandRing1",
+      "mixamorig:RightHandRing2",
+      "mixamorig:RightHandRing3",
+      "mixamorig:RightHandRing4",
+      "mixamorig:RightHandThumb1",
+      "mixamorig:RightHandThumb2",
+      "mixamorig:RightHandThumb3",
+      "mixamorig:RightHandThumb4"
+    ],
+    "meshCount": 1,
+    "textureCount": 3,
+    "unchanged": {
+      "nodes": true,
+      "skins": true,
+      "meshes": true,
+      "materials": true,
+      "images": true,
+      "originalBufferPrefix": true
+    }
+  }
+]

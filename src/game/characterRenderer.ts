@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { HumanPreset } from '../data/appearance';
 
-export type CharacterRendererMode = 'glb' | 'code';
+export type CharacterRendererMode = 'glb' | 'code' | 'canolia';
 
 /**
  * Easy character renderer switch:
@@ -17,7 +17,7 @@ function readStoredRendererMode(): CharacterRendererMode | null {
   if (typeof window === 'undefined' || !window.localStorage) return null;
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
-    return saved === 'glb' || saved === 'code' ? saved : null;
+    return saved === 'glb' || saved === 'code' || saved === 'canolia' ? saved : null;
   } catch {
     return null;
   }
@@ -32,7 +32,7 @@ export function getCharacterRendererMode(): CharacterRendererMode {
 
 /** Switches between `'glb'` (GLB models) and `'code'` (ProceduralHuman) at runtime. */
 export function setCharacterRendererMode(mode: CharacterRendererMode): CharacterRendererMode {
-  if (mode !== 'glb' && mode !== 'code') return currentMode;
+  if (mode !== 'glb' && mode !== 'code' && mode !== 'canolia') return currentMode;
   if (currentMode === mode) return currentMode;
   currentMode = mode;
   if (typeof window !== 'undefined' && window.localStorage) {
