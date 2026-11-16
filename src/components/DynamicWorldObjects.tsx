@@ -1,7 +1,11 @@
 import { memo, useEffect, useState, useMemo } from 'react';
 import { BufferGeometry, Float32BufferAttribute } from 'three';
-import { REGIONS, loadRegionLayout, syncAllWorldEdits } from '../game/editorRegions';
-import { normalizeAuthoredRegionId } from '../game/regionObjectsMigration';
+import {
+  getEditableRegionIds,
+  loadStoredRegionLayout,
+  normalizeAuthoredRegionId,
+  syncAllWorldEdits,
+} from '../game/worldEditsSync';
 import { type LayoutFeature } from '../game/worldLayout';
 import { getAssetDefinition } from '../game/assetRegistry';
 import { Asset3DInstance } from './Asset3DRenderer';
@@ -17,12 +21,12 @@ import { getBuiltInEdit } from '../game/builtInAssetEdits';
 function getActiveDynamicFeatures(): LayoutFeature[] {
   const features: LayoutFeature[] = [];
   try {
-    for (const r of REGIONS) {
-      const raw = r.id === 'custom'
+    for (const id of getEditableRegionIds()) {
+      const raw = id === 'custom'
         ? localStorage.getItem('myanmar-town-world-layout-v1')
-        : (localStorage.getItem(`mm-editor-region-v1:${r.id}`) || localStorage.getItem(`mm-editor-region-v1:${normalizeAuthoredRegionId(r.id)}`));
+        : (localStorage.getItem(`mm-editor-region-v1:${id}`) || localStorage.getItem(`mm-editor-region-v1:${normalizeAuthoredRegionId(id)}`));
       if (!raw) continue;
-      const layout = loadRegionLayout(r.id);
+      const layout = loadStoredRegionLayout(id);
       if (layout && Array.isArray(layout.features)) {
         for (const f of layout.features) {
           if (!f.metadata?.authored) {

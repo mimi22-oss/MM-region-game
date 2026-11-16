@@ -20,9 +20,15 @@ import { startupDiagnostics } from '../game/startupDiagnostics';
 import { diagnosticConfig } from '../game/diagnosticMode';
 import { sourceIsEdited } from '../game/worldEdits';
 import { getIntroState, isIntroHighAltitude, useIntroState } from '../game/IntroStateMachine';
+import kanbaleDatasetJson from '../data/kanbaleDataset.json' with { type: 'json' };
+import { KanbaleChunkTiles } from './villages/kanbale/KanbaleChunkTiles';
 
 // No spread into Math.min/max: large source collections exceed JS argument limits.
 const bounds = regions.map(r => {
+  if ('streamed' in r && r.streamed && r.id === 'kanbale') {
+    const b = kanbaleDatasetJson.bounds;
+    return { id: r.id, minX: b.minX - 60, maxX: b.maxX + 60, minZ: b.minZ - 60, maxZ: b.maxZ + 60 };
+  }
   let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
   for(const h of r.houses){minX=Math.min(minX,h.x);maxX=Math.max(maxX,h.x);minZ=Math.min(minZ,h.z);maxZ=Math.max(maxZ,h.z);}
   return {id:r.id,minX:minX-60,maxX:maxX+60,minZ:minZ-60,maxZ:maxZ+60};
@@ -38,6 +44,13 @@ const overviewGeometry = new BoxGeometry(), overviewMaterial = new MeshLambertMa
 function Overview({ region }: { region: typeof regions[number] }) {
   const mesh = useRef<InstancedMesh>(null);
   const plots = useMemo<Plot[]>(() => {
+    if ('streamed' in region && region.streamed && region.id === 'kanbale') {
+      return kanbaleDatasetJson.overviewPlots.map((p) => ({
+        ...p,
+        height: 4.5,
+        y: 2.25,
+      }));
+    }
     const fields=[...new Map([...region.fields,...('bundedFields' in region?region.bundedFields:[]),...('separationFields' in region?region.separationFields:[])].map(f=>['id' in f?f.id:`${f.x}/${f.z}/${f.width}/${f.depth}/${f.rotation}`,f])).values()];
     return [
     ...fields.map(f => ({ ...f, height: .1, y: 0 })),
@@ -376,11 +389,12 @@ const fallbackFocus = { x: 0, z: 0 };
     {myothar && <RegionBuilder id="myothar" Scene={myothar} live active={started && active.includes('myothar')} onBuilt={onBuilt} />}
     {building && building !== 'myothar' && Scene && !cache.current.has(building) &&
       <RegionBuilder key={building} id={building} Scene={Scene} onBuilt={onBuilt} />}
+    <KanbaleChunkTiles active={started && active.includes('kanbale')} destination={destination} />
     {regions.filter(region=>overviewIds.includes(region.id)).map(region => <group key={region.id} visible={!active.includes(region.id) || !prepared.includes(region.id)}><Overview region={region} /></group>)}
     {!paused && started && !diagnosticConfig.disableNPCs && !hideNpcsDuringHighIntro && <>
       <RobotBots activeRegions={active} />
       <CarBots />
-      <HauntedWarehouseAudioZone enabled={active.includes('myothar')} minute={minute} timeMode={timeMode} soundEnabled={soundEnabled}/>
+      <HauntedWarehouseAudioZone enabled={active.includes('myothar')} minute={minute} timeMode={timeMode} soundEnabled={soundEnabled} soundVolume={soundVolume}/>
 
     </>}
     {started && !diagnosticConfig.disableNPCs && !hideNpcsDuringHighIntro && <>

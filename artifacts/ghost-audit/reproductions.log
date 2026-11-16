@@ -1,0 +1,87 @@
+✖ AUDIT REPRO: equal wall-time chase should not lose most displacement at 5Hz (4.909ms)
+✖ AUDIT REPRO: authoritative ghost must not damage across an impassable barrier (2.1899ms)
+✖ AUDIT REPRO: 60Hz client movement throttled to network ticks must preserve elapsed movement time (1.2768ms)
+✖ AUDIT REPRO: blocked empty route must respect path replanning throttle (1.04ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 0
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1498.6274
+
+✖ failing tests:
+
+test at tests\ghostAuditReproductions.test.mjs:8:1
+✖ AUDIT REPRO: equal wall-time chase should not lose most displacement at 5Hz (4.909ms)
+  AssertionError [ERR_ASSERTION]: {"hz60":6.965000000000009,"hz5":0.8250000000000002,"ratio":0.1184493898061736}
+      at TestContext.<anonymous> (file:///C:/Users/EBPMyanmar/Desktop/Myanmar-Town-Prototype/tests/ghostAuditReproductions.test.mjs:10:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\ghostAuditReproductions.test.mjs:12:1
+✖ AUDIT REPRO: authoritative ghost must not damage across an impassable barrier (2.1899ms)
+  AssertionError [ERR_ASSERTION]: {"hp":66,"events":[{"eventId":"cev_1","tick":1,"attackerId":"warehouse-ghost-1","attackerKind":"ghost","targetId":"audit","targetKind":"player","abilityId":"ghost-grab","damage":34,"targetHpAfter":66,"defeated":false}]}
+  
+  66 !== 100
+  
+      at TestContext.<anonymous> (file:///C:/Users/EBPMyanmar/Desktop/Myanmar-Town-Prototype/tests/ghostAuditReproductions.test.mjs:16:88)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 66,
+    expected: 100,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\ghostAuditReproductions.test.mjs:19:1
+✖ AUDIT REPRO: 60Hz client movement throttled to network ticks must preserve elapsed movement time (1.2768ms)
+  AssertionError [ERR_ASSERTION]: {"sent":20,"serverDistance":1.088,"expectedClientDistance":3.2}
+      at TestContext.<anonymous> (file:///C:/Users/EBPMyanmar/Desktop/Myanmar-Town-Prototype/tests/ghostAuditReproductions.test.mjs:26:74)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\ghostAuditReproductions.test.mjs:28:1
+✖ AUDIT REPRO: blocked empty route must respect path replanning throttle (1.04ms)
+  AssertionError [ERR_ASSERTION]: {"elapsedSec":1,"replanCalls":20,"expectedMaximum":5}
+      at TestContext.<anonymous> (file:///C:/Users/EBPMyanmar/Desktop/Myanmar-Town-Prototype/tests/ghostAuditReproductions.test.mjs:31:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

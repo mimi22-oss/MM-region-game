@@ -74,6 +74,9 @@ jobs:
       - name: Run unit & integration tests
         run: npm test
 
+      - name: Run server & contract TypeScript check
+        run: npm run server:check
+
       - name: Run map data audit
         run: npm run map:audit
 

@@ -1,5 +1,5 @@
-import {emptyLayout,loadLayout,validLayout,type LayoutFeature,type Point2,type WorldLayout,type FeatureKind} from './worldLayout';
-import { MAP_DESTINATIONS } from './locationDetect';
+import {emptyLayout,loadLayout,validLayout,type LayoutFeature,type Point2,type WorldLayout,type FeatureKind} from './worldLayout.ts';
+import { MAP_DESTINATIONS } from './locationDetect.ts';
 export const REGIONS = [
  {id:'custom',name:'New / Custom Village'},
  {id:'myothar',name:'မြို့သာရပ်ကွက် (Myothar Ward)',destination:'myothar-center'},
@@ -22,17 +22,20 @@ export function regionCenter(id:string,fallback:Point2):Point2 {
  const point = MAP_DESTINATIONS.find(d=>d.id===destination || d.id===normId);
  return point?{x:point.x,z:point.z}:fallback;
 }
-import { getRegionAuthoredFeatures, normalizeAuthoredRegionId } from './regionObjectsMigration';
-import { publishWorldEdits } from './worldEdits';
+import { getRegionAuthoredFeatures, getRegionAuthoredFeaturesAsync } from './regionObjectsMigration.ts';
+import {
+  loadStoredRegionLayout,
+  normalizeAuthoredRegionId,
+  syncAllWorldEdits,
+} from './worldEditsSync.ts';
+
+export { syncAllWorldEdits };
 
 const key=(id:string)=>`mm-editor-region-v1:${id}`;
 export function loadRegionLayout(id:string):WorldLayout{
- if(id==='custom')return loadLayout();
+ const stored = loadStoredRegionLayout(id);
+ if (stored) return stored;
  const normId = normalizeAuthoredRegionId(id);
- try{
-   const raw=localStorage.getItem(key(id)) || localStorage.getItem(key(normId));
-   if(raw){const data:unknown=JSON.parse(raw);if(validLayout(data))return data;}
- }catch{}
  const authored = getRegionAuthoredFeatures(normId);
  return {
    ...emptyLayout(),
@@ -41,22 +44,19 @@ export function loadRegionLayout(id:string):WorldLayout{
  };
 }
 
-export function syncAllWorldEdits(): WorldLayout[] {
-  const layouts: WorldLayout[] = [];
-  for (const r of REGIONS) {
-    try {
-      const normId = normalizeAuthoredRegionId(r.id);
-      const raw = r.id === 'custom'
-        ? localStorage.getItem('myanmar-town-world-layout-v1')
-        : (localStorage.getItem(key(r.id)) || localStorage.getItem(key(normId)));
-      if (raw) {
-        const l = loadRegionLayout(r.id);
-        if (l && Array.isArray(l.features)) layouts.push(l);
-      }
-    } catch {}
-  }
-  publishWorldEdits(layouts);
-  return layouts;
+export async function loadRegionLayoutAsync(
+ id:string,
+ readJson?: (url: string, maxBytes: number, expectedSha256?: string) => Promise<unknown>,
+): Promise<WorldLayout> {
+ const stored = loadStoredRegionLayout(id);
+ if (stored) return stored;
+ const normId = normalizeAuthoredRegionId(id);
+ const authored = await getRegionAuthoredFeaturesAsync(normId, readJson);
+ return {
+   ...emptyLayout(),
+   name: REGIONS.find(r => r.id === id || r.id === normId)?.name ?? id,
+   features: authored,
+ };
 }
 
 export function saveRegionLayout(id:string,layout:WorldLayout){

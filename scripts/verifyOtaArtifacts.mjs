@@ -3,7 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   APP_NATIVE_BASELINE,
+  checkContentPackCompatibility,
   checkUpdateCompatibility,
+  serializeContentPackDigestInput,
   validateAssetManifest,
 } from '../src/game/otaCompatibility.ts';
 
@@ -50,6 +52,35 @@ for (const file of manifest.files) {
   const actualSha = sha256Hex(bytes);
   if (actualSha !== file.sha256) {
     throw new Error(`Asset SHA-256 mismatch for ${file.path}: ${actualSha} !== ${file.sha256}`);
+  }
+}
+
+if (manifest.packs && manifest.packs.length > 0) {
+  const fileMap = new Map(manifest.files.map((f) => [f.path, f]));
+  for (const pack of manifest.packs) {
+    const entries = pack.paths.map((p) => fileMap.get(p));
+    const expectedPackSha = sha256Hex(Buffer.from(serializeContentPackDigestInput(entries)));
+    if (expectedPackSha !== pack.sha256) {
+      throw new Error(`Content pack "${pack.id}" SHA-256 mismatch: ${expectedPackSha} !== ${pack.sha256}`);
+    }
+    const packCompat = checkContentPackCompatibility(pack, {
+      nativeVersion: APP_NATIVE_BASELINE.nativeVersion,
+      androidVersionCode: APP_NATIVE_BASELINE.androidVersionCode,
+      schemaVersion: APP_NATIVE_BASELINE.otaSchemaVersion,
+      currentVersion: '0.0.1',
+      channel,
+    });
+    if (!packCompat.compatible) {
+      throw new Error(`Content pack "${pack.id}" compatibility failed: ${packCompat.message}`);
+    }
+  }
+  const packsPath = path.join(distDir, 'ota', 'packs.json');
+  if (!fs.existsSync(packsPath)) {
+    throw new Error(`Missing segmented pack index at ${packsPath}`);
+  }
+  const packsJson = JSON.parse(fs.readFileSync(packsPath, 'utf8'));
+  if (packsJson.assetManifestSha256 !== expectedManifestSha) {
+    throw new Error('packs.json assetManifestSha256 mismatch');
   }
 }
 

@@ -41,12 +41,12 @@ If a push modifies native files or increments `minNativeVersion` / `minAndroidVe
 1. **Discovery (`src/services/otaUpdater.ts`)**:
    - Reads `/ota/production.json` (or `/ota/staging.json` when channel is `staging`) with `Cache-Control: no-store`.
    - Evaluates compatibility (`checkUpdateCompatibility`) against `nativeVersion`, `androidVersionCode`, `schemaVersion`, HTTPS URL policy, SHA-256 format, and downgrade protection.
-2. **Delta Asset Cache Sync (`src/services/assetCacheManager.ts`)**:
-   - Validates `/ota/asset-manifest.json`.
-   - Diffs target file hashes against active/previous generations stored by content-addressed SHA-256 in Cache Storage (`mm-region-ota-blobs-v1`).
-   - Downloads **changed files only**, verifies SHA-256 of every downloaded asset via Web Crypto (`crypto.subtle.digest`), checkpoints completed paths per file so interrupted downloads resume cleanly, and activates the new generation atomically only when complete.
-   - Enforces bounded disk budget (`DEFAULT_MAX_ASSET_STORAGE_BYTES = 128 MB`) and never deletes the sole working offline copy.
-   - Intercepts same-origin asset requests (`/models/`, `/motions/`, `/map/`, `/assets/`, textures) in `src/services/offlineAssetResolver.ts`, strictly reading the active generation so old assets cannot leak across versions.
+2. **Delta Asset Cache Sync & Segmented Content Packs (`src/services/assetCacheManager.ts`)**:
+   - Validates `/ota/asset-manifest.json` and `/ota/packs.json` (`core-shell`, `characters-core`, `npc-ghost`, `motions-shared`, `region-kanbale`, `region-sithar-fields`).
+   - Stores blobs by content-addressed SHA-256 primarily in **IndexedDB** (`mm-region-ota-db-v1`) with `navigator.storage.persist()`, falling back cleanly to **Cache Storage** (`mm-region-ota-blobs-v1`) and in-memory storage when unavailable.
+   - Downloads **changed files only**, verifies SHA-256 of every downloaded asset via Web Crypto (`crypto.subtle.digest`), supports both whole-manifest sync (`syncToManifest`) and per-pack sync/rollback (`syncPack`, `rollbackPack`), resumes interrupted downloads cleanly, and activates atomically.
+   - Enforces bounded disk budget (`DEFAULT_MAX_ASSET_STORAGE_BYTES = 128 MB`) and never deletes the sole working offline copy or required packs.
+   - Intercepts same-origin asset requests (`/models/`, `/motions/`, `/map/`, `/assets/`, textures) in `src/services/offlineAssetResolver.ts`, strictly serving the newest active verified generation or falling back directly to the APK builtin assets.
 3. **Capacitor Web Bundle & Rollback**:
    - Downloads verified OTA ZIP (`CapacitorUpdater.download({ url, version, checksum, manifest })`) in background with `httpsOnly: true`.
    - **Never interrupts** an active ghost chase (`isAnyGhostThreatActive()`), ghost neck-grab/fall (`getGhostEncounterInteraction()`), motorcycle ride, car drive, balloon ride, cinematic intro, or loading state (`src/game/updateSafety.ts`).

@@ -1,0 +1,162 @@
+{
+  "renderScaling": [
+    {
+      "count": 1,
+      "active": 1,
+      "visible": 1,
+      "frames": 210,
+      "meanFrameMs": 16.666666666666668,
+      "avgFps": 59.99999999999999,
+      "maxCalls": 1,
+      "maxTriangles": 19097,
+      "maxTextures": 4,
+      "heapMiB": 53.80483627319336,
+      "timing": {
+        "ai": {
+          "calls": 210,
+          "ms": 17.399999998509884
+        },
+        "blend": {
+          "calls": 210,
+          "ms": 1.9000000059604645
+        },
+        "animation": {
+          "calls": 210,
+          "ms": 30.099999990314245
+        }
+      }
+    },
+    {
+      "count": 3,
+      "active": 3,
+      "visible": 3,
+      "frames": 114,
+      "meanFrameMs": 31.361403508765395,
+      "avgFps": 31.886328037598947,
+      "maxCalls": 3,
+      "maxTriangles": 57291,
+      "maxTextures": 6,
+      "heapMiB": 43.26271915435791,
+      "timing": {
+        "ai": {
+          "calls": 342,
+          "ms": 22.1999999769032
+        },
+        "blend": {
+          "calls": 342,
+          "ms": 1.5
+        },
+        "animation": {
+          "calls": 342,
+          "ms": 43.10000003129244
+        },
+        "path": {
+          "calls": 1,
+          "ms": 0.30000000074505806
+        }
+      }
+    },
+    {
+      "count": 10,
+      "active": 10,
+      "visible": 10,
+      "frames": 40,
+      "meanFrameMs": 87.61000000005588,
+      "avgFps": 11.41422212075519,
+      "maxCalls": 10,
+      "maxTriangles": 190970,
+      "maxTextures": 13,
+      "heapMiB": 47.39100360870361,
+      "timing": {
+        "ai": {
+          "calls": 400,
+          "ms": 34.70000000298023
+        },
+        "blend": {
+          "calls": 400,
+          "ms": 2.0000000037252903
+        },
+        "animation": {
+          "calls": 400,
+          "ms": 45.099999979138374
+        },
+        "path": {
+          "calls": 1,
+          "ms": 0.09999999776482582
+        }
+      }
+    },
+    {
+      "count": 50,
+      "active": 50,
+      "visible": 50,
+      "frames": 8,
+      "meanFrameMs": 434.76250000018626,
+      "avgFps": 2.300106379919086,
+      "maxCalls": 50,
+      "maxTriangles": 954850,
+      "maxTextures": 53,
+      "heapMiB": 52.7975435256958,
+      "timing": {
+        "ai": {
+          "calls": 400,
+          "ms": 8.30000002682209
+        },
+        "blend": {
+          "calls": 400,
+          "ms": 0.5999999940395355
+        },
+        "animation": {
+          "calls": 400,
+          "ms": 37.69999999180436
+        }
+      }
+    },
+    {
+      "count": 100,
+      "active": 100,
+      "visible": 100,
+      "frames": 4,
+      "meanFrameMs": 835.2999999998137,
+      "avgFps": 1.1971746677842967,
+      "maxCalls": 100,
+      "maxTriangles": 1909700,
+      "maxTextures": 103,
+      "heapMiB": 68.27761554718018,
+      "timing": {
+        "ai": {
+          "calls": 400,
+          "ms": 8.999999985098839
+        },
+        "blend": {
+          "calls": 400,
+          "ms": 0.6000000089406967
+        },
+        "animation": {
+          "calls": 400,
+          "ms": 34.10000002011657
+        }
+      }
+    }
+  ],
+  "cases": [],
+  "pausedUnchanged": true,
+  "registryReleased": true,
+  "audioFiles": [
+    "http://127.0.0.1:5199/assets/audio/horror/ghost/spectral-cackle.opus",
+    "http://127.0.0.1:5199/assets/audio/horror/ghost/spectral-shriek.opus",
+    "http://127.0.0.1:5199/assets/audio/horror/events/horror-sting.opus",
+    "http://127.0.0.1:5199/assets/audio/horror/ambience/chase-tension.opus",
+    "http://127.0.0.1:5199/assets/audio/horror/events/ghost-grab-impact.opus",
+    "http://127.0.0.1:5199/assets/audio/horror/ghost/ghost-whisper.opus"
+  ],
+  "errors": [],
+  "frameSample": {
+    "frames": 7,
+    "avgFps": 1.4039028499223658,
+    "maxCalls": 100,
+    "maxTriangles": 1909700,
+    "maxTextures": 103
+  },
+  "note": "Pinned source, real GhostNpc/GLB/mixer/AI, proxy nested player group, software WebGL. No full Player controller or physical Android."
+}

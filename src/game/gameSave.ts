@@ -1,4 +1,12 @@
+import { CONTRACT_SCHEMA_VERSIONS, type AuthorityOwner } from '../../shared/contracts/index.ts';
+
 export const GAME_SAVE_STORAGE_KEY = 'mm-region-game-save-v1';
+
+export interface GameSaveEnvelopeV1 {
+  readonly schemaVersion: typeof CONTRACT_SCHEMA_VERSIONS.gameSave;
+  readonly authority: Extract<AuthorityOwner, 'local-offline'>;
+  readonly data: GameSaveData;
+}
 
 export interface GameSaveData {
   version: 1;
@@ -161,4 +169,19 @@ export function flushGameSave(
   latestPendingInput = null;
   if (!target) return null;
   return writeGameSave(target.data, target.bounds);
+}
+
+/** Upgrades stored v1 save objects or wrapped envelopes into explicit local-offline contracts. */
+export function migrateGameSave(raw: unknown, bounds?: SaveBounds): GameSaveEnvelopeV1 | null {
+  const candidate =
+    raw && typeof raw === 'object' && !Array.isArray(raw) && 'data' in raw
+      ? (raw as { data: unknown }).data
+      : raw;
+  const validated = validateGameSave(candidate, bounds);
+  if (!validated) return null;
+  return {
+    schemaVersion: CONTRACT_SCHEMA_VERSIONS.gameSave,
+    authority: 'local-offline',
+    data: validated,
+  };
 }

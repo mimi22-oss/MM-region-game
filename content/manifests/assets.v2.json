@@ -1,0 +1,1146 @@
+{
+  "schemaVersion": 2,
+  "generatedBy": "pipelines/asset-optimize/runPipeline.mjs",
+  "pinnedBlenderVersion": "5.2.3",
+  "assetCount": 21,
+  "assets": [
+    {
+      "schemaVersion": 2,
+      "assetId": "character:canolia-reference-static",
+      "version": "2.0.0-prototype",
+      "contentHash": "333530416a040477b2574063da13afd05da4b82a7ac90bc35711d07470ff3f8f",
+      "name": "blender:reference-model",
+      "nameMm": "blender:reference-model",
+      "category": "character",
+      "rendererHint": "BlenderCharacter",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "artifacts/blender-character/reference_model.blend",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 0.6653,
+        "depth": 0.3411,
+        "height": 1.7758
+      },
+      "collision": {
+        "type": "box",
+        "width": 0.6653,
+        "depth": 0.3411
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.6653,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_canolia-reference-static.333530416a040477.glb",
+          "sha256": "333530416a040477b2574063da13afd05da4b82a7ac90bc35711d07470ff3f8f",
+          "maxTriangles": 65720
+        },
+        {
+          "level": 1,
+          "url": "artifacts/phase2-pipeline/blender-staged/reference-model.lod1.glb",
+          "sha256": "5cfe5ffc7aebff5bd8bbb7d09866039d8bacc3d3e9de63df46301fd504c27c5d",
+          "maxTriangles": 29574
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 65720,
+        "maxTexturePx": 1024,
+        "maxBytes": 1240700
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "character-highpoly"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:canolia-reference-animated",
+      "version": "2.0.0-prototype",
+      "contentHash": "1db53510323aa2075f91664aa000126acce58845ff636eae8f9cdc5d9f8ad2fe",
+      "name": "blender:reference-model-animated",
+      "nameMm": "blender:reference-model-animated",
+      "category": "character",
+      "rendererHint": "BlenderCharacter",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "artifacts/blender-character/reference_model_animated.blend",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 0.6653,
+        "depth": 0.3411,
+        "height": 1.7758
+      },
+      "collision": {
+        "type": "box",
+        "width": 0.6653,
+        "depth": 0.3411
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.6653,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "canolia-biped-v1",
+      "animationClips": [
+        "Bike_Drive",
+        "Bike_Idle",
+        "Bike_Mount",
+        "Car_Drive",
+        "Idle",
+        "Swim_Forward",
+        "Swim_Idle",
+        "Vault",
+        "Walk"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_canolia-reference-animated.1db53510323aa207.glb",
+          "sha256": "1db53510323aa2075f91664aa000126acce58845ff636eae8f9cdc5d9f8ad2fe",
+          "maxTriangles": 65720
+        },
+        {
+          "level": 1,
+          "url": "artifacts/phase2-pipeline/blender-staged/reference-model-animated.lod1.glb",
+          "sha256": "62df54182604f9361f2c1ab6d89e6a859cb28d51f320d513aae11c35ffed1cfc",
+          "maxTriangles": 29574
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 65720,
+        "maxTexturePx": 1024,
+        "maxBytes": 2150944
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "character-highpoly"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:canolia-rig-source",
+      "version": "2.0.0-prototype",
+      "contentHash": "333530416a040477b2574063da13afd05da4b82a7ac90bc35711d07470ff3f8f",
+      "name": "blender:rig-material-source",
+      "nameMm": "blender:rig-material-source",
+      "category": "character",
+      "rendererHint": "BlenderCharacter",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "artifacts/blender-character/rig_material_source.blend",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 0.6653,
+        "depth": 0.3411,
+        "height": 1.7758
+      },
+      "collision": {
+        "type": "box",
+        "width": 0.6653,
+        "depth": 0.3411
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.6653,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_canolia-rig-source.333530416a040477.glb",
+          "sha256": "333530416a040477b2574063da13afd05da4b82a7ac90bc35711d07470ff3f8f",
+          "maxTriangles": 65720
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 65720,
+        "maxTexturePx": 1024,
+        "maxBytes": 1240700
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "character-highpoly"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:boy-base",
+      "version": "2.0.0-prototype",
+      "contentHash": "c8baa66be282c69fd0d2371e459c93ecb8714efe8db3567d7dc09e43b44a0bb7",
+      "name": "Boy Base Rigged Character",
+      "nameMm": "လူငယ် 3D ဇာတ်ကောင်",
+      "category": "character",
+      "rendererHint": "GlbHuman",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "src/assets/boy.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 0.7681,
+        "depth": 0.2534,
+        "height": 0.9995
+      },
+      "collision": {
+        "type": "box",
+        "width": 0.7681,
+        "depth": 0.2534
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.7681,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_boy-base.c8baa66be282c69f.glb",
+          "sha256": "c8baa66be282c69fd0d2371e459c93ecb8714efe8db3567d7dc09e43b44a0bb7",
+          "maxTriangles": 10962
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 10962,
+        "maxTexturePx": 1024,
+        "maxBytes": 1579244
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "character-rigged"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:girl-base",
+      "version": "2.0.0-prototype",
+      "contentHash": "d0828919477d1bb621f1915fa1a485d9ef2ca890b9b615ec7eb0e9ccb53076d9",
+      "name": "Girl Base Rigged Character",
+      "nameMm": "မိန်းကလေး 3D ဇာတ်ကောင်",
+      "category": "character",
+      "rendererHint": "GlbHuman",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "src/assets/girl.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 0.6334,
+        "depth": 0.3195,
+        "height": 0.9778
+      },
+      "collision": {
+        "type": "box",
+        "width": 0.6334,
+        "depth": 0.3195
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.6334,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_girl-base.d0828919477d1bb6.glb",
+          "sha256": "d0828919477d1bb621f1915fa1a485d9ef2ca890b9b615ec7eb0e9ccb53076d9",
+          "maxTriangles": 3173
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 3173,
+        "maxTexturePx": 1024,
+        "maxBytes": 863432
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "character-rigged"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:ghost-woman",
+      "version": "2.0.0-prototype",
+      "contentHash": "49a8672ccb6ac533a9301886f90dbcb473715834c5f5806b0f75e0c169522771",
+      "name": "Night Ghost Character",
+      "nameMm": "ညသရဲမ ဇာတ်ကောင်",
+      "category": "character",
+      "rendererHint": "GhostNpc",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "public/models/ghost-woman.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 0.5106,
+        "depth": 0.6865,
+        "height": 0.9772
+      },
+      "collision": {
+        "type": "box",
+        "width": 0.5106,
+        "depth": 0.6865
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5106,
+        "defaultDepth": 0.6865,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_ghost-woman.49a8672ccb6ac533.glb",
+          "sha256": "49a8672ccb6ac533a9301886f90dbcb473715834c5f5806b0f75e0c169522771",
+          "maxTriangles": 19097
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 19097,
+        "maxTexturePx": 1024,
+        "maxBytes": 3189452
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "character-rigged"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:canolia-animated",
+      "version": "2.0.0-prototype",
+      "contentHash": "8bfc096523a33087d06a5125f2cf1a111dcf1cafdd5fc0636038bf0cce94cde7",
+      "name": "Canolia Styled Character",
+      "nameMm": "ကနိုလီယာ 3D ဇာတ်ကောင်",
+      "category": "character",
+      "rendererHint": "BlenderCharacter",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "public/models/canolia-character.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 0.6653,
+        "depth": 0.3411,
+        "height": 1.7758
+      },
+      "collision": {
+        "type": "box",
+        "width": 0.6653,
+        "depth": 0.3411
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.6653,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "canolia-biped-v1",
+      "animationClips": [
+        "Bike_Drive",
+        "Bike_Idle",
+        "Bike_Mount",
+        "Car_Drive",
+        "Idle",
+        "Swim_Forward",
+        "Swim_Idle",
+        "Vault",
+        "Walk"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_canolia-animated.8bfc096523a33087.glb",
+          "sha256": "8bfc096523a33087d06a5125f2cf1a111dcf1cafdd5fc0636038bf0cce94cde7",
+          "maxTriangles": 65720
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 65720,
+        "maxTexturePx": 1024,
+        "maxBytes": 2151464
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "character-highpoly"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "cultural:motion-dance-01",
+      "version": "2.0.0-prototype",
+      "contentHash": "d4ce9c0f5087a695ee150319ceb45ea64ccb23066b934330bfd0d9f830c7deb0",
+      "name": "Dance Motion 01",
+      "nameMm": "အက (၁)",
+      "category": "cultural",
+      "rendererHint": "MotionLoader",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "dance group.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "dance_01.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/cultural_motion-dance-01.d4ce9c0f5087a695.glb",
+          "sha256": "d4ce9c0f5087a695ee150319ceb45ea64ccb23066b934330bfd0d9f830c7deb0",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 273636
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "cultural:motion-dance-02",
+      "version": "2.0.0-prototype",
+      "contentHash": "ecdb9b356095b45c93f6bf019c2c4378445b53e1b1ec5bd33811392ff698cafa",
+      "name": "Dance Motion 02",
+      "nameMm": "အက (၂)",
+      "category": "cultural",
+      "rendererHint": "MotionLoader",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "dance group.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "dance_02.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/cultural_motion-dance-02.ecdb9b356095b45c.glb",
+          "sha256": "ecdb9b356095b45c93f6bf019c2c4378445b53e1b1ec5bd33811392ff698cafa",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 148560
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "cultural:motion-dance-03",
+      "version": "2.0.0-prototype",
+      "contentHash": "f0e31e6ffaa083802b91f0a9e54bf5ea0d165fb9cda286ae224d53c824ea6ca4",
+      "name": "Dance Motion 03",
+      "nameMm": "အက (၃)",
+      "category": "cultural",
+      "rendererHint": "MotionLoader",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "dance group.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "dance_03.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/cultural_motion-dance-03.f0e31e6ffaa08380.glb",
+          "sha256": "f0e31e6ffaa083802b91f0a9e54bf5ea0d165fb9cda286ae224d53c824ea6ca4",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 208064
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:motion-vehicle-wait",
+      "version": "2.0.0-prototype",
+      "contentHash": "f9c21b820b9fc4da10dab272e5b3c6f92c345203969266748377e3ef2cd3919e",
+      "name": "Vehicle Waiting Pose",
+      "nameMm": "ကားစောင့်ဟန်",
+      "category": "character",
+      "rendererHint": "MotionLoader",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "boy wait.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "wait.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_motion-vehicle-wait.f9c21b820b9fc4da.glb",
+          "sha256": "f9c21b820b9fc4da10dab272e5b3c6f92c345203969266748377e3ef2cd3919e",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 38624
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:motion-box-01",
+      "version": "2.0.0-prototype",
+      "contentHash": "e2a417744ea76008a9b27f9e94cc22fc23df9b604837dc737b69997a50d757db",
+      "name": "Boxing Combo 01",
+      "nameMm": "လက်ဝှေ့ (၁)",
+      "category": "character",
+      "rendererHint": "MotionLoader",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "boy hit fight dive.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "box_01.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_motion-box-01.e2a417744ea76008.glb",
+          "sha256": "e2a417744ea76008a9b27f9e94cc22fc23df9b604837dc737b69997a50d757db",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 42956
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:motion-front-kick-01",
+      "version": "2.0.0-prototype",
+      "contentHash": "36b7f51e769846cd48eaaedd9d9a697c81e86c1e5ac8b08d7753cfb24f4f2dc3",
+      "name": "Front Kick 01",
+      "nameMm": "ရှေ့ကန်ချက် (၁)",
+      "category": "character",
+      "rendererHint": "MotionLoader",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "boy hit fight dive.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "front_kick_01.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_motion-front-kick-01.36b7f51e769846cd.glb",
+          "sha256": "36b7f51e769846cd48eaaedd9d9a697c81e86c1e5ac8b08d7753cfb24f4f2dc3",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 49604
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:motion-warm-up",
+      "version": "2.0.0-prototype",
+      "contentHash": "b3ee909c86cd52c4566bd6e1a99d4b3c0fc69c47509ab6523c5d4e692653a196",
+      "name": "Warm Up Exercise",
+      "nameMm": "သွေးပူလေ့ကျင့်ခန်း",
+      "category": "character",
+      "rendererHint": "MotionLoader",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "boy hit fight dive.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "warm_up.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_motion-warm-up.b3ee909c86cd52c4.glb",
+          "sha256": "b3ee909c86cd52c4566bd6e1a99d4b3c0fc69c47509ab6523c5d4e692653a196",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 147892
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:motion-hit-to-head",
+      "version": "2.0.0-prototype",
+      "contentHash": "4e77a2adeb1bf54247d90f39796f73af4d4724ed8997dcc5af8bdd596bd355e6",
+      "name": "Hit To Head Reaction",
+      "nameMm": "ဦးခေါင်းထိမှန်ဟန်",
+      "category": "character",
+      "rendererHint": "MotionLoader",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "boy hit fight dive.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "hit_to_head.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_motion-hit-to-head.4e77a2adeb1bf542.glb",
+          "sha256": "4e77a2adeb1bf54247d90f39796f73af4d4724ed8997dcc5af8bdd596bd355e6",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 39452
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:motion-defeat-02",
+      "version": "2.0.0-prototype",
+      "contentHash": "e5480f343b338653ed57ef9bc9e96c46f76aff803e97429c291e460113ad56e7",
+      "name": "Defeat Knockdown 02",
+      "nameMm": "လဲကျဟန် (၂)",
+      "category": "character",
+      "rendererHint": "MotionLoader",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "boy hit fight dive.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "defeat_02.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_motion-defeat-02.e5480f343b338653.glb",
+          "sha256": "e5480f343b338653ed57ef9bc9e96c46f76aff803e97429c291e460113ad56e7",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 55328
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:motion-fall",
+      "version": "2.0.0-prototype",
+      "contentHash": "7a7b26eb7c8bf637110b60d0c9beb00a743ad56c39d5df4a59f57132e3df5def",
+      "name": "Fall Motion",
+      "nameMm": "လဲကျဟန်",
+      "category": "character",
+      "rendererHint": "MotionLoader",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "boy hit fight dive.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "fall.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_motion-fall.7a7b26eb7c8bf637.glb",
+          "sha256": "7a7b26eb7c8bf637110b60d0c9beb00a743ad56c39d5df4a59f57132e3df5def",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 74164
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:motion-dive",
+      "version": "2.0.0-prototype",
+      "contentHash": "0263a0f18f11c0be4803a49ff2d9b80499a4dea66ccfa6c8124f9e22af4490e9",
+      "name": "Dive Roll Motion",
+      "nameMm": "ခုန်ဝင်ဟန်",
+      "category": "character",
+      "rendererHint": "MotionLoader",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "boy hit fight dive.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "dive.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_motion-dive.0263a0f18f11c0be.glb",
+          "sha256": "0263a0f18f11c0be4803a49ff2d9b80499a4dea66ccfa6c8124f9e22af4490e9",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 71472
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:motion-ghost-freaky",
+      "version": "2.0.0-prototype",
+      "contentHash": "d1f680d1262e897c8b91d435de50196f1a4c92a3c94dc733073203409d746223",
+      "name": "Ghost Scare Clip",
+      "nameMm": "သရဲခြောက်ဟန်",
+      "category": "character",
+      "rendererHint": "GhostMotionLibrary",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "public/motions/ghost/freaky.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "freaky.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_motion-ghost-freaky.d1f680d1262e897c.glb",
+          "sha256": "d1f680d1262e897c8b91d435de50196f1a4c92a3c94dc733073203409d746223",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 38368
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:motion-ghost-depressed",
+      "version": "2.0.0-prototype",
+      "contentHash": "5f8e02f2f920bb586c13afba3d08fa5d822f73db4901b5b31ff80d946d68e774",
+      "name": "Ghost Depressed Clip",
+      "nameMm": "သရဲစိတ်ဓာတ်ကျဟန်",
+      "category": "character",
+      "rendererHint": "GhostMotionLibrary",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "public/motions/ghost/depressed.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "depressed.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_motion-ghost-depressed.5f8e02f2f920bb58.glb",
+          "sha256": "5f8e02f2f920bb586c13afba3d08fa5d822f73db4901b5b31ff80d946d68e774",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 81044
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    },
+    {
+      "schemaVersion": 2,
+      "assetId": "character:motion-ghost-laugh",
+      "version": "2.0.0-prototype",
+      "contentHash": "b6e8fccc96ace1f7d05b6a787c9b06e3271fc4e7c3a18814f63507572ed23605",
+      "name": "Ghost Laugh Clip",
+      "nameMm": "သရဲရယ်သံဟန်",
+      "category": "character",
+      "rendererHint": "GhostMotionLibrary",
+      "provenance": {
+        "sourceType": "blender-glb",
+        "sourceRef": "public/motions/ghost/laugh_01.glb",
+        "license": "project-authored"
+      },
+      "bounds": {
+        "width": 1,
+        "depth": 1,
+        "height": 1.8
+      },
+      "collision": {
+        "type": "none"
+      },
+      "footprint2d": {
+        "shape": "circle",
+        "defaultWidth": 0.5,
+        "defaultDepth": 0.5,
+        "color": "#6366f1",
+        "stroke": "#312e81"
+      },
+      "skeletonId": "mixamo-humanoid-v1",
+      "animationClips": [
+        "laugh_01.001"
+      ],
+      "lods": [
+        {
+          "level": 0,
+          "url": "artifacts/phase2-pipeline/published/character_motion-ghost-laugh.b6e8fccc96ace1f7.glb",
+          "sha256": "b6e8fccc96ace1f7d05b6a787c9b06e3271fc4e7c3a18814f63507572ed23605",
+          "maxTriangles": 1
+        }
+      ],
+      "budgets": {
+        "maxTriangles": 100,
+        "maxTexturePx": 64,
+        "maxBytes": 83768
+      },
+      "dependencies": [],
+      "authority": "publisher-manifest",
+      "tags": [
+        "phase2-prototype",
+        "motion-clip"
+      ]
+    }
+  ]
+}

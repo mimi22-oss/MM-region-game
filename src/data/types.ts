@@ -124,4 +124,6 @@ export type VillageMeta = {
  largeTrees: TreePlot[];
  farmTrees: TreePlot[];
  areas?: AreaMeta[];
+ streamed?: boolean;
+ streamedDataset?: string;
 };

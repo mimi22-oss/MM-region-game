@@ -1,3 +1,4 @@
+import type { AuthorityOwner } from '../../shared/contracts/index.ts';
 import { farmhouse } from '../data/ward.ts';
 import { PLAYER_OWNER, homeOwnership, ownsHome } from './homeAccess.ts';
 import type { LayoutFeature, WorldLayout } from './worldLayout.ts';
@@ -185,4 +186,52 @@ export function filterPermittedLayoutChanges(
     },
     blockedCount,
   };
+}
+
+/**
+ * Trust boundary adapter: preserves offline `'admin'` convenience ONLY in local single-player.
+ * Connected authoritative worlds require an authenticated server role claim (`admin`), defaulting
+ * otherwise to `'user'` regardless of local URL/storage settings.
+ */
+export function resolveEffectiveMapRole(
+  ctx: MapAccessContext,
+  authorityMode: Extract<AuthorityOwner, 'local-offline' | 'server-authoritative'>,
+  serverClaimRole?: 'player' | 'moderator' | 'admin',
+): MapRole {
+  if (authorityMode === 'local-offline') {
+    return ctx.role;
+  }
+  return serverClaimRole === 'admin' ? 'admin' : 'user';
+}
+
+let activeAuthorityMode: Extract<AuthorityOwner, 'local-offline' | 'server-authoritative'> = 'local-offline';
+let activeServerClaimRole: 'player' | 'moderator' | 'admin' | undefined;
+const authorityListeners = new Set<() => void>();
+
+export function setActiveAuthoritySession(
+  mode: Extract<AuthorityOwner, 'local-offline' | 'server-authoritative'>,
+  serverRole?: 'player' | 'moderator' | 'admin',
+): void {
+  if (activeAuthorityMode === mode && activeServerClaimRole === serverRole) return;
+  activeAuthorityMode = mode;
+  activeServerClaimRole = mode === 'server-authoritative' ? serverRole : undefined;
+  authorityListeners.forEach((fn) => fn());
+}
+
+export function getActiveAuthoritySession(): {
+  mode: Extract<AuthorityOwner, 'local-offline' | 'server-authoritative'>;
+  serverRole?: 'player' | 'moderator' | 'admin';
+} {
+  return { mode: activeAuthorityMode, serverRole: activeServerClaimRole };
+}
+
+export function subscribeAuthoritySession(listener: () => void): () => void {
+  authorityListeners.add(listener);
+  return () => authorityListeners.delete(listener);
+}
+
+export function resolveCurrentMapAccessContext(ctx: MapAccessContext): MapAccessContext {
+  const effectiveRole = resolveEffectiveMapRole(ctx, activeAuthorityMode, activeServerClaimRole);
+  if (effectiveRole === ctx.role) return ctx;
+  return { ...ctx, role: effectiveRole };
 }

@@ -2,7 +2,7 @@ import {useTrafficCollider} from './useTrafficCollider';
 import {sceneGround} from '../game/groundSurface';
 import { mobileQuality } from '../game/sceneBudget';
 import { useQualityPreset } from '../game/qualityPreset';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group } from 'three';
 import { ward } from '../data/ward';
@@ -11,6 +11,11 @@ import { canStand } from '../game/collision';
 import { botAppearance } from '../game/robotAppearance';
 import { buildRoadGraph, nextRoadNode, type RouteNode } from '../game/robotRoutes';
 import { RobotCharacter } from './RobotCharacter';
+import {
+  getStreamedChunkVersion,
+  getStreamedRoadPlotsForRegion,
+  subscribeStreamedChunks,
+} from '../game/streamedChunkRegistry';
 
 const regions=[{id:'myothar',roads:ward.roads},...kalayVillages];
 const clear=(x:number,z:number)=>canStand(x,z)&&canStand(x+0.08,z)&&canStand(x-0.08,z)&&canStand(x,z+0.08)&&canStand(x,z-0.08);
@@ -21,9 +26,20 @@ function Bot({graph,start,index}:{graph:RouteNode[];start:number;index:number}){
  const root=useRef<Group>(null),wheels=useRef<Group>(null),[detail,setDetail]=useState(false);
  const appearance=useMemo(()=>botAppearance(index),[index]);
  useTrafficCollider(root,.85*appearance.size,.65*appearance.size);
- const state=useRef({x:graph[start].x,y:0,z:graph[start].z,from:start,to:graph[start].links[index%graph[start].links.length],seed:index+1,elapsed:index*0.01,groundTimer:0,grounded:false,travel:0});
+ const initialNode=graph[start];
+ const initialLink=initialNode?.links[index%Math.max(1,initialNode.links.length)]??start;
+ const state=useRef({graph,x:initialNode?.x??0,y:0,z:initialNode?.z??0,from:start,to:initialLink,seed:index+1,elapsed:index*0.01,groundTimer:0,grounded:false,travel:0});
  useFrame(({camera,scene,clock},delta)=>{
-  const s=state.current,dt=Math.min(delta,0.05),target=graph[s.to];
+  const s=state.current;
+  if(s.graph!==graph){
+   const node=graph[start];
+   if(!node)return;
+   s.graph=graph;s.x=node.x;s.z=node.z;s.from=start;
+   s.to=node.links[index%Math.max(1,node.links.length)]??start;
+   s.grounded=false;
+  }
+  const dt=Math.min(delta,0.05),target=graph[s.to];
+  if(!target)return;
   const dx=target.x-s.x,dz=target.z-s.z,distSq=dx*dx+dz*dz,travelMax=(1.1+(index%7)*0.13)*dt;
   const distance=distSq>0.0001*0.0001?Math.sqrt(distSq):0;
   const travel=Math.min(distance,travelMax);
@@ -55,17 +71,25 @@ function Bot({graph,start,index}:{graph:RouteNode[];start:number;index:number}){
  </group>;
 }
 type BotDefinition={graph:RouteNode[];start:number;index:number;key:string};
-const cachedPatrols=new Map<string,BotDefinition[]>();
+const cachedPatrols=new Map<string,{roadSig:string;rev:number;bots:BotDefinition[]}>();
 export function prepareRobotPatrols(id:string){
- const existing=cachedPatrols.get(id);if(existing)return existing;
  const r=regions.findIndex(r=>r.id===id);if(r<0)return [];
- const region=regions[r],graph=buildRoadGraph(region.roads,clear),starts=graph.map((n,i)=>n.links.length&&n.lane?i:-1).filter(i=>i>=0);
+ const region=regions[r] as (typeof regions[number] & { streamed?: boolean });
+ const isStreamed = Boolean(region.streamed);
+ const roads = isStreamed ? getStreamedRoadPlotsForRegion(id) : region.roads;
+ const roadSig = isStreamed ? roads.map(rd=>rd.id).sort().join('|') : 'static';
+ const existing=cachedPatrols.get(id);
+ if(existing && existing.roadSig===roadSig)return existing.bots;
+ const rev = (existing?.rev ?? 0) + 1;
+ if(!roads.length){cachedPatrols.set(id,{roadSig,rev,bots:[]});return [];}
+ const graph=buildRoadGraph(roads,clear),starts=graph.map((n,i)=>n.links.length&&n.lane?i:-1).filter(i=>i>=0);
  const count=Math.min(mobileQuality?3:8,starts.length);
- const bots=Array.from({length:count},(_,i)=>({graph,start:starts[Math.floor(i*starts.length/count)],index:r*8+i,key:`${region.id}-${i}`}));
- cachedPatrols.set(id,bots);return bots;
+ const bots=Array.from({length:count},(_,i)=>({graph,start:starts[Math.floor(i*starts.length/count)],index:r*8+i,key:isStreamed?`${region.id}-${rev}-${i}`:`${region.id}-${i}`}));
+ cachedPatrols.set(id,{roadSig,rev,bots});return bots;
 }
 export function RobotBots({activeRegions=[]}:{activeRegions?:string[]}){
  const preset=useQualityPreset();
+ const chunkVersion = useSyncExternalStore(subscribeStreamedChunks, getStreamedChunkVersion);
  const bots=useMemo(()=>{
   const all=activeRegions.flatMap(prepareRobotPatrols);
   if(preset.id==='mobile'||preset.id==='low'){
@@ -79,6 +103,6 @@ export function RobotBots({activeRegions=[]}:{activeRegions?:string[]}){
    return out;
   }
   return all;
- },[activeRegions,preset.id]);
+ },[activeRegions,preset.id,chunkVersion]);
  return <group name="autonomous-village-robots">{bots.map(b=><Bot key={b.key} graph={b.graph} start={b.start} index={b.index}/>)}</group>;
 }

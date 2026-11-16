@@ -1,21 +1,39 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Preserve annotations, generics, and readable line numbers in release builds
+-keepattributes *Annotation*, Signature, SourceFile, LineNumberTable
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep app entrypoint MainActivity
+-keep class com.mmregion.town3d.** { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep Capacitor core bridge and WebView JavascriptInterface callbacks
+-keep class com.getcapacitor.** { *; }
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep Capacitor plugins & annotated plugin methods invoked via reflection
+-keep @com.getcapacitor.annotation.CapacitorPlugin public class * {
+    *;
+}
+-keep public class * extends com.getcapacitor.Plugin { *; }
+-keep @interface com.getcapacitor.annotation.** { *; }
+-keep @interface com.getcapacitor.PluginMethod { *; }
+-keepclassmembers class * extends com.getcapacitor.Plugin {
+    @com.getcapacitor.annotation.ActivityCallback <methods>;
+    @com.getcapacitor.annotation.PermissionCallback <methods>;
+}
+
+# Keep Capgo CapacitorUpdater plugin
+-keep class ee.forgr.capacitor_updater.** { *; }
+
+# Keep AndroidX core SplashScreen classes
+-keep class androidx.core.splashscreen.** { *; }
+
+# Keep Cordova compatibility layer if referenced by plugins
+-keep public class * extends org.apache.cordova.* {
+    public <methods>;
+    public <fields>;
+}
+
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn javax.annotation.**
+-dontwarn org.codehaus.mojo.animal_sniffer.**

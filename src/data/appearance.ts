@@ -1,3 +1,11 @@
+import {
+  CONTRACT_SCHEMA_VERSIONS,
+  parseAssetId,
+  parseCharacterDefId,
+  validateCharacterDefinitionV1,
+  type CharacterDefinitionV1,
+} from '../../shared/contracts/index.ts';
+
 export type HumanPreset = 'boy' | 'girl' | 'mother' | 'grandmother' | 'grandfather' | 'father';
 export type HumanAppearance = {
  preset:HumanPreset; hair:'swept'|'bob'|'long'|'bun'; hairColor:string; skin:string;
@@ -35,4 +43,27 @@ export function normalizeAppearance(input:unknown):AppearanceSettings{
  return {version:1,human:{preset,hair:choice(h.hair,['swept','bob','long','bun'],base.hair),hairColor:color(h.hairColor,base.hairColor),skin:color(h.skin,base.skin),face:choice(h.face,['oval','round','mature'],base.face),clothes:choice(h.clothes,['hoodie','shirt','dress','longyi'],base.clothes),clothingColor:color(h.clothingColor,base.clothingColor),trousersColor:color(h.trousersColor,base.trousersColor),height:range(h.height,.8,1.2,base.height),shoes:choice(h.shoes,['sneakers','boots','sandals'],base.shoes),shoeColor:color(h.shoeColor,base.shoeColor)},
  robot:{color:color(r.color,d.robot.color),accent:color(r.accent,d.robot.accent),size:range(r.size,.75,1.25,1),legs:choice(r.legs,['wheels','feet','tracks'],'wheels'),hands:choice(r.hands,['rounded','claw','gripper'],'rounded')},
  car:{model:choice(c.model,Object.keys(CAR_MODELS) as CarModel[],'compact'),color:color(c.color,d.car.color),transmission:choice(c.transmission,['manual','automatic'],'manual')}};
+}
+
+export function humanPresetToCharacterDef(preset: HumanPreset): CharacterDefinitionV1 {
+ const base = HUMAN_PRESETS[preset];
+ return validateCharacterDefinitionV1({
+  schemaVersion: CONTRACT_SCHEMA_VERSIONS.characterDefinition,
+  characterDefId: parseCharacterDefId(`human:${preset}`),
+  displayName: preset[0].toUpperCase() + preset.slice(1),
+  role: 'player',
+  rigProfile: 'mixamo-humanoid-v1',
+  modelAssetId: parseAssetId(preset === 'girl' ? 'character:girl-base' : 'character:boy-base'),
+  sharedRigRequired: true,
+  supportedClipIds: ['idle', 'walk', 'run', 'jump', 'sit', 'motorcycle_idle', 'motorcycle_ride'],
+  defaultAppearance: {
+   presetId: base.preset,
+   primaryColor: base.clothingColor,
+   secondaryColor: base.trousersColor,
+   hairColor: base.hairColor,
+   skinColor: base.skin,
+   heightScale: base.height,
+  },
+  authority: 'publisher-manifest',
+ });
 }

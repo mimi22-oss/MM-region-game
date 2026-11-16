@@ -1,0 +1,1834 @@
+{
+  "files": [
+    {
+      "path": "src/candlePreview.tsx",
+      "sha256": "6cd6ba22c3e22e261c8e116b8b7eae96068b73df7fab4836dd2dd58b518c3d1b",
+      "bytes": 3209
+    },
+    {
+      "path": "src/main.tsx",
+      "sha256": "94970ee72f5ef4fdc3bb9a77ecf0903ceb4fb79611c722cf44b8f46cd2f98ecb",
+      "bytes": 55569
+    },
+    {
+      "path": "src/style.css",
+      "sha256": "d51a141f688476ee58ee34c92c092b5616291391c563e280120eb6949ed12652",
+      "bytes": 165315
+    },
+    {
+      "path": "src/ushwehouse.ts",
+      "sha256": "d7716fcc8a4693b85e54106845292dfb15dba137855108c95c69f450d8d94d8e",
+      "bytes": 76
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "sha256": "daeb5cf0a28ce53fcc8f8bb0fca8726f658df75165499e58dd5c1a631aa33875",
+      "bytes": 109
+    },
+    {
+      "path": "src/assets/boy.glb",
+      "sha256": "0ff8e362804b0b4152ea574ac93836831b91b866ddf0d055cb22c71bf89e2e07",
+      "bytes": 3801836
+    },
+    {
+      "path": "src/assets/girl.glb",
+      "sha256": "c45b5887ac170185bc4cec3b0a815c5892ccdca0152e646074a4cb11e7e476d8",
+      "bytes": 8502652
+    },
+    {
+      "path": "src/components/ActionMenu.tsx",
+      "sha256": "7b3245d5b37d7f9068ac8f22274917821975747a6748a8991e7730d16e5a46af",
+      "bytes": 138
+    },
+    {
+      "path": "src/components/AndroidApkDownloadDialog.tsx",
+      "sha256": "14dd4c740c952ebad734ad23b941f32e1c9fafcf20fda32ed9d50c16ebf1c590",
+      "bytes": 5500
+    },
+    {
+      "path": "src/components/AppearanceSettings.tsx",
+      "sha256": "0916d1c05dbd796c2fb77694c6516bd0c653dfafd6f63fc58e21ba6773d7bcf5",
+      "bytes": 8555
+    },
+    {
+      "path": "src/components/Asset3DRenderer.tsx",
+      "sha256": "f2ad551812133d85847ffd17dc9e5572ec777df5c885bb471b0c45fdc131f980",
+      "bytes": 29196
+    },
+    {
+      "path": "src/components/AssetAiAdd.tsx",
+      "sha256": "d7d54b1ad7a44fb6cec1ba48bde223cce7f643f755015f42ff23721409972130",
+      "bytes": 5690
+    },
+    {
+      "path": "src/components/AssetAiEditor.css",
+      "sha256": "12ed874d80fb4e4bf6c18a1d10d845f1cd2f4bff00817d388d648c157cc677b4",
+      "bytes": 8297
+    },
+    {
+      "path": "src/components/AssetAiEditor.tsx",
+      "sha256": "26b94ee1574975e51e223db6f6ddbf9f5503bc8cbeb27ba08fe434ccac7caa5b",
+      "bytes": 5423
+    },
+    {
+      "path": "src/components/AssetLibraryPage.css",
+      "sha256": "7db09edc23bd48ed8d0f35028d5a9a12dff14aaa457497a8faf9d4b03c569525",
+      "bytes": 52182
+    },
+    {
+      "path": "src/components/AssetLibraryPage.tsx",
+      "sha256": "47f41e44673919b8d55c9ec1ab4de93cc4799179c06b24fb29cb3e703d18d395",
+      "bytes": 189559
+    },
+    {
+      "path": "src/components/AudioDiagnosticsPanel.tsx",
+      "sha256": "dcc3b443980352ee7f7e255a38da17c56e1e9229369ba48568380b974ef4109b",
+      "bytes": 7355
+    },
+    {
+      "path": "src/components/AuthoredObject.tsx",
+      "sha256": "d210cab0984b1624bb9328e5b2d2c7605d85c04b3a2d83560ebb4d45e4813f18",
+      "bytes": 460
+    },
+    {
+      "path": "src/components/BalloonControls.tsx",
+      "sha256": "b807c40da3c5d1b464f32ec46623e5f95e06bf39d328f379eb9393b5044ba139",
+      "bytes": 11693
+    },
+    {
+      "path": "src/components/BlenderCharacter.tsx",
+      "sha256": "8f1f05fc0ec4224eebd38bf8ed1c3eac5655acb76bdd1a9cbf113c8f7ee61098",
+      "bytes": 6059
+    },
+    {
+      "path": "src/components/BuiltInAssetEditor.tsx",
+      "sha256": "4594385b737a43d5e4cf38edc1cf36eabff4a2aa021c73ab90d34d8bcea7de97",
+      "bytes": 7870
+    },
+    {
+      "path": "src/components/Canal.tsx",
+      "sha256": "29230c918ea6c25f0f2d7eec3f7efd05a17050809904afc0b35337d70f62241c",
+      "bytes": 4851
+    },
+    {
+      "path": "src/components/Candle.tsx",
+      "sha256": "86a0c09395df47a3a8a55c36c03bf815c5dd3dd274246c7e72352ce71972dc46",
+      "bytes": 2797
+    },
+    {
+      "path": "src/components/Car.tsx",
+      "sha256": "7fe2d9cfa727f92a439653e2acdfc2ce6dc38e56493ceea53772dbca68f09094",
+      "bytes": 18920
+    },
+    {
+      "path": "src/components/CarBodywork.tsx",
+      "sha256": "cbd70170a8640d80865f6ac61e0dd297b4d8be694708b848eec290e64b4a4ed3",
+      "bytes": 3620
+    },
+    {
+      "path": "src/components/CarBots.tsx",
+      "sha256": "910b12fd25ca581eacf013583f3470fbe3a88168dcf792c51afe53f42a688a36",
+      "bytes": 6242
+    },
+    {
+      "path": "src/components/CarCallSpotMarker.tsx",
+      "sha256": "d72a9348c70915bdfa3f4b785496e18dfa758bde0617dd235ea29040e244f6bd",
+      "bytes": 5925
+    },
+    {
+      "path": "src/components/CarControls.tsx",
+      "sha256": "fd59f5a33273b28caca171b11ec4c387440dc817502198d358c73057c9c025e5",
+      "bytes": 21866
+    },
+    {
+      "path": "src/components/CarInterior.tsx",
+      "sha256": "f815f76647d2d94b6dd95d3b79f9e38cf143a09e193f47894f5861604d62bf45",
+      "bytes": 5910
+    },
+    {
+      "path": "src/components/CartoonCharacter.tsx",
+      "sha256": "edee7d9a7482d29abb396e5a613ba8288b06e101dbedb4634d69316f93762029",
+      "bytes": 2284
+    },
+    {
+      "path": "src/components/CartoonFace.tsx",
+      "sha256": "e67c514e5be25112d5ac27e29f7479dff403d17e6bb9ebf27ef0bd7034f63f8b",
+      "bytes": 8277
+    },
+    {
+      "path": "src/components/CartoonHair.tsx",
+      "sha256": "d41b3d87891a6a0590dc5f4a7d25bdc91ada7f5af352dc9a5696474a004aad52",
+      "bytes": 7606
+    },
+    {
+      "path": "src/components/Cemetery.tsx",
+      "sha256": "821dfc2dab71a50bf9785e0ba6f3e414ff412ef9192465985f5dae71f0e5fd1f",
+      "bytes": 27216
+    },
+    {
+      "path": "src/components/CharacterPicker.tsx",
+      "sha256": "31a270fc736074383a91e4f4438c3b7b7bc5b44a7af273878e17737e8f84491b",
+      "bytes": 1337
+    },
+    {
+      "path": "src/components/CinematicIntroController.tsx",
+      "sha256": "3066e612087fd3190ed859ec7dd202cb093a297a343b9ca8d61f0b0b27e086df",
+      "bytes": 6360
+    },
+    {
+      "path": "src/components/CustomAssetModel.tsx",
+      "sha256": "9bde93ae7d0817e86555e99f83eac772f228e43c06a99e231143f652663ebb29",
+      "bytes": 5916
+    },
+    {
+      "path": "src/components/DynamicWorldObjects.tsx",
+      "sha256": "b8c5f37a03dd80ac06416245efabfa2f590864e1d63ff6b77c7f4c735e4ab92f",
+      "bytes": 7593
+    },
+    {
+      "path": "src/components/EditorExtensions.css",
+      "sha256": "2ac422e015357fbabda5c10cf5e94e64ea4a50403cb0317ba565842a336bdda5",
+      "bytes": 79
+    },
+    {
+      "path": "src/components/EnvironmentAudio.tsx",
+      "sha256": "133c5e7292a4c473697bb48114984f2ceddddd2156ba21b7fbcb4af721298013",
+      "bytes": 2927
+    },
+    {
+      "path": "src/components/EnvironmentSettings.tsx",
+      "sha256": "9407f6cbd249e7586de2fc4ef8002c56efdc2ddc4c67e4a45b86fef5b0cf0939",
+      "bytes": 5395
+    },
+    {
+      "path": "src/components/ExistingRegionPlan.tsx",
+      "sha256": "ef17afe8cc0db3b79983857564d18796369b3f1133a5c29a578c41ec13f94f6b",
+      "bytes": 1296
+    },
+    {
+      "path": "src/components/FarmEstate.tsx",
+      "sha256": "c2b64968c5caecd6d0bca2202d654a28b1b7cbe307da43103c3db5a064544df2",
+      "bytes": 2002
+    },
+    {
+      "path": "src/components/Farmhouse.tsx",
+      "sha256": "18994d78591f200ae451ea6173fc219dbbd1ddb71982c39573acf18dabed9e8d",
+      "bytes": 43565
+    },
+    {
+      "path": "src/components/FestivalAnchor.tsx",
+      "sha256": "e6bf6d2d49769dc1612df6c5be39c93238f13cf61f287f3e85d05047f04f2298",
+      "bytes": 930
+    },
+    {
+      "path": "src/components/FestivalLighting.tsx",
+      "sha256": "0f423d968bf443fa824579368e1d4f59bdc8867a6df9133d943814c1fbe382ee",
+      "bytes": 6023
+    },
+    {
+      "path": "src/components/Field.tsx",
+      "sha256": "2bc6b8a324a564d5efd5478c5324a8332dbd990699fc418df901ad36db2aedcb",
+      "bytes": 1235
+    },
+    {
+      "path": "src/components/FireBalloonSky.tsx",
+      "sha256": "dff63f853b83a5329540a1323fd47d382cabb882e1fafc559cf719f023c8955e",
+      "bytes": 23011
+    },
+    {
+      "path": "src/components/FrameBudget.tsx",
+      "sha256": "bed25bc8ff20aae16949fcd2e3ae6776842919914a74bf219e90fc832352a602",
+      "bytes": 3305
+    },
+    {
+      "path": "src/components/GhostGameOver.tsx",
+      "sha256": "9b076e11c493d19e52f556e766a954437d986ed930a0138f72e6fd0e6abaca27",
+      "bytes": 808
+    },
+    {
+      "path": "src/components/GhostNpc.tsx",
+      "sha256": "4a20072fc690245dfb78eb5f008bb718da9449ff670a703301c9320aafb672f5",
+      "bytes": 34768
+    },
+    {
+      "path": "src/components/GlbHuman.tsx",
+      "sha256": "1d4ec128eacdfa1fcf13526d4ac3b88c2fa009321355363291243ebdfc468315",
+      "bytes": 6593
+    },
+    {
+      "path": "src/components/GuideDialog.tsx",
+      "sha256": "23811e31b2ce1c48b671398cfee9c2976d6ed99ed86a46bfbdd108c387434a56",
+      "bytes": 36026
+    },
+    {
+      "path": "src/components/HandPumpLongSpout.tsx",
+      "sha256": "96d3c477a4d552358af48d963d1376be2d7da59814f100698ecaf1e989ff6db3",
+      "bytes": 26677
+    },
+    {
+      "path": "src/components/HauntedWarehouseAudioZone.tsx",
+      "sha256": "8eaa3ffdfc2d2619a4dfdaa136a1a39aa40787fd11eba9ae0033f30276da0433",
+      "bytes": 7540
+    },
+    {
+      "path": "src/components/HomeGate.tsx",
+      "sha256": "8d101797b8b64be0042fa7eabf06371bd0bcea93fae358c58d6e273799825380",
+      "bytes": 1575
+    },
+    {
+      "path": "src/components/House.tsx",
+      "sha256": "19b8da92d55515ef5fc46c798d024538ecd561f349d00bf9e7af43be047e3f35",
+      "bytes": 7888
+    },
+    {
+      "path": "src/components/ImportedGableRoof.tsx",
+      "sha256": "7caf1a6dcdb0f92069e02cd9dffad654a2be3f252009ef54bbe2cea423ae2483",
+      "bytes": 1395
+    },
+    {
+      "path": "src/components/IntroOverlay.tsx",
+      "sha256": "37268e61439ca42241b6703321b88810021094ed122918fc5d79db71a179c362",
+      "bytes": 4566
+    },
+    {
+      "path": "src/components/KalaySignboard.tsx",
+      "sha256": "6019cd8110b11c73e8a00d0d79201d8eb53608d00792a0a1eba4a2c4c72492e0",
+      "bytes": 19775
+    },
+    {
+      "path": "src/components/KalaySignboardBig.tsx",
+      "sha256": "7167ec3ee8439e7e2634adae3f99f129bc0ca76eaf7a971edda3b358bcc6ed3a",
+      "bytes": 27221
+    },
+    {
+      "path": "src/components/Landmarks.tsx",
+      "sha256": "d228b3ea7be989a81d25c0844523753bb1b742ab654e3c9628ed7fd9c1f1462a",
+      "bytes": 5000
+    },
+    {
+      "path": "src/components/Lane.tsx",
+      "sha256": "37876c2edc510a8ee36786eadba005be04fb8c41312efe607684ce26facb60c1",
+      "bytes": 279
+    },
+    {
+      "path": "src/components/LifeMeter.tsx",
+      "sha256": "2af335d5fe4a9b5b19f5e2d189afaffad5f467afa44cb3c6cad44482d13e26d5",
+      "bytes": 535
+    },
+    {
+      "path": "src/components/MainRoad.tsx",
+      "sha256": "3d2ad4389e60e7e9df35bf6f385aedf717d9b3f573cb19e41306ef39839e5202",
+      "bytes": 220
+    },
+    {
+      "path": "src/components/MangoTrees.tsx",
+      "sha256": "0cbc5653b9ae49ab766fc5f28f9200f1ad6a0bc04d860928824b663b4b8c8f40",
+      "bytes": 5748
+    },
+    {
+      "path": "src/components/MapDataset.tsx",
+      "sha256": "3661111fe98e562cb2e0fe2d6d0301fc2653cf96f3082b78a85aee0e83f0935c",
+      "bytes": 4703
+    },
+    {
+      "path": "src/components/MapLabels.tsx",
+      "sha256": "aa916fbcf4890a4ba5a37e3f8efccd06b621a067605a70d398f77ea3e26e13ad",
+      "bytes": 4645
+    },
+    {
+      "path": "src/components/MapPortalPage.css",
+      "sha256": "75e367a8dbea2347889fe557f5678a08ca54ae4cbff32bd12b2bf74eca63a2bf",
+      "bytes": 6144
+    },
+    {
+      "path": "src/components/MapPortalPage.tsx",
+      "sha256": "a848261c88331f34bef3d638bb617bbd87935a6a5d5be4ae0479825fa881d4d2",
+      "bytes": 13740
+    },
+    {
+      "path": "src/components/mapSelection.css",
+      "sha256": "41897d3e46c929833588a80dfe5c150a229ae1f8ed124e2adadc56916188912c",
+      "bytes": 4880
+    },
+    {
+      "path": "src/components/MapSelectionMap.tsx",
+      "sha256": "6d6052e5b57437028b3e6dbe9beb66110b24d70ae1c5086a163043579480f6b7",
+      "bytes": 7954
+    },
+    {
+      "path": "src/components/MapSelectionTool.tsx",
+      "sha256": "fd64099e844a89df6ff8a83cf9d9ed535785d2a56abaf7de98dd53b23f0fef5a",
+      "bytes": 28825
+    },
+    {
+      "path": "src/components/MobileControls.tsx",
+      "sha256": "9594d643f1d18b318f2e29cc7409491547f9c4ee1f7afa256d5fac5d93a9b20c",
+      "bytes": 17747
+    },
+    {
+      "path": "src/components/Motorcycle.tsx",
+      "sha256": "c86ae8f9993a50c44d7a0daa9bf147c2859a584aca20987cc8f7a609a6162fb5",
+      "bytes": 9887
+    },
+    {
+      "path": "src/components/Mountains.tsx",
+      "sha256": "896ea13cc621aa99fe21a1561240921f6f40496f1bc70bec1eba7d5c6330c159",
+      "bytes": 56078
+    },
+    {
+      "path": "src/components/MyanmarFireBalloon.tsx",
+      "sha256": "2235d90cdfbdfc1452bbce3eb26dd2a302a52a45659ad9c861522000f4f9f244",
+      "bytes": 8909
+    },
+    {
+      "path": "src/components/NeuralGridLoader.tsx",
+      "sha256": "f0d6294f68cf6ce1c2ebf2460b89744167691febaa56d7287e3f37e999e44af3",
+      "bytes": 745
+    },
+    {
+      "path": "src/components/NightEnvironment.tsx",
+      "sha256": "603775a98a3a3926a35c38c568ea4f4ccdac48fa217bc5cb00bb5b56afa15a10",
+      "bytes": 14805
+    },
+    {
+      "path": "src/components/PassengerBalloon.tsx",
+      "sha256": "a712679b7285901de9f0fcf9d1612b9f209fdab7e43a37c1c11a3b4b798fa816",
+      "bytes": 7205
+    },
+    {
+      "path": "src/components/Player.tsx",
+      "sha256": "9d2e744ad9dc748f771d4e7a44394622fe82b2273d0199297be60433a124da13",
+      "bytes": 47874
+    },
+    {
+      "path": "src/components/Primitives.tsx",
+      "sha256": "bba14f48b4b9b31c3a1ffbc1a8095670947ad3107c6ff98e22cbcf538249ce3c",
+      "bytes": 1054
+    },
+    {
+      "path": "src/components/ProceduralHuman.tsx",
+      "sha256": "cf6e5ef53913a7c1d097a8967f898e9738ab24b2ac832a70900d0c0f5d76b6cf",
+      "bytes": 26806
+    },
+    {
+      "path": "src/components/RegionActivity.tsx",
+      "sha256": "dc0de29f8c20ec9b671b4916588a2be640b783efcfb852efee0f1809b0b3019c",
+      "bytes": 442
+    },
+    {
+      "path": "src/components/regionAssets.ts",
+      "sha256": "75b96f2b982cab0623f97f6ce7469898ec2dd301a306976d9c03a8e15e89c775",
+      "bytes": 3552
+    },
+    {
+      "path": "src/components/RiceMillPlan.tsx",
+      "sha256": "c1df653d16fc6c550dd1004791b0968fb1a7fd97a076d9532293b838e6707356",
+      "bytes": 874
+    },
+    {
+      "path": "src/components/RideControls.tsx",
+      "sha256": "2175b1bb53ddebec8b3b34a24807c9497ba91b352d539b49573e96d03a7667bf",
+      "bytes": 7512
+    },
+    {
+      "path": "src/components/Road.tsx",
+      "sha256": "7d027b153b44c72b96441ff6a3c54b47978fb46a9cff30d53139a68ca260f1be",
+      "bytes": 613
+    },
+    {
+      "path": "src/components/RobotBots.tsx",
+      "sha256": "f07e7b91933311d75fccebfedb1bd26bee66764bc3bcf4bee6466c2b2ab9e1fa",
+      "bytes": 6524
+    },
+    {
+      "path": "src/components/RobotCharacter.tsx",
+      "sha256": "89d9ab89afae5f515dd899aed9be36d33ffe31c5eebefd6f7e1acfd967c944b7",
+      "bytes": 18437
+    },
+    {
+      "path": "src/components/RobotLimbs.tsx",
+      "sha256": "06ecf2262312c35d84d1dc1c0335c5893baa9a584355b2d2571b5fcde3251d2e",
+      "bytes": 2512
+    },
+    {
+      "path": "src/components/RobotLocationPanel.tsx",
+      "sha256": "d8c4c543c200f0b0ef2535ee1d20015e6eaee7dbc82bebf9069e8725395acad5",
+      "bytes": 3176
+    },
+    {
+      "path": "src/components/SeparationFieldTiles.tsx",
+      "sha256": "23d0ccf1f027e70d9b05bf5c887743b456d31e83d4e83dad467c67f7bb1edc6b",
+      "bytes": 2165
+    },
+    {
+      "path": "src/components/SettingsMenu.tsx",
+      "sha256": "96bbe297a1d28bd6cb9b4d999e0e7e9364c68cefee2674d120dddb05cb61c14b",
+      "bytes": 23486
+    },
+    {
+      "path": "src/components/ShweMyanmarArea.tsx",
+      "sha256": "e4df3e82b651288b0800051c0a1788d06b65d95c38eb5ece2ab95ef0c096b36b",
+      "bytes": 23509
+    },
+    {
+      "path": "src/components/ShweMyanmarPlan.tsx",
+      "sha256": "4fbca5c16fd4cc7b7f1428b2dd4ab3b1649b612ab66d8b853737b8d4bcc2f555",
+      "bytes": 11197
+    },
+    {
+      "path": "src/components/StaticBatch.tsx",
+      "sha256": "0714c91413894b9e4b9ba9b1fc70016740eb7833368900f1e94a5147cfbc06ae",
+      "bytes": 600
+    },
+    {
+      "path": "src/components/StreamedWorld.tsx",
+      "sha256": "935b4058d9f282823fc199012b10d88af79f7d48e376a80ddcd15c417780d4c5",
+      "bytes": 19071
+    },
+    {
+      "path": "src/components/SubscriptionBillboard.tsx",
+      "sha256": "4ddf3c30a6d5aa57076ed4c92fa921d94da673f44844dc918827c9f026979a0e",
+      "bytes": 14521
+    },
+    {
+      "path": "src/components/SubscriptionShopDialog.tsx",
+      "sha256": "0cb2841dc4b081edad6dbc3d11d76b99bff0cb8b0fda8879f0b3b7580b89de5f",
+      "bytes": 12888
+    },
+    {
+      "path": "src/components/TamarindTrees.tsx",
+      "sha256": "58f79adb6eaeabfd97d1195f9ea59011b488bf47218a8627ed218551f46f9a77",
+      "bytes": 9231
+    },
+    {
+      "path": "src/components/TeleportPicker.tsx",
+      "sha256": "bdd5fa827683aff0b94a4243047bc803e2c02835566787f8f67ec592f7076230",
+      "bytes": 15712
+    },
+    {
+      "path": "src/components/TimeEnvironment.tsx",
+      "sha256": "4f59891596d8258cd51471d785640a673b6f766d0788d6dba156ae6f46d0dd3f",
+      "bytes": 11717
+    },
+    {
+      "path": "src/components/ToiletBlock.tsx",
+      "sha256": "39025faf30aac86a238b8c6a52d4607e06c2c4e82252e5d6c17969605fcc9903",
+      "bytes": 17313
+    },
+    {
+      "path": "src/components/Town.tsx",
+      "sha256": "c397ba9e862ccd20dc653fbc78080a737a1c3a81a630a843c4e62d6df256034f",
+      "bytes": 1519
+    },
+    {
+      "path": "src/components/Tree.tsx",
+      "sha256": "0d8613d535d492d0b921e14412c5ac7debd06047a940f7e06af4e4614b490f85",
+      "bytes": 2625
+    },
+    {
+      "path": "src/components/UpdateStatusPanel.tsx",
+      "sha256": "e6f1734951c321c623de084f9d4d9615e64683acf2a4c049e908d88512a52b7d",
+      "bytes": 24037
+    },
+    {
+      "path": "src/components/useTrafficCollider.ts",
+      "sha256": "49df84f2d5aa428028e24ae3da2f39e83f9587285b5471ea4bbb851e95f9a10c",
+      "bytes": 457
+    },
+    {
+      "path": "src/components/ushwehouse.tsx",
+      "sha256": "1bd03642fe5c7a247a62ccc422ae02546d6e6f68d317fec9713cf671b7179821",
+      "bytes": 24696
+    },
+    {
+      "path": "src/components/WardVillageEditor.css",
+      "sha256": "1ca38b233b577b5a5266961f2a9d6b4e686366de0f58d1774302800bbfabb2a0",
+      "bytes": 27330
+    },
+    {
+      "path": "src/components/WardVillageEditor.tsx",
+      "sha256": "8125ad843622c9368738733f2c5f7fc1b80c405d89996ec99d71bdd2930a5454",
+      "bytes": 85503
+    },
+    {
+      "path": "src/components/WardVillageEditorDialog.css",
+      "sha256": "d5b4c48394ba26851a8b04af42c5ab7169da7e371ec360edabb07e64aed65f45",
+      "bytes": 1127
+    },
+    {
+      "path": "src/components/WardVillageEditorDialog.tsx",
+      "sha256": "f86aa54b27ebc18bb7f527a6c78d4270353b0c6268a69e653e14023c27a3262c",
+      "bytes": 1256
+    },
+    {
+      "path": "src/components/WaterPump.tsx",
+      "sha256": "c39a3c8ba2142c5b227dcd55833d5e12a496d7e1515da294f46bf949f238345b",
+      "bytes": 24237
+    },
+    {
+      "path": "src/components/WorldLoading.tsx",
+      "sha256": "28935768841856be27cd234dba483b25fb18228ae9fb4efffeb700ba5f32f3df",
+      "bytes": 1378
+    },
+    {
+      "path": "src/data/appearance.ts",
+      "sha256": "c89cdbe096b17422d4b53c451af7e3bcf528465dc0fc468cf51f04171441b319",
+      "bytes": 5917
+    },
+    {
+      "path": "src/data/cars.ts",
+      "sha256": "bda0fa89aaa0e1cb25e75cf1316b148bdd43e6598b20434e67909428341102bc",
+      "bytes": 190
+    },
+    {
+      "path": "src/data/farmEstate.ts",
+      "sha256": "e1635a8fe062470777712f414a0f353d8e62a3de6450c6b732d0c1418856e86f",
+      "bytes": 2682
+    },
+    {
+      "path": "src/data/ghostWarehouseWaypoints.ts",
+      "sha256": "3995782b2a2f0bc971876e391ce08196767e3d8ef5ad01ce403a21f9a1a30256",
+      "bytes": 40857
+    },
+    {
+      "path": "src/data/handPumpLongSpout.ts",
+      "sha256": "640ae3329d54aa29234913d2fb6e0b6a7fe96f2d70ac785a45cb4f4b2b3088c0",
+      "bytes": 2401
+    },
+    {
+      "path": "src/data/kalaySignboard.ts",
+      "sha256": "a2bd999ed6b7a3b1783d188152c03e7e75cb154a641071a23e09a1beb0bc2f4c",
+      "bytes": 1488
+    },
+    {
+      "path": "src/data/kalaySignboardBig.ts",
+      "sha256": "6616ef17e4fcfedcaf94468b438fbadd51f6d90141c2f756aa04e486b075497c",
+      "bytes": 3566
+    },
+    {
+      "path": "src/data/kanbaleDataset.json",
+      "sha256": "4ea78ffd67862a45d5da90f05d414d48abeca04f5a144502e729e653cb0e0215",
+      "bytes": 15592
+    },
+    {
+      "path": "src/data/mangoTrees.ts",
+      "sha256": "af37ca2ffc06cbc37d65c00496c990c6d6d8ee46b81d8a0bc67a61c2fa8e4917",
+      "bytes": 1626
+    },
+    {
+      "path": "src/data/mapLabels.ts",
+      "sha256": "1ab362183fa3aa89fd002952ffa02d0f0de31503cdee192e05abc565e2387f19",
+      "bytes": 2198
+    },
+    {
+      "path": "src/data/motorcycle.ts",
+      "sha256": "5eff47fb332aa4652467fe0cb4dd5fe7cbeeeed89629461b88864317c83fa433",
+      "bytes": 1153
+    },
+    {
+      "path": "src/data/sitharFieldDataset.json",
+      "sha256": "5a4cf1b3943919b012d819d96e18628aab5460e3ca587a0f012080336ce41dd2",
+      "bytes": 333
+    },
+    {
+      "path": "src/data/subscriptionBillboard.ts",
+      "sha256": "e925e4b98876fe4ba3f832cd18455fe5f0c69f6fcdb80174085d9bb5a409b87d",
+      "bytes": 3330
+    },
+    {
+      "path": "src/data/tamarindTrees.ts",
+      "sha256": "19fc6393af490aedfd0e6050244becb37cc884453542065d0eb394119efcda99",
+      "bytes": 1404
+    },
+    {
+      "path": "src/data/township.ts",
+      "sha256": "37fbca15298b99bee29e4cfdb8af39aa39d90fc735ad44173a529d528daca99b",
+      "bytes": 1179
+    },
+    {
+      "path": "src/data/types.ts",
+      "sha256": "b3222ed1758ee66d2b950e43d46777109d0653f8d5350ecd4086d22240be91ba",
+      "bytes": 2648
+    },
+    {
+      "path": "src/data/ushwehouse.ts",
+      "sha256": "9914dafdc51fbef6ed7e0d5c5b9344a0a2a321c46de39a93f80e8766e7a61195",
+      "bytes": 2894
+    },
+    {
+      "path": "src/data/ward.ts",
+      "sha256": "c962d834bee0580a69c8cf81c2e16f388177a8fb02753c842aaf74fceacf22dc",
+      "bytes": 2626
+    },
+    {
+      "path": "src/festivals/BalloonShow.tsx",
+      "sha256": "ddb630c06656176febbe4585384de709e119ca689f12b82b793abcf68e6dca64",
+      "bytes": 21066
+    },
+    {
+      "path": "src/festivals/FestivalConfiguration.ts",
+      "sha256": "abeaf3683fcfab869e95570bb169ccd76f2bb1e263988e2cae74ec41276990e9",
+      "bytes": 9861
+    },
+    {
+      "path": "src/festivals/FestivalDecorations.tsx",
+      "sha256": "e619e98ff6a7609205ee48e74ef34d9999bc3ec5760ad7426a521e0ff34e01f4",
+      "bytes": 10033
+    },
+    {
+      "path": "src/festivals/FestivalManager.tsx",
+      "sha256": "82e25147121d6378ae9a357a134e10ff6e0e35a7b6c39365f4c9a34b21b3b90e",
+      "bytes": 2252
+    },
+    {
+      "path": "src/festivals/FestivalRegistry.ts",
+      "sha256": "31e3a6fe5d8319a11dd384fd8631a09e52931afc9fc546322de2df3d9f6bc30b",
+      "bytes": 2547
+    },
+    {
+      "path": "src/festivals/FestivalSettings.tsx",
+      "sha256": "49f0efa3eba4df7b12e5f223a91419b3491a51e7718033401a259dcbcbd9a7bd",
+      "bytes": 12102
+    },
+    {
+      "path": "src/festivals/festivalSimulation.ts",
+      "sha256": "95e785ce43f87d62e9d0cc74f24f429c7ecf5dc3fd1b360a4880217556fcb76f",
+      "bytes": 9149
+    },
+    {
+      "path": "src/festivals/index.ts",
+      "sha256": "abab16c616f0ff5cb99e1882cea04fba3f655d223c47f8540633a991a896a04b",
+      "bytes": 281
+    },
+    {
+      "path": "src/festivals/TazaungdaingScene.tsx",
+      "sha256": "5c1778956d8e6ef8ad587ccc5e2f8113b3faec53c735993cc8bf8c05479e6d87",
+      "bytes": 2096
+    },
+    {
+      "path": "src/game/ambientAudio.ts",
+      "sha256": "300732753e73a91581f8e8996e8c14ca99a082c3fe9eeb7a2f0d4f076206cda7",
+      "bytes": 4210
+    },
+    {
+      "path": "src/game/androidApkDownload.ts",
+      "sha256": "ba727b3e51fd1f4e8d5f0433b05a0af09e37d3be7f805eb36d3fc15743373c85",
+      "bytes": 2815
+    },
+    {
+      "path": "src/game/appearanceStore.ts",
+      "sha256": "bd7df9d2064a5e3ecf536efe096b1f82de7097ec849b373d3c37fdc5e8736af7",
+      "bytes": 1236
+    },
+    {
+      "path": "src/game/assetAiEdit.ts",
+      "sha256": "dd74c82436c67d1c7968a37806ace2dbf61bd2be0ca438f3e3d8fe4a01751da5",
+      "bytes": 3295
+    },
+    {
+      "path": "src/game/assetRegistry.ts",
+      "sha256": "ff13ade413d2c5738d9e6336c5233df93ea18f867567a2fc9685eab50e6c664b",
+      "bytes": 34666
+    },
+    {
+      "path": "src/game/avatarHeading.ts",
+      "sha256": "64770162f7305e9c4abd3895a6865b7b58ccafe9fa7e029bd030a84ab22b0812",
+      "bytes": 225
+    },
+    {
+      "path": "src/game/balloonRide.ts",
+      "sha256": "2df1bb6bf7eb0b7323dd9438c194b087aa72edbf160803133b92deeaec73e05e",
+      "bytes": 7183
+    },
+    {
+      "path": "src/game/blenderCharacter.ts",
+      "sha256": "334d1ddc4810665df431978ca3648baa49df668879b02e6a9b28ad50b42257d1",
+      "bytes": 981
+    },
+    {
+      "path": "src/game/builtInAssetEdits.ts",
+      "sha256": "9b9f1d43ed9244ef92bd95119cac2274c5282492158b0caf6f986c5caefbcba3",
+      "bytes": 1748
+    },
+    {
+      "path": "src/game/cameraNavigation.ts",
+      "sha256": "44967ef2da9e3c9e5e516838ca1bced55234240e8337ff0a9eb3e8a0bec2f306",
+      "bytes": 912
+    },
+    {
+      "path": "src/game/cameraObstruction.ts",
+      "sha256": "95ee6310c648f83fbce52d51c08f8429c42abc1b9ad020768651e9d92a641227",
+      "bytes": 1291
+    },
+    {
+      "path": "src/game/candleModel.ts",
+      "sha256": "3996ebc9637a1d206ea8d976b049dbfea82b8b91b05522d23f2e9172987cb5f2",
+      "bytes": 6271
+    },
+    {
+      "path": "src/game/carCabin.ts",
+      "sha256": "6f7245f86173274c16bff1572a1c1ff38a3508935d5d7285e1a8c379f0b350ae",
+      "bytes": 2668
+    },
+    {
+      "path": "src/game/carRide.ts",
+      "sha256": "8a5e29e7d767c4f1697627a163f65db39c3b6db832bb7ec1c2b384e83c8fdfce",
+      "bytes": 9880
+    },
+    {
+      "path": "src/game/carSummon.ts",
+      "sha256": "69594042340c5142549d331a67bd873ac5cc019f81075badb1c789f72363b07f",
+      "bytes": 8965
+    },
+    {
+      "path": "src/game/carTraffic.ts",
+      "sha256": "876ca6a452cbc1047485d8e6b7d6e66cd7344ede66ef2fbad9ad4aea93f7c512",
+      "bytes": 3244
+    },
+    {
+      "path": "src/game/carWindshield.ts",
+      "sha256": "d46faa62a9b40bb340b4054e66528821073004ed34d99137daaf270dcbd7a4df",
+      "bytes": 4823
+    },
+    {
+      "path": "src/game/characterClothing.ts",
+      "sha256": "192728f7c5102a160976d03bc2ff30c711d1e05861d943b9642a4e6713c98825",
+      "bytes": 3136
+    },
+    {
+      "path": "src/game/characterRenderer.ts",
+      "sha256": "2f09240e3874e4f5ad40c5c7097508877e3379e2109b1f7c5e739d761dec1f70",
+      "bytes": 2643
+    },
+    {
+      "path": "src/game/characterRig.ts",
+      "sha256": "ac279e188ac59330565d36d4411009f23d0e8f8c6281bec15d7aea020035b703",
+      "bytes": 1954
+    },
+    {
+      "path": "src/game/collision.ts",
+      "sha256": "0719f6c348ffd102baf3caf42db6bd2214454c852c40b7d5e30bd731ec891613",
+      "bytes": 27857
+    },
+    {
+      "path": "src/game/customAssets.ts",
+      "sha256": "f08adb85c09ee3bef05ce8aaf8f57af84547184dfe5d10435a7ef117ca037134",
+      "bytes": 17877
+    },
+    {
+      "path": "src/game/customAssetTemplates.ts",
+      "sha256": "f48c50029b1e26eb598b2387ebc658f307afab583779294d407bffd1807e9280",
+      "bytes": 2297
+    },
+    {
+      "path": "src/game/diagnosticMode.ts",
+      "sha256": "d628521cbfd66a2f2ca9ec510113ae19e937727864fd61e10034d3061e5bee7d",
+      "bytes": 2423
+    },
+    {
+      "path": "src/game/editorRegions.ts",
+      "sha256": "4142535f1b2dea60a50ec4b5d53282696bfea3a95f3f790cd0fe4ea8624141c5",
+      "bytes": 5614
+    },
+    {
+      "path": "src/game/environmentTime.ts",
+      "sha256": "190aaadf28012e5e3fedd7d635db79190cd531d799ff7b67710610cac851afe3",
+      "bytes": 4639
+    },
+    {
+      "path": "src/game/festivalCandles.ts",
+      "sha256": "c5e795f5bba752dbf5c9171cb0a318ce4e1900b310af20a5b5dc3c217a44c0d2",
+      "bytes": 5616
+    },
+    {
+      "path": "src/game/fireBalloonModel.ts",
+      "sha256": "0205c5efec2720a638a2240128864a11fce6c68175f491ee816207c447e0580d",
+      "bytes": 4831
+    },
+    {
+      "path": "src/game/floatingOrigin.ts",
+      "sha256": "41ec2b06eea27b1b9b792acc6016fd18241ab20337d4abc1498b6d1f844167fb",
+      "bytes": 2545
+    },
+    {
+      "path": "src/game/gameAudio.ts",
+      "sha256": "ac11845f7d79c61c1d1835c0f9a5f1dede30f884c657ccd97c48d16e85a8272d",
+      "bytes": 5869
+    },
+    {
+      "path": "src/game/gameSave.ts",
+      "sha256": "a263518cebca030737a662ea2f4f4f3404938b380f452cebbc332237ce443c9f",
+      "bytes": 5197
+    },
+    {
+      "path": "src/game/ghostAi.ts",
+      "sha256": "cdcb9e416e3fe81e28b54c2af14ace1bf5cebaa1d4429bcda1a8f9885098bc31",
+      "bytes": 49254
+    },
+    {
+      "path": "src/game/ghostAudio.ts",
+      "sha256": "e007b4aca0d0d839c7a3327e462fac346a48db6e7a9c284cb6a61c93426d3df4",
+      "bytes": 11746
+    },
+    {
+      "path": "src/game/ghostConfig.ts",
+      "sha256": "749577fd476c64aea30869acf6afa8cddfaaa8498c6a882a7f3d2afbf750be95",
+      "bytes": 14384
+    },
+    {
+      "path": "src/game/ghostGrabPose.ts",
+      "sha256": "db9cfb47d8a7b6d0676d7f9a57a96944fba43ed8fa2c7e34f5594275e60618a8",
+      "bytes": 1141
+    },
+    {
+      "path": "src/game/ghostPersonalities.ts",
+      "sha256": "7b205288a394bffbdd10e25fb7b9d90da1e79000724a9612cbb9de9d633b5e45",
+      "bytes": 1303
+    },
+    {
+      "path": "src/game/ghostVisuals.ts",
+      "sha256": "45f82a4bafbfaf6cda61216dfe6796fa15f1086d39751197978374c8d0a138ef",
+      "bytes": 784
+    },
+    {
+      "path": "src/game/glbEyeBlink.ts",
+      "sha256": "44dd7be96b66a28b682b99383ff78c04f6ee535d71cb65cdbaaea725a473157e",
+      "bytes": 8495
+    },
+    {
+      "path": "src/game/glbHuman.ts",
+      "sha256": "fcece749b7557193db1d8a582f22265442f5c1dc94e142edf0974e759a4794e8",
+      "bytes": 31741
+    },
+    {
+      "path": "src/game/groundSurface.ts",
+      "sha256": "5e101dcb90ad27fb2778546055cb7d2739a5a4ffb59f81cbf60c41e7cae74616",
+      "bytes": 5040
+    },
+    {
+      "path": "src/game/homeAccess.ts",
+      "sha256": "4043a9dccac46fc22aa25be133ba917b40ddc4fbc080566aaf5349d42b070a37",
+      "bytes": 4291
+    },
+    {
+      "path": "src/game/horrorMix.ts",
+      "sha256": "353de9abdf72756a04e720836dd875bb154eb62aa04d0b68600f6a3761400586",
+      "bytes": 767
+    },
+    {
+      "path": "src/game/humanJump.ts",
+      "sha256": "be575acc863d33f48898a9790760e8d99585840473a79c497472a921b0c3bbd0",
+      "bytes": 2737
+    },
+    {
+      "path": "src/game/humanJumpPose.ts",
+      "sha256": "e82ace6cda492bc07e2205d08b00e46c56a51e063c20383cd2d804289cb1653d",
+      "bytes": 2186
+    },
+    {
+      "path": "src/game/IntroCameraPath.ts",
+      "sha256": "cc457f4be6d78cd2a0983797770674921f2a758cb64c3ec9cda9d7bcb8f88375",
+      "bytes": 16586
+    },
+    {
+      "path": "src/game/IntroSettings.ts",
+      "sha256": "29cab8691e479121f0282786fb7e015c5baf322c15271f6caee8532db2db9b8c",
+      "bytes": 6129
+    },
+    {
+      "path": "src/game/IntroStateMachine.ts",
+      "sha256": "74a49172e7b0ab2c4f3093267082211a030809de26517c4ad024a8e86afc43a6",
+      "bytes": 6963
+    },
+    {
+      "path": "src/game/kanbaleTiledEditor.ts",
+      "sha256": "e87b5ba29f563d7ea61f3d58765337483db6e9233645c5119b0f2c79e54070d7",
+      "bytes": 6761
+    },
+    {
+      "path": "src/game/layoutTransforms.ts",
+      "sha256": "e3e8977ca70cf82b577edf6aa92a2d3558165bd44a2dc16ee7994844fe46715b",
+      "bytes": 4761
+    },
+    {
+      "path": "src/game/locationDetect.ts",
+      "sha256": "720c96a4cebbe82886d0b833c8b89088551d3266cd54f3d61969e8ae1717d36e",
+      "bytes": 60774
+    },
+    {
+      "path": "src/game/mapLabels.ts",
+      "sha256": "3721ced7150803fa93a889609be3a8ae4af2ff029614b0de943a845917875f41",
+      "bytes": 1800
+    },
+    {
+      "path": "src/game/mapPermissions.ts",
+      "sha256": "3e3561ccdaa5d12d144db10d35721504bee7e5b881dd1e0a54077839362c2651",
+      "bytes": 7601
+    },
+    {
+      "path": "src/game/mapProjection.ts",
+      "sha256": "bb2f1127ef8d6dd9d1aa0d3a7abb77ffec8ec047e2ec154af339d1e9a97e7f48",
+      "bytes": 748
+    },
+    {
+      "path": "src/game/mapSelection.ts",
+      "sha256": "2a182787cefa760c598386a9a5df01f42ef94db945e2f596f5b1aac0d8622e70",
+      "bytes": 22749
+    },
+    {
+      "path": "src/game/mapTileStore.ts",
+      "sha256": "a8e85b2a2eb458fdc0f700849703f20b45fa0384ea890a2bbf095c5247763874",
+      "bytes": 11822
+    },
+    {
+      "path": "src/game/mobileInput.ts",
+      "sha256": "ef20b63b7126ea9bc274069fc845a7081752f08f735c69901890f11bf92e0579",
+      "bytes": 8541
+    },
+    {
+      "path": "src/game/motorcycleRide.ts",
+      "sha256": "a73533d241c53a8d5253c2040d7f56fb9aa8da7fde1f5c0be79b6a7b9d2c3217",
+      "bytes": 3593
+    },
+    {
+      "path": "src/game/mountainTerrain.ts",
+      "sha256": "5dcac88169fd8ef46e4039362eea414b63dcd19c71ebd9330cabae5f59e22a6b",
+      "bytes": 6083
+    },
+    {
+      "path": "src/game/otaCompatibility.ts",
+      "sha256": "ef0100692198cd603383e909ade5c3fa30f8cd1f5f333ffad6c14617fb5f85fe",
+      "bytes": 30205
+    },
+    {
+      "path": "src/game/perfMetrics.ts",
+      "sha256": "54536c8cff55996e63a1cbc3a8627baf39000a5ffe5fb428d0308805b59c820c",
+      "bytes": 10351
+    },
+    {
+      "path": "src/game/playerDeath.ts",
+      "sha256": "69a4a57e4627ee9b386b04a075b69eee2f0e387519e532d5ec1f5d32679a3929",
+      "bytes": 1958
+    },
+    {
+      "path": "src/game/playerHomeProtection.ts",
+      "sha256": "dccce8da7b6c1f8fc338abc0929ec7abe66eb8c62f03ed9968e0afd13021e587",
+      "bytes": 4561
+    },
+    {
+      "path": "src/game/pointLightPool.ts",
+      "sha256": "fdc745ff6e6c452a2c1be736d658e5c6b7efa1484c3952b9b9bcb89059afdf96",
+      "bytes": 1794
+    },
+    {
+      "path": "src/game/preparedScene.ts",
+      "sha256": "d5dc29c26162a0f6babb98201377f58845ca15d431372345c5e28e5eac2739a7",
+      "bytes": 4140
+    },
+    {
+      "path": "src/game/qualityPreset.ts",
+      "sha256": "fea59b1396c5c6ea614bb5684dbf0bf9315c498d21b3c9881fd749cc7eff5f67",
+      "bytes": 5192
+    },
+    {
+      "path": "src/game/regionLoading.ts",
+      "sha256": "68150e8a448db85f593d6b2425d2afd6f01872d5cb2b8556f973d2d6e4956f95",
+      "bytes": 3405
+    },
+    {
+      "path": "src/game/regionObjectsMigration.ts",
+      "sha256": "1f671b734d9ee0ce67e08b24c0a012e26c660c3e885d8634fff93aca05063841",
+      "bytes": 15249
+    },
+    {
+      "path": "src/game/rideLife.ts",
+      "sha256": "a2c944c97c7ffdf0b5c28a8fc89ec7aa1e806c5fcc5b4398002ff74080c99a6c",
+      "bytes": 1699
+    },
+    {
+      "path": "src/game/robotAppearance.ts",
+      "sha256": "7ce30be326edc1b2a74a429495b75e905fae9cf2c4c5b09cb4f7e88b22981d17",
+      "bytes": 852
+    },
+    {
+      "path": "src/game/robotLocation.ts",
+      "sha256": "482414c4662636dacde99ef45c4f42be26190c2faa44002ca71990a5377f8ecb",
+      "bytes": 1663
+    },
+    {
+      "path": "src/game/robotRoutes.ts",
+      "sha256": "864f2b4fbe83e396aba2e49837c7e5f9b66eec4b4d0d298005f1745f45091fa2",
+      "bytes": 4323
+    },
+    {
+      "path": "src/game/sceneBudget.ts",
+      "sha256": "23bd68a07f2d850951d1f51931249f232225caf8b2873104eecfd9b0b641e2cb",
+      "bytes": 3691
+    },
+    {
+      "path": "src/game/spatialIndex.ts",
+      "sha256": "62c982aa5b1fa78eb883a21ece7a815602844c9c531d125405c0150c6d13caf2",
+      "bytes": 947
+    },
+    {
+      "path": "src/game/specialActions.ts",
+      "sha256": "49a303355418bc05b742f645f3d875577cf45fc86c3b12ebcb7a264dc55c5b97",
+      "bytes": 4176
+    },
+    {
+      "path": "src/game/startupDiagnostics.ts",
+      "sha256": "b35233c5b780f5558726ae1ac2f273eae3f73ce64fb150cf758143b881a4b7db",
+      "bytes": 10924
+    },
+    {
+      "path": "src/game/staticBatch.ts",
+      "sha256": "847b47f5423eafd4117c97dc3eda68362e27f8e7532b561397d022a44c705586",
+      "bytes": 6001
+    },
+    {
+      "path": "src/game/staticVisibility.ts",
+      "sha256": "472a72b86dfd2acb38717a36de5fdca1c27adb064d89dbdb13341d93168e1652",
+      "bytes": 989
+    },
+    {
+      "path": "src/game/streamedAssetPool.ts",
+      "sha256": "522043d5cf330473b4b805c5878f311df113accfae83d631bb089f331d0253ff",
+      "bytes": 4800
+    },
+    {
+      "path": "src/game/streamedChunkRegistry.ts",
+      "sha256": "c6f84499655515e17578632a3e3794251251fc067b4100519fa30bd0b18eeea8",
+      "bytes": 11893
+    },
+    {
+      "path": "src/game/subscriptionShop.ts",
+      "sha256": "93b8b77c6448181f07265fab6abf7f6c1044b06c7477ee76bdef66441834b6f2",
+      "bytes": 5834
+    },
+    {
+      "path": "src/game/thadingyutFestival.ts",
+      "sha256": "30b07c4e581d5eecccb3fc57fada227c82de7df3b1ea23d18b0d81a8f90e96a5",
+      "bytes": 3388
+    },
+    {
+      "path": "src/game/trafficColliders.ts",
+      "sha256": "d68bd4ec0c6d79ae4b7a59d0b4dc62252cc9a402d6693609c6c7a2e01379dcc5",
+      "bytes": 1387
+    },
+    {
+      "path": "src/game/updateSafety.ts",
+      "sha256": "c51853516a8d8c83a24bd31ee0b59381cb86274899a395d416da586edd9fb297",
+      "bytes": 4383
+    },
+    {
+      "path": "src/game/vehicleWaiting.ts",
+      "sha256": "b5bfc37e556162a62127449d886cee22e47b92e341a8cb415d21a8123a6f169e",
+      "bytes": 13399
+    },
+    {
+      "path": "src/game/walkingCollision.ts",
+      "sha256": "594b6fae65045ccc771a3bf4b72e4a13a7d54b51306c4f8bbbd284c24153bd41",
+      "bytes": 2668
+    },
+    {
+      "path": "src/game/worldEdits.ts",
+      "sha256": "515e5e515be9871fe0fc9a9272a18105663da93367756877f44ce176cf23929b",
+      "bytes": 3142
+    },
+    {
+      "path": "src/game/worldEditsSync.ts",
+      "sha256": "f9660e5d6df357a444e5bfb4240f0c5501e2f1f32a461d72d6fbeb50d308fb9f",
+      "bytes": 2182
+    },
+    {
+      "path": "src/game/worldLayout.ts",
+      "sha256": "190be08d9de866fd84c20afb0fa2c4a99dc10339ed8a3471df2db78e750bfb1e",
+      "bytes": 5164
+    },
+    {
+      "path": "src/multiplayer/multiplayer.css",
+      "sha256": "3882a55ab8d41fcabc2d00f8d8e8f9d0feaf9ca228ce01394e278fbeaa299e0c",
+      "bytes": 937
+    },
+    {
+      "path": "src/multiplayer/MultiplayerPanel.tsx",
+      "sha256": "f5452a2e992b2d43a0fbb2a477246e3164a948be355557b25898a4d98dd8ed67",
+      "bytes": 5340
+    },
+    {
+      "path": "src/multiplayer/RemotePlayers.tsx",
+      "sha256": "e27f30e02ccc0fd6579dee007960a76ff522ce597eefa27d4c2dac8445c62a8e",
+      "bytes": 3030
+    },
+    {
+      "path": "src/multiplayer/session.ts",
+      "sha256": "f0096ae8f679ba82665f5fe92736e67f026ca9c39c6949604781a8df41a2fa30",
+      "bytes": 14330
+    },
+    {
+      "path": "src/services/androidLifecycle.ts",
+      "sha256": "afa583f9bb51111c6067b28a99b7ce79201320ab6f9914fb8c58401d2ed5a31f",
+      "bytes": 1804
+    },
+    {
+      "path": "src/services/assetCacheManager.ts",
+      "sha256": "032da2c5d160c27ab0a56e7fdcd345080da0bfe5994120eb7795203acf34c50d",
+      "bytes": 51059
+    },
+    {
+      "path": "src/services/networkStatus.ts",
+      "sha256": "c67447ffa8199d769780cf8f887ef72509f5fda20eef24956a93c42ba6eb3437",
+      "bytes": 3844
+    },
+    {
+      "path": "src/services/offlineAssetResolver.ts",
+      "sha256": "1bc98c38e59fe39711cd42cec8d36876d8d51ad6cdddad388f8868aaf21d35e4",
+      "bytes": 3305
+    },
+    {
+      "path": "src/services/onlineServices.ts",
+      "sha256": "2e79209f4ecf5003c86934ac40e3c4d66766d98fce011091e55426777689795f",
+      "bytes": 4164
+    },
+    {
+      "path": "src/services/otaUpdater.ts",
+      "sha256": "8ec6a87df01100ed84f773c48e075251a89d578c81c7d465fd1740afe85ddd84",
+      "bytes": 36999
+    },
+    {
+      "path": "src/services/platform.ts",
+      "sha256": "8fc1ce471d3820ca30adf78533df86b026c6d2686e47140cf244d69c1677a81f",
+      "bytes": 948
+    },
+    {
+      "path": "src/animation/actions/DanceActions.ts",
+      "sha256": "4b819bfbe05b523afb6b643cc35603ca39064bf6dc171631eec72e80bd5deaa1",
+      "bytes": 906
+    },
+    {
+      "path": "src/animation/actions/SpecialActionManager.ts",
+      "sha256": "eb81e7f8dd97d507795d358205c7c0b50eab5619fbbf7be4e46d6418643da38c",
+      "bytes": 8027
+    },
+    {
+      "path": "src/animation/actions/VehicleWaitingAction.ts",
+      "sha256": "6f2248f82b8d6aab4b4d8b0f07884cc88fa453350f11c9cd45a1b5751d72f001",
+      "bytes": 1264
+    },
+    {
+      "path": "src/animation/core/AnimationController.ts",
+      "sha256": "f195e7a9e4b65577e2d31983021c45fde34f1c0892703fe257a6158bc4426c49",
+      "bytes": 11862
+    },
+    {
+      "path": "src/animation/core/AnimationStateMachine.ts",
+      "sha256": "df10b2952b0ffd4f1d6daea69e5e75c895b42075157c9f63a8d9b3ba28027854",
+      "bytes": 6957
+    },
+    {
+      "path": "src/animation/core/MotionCache.ts",
+      "sha256": "9ebafe38869c77bb009eb3cb9349806d03ff7410e846c85aa2968cc4b60dd72a",
+      "bytes": 2907
+    },
+    {
+      "path": "src/animation/core/MotionLoader.ts",
+      "sha256": "21e0fa8593883d37c819577cc9cbd2a2e3c990961c4a4a33644ac9856e61cb6f",
+      "bytes": 4557
+    },
+    {
+      "path": "src/animation/core/MotionRegistry.ts",
+      "sha256": "fa651329c91eecbc41a286b271c58ea71dd19666ffd4c2487d278b72dceb5edb",
+      "bytes": 15156
+    },
+    {
+      "path": "src/animation/ghost/GhostMotionLibrary.ts",
+      "sha256": "9a2c1741d366b4df401d4269d14e2433291bc381874d27ee33de3a972174e14d",
+      "bytes": 8130
+    },
+    {
+      "path": "src/animation/hooks/useSpecialActions.ts",
+      "sha256": "f7182608afa0aba0738a64ab9b249b85c4395048669862cfe3356dd451369df4",
+      "bytes": 1442
+    },
+    {
+      "path": "src/animation/retargeting/BoneMapping.ts",
+      "sha256": "19a2321b1f69d7d45931b7799160a4f5af24f2cac5b975ee340e7b7e79b93954",
+      "bytes": 5978
+    },
+    {
+      "path": "src/animation/retargeting/SkeletonAnalyzer.ts",
+      "sha256": "eb0b9c5889d0af25919ad682d9b3bc5dd6f9718361374fb4f07d037b53e50a7a",
+      "bytes": 6182
+    },
+    {
+      "path": "src/animation/retargeting/SkeletonRetargeter.ts",
+      "sha256": "8061b9e056858ad0f3983dbab6bc63da1b220b563a3a47dbdcb9776028ba6492",
+      "bytes": 10408
+    },
+    {
+      "path": "src/animation/ui/SpecialActionMenu.tsx",
+      "sha256": "7ff398989c321714d0d7421c39ae2ccc9e360aea0958adec99ef862a534adddc",
+      "bytes": 15204
+    },
+    {
+      "path": "src/components/villages/index.tsx",
+      "sha256": "e40ce1baab23a679183a8824937a09c889ecce6fdeb8292cb36731abd48692b2",
+      "bytes": 2501
+    },
+    {
+      "path": "src/components/wards/index.tsx",
+      "sha256": "b22a369a4d4304fa8ed2f4792cb20a163e37c0ab174a1f137133d875ad27ae7a",
+      "bytes": 970
+    },
+    {
+      "path": "src/components/villages/chinsai/index.tsx",
+      "sha256": "5269ccbb4008a64c8b2c5c9ea297b9d86094d29b432731fcc7a63073731229b3",
+      "bytes": 5226
+    },
+    {
+      "path": "src/components/villages/htaukkyant/index.tsx",
+      "sha256": "cb4f2c78e42a0d260275c3e85bb4dfbbcd4ccbfefbb63edf81ee15ab331eebfb",
+      "bytes": 27484
+    },
+    {
+      "path": "src/components/villages/htomar/index.tsx",
+      "sha256": "1cb0a7b4a0282b108b30b35c0a2ff8072a996d811bb1ad2b8e48690799e75da2",
+      "bytes": 10563
+    },
+    {
+      "path": "src/components/villages/kanbale/index.ts",
+      "sha256": "e0eb9d879fe68a44d9d24ff981a1d40e01255ade4f16a03ab27d91e98bd0c27a",
+      "bytes": 178
+    },
+    {
+      "path": "src/components/villages/kanbale/KanbaleBuilding.tsx",
+      "sha256": "698fc28bb217b73190d1c4a47a98df2c41a8af88a369ec38894f0cc3c0d6f79f",
+      "bytes": 12216
+    },
+    {
+      "path": "src/components/villages/kanbale/KanbaleChunkTiles.tsx",
+      "sha256": "e25f3d164fdff61dcc20e1d3c996db685d05c0417a356f8434e58da1651e97c5",
+      "bytes": 17114
+    },
+    {
+      "path": "src/components/villages/kanbale/KanbaleCustomBuildings.tsx",
+      "sha256": "1ff64f506a00678b4b1a195e6f278c5125cb23ddd9e37ebabb44ba2d52661933",
+      "bytes": 1798
+    },
+    {
+      "path": "src/components/villages/kanbale/KanbaleDrain.tsx",
+      "sha256": "0b5ff1dd05bd530e4b8ec216a8a9c3912d865f1f35a7b98f853713e4a718ae90",
+      "bytes": 8407
+    },
+    {
+      "path": "src/components/villages/kanbale/KanbaleFarmhouse.tsx",
+      "sha256": "0f133c199f7d01cdfd276f530fec72973509630b439fee8e4c900f7e75b8ecac",
+      "bytes": 13183
+    },
+    {
+      "path": "src/components/villages/kanbale/KanbalePlan.tsx",
+      "sha256": "f3063d5c6cf92fc49091e67cd9e04c20e15919f2ee23b37508f272bb5d166bb9",
+      "bytes": 9853
+    },
+    {
+      "path": "src/components/villages/kanbale/KanbaleRiceMill.tsx",
+      "sha256": "4814f5bb17b21108ba3c39bca09f92ba82e5843e49d4cbc56a6230ed2e7ab587",
+      "bytes": 9196
+    },
+    {
+      "path": "src/components/villages/kanbale/KanbaleSchool.tsx",
+      "sha256": "ad04991590fbbb4aebc188c45af56733b7dc846c0e8894fe72e7cd7b8377ff8d",
+      "bytes": 13062
+    },
+    {
+      "path": "src/components/villages/kanbale/KanbaleVillage.tsx",
+      "sha256": "d8cab842e84265db7075fce4caff1f20cd0e71f1d4d8e574155b3b510f8599fc",
+      "bytes": 1827
+    },
+    {
+      "path": "src/components/villages/kyarinn/index.tsx",
+      "sha256": "2df807f421954a4ad60cb2ac7aa930903b8f00664e94f96cfc72d2055c92720d",
+      "bytes": 27500
+    },
+    {
+      "path": "src/components/villages/natmyaung/index.ts",
+      "sha256": "cc11673e0850a9e6278026d06e0990ca056ca5a42febf34915c999e9db2b4389",
+      "bytes": 161
+    },
+    {
+      "path": "src/components/villages/natmyaung/NatmyaungBuilding.tsx",
+      "sha256": "9f25d562298a087f05e1e795ff4283e3c177ed30d674f968f7c20a14183a366e",
+      "bytes": 15174
+    },
+    {
+      "path": "src/components/villages/natmyaung/NatmyaungPlan.tsx",
+      "sha256": "cf5abaedc7b4ae464782064b35a50df736d97d48b1f349acf158b64e0a080e0f",
+      "bytes": 8721
+    },
+    {
+      "path": "src/components/villages/natmyaung/NatmyaungVillage.tsx",
+      "sha256": "df4a32a1b89ee40449db7fa9e0dcb20f62f09aea19926e960ddcc784545476d9",
+      "bytes": 9502
+    },
+    {
+      "path": "src/components/villages/sithar/index.ts",
+      "sha256": "5e6509db7e50556d824f316c718a602d8a9310e13011f8d6a068379e827d5077",
+      "bytes": 97
+    },
+    {
+      "path": "src/components/villages/sithar/SiTharBuilding.tsx",
+      "sha256": "e1b7b01f56b1aba7e68a2f1649132faf8d4fef7814b1f817cddce44357c495b0",
+      "bytes": 18934
+    },
+    {
+      "path": "src/components/villages/sithar/SiTharPlan.tsx",
+      "sha256": "e55cd37fa2ad41674fcdf9a143a299ca85cc80497f086123acc8897eabe2e47f",
+      "bytes": 10460
+    },
+    {
+      "path": "src/components/villages/sithar/SiTharVillage.tsx",
+      "sha256": "bb5c2d0c56322b9a2faf36b9f51b0d600e34cf999cb6ea220e0b60a9b24609ba",
+      "bytes": 9498
+    },
+    {
+      "path": "src/components/villages/tharsi/index.tsx",
+      "sha256": "adfc68e89b76af5e18aea3e68016fdbb8c421a3dfb1a0deef61b775c4635087e",
+      "bytes": 5628
+    },
+    {
+      "path": "src/components/villages/tharyargone/index.tsx",
+      "sha256": "f469ba7d1b7e8948b0d5e46b3ef902d82d5bc0647ab11b20ce985b5f11c366ba",
+      "bytes": 8677
+    },
+    {
+      "path": "src/components/villages/zingalin/index.tsx",
+      "sha256": "3c6f89773f4ea4686df4c039bcfee6648a51e3a5713872ff8ae53c9c86ec6fb7",
+      "bytes": 5461
+    },
+    {
+      "path": "src/components/wards/kalayArea1/index.ts",
+      "sha256": "f07b7f9b0ce9496643f0db83c9aa5747e035691859c01c5ad8ab9befe34e6fb0",
+      "bytes": 193
+    },
+    {
+      "path": "src/components/wards/kalayArea1/KalayArea1.tsx",
+      "sha256": "113a21293ee448753534cb7bcd32ef69f5a378dc1206c596920360c17cec268e",
+      "bytes": 8203
+    },
+    {
+      "path": "src/components/wards/kalayArea1/KalayArea1Building.tsx",
+      "sha256": "96e0b2f85db0b8f61808927dea270811e9563b89f5b9b3668c39f7d395890064",
+      "bytes": 5365
+    },
+    {
+      "path": "src/components/wards/kalayArea1/KalayArea1Plan.tsx",
+      "sha256": "aa62636f97eed45cbada673c5eb3ae7c1b1a0c5e1c7ce67d71c05e16ea6d02f9",
+      "bytes": 9637
+    },
+    {
+      "path": "src/components/wards/kalayArea1/KalayArea1TeaShop.tsx",
+      "sha256": "948447a86aa85e411e1b02533fbffcfc7b5b027d1a759ba715c74d61e4622585",
+      "bytes": 12658
+    },
+    {
+      "path": "src/components/wards/kalayArea1/NankaleinCreek.tsx",
+      "sha256": "52cda9c006d4e97a179f8c1ab0fde77d7165d4146f15112c365c9453e153ebc3",
+      "bytes": 10223
+    },
+    {
+      "path": "src/components/wards/myothar/Area5.tsx",
+      "sha256": "688d2aff18cfc5260047d13eee11eb2d73bb90f18ea4ad8d66df6c380fd06f6f",
+      "bytes": 14443
+    },
+    {
+      "path": "src/components/wards/myothar/FootballPitch.tsx",
+      "sha256": "543c563da30197c61de02d2462fc73ed6aa8d36fdfbb126091678504f1fd62bf",
+      "bytes": 1204
+    },
+    {
+      "path": "src/components/wards/myothar/index.tsx",
+      "sha256": "d7ee4fb66ac90dc2a2ea1889a552032d61491ff7d2d08a738f572e396a8b42fa",
+      "bytes": 1190
+    },
+    {
+      "path": "src/components/wards/myothar/Warehouses.tsx",
+      "sha256": "56d85d1d2e47da1b6f3c916b9d14bbadfa688a9b4d7bb1f897f8cf0f3e01dad0",
+      "bytes": 987
+    },
+    {
+      "path": "src/components/wards/myothar/center/index.ts",
+      "sha256": "0d3ac64c2ae84d03c19119649aafc228f8c46a9df4c0c76f86c7977a046e71e8",
+      "bytes": 153
+    },
+    {
+      "path": "src/components/wards/myothar/center/MyotharCenter.tsx",
+      "sha256": "366c4785906cffe82217b83138e13a2e6ff99ca2fb8f8453ddb4cc88d0f7b322",
+      "bytes": 9045
+    },
+    {
+      "path": "src/components/wards/myothar/center/MyotharCenterBuilding.tsx",
+      "sha256": "d8277667809177248351c6370392aba462286514a20436c5734c8eb87c282026",
+      "bytes": 13678
+    },
+    {
+      "path": "src/components/wards/myothar/center/MyotharCenterLandmarks.tsx",
+      "sha256": "89ebc8ac49cfdcb5b428fca4b6c49a66714353193fb75123f483a7ba020bd0c3",
+      "bytes": 20795
+    },
+    {
+      "path": "src/components/wards/myothar/center/MyotharCenterPlan.tsx",
+      "sha256": "977c857c11c92eeb7d6559ff26257322ab969a3019a6260ed04e2f212c613989",
+      "bytes": 8844
+    },
+    {
+      "path": "src/data/villages/index.ts",
+      "sha256": "6539570eeda3e99198a9589d954a62130dc55e5c76ad7a3f5be2ab45da22e21d",
+      "bytes": 2939
+    },
+    {
+      "path": "src/data/villages/kanbale_extracted.json",
+      "sha256": "cf996fb2da27162ccb3d06c4171303f54fd5af004a3fc843ba63a420fe10370b",
+      "bytes": 954455
+    },
+    {
+      "path": "src/data/wards/index.ts",
+      "sha256": "967430a0391330ac5068e6bc1f5868b485d4287b66764529bb66e16b52be0e6a",
+      "bytes": 638
+    },
+    {
+      "path": "src/data/villages/chinsai/index.ts",
+      "sha256": "7f2f2e7fd52c629cf0ab82deeb9776b520520308445c58e242abc8336c539129",
+      "bytes": 15266
+    },
+    {
+      "path": "src/data/villages/htaukkyant/index.ts",
+      "sha256": "34a6c3fe15396f2000a32a4128d2f0a6dca8380b945b1ac76d663fc152f86b07",
+      "bytes": 23409
+    },
+    {
+      "path": "src/data/villages/htomar/index.ts",
+      "sha256": "292461a2d6ba688c238d2cd860b3553a7efb3894a6e2c309e0bf9b5f454ac09a",
+      "bytes": 24968
+    },
+    {
+      "path": "src/data/villages/kanbale/index.ts",
+      "sha256": "820673f4409fb5a99fa3d40f8fe4efe691863c85dbfafca4413035d278484273",
+      "bytes": 257
+    },
+    {
+      "path": "src/data/villages/kanbale/kanbaleBoundary.ts",
+      "sha256": "53a49ecb0453860004d9b5da924d3bd62307d6dbaa5d72992e4f92b8553382f6",
+      "bytes": 7894
+    },
+    {
+      "path": "src/data/villages/kanbale/kanbaleBuildings.ts",
+      "sha256": "14016174d56b51a5dc2ad4a03c9152a39a090345404d70061a32a1b81ea3356d",
+      "bytes": 894700
+    },
+    {
+      "path": "src/data/villages/kanbale/kanbaleData.ts",
+      "sha256": "5ae4bda6c486d2eec0d5d471fa23e8296df1ae8b1d1e62ee3f3d19a6cbf04d27",
+      "bytes": 3494
+    },
+    {
+      "path": "src/data/villages/kanbale/kanbaleDrain.ts",
+      "sha256": "a951c5896142316912a843d0ea113207782a64d5f170fd1ceef77221c6806e82",
+      "bytes": 2609
+    },
+    {
+      "path": "src/data/villages/kanbale/kanbaleMeta.ts",
+      "sha256": "e7abf17466532367f471ac8b61a8d364105572b6cbbafe55a9620e73866fbccc",
+      "bytes": 1734
+    },
+    {
+      "path": "src/data/villages/kanbale/kanbaleRoads.ts",
+      "sha256": "9e3b18dfc8ba25057041a790e0993a432efa71e98e47d9e5c45353258cc4948f",
+      "bytes": 72681
+    },
+    {
+      "path": "src/data/villages/kyarinn/index.ts",
+      "sha256": "4f10748fcd02090eb706840356dd043bb95897d0e481b76ced3520cfaa8db0ff",
+      "bytes": 27663
+    },
+    {
+      "path": "src/data/villages/natmyaung/index.ts",
+      "sha256": "91df3c5f15d873aac7453804be1430856dc7061fc147c1e7de8d4765ca9980a9",
+      "bytes": 3115
+    },
+    {
+      "path": "src/data/villages/natmyaung/natmyaungBoundary.ts",
+      "sha256": "1f7b56aca611b694eed174d793fe071fa78e39a9ef29924b47928d94b80bd39f",
+      "bytes": 3834
+    },
+    {
+      "path": "src/data/villages/natmyaung/natmyaungBuildings.ts",
+      "sha256": "a0efeb23f5c8f6518e2ec9dc801d2c9692f1a1de674fa05a8d6de876a480481c",
+      "bytes": 326974
+    },
+    {
+      "path": "src/data/villages/natmyaung/natmyaungData.ts",
+      "sha256": "d1b0b7c41ac4312b7ac0a9d016baa5b3228c7bc1bf0882cfb8fa50c9dc5ef655",
+      "bytes": 3697
+    },
+    {
+      "path": "src/data/villages/natmyaung/natmyaungRoads.ts",
+      "sha256": "3be2bb218de81769038fa24c8c9dd8fbe387b0ece8b82e79909766a8926f383c",
+      "bytes": 5695
+    },
+    {
+      "path": "src/data/villages/sithar/index.ts",
+      "sha256": "4fd34db64596227c5d4f2bc14b0468dab22836d4e1e14ee41b3b0be63e2e4baf",
+      "bytes": 2595
+    },
+    {
+      "path": "src/data/villages/sithar/separationFields.ts",
+      "sha256": "6775c50499ab4918ba413c721999c5b23589e7ee89ff01296a9b359967d0e30c",
+      "bytes": 920
+    },
+    {
+      "path": "src/data/villages/sithar/sitharBoundary.ts",
+      "sha256": "0e77c3eea0c92dac9841c326e3c346ed86cbce2d344ee26bab04c742fec19e30",
+      "bytes": 7416
+    },
+    {
+      "path": "src/data/villages/sithar/sitharBuildings.ts",
+      "sha256": "a457a8745514ca09a668c23ed9fb3e4438864c04adbae48c81c7dcd69ee718b5",
+      "bytes": 46869
+    },
+    {
+      "path": "src/data/villages/sithar/sitharData.ts",
+      "sha256": "bd694937c9d34bc981d2f1d74368f80ad2cfa1d698474d7be1f720e24282541d",
+      "bytes": 3559
+    },
+    {
+      "path": "src/data/villages/sithar/sitharRoads.ts",
+      "sha256": "11617bc56d41f1d3cf9f3a75c648ba48ecfce6966b281fb54f1c4a24de67bfc5",
+      "bytes": 19093
+    },
+    {
+      "path": "src/data/villages/tharsi/index.ts",
+      "sha256": "3847bab719337fa03ccdb9f13d02b3df3e6fbbe1ae7bbe8442cc1040a063193d",
+      "bytes": 14001
+    },
+    {
+      "path": "src/data/villages/tharyargone/index.ts",
+      "sha256": "fef7cf865c2c3eafc2615bffb4bf3709d0adc5a895b70f4eefe4f88f35a764d1",
+      "bytes": 12363
+    },
+    {
+      "path": "src/data/villages/zingalin/index.ts",
+      "sha256": "50dd6a5bb8dd1add138919c26b5a9c2c07d4868c283b12e1e3aeadab42e79119",
+      "bytes": 14441
+    },
+    {
+      "path": "src/data/wards/kalayArea1/index.ts",
+      "sha256": "6a41214b9a09893cc447dcfeb70a22770a797c3f26b0c378ac62fce595b9f44b",
+      "bytes": 122
+    },
+    {
+      "path": "src/data/wards/kalayArea1/kalayArea1Buildings.ts",
+      "sha256": "7d2eb797195088f3fb39a52f1cd34ce267e1265ce6e6eeafe206928135fe3c2c",
+      "bytes": 491736
+    },
+    {
+      "path": "src/data/wards/kalayArea1/kalayArea1Data.ts",
+      "sha256": "9c43e5f4dc4cf0a3983802a2fa8b6cd0674038666fc8d2bd7312c2425a5237ba",
+      "bytes": 26929
+    },
+    {
+      "path": "src/data/wards/kalayArea1/kalayArea1TeaShop.ts",
+      "sha256": "66e48b58d7853f4a8e0628c0a936cf7acc85dfa7cbff306ab8add75303cdc201",
+      "bytes": 3947
+    },
+    {
+      "path": "src/data/wards/myothar/area5.ts",
+      "sha256": "f9e7c98ac6a2fab12bdc63433321b2c09195ff7e76bc04e077f357e137d43979",
+      "bytes": 9860
+    },
+    {
+      "path": "src/data/wards/myothar/index.ts",
+      "sha256": "fe9d8b021dfb3cc82b7100bafe380196fa02cde5d4a0d751a0bdb09cc402cacb",
+      "bytes": 1572
+    },
+    {
+      "path": "src/data/wards/myothar/shweMyanmarArea.ts",
+      "sha256": "449d3f9ba81574a914a92254b0bf5a8250d0d4b207d9e6687655077c724ebcd7",
+      "bytes": 13407
+    },
+    {
+      "path": "src/data/wards/myothar/center/index.ts",
+      "sha256": "879858649f31daaed959cce4b5a568dc7d87b1691e6d7c177196728850266178",
+      "bytes": 170
+    },
+    {
+      "path": "src/data/wards/myothar/center/myotharCenterBuildings.ts",
+      "sha256": "c70161b7f0d581c86797c02ee9a1ec7000baf9c72489e1a2b7ebb653abae32de",
+      "bytes": 1159500
+    },
+    {
+      "path": "src/data/wards/myothar/center/myotharCenterData.ts",
+      "sha256": "e604524187f7e927d18f7b830ff6ca1a71fdc15411d02e6ec6dbeeba3d4b045c",
+      "bytes": 5617
+    },
+    {
+      "path": "src/data/wards/myothar/center/myotharCenterPOIs.ts",
+      "sha256": "e0951d2d8768221e015a954a8db347f49f867e9ae65a394e25cb65e5bacd9e63",
+      "bytes": 4351
+    },
+    {
+      "path": "src/data/wards/myothar/center/myotharCenterRoads.ts",
+      "sha256": "4229032fa9ed08bad1dd30ee7f13689e2f3f716ece9193561bbf27c5cc332a7c",
+      "bytes": 37483
+    },
+    {
+      "path": "src/game/audio/GhostAudioEventScheduler.ts",
+      "sha256": "bd100ee0c69b54f07abfde172e713dbafdb2de16ff2bfb3d2358229d98513486",
+      "bytes": 6424
+    },
+    {
+      "path": "src/game/audio/GhostSpatialAudioController.ts",
+      "sha256": "eaac720c60f652d6ca6a80cfacc520e9e23837fc0bdb612fb063a050250a5aaf",
+      "bytes": 3886
+    },
+    {
+      "path": "src/game/audio/HorrorAudioAssetLoader.ts",
+      "sha256": "93aae54115eeace2ab6277459853f0a830d9c351b434513c727185305829e500",
+      "bytes": 14664
+    },
+    {
+      "path": "src/game/audio/horrorAudioDiagnostics.ts",
+      "sha256": "0b86d9f054f9445593b650dda05ccea6f458a855592393864edc1a77aadfe493",
+      "bytes": 5567
+    },
+    {
+      "path": "src/game/audio/HorrorAudioMixer.ts",
+      "sha256": "11d344a289ed3156bfdd96f44eb18ed462b820cf09c25eafd88a680b10955023",
+      "bytes": 25700
+    },
+    {
+      "path": "src/game/audio/HorrorAudioRegistry.ts",
+      "sha256": "4f678789cc8a89c15a25df0678405ef182baaf65c9592e0f0e12a6c5d6d8c546",
+      "bytes": 11565
+    },
+    {
+      "path": "src/game/audio/ProceduralHorrorSynth.ts",
+      "sha256": "a530c0040b8a6efde02349b93f5a3fb1fb71ed809b1f311a682b75df58feb563",
+      "bytes": 286
+    },
+    {
+      "path": "src/game/audio/WarehouseAmbientBed.ts",
+      "sha256": "1577f860655f163245e884cadd991f3192fb5565d6496f07ac2b2260efe6405a",
+      "bytes": 3914
+    },
+    {
+      "path": "src/game/audio/warehouseSoundOrigins.ts",
+      "sha256": "23ed8e3c244c0bd8a8b9a40dbc73c61bd42c3752a1c45dd3ebbe2bdf9cd191ae",
+      "bytes": 2919
+    },
+    {
+      "path": "server/auth.ts",
+      "sha256": "40770a59a28cc4ab41f3e8a5fc01f42ddb54871394a9a63ffbff12d16cbba3e8",
+      "bytes": 5390
+    },
+    {
+      "path": "server/index.ts",
+      "sha256": "eea5b22f4f8ca291fe84a8d5df2d864f138328230b5478c049c47bbc936be46d",
+      "bytes": 580
+    },
+    {
+      "path": "server/interestManager.ts",
+      "sha256": "1a17254ee69989ab479de3a61004f21778ab9c62cdf33f05b9d86f3b77683c32",
+      "bytes": 3399
+    },
+    {
+      "path": "server/server.ts",
+      "sha256": "a6f0a02a22136e926dd817ffa834abb173e956703506e568721b5cbebea1d42c",
+      "bytes": 2965
+    },
+    {
+      "path": "server/state.ts",
+      "sha256": "3394d64b0b42f8409aecf3c3f72197cbddff55ce822560b924d3788d2a818f89",
+      "bytes": 1586
+    },
+    {
+      "path": "server/TownAuthoritativeRoom.ts",
+      "sha256": "6389bfa232ea87378b4763d6883df695685780afd414acb381bd511a7f22e3a5",
+      "bytes": 7366
+    },
+    {
+      "path": "server/TownPresenceRoom.ts",
+      "sha256": "9d2eb481aa0210d703858d71761756ff826de4b099a0c3467a5fa91b7b93a653",
+      "bytes": 2173
+    },
+    {
+      "path": "server/tsconfig.json",
+      "sha256": "f8a9966ec2740315541c7a9c1389503088d9de718b0802553aad866fa47a0b39",
+      "bytes": 339
+    },
+    {
+      "path": "server/worldSimulation.ts",
+      "sha256": "74c6c6fe434add8d708997f0f6a455fffba372b2d49e6942cbb3f853acf99f00",
+      "bytes": 21395
+    },
+    {
+      "path": "shared/network.ts",
+      "sha256": "b6bb739cf70eab04c1a4c1a3de044b94f99cae42b242e9427765c1000f05e59b",
+      "bytes": 2710
+    },
+    {
+      "path": "shared/contracts/assets.ts",
+      "sha256": "eeadafdcdfd0d506ceb02dc48023c9dcf453882e08c03fb3c58cfb1217803c86",
+      "bytes": 4079
+    },
+    {
+      "path": "shared/contracts/characters.ts",
+      "sha256": "7bf64e9a6fe0418d5ed12d7f5719296c816e7765853185fce1fef99d4b67c29e",
+      "bytes": 2674
+    },
+    {
+      "path": "shared/contracts/ids.ts",
+      "sha256": "361c3d8f827709208b7daf19d3754cfb2dce79246da04586377ff514ec7967d7",
+      "bytes": 3963
+    },
+    {
+      "path": "shared/contracts/index.ts",
+      "sha256": "c67bc7a5fd8eb5ed6eede8fe47e30875aa08fa6545b033ca52d2eff9f05857e0",
+      "bytes": 179
+    },
+    {
+      "path": "shared/contracts/network.ts",
+      "sha256": "72b0afd50ad9d0f6705a32eb713b65e4929dfc7e083e86c28102d6990b566fac",
+      "bytes": 6659
+    },
+    {
+      "path": "shared/contracts/simulation.ts",
+      "sha256": "d807ef071eaf83dd2dcf501436707a86cbbbea35e10a84b968711f6ea662be85",
+      "bytes": 8349
+    },
+    {
+      "path": "shared/contracts/world.ts",
+      "sha256": "e7becb3523cb76d542bc92e91b16d75dc0f43452b0e6161b66629738f8b27812",
+      "bytes": 7070
+    },
+    {
+      "path": "package.json",
+      "sha256": "5b8e30398e69c71809c1e1992da5eb312eb9eab364387feed55db08917cf791f",
+      "bytes": 4268
+    },
+    {
+      "path": "capacitor.config.ts",
+      "sha256": "6ba5f1da086be01c49ad71d4ec87ce6f8490d63a4e5d330cf9de84498132b2d6",
+      "bytes": 681
+    },
+    {
+      "path": "vite.config.ts",
+      "sha256": "8490c436973923803022ad9517c981a90aa7c6edccb95cf0a625917ca07a180f",
+      "bytes": 3441
+    },
+    {
+      "path": "scripts/checkGhostAudio.mjs",
+      "sha256": "1941e7964db5edcafd6c231bb9d274869a72059c8c1ba89ac82173b80b285694",
+      "bytes": 15501
+    }
+  ]
+}

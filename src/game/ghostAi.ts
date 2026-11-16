@@ -1,3 +1,4 @@
+import type { WalkabilityPort } from '../../shared/contracts/index.ts';
 import {HOME_RETREAT,isPlayerHomeProtected,stepHomeRetreat} from './playerHomeProtection.ts';
 import type { GhostClipId } from '../animation/ghost/GhostMotionLibrary.ts';
 import {
@@ -259,14 +260,17 @@ export class GhostAiController {
   private lastAudioCue: GhostAiAudioEvent | null = null;
   private lastDistToPlayer = 999;
   private lastHasLos = false;
+  private readonly spatialPort?: WalkabilityPort;
 
   constructor(
     env: GhostWarehouseEnvironment,
     config: GhostAiConfig = DEFAULT_GHOST_AI_CONFIG,
     initialSeed = 424242,
     thresholdRng: () => number = Math.random,
+    spatialPort?: WalkabilityPort,
   ) {
     this.env = env;
+    this.spatialPort = spatialPort;
     this.cfg = {...config,hideDurationRangeSec:[...config.hideDurationRangeSec],observeDurationRangeSec:[...config.observeDurationRangeSec],roadCrossCooldownRangeSec:[...config.roadCrossCooldownRangeSec]};
     this.seed = initialSeed >>> 0;
     this.thresholdRng = thresholdRng;
@@ -839,7 +843,10 @@ export class GhostAiController {
 
   public step(input: GhostAiStepInput): GhostAiSnapshot {
     const dt = Math.max(0, Math.min(0.05, input.dt));
-    const walkCheck = input.walkCheck ?? isGhostPointWalkable;
+    const port = this.spatialPort;
+    const walkCheck = input.walkCheck ?? (port ? (x, z) => port.isPointWalkable(x, z) : isGhostPointWalkable);
+    const checkHomeProtected = (x: number, z: number, buffer = 0) =>
+      port?.isHomeProtected ? port.isHomeProtected(x, z, buffer) : isPlayerHomeProtected(x, z, buffer);
 
     const distToPlayer = Math.hypot(input.playerX - this.x, input.playerZ - this.z);
     const distFromAnchor = Math.hypot(
@@ -861,8 +868,8 @@ export class GhostAiController {
     }
 
     // Highest priority: evaluated before schedule activation, sensing, windup or catch checks.
-    this.homeProtected=isPlayerHomeProtected(input.playerX,input.playerZ);
-    const buffered=isPlayerHomeProtected(input.playerX,input.playerZ,HOME_RETREAT.buffer);
+    this.homeProtected=checkHomeProtected(input.playerX,input.playerZ);
+    const buffered=checkHomeProtected(input.playerX,input.playerZ,HOME_RETREAT.buffer);
     if(this.homeProtected){
       this.grabPhase='none';this.grabFallProgress=0;this.lastAudioCue=null;this.playerKilled=false;
       this.playerInsideEncounterZone=true;
@@ -893,7 +900,7 @@ export class GhostAiController {
       this.opacity=0;this.stateTimer+=dt;
       if(buffered||this.stateTimer<HOME_RETREAT.cooldownSec)return this.getSnapshot();
       const spawn=this.env.waypointById.get(this.originalSpawnId)!;
-      if(!walkCheck(spawn.x,spawn.z)||isPlayerHomeProtected(spawn.x,spawn.z,HOME_RETREAT.buffer))return this.getSnapshot();
+      if(!walkCheck(spawn.x,spawn.z)||checkHomeProtected(spawn.x,spawn.z,HOME_RETREAT.buffer))return this.getSnapshot();
       this.x=spawn.x;this.z=spawn.z;this.currentWaypointId=spawn.id;this.homeWaypointId=spawn.id;
       this.safeCooldown=false;this.resetEncounterCycle(distToPlayer);this.transitionTo('SPAWNING');
       if(!input.activeBySchedule)this.transitionTo('DORMANT');

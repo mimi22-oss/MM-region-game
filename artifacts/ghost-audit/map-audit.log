@@ -1,0 +1,119 @@
+
+> mm-region-game@1.0.0 map:audit
+> node --experimental-strip-types scripts/auditMapData.mjs
+
+{
+  "architecture": "hybrid eager legacy + versioned spatial chunks",
+  "regions": [
+    {
+      "id": "myothar",
+      "streamed": false,
+      "buildings": 1403,
+      "roads": 18,
+      "fields": 1,
+      "trees": 99
+    },
+    {
+      "id": "tharsi",
+      "streamed": false,
+      "buildings": 320,
+      "roads": 22,
+      "fields": 42,
+      "trees": 115
+    },
+    {
+      "id": "chinsai",
+      "streamed": false,
+      "buildings": 100,
+      "roads": 19,
+      "fields": 43,
+      "trees": 38
+    },
+    {
+      "id": "zingalin",
+      "streamed": false,
+      "buildings": 100,
+      "roads": 20,
+      "fields": 39,
+      "trees": 38
+    },
+    {
+      "id": "htomar",
+      "streamed": false,
+      "buildings": 235,
+      "roads": 26,
+      "fields": 67,
+      "trees": 56
+    },
+    {
+      "id": "tharyargone",
+      "streamed": false,
+      "buildings": 205,
+      "roads": 18,
+      "fields": 111,
+      "trees": 50
+    },
+    {
+      "id": "htaukkyant",
+      "streamed": false,
+      "buildings": 381,
+      "roads": 20,
+      "fields": 77,
+      "trees": 77
+    },
+    {
+      "id": "kyarinn",
+      "streamed": false,
+      "buildings": 394,
+      "roads": 33,
+      "fields": 59,
+      "trees": 67
+    },
+    {
+      "id": "sithar",
+      "streamed": false,
+      "buildings": 91,
+      "roads": 27,
+      "fields": 20,
+      "trees": 40
+    },
+    {
+      "id": "kanbale",
+      "streamed": true,
+      "buildings": 0,
+      "roads": 0,
+      "fields": 0,
+      "trees": 0
+    },
+    {
+      "id": "natmyaung",
+      "streamed": false,
+      "buildings": 445,
+      "roads": 10,
+      "fields": 0,
+      "trees": 47
+    }
+  ],
+  "totalEagerFeatures": 4973,
+  "streamedDatasets": [
+    {
+      "dataset": "sithar-fields",
+      "schemaVersion": 1,
+      "version": "0431166f76b83ca83ff0",
+      "tiles": 2,
+      "featureCount": 20,
+      "maxTileBytes": 2381
+    },
+    {
+      "dataset": "kanbale",
+      "regionId": "kanbale",
+      "schemaVersion": 2,
+      "version": "68bfa30f429b9d52b602",
+      "tiles": 8,
+      "featureCount": 934,
+      "maxTileBytes": 71868
+    }
+  ],
+  "newDataPath": "scripts/mapTiles.mjs -> public/map/<dataset>/<version>/manifest.json -> openMapDataset",
+  "note": "Tile/JSON budgets bound streamed dataset residency; this audit does not measure browser FPS, GPU or total JS heap."
+}

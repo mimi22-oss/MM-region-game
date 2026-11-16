@@ -1,4 +1,5 @@
 import type { HorrorPreset } from '../ghostAudio.ts';
+import type { HorrorAudioId } from './HorrorAudioRegistry.ts';
 export type HauntedBand = 'outside' | 'distant' | 'uneasy' | 'near' | 'encounter';
 export interface HauntedZoneConfig {
   distances: readonly [number, number, number, number];
@@ -7,11 +8,30 @@ export interface HauntedZoneConfig {
   silenceSec: number;
   laughCooldownSec: number;
   screamCooldownSec: number;
+  perEventCooldownSec?: Partial<Record<HorrorPreset, number>>;
 }
 export const DEFAULT_HAUNTED_ZONE_CONFIG: HauntedZoneConfig = {
   distances: [60, 40, 20, 8], hysteresis: 2, maxOverlap: 2,
   silenceSec: 2.5, laughCooldownSec: 24, screamCooldownSec: 50,
+  perEventCooldownSec: {
+    warehouse_creak: 10,
+    wood_crack: 10,
+    ghost_footsteps: 10,
+    ghost_whisper: 12,
+  },
 };
+const PRESET_TO_ASSET: Partial<Record<HorrorPreset, HorrorAudioId>> = {
+  warehouse_creak: 'rusted-door-creak',
+  wood_crack: 'wood-cracks',
+  ghost_footsteps: 'distant-footsteps',
+  ghost_whisper: 'ghost-whisper',
+  ghost_evil_laugh: 'spectral-cackle',
+  ghost_sudden_scream: 'spectral-shriek',
+  horror_drone: 'warehouse-drone',
+};
+export function horrorPresetToAssetId(preset: HorrorPreset): HorrorAudioId | null {
+  return PRESET_TO_ASSET[preset] ?? null;
+}
 const bands: HauntedBand[] = ['outside', 'distant', 'uneasy', 'near', 'encounter'];
 export function hauntedBand(distance: number, previous: HauntedBand, config = DEFAULT_HAUNTED_ZONE_CONFIG): HauntedBand {
   if (!Number.isFinite(distance)) return 'outside';
@@ -24,15 +44,22 @@ export function hauntedGain(distance: number, radius = 60) {
   const x = Math.max(0, Math.min(1, (radius - distance) / 15));
   return x * x * (3 - 2 * x);
 }
-interface Choice { preset: HorrorPreset; weight: number; kind: 'warehouse' | 'tree' }
-const distant: Choice[] = [
-  {preset:'warehouse_creak',weight:4,kind:'warehouse'}, {preset:'metal_knock',weight:2,kind:'warehouse'},
-  {preset:'tree_rustle',weight:5,kind:'tree'}, {preset:'horror_drone',weight:2,kind:'warehouse'},
+export interface ScheduledHorrorChoice { preset: HorrorPreset; weight: number; kind: 'warehouse' | 'tree'; assetId?: HorrorAudioId }
+const distant: ScheduledHorrorChoice[] = [
+  {preset:'warehouse_creak',weight:4,kind:'warehouse',assetId:'rusted-door-creak'},
+  {preset:'metal_knock',weight:2,kind:'warehouse'},
+  {preset:'tree_rustle',weight:5,kind:'tree'},
+  {preset:'horror_drone',weight:2,kind:'warehouse',assetId:'warehouse-drone'},
 ];
-const uneasy: Choice[] = [...distant, {preset:'wood_crack',weight:4,kind:'warehouse'},
-  {preset:'ghost_evil_laugh',weight:2,kind:'warehouse'}, {preset:'ghost_footsteps',weight:3,kind:'warehouse'}];
-const near: Choice[] = [...uneasy, {preset:'ghost_whisper',weight:6,kind:'warehouse'}, {preset:'warehouse_scrape',weight:3,kind:'warehouse'},
-  {preset:'ghost_sudden_scream',weight:1,kind:'warehouse'}, {preset:'warehouse_creak',weight:3,kind:'warehouse'}];
+const uneasy: ScheduledHorrorChoice[] = [...distant,
+  {preset:'wood_crack',weight:4,kind:'warehouse',assetId:'wood-cracks'},
+  {preset:'ghost_evil_laugh',weight:2,kind:'warehouse',assetId:'spectral-cackle'},
+  {preset:'ghost_footsteps',weight:3,kind:'warehouse',assetId:'distant-footsteps'}];
+const near: ScheduledHorrorChoice[] = [...uneasy,
+  {preset:'ghost_whisper',weight:6,kind:'warehouse',assetId:'ghost-whisper'},
+  {preset:'warehouse_scrape',weight:3,kind:'warehouse'},
+  {preset:'ghost_sudden_scream',weight:1,kind:'warehouse',assetId:'spectral-shriek'},
+  {preset:'warehouse_creak',weight:3,kind:'warehouse',assetId:'rusted-door-creak'}];
 /** Pure simulation clock + seeded PRNG. No timers, audio graph or ghost AI mutations. */
 export class GhostAudioEventScheduler {
   private seed: number;
@@ -40,6 +67,7 @@ export class GhostAudioEventScheduler {
   private due = 0;
   private laughAt = -Infinity;
   private screamAt = -Infinity;
+  private lastPresetAt = new Map<HorrorPreset, number>();
   private lastPreset: HorrorPreset | null = null;
   private lastOrigin = '';
   band: HauntedBand = 'outside';
@@ -53,7 +81,7 @@ export class GhostAudioEventScheduler {
     const range = (this.band==='near'||this.band==='encounter') ? [4,8] : this.band==='uneasy' ? [7,13] : [10,18];
     this.due=this.time+range[0]+this.random()*(range[1]-range[0]);
   }
-  tick(dt:number, distance:number, enabled:boolean, activeVoices:number, _encounterBusy=false): Choice | null {
+  tick(dt:number, distance:number, enabled:boolean, activeVoices:number, _encounterBusy=false): ScheduledHorrorChoice | null {
     this.time += Math.max(0, Math.min(Number.isFinite(dt)?dt:0, .5));
     const previous=this.band;
     this.band = enabled ? hauntedBand(distance,this.band,this.config) : 'outside';
@@ -63,14 +91,21 @@ export class GhostAudioEventScheduler {
     if(this.time<this.due)return null;
     if(activeVoices>=this.config.maxOverlap){this.due=this.time+this.config.silenceSec;return null;}
     const pool=(this.band==='near'||this.band==='encounter')?near:this.band==='uneasy'?uneasy:distant;
-    const choices=pool.filter(c=>c.preset!==this.lastPreset&&
-      (c.preset!=='ghost_evil_laugh'||this.time-this.laughAt>=this.config.laughCooldownSec)&&
-      (c.preset!=='ghost_sudden_scream'||this.time-this.screamAt>=this.config.screamCooldownSec));
+    const perCooldowns = this.config.perEventCooldownSec ?? DEFAULT_HAUNTED_ZONE_CONFIG.perEventCooldownSec;
+    const choices=pool.filter(c=>{
+      if(c.preset===this.lastPreset)return false;
+      if(c.preset==='ghost_evil_laugh'&&this.time-this.laughAt<this.config.laughCooldownSec)return false;
+      if(c.preset==='ghost_sudden_scream'&&this.time-this.screamAt<this.config.screamCooldownSec)return false;
+      const minGap = perCooldowns?.[c.preset];
+      if(minGap!==undefined && this.time-(this.lastPresetAt.get(c.preset)??-Infinity)<minGap)return false;
+      return true;
+    });
     let roll=this.random()*choices.reduce((sum,c)=>sum+c.weight,0),choice=choices[choices.length-1];
     for(const candidate of choices){roll-=candidate.weight;if(roll<0){choice=candidate;break;}}
     if(!choice){this.defer();return null;}
     if(choice.preset==='ghost_evil_laugh')this.laughAt=this.time;
     if(choice.preset==='ghost_sudden_scream')this.screamAt=this.time;
+    this.lastPresetAt.set(choice.preset,this.time);
     this.lastPreset=choice.preset;this.defer();
     // Longest preset is four seconds; reserve its tail plus a quiet gap.
     this.due=Math.max(this.due,this.time+4.1+this.config.silenceSec);

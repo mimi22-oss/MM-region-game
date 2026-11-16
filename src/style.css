@@ -7778,3 +7778,93 @@ main.night-mode .settings-menu .guide-list kbd {
 	font-weight: 700;
 	cursor: pointer;
 }
+
+
+.ota-subtabs {
+	display: flex;
+	gap: 6px;
+	border-bottom: 1px solid rgba(20, 61, 54, 0.12);
+	padding-bottom: 8px;
+}
+
+.ota-subtab-btn {
+	flex: 1 1 0;
+	border: 1px solid rgba(20, 61, 54, 0.2);
+	background: rgba(255, 255, 255, 0.72);
+	color: #143d36;
+	border-radius: 9px;
+	padding: 6px 8px;
+	font-size: 12px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.ota-subtab-btn.is-selected {
+	background: #143d36;
+	color: #f4f0df;
+	border-color: #143d36;
+}
+
+.ota-packs-section,
+.ota-baseline-section {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.ota-pack-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	max-height: 220px;
+	overflow-y: auto;
+}
+
+.ota-pack-card {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 9px 11px;
+	border-radius: 10px;
+	background: rgba(255, 255, 255, 0.76);
+	border: 1px solid rgba(20, 61, 54, 0.14);
+}
+
+.ota-pack-info {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.ota-pack-info strong {
+	font-size: 12.5px;
+	color: #143d36;
+}
+
+.ota-pack-info small {
+	font-size: 11px;
+	color: #46665d;
+	word-break: break-word;
+}
+
+.ota-pack-actions {
+	display: flex;
+	gap: 6px;
+	flex-shrink: 0;
+}
+
+.ota-baseline-preview {
+	width: 100%;
+	box-sizing: border-box;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 11px;
+	line-height: 1.4;
+	padding: 8px;
+	border-radius: 10px;
+	border: 1px solid rgba(20, 61, 54, 0.22);
+	background: #0f2622;
+	color: #e2e8f0;
+	resize: vertical;
+}

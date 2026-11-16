@@ -37,6 +37,12 @@ import { kalayArea1Buildings } from "../data/wards/kalayArea1/kalayArea1Building
 import { nankaleinCreek, nankaleinBridge } from "../data/wards/kalayArea1/kalayArea1Data.ts";
 import { nankaleinTeaShopData } from "../data/wards/kalayArea1/kalayArea1TeaShop.ts";
 import { sourceIsEdited } from "./worldEdits.ts";
+import {
+  isPositionWaitingForStreamedTile,
+  isStreamedPrivateHome,
+  queryStreamedBuildings,
+  queryStreamedTrees,
+} from "./streamedChunkRegistry.ts";
 export const PLAYER_RADIUS = 0.4;
 const nearbyAreca = spatialIndex(estatePalms, (p) => ({
   x: p.x,
@@ -458,8 +464,37 @@ function canStandMountainVillage(x: number, z: number): boolean {
 
 /** The same trunk bounds are used for blocking and the pedestrian's small recoil. */
 export function treeBlocks(x: number, z: number): boolean {
+  const trunkHits = (t: { id?: string; x: number; z: number; radius: number }) =>
+    (!t.id || !sourceIsEdited(t.id)) && Math.hypot(x - t.x, z - t.z) < t.radius + PLAYER_RADIUS;
   return nearbyAreca(x, z).some((p) => Math.hypot(x - p.x, z - p.z) < 0.62) ||
-    nearbyTrees(x, z).some((t) => (!t.id || !sourceIsEdited(t.id)) && Math.hypot(x - t.x, z - t.z) < t.radius + PLAYER_RADIUS);
+    nearbyTrees(x, z).some(trunkHits) ||
+    queryStreamedTrees(x, z).some(trunkHits);
+}
+
+function pointBlockedByBuilding(
+  x: number,
+  z: number,
+  h: { id?: string; x: number; z: number; width: number; depth: number; rotation: number },
+  privateHome: boolean,
+): boolean {
+  if (h.id && sourceIsEdited(h.id)) return false;
+  const dx = x - h.x;
+  const dz = z - h.z;
+  const c = Math.cos(h.rotation);
+  const s = Math.sin(h.rotation);
+  const lx = dx * c - dz * s;
+  const lz = dx * s + dz * c;
+  if (
+    privateHome &&
+    Math.abs(lx) < h.width / 2 + 1.6 + PLAYER_RADIUS &&
+    lz > -h.depth / 2 - 1.5 - PLAYER_RADIUS &&
+    lz < h.depth / 2 + 2.6 + PLAYER_RADIUS
+  ) {
+    return true;
+  }
+  const nx = Math.max(-h.width / 2 - 0.6, Math.min(lx, h.width / 2 + 0.6));
+  const nz = Math.max(-h.depth / 2 - 0.6, Math.min(lz, h.depth / 2 + 2.6));
+  return Math.hypot(lx - nx, lz - nz) < PLAYER_RADIUS;
 }
 
 /** clearance is sole height above local ground; airborne skips water, never solid buildings. */
@@ -658,24 +693,12 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
     const pipeZ = HAND_PUMP_Z + tSpout * SPOUT_DZ;
     if (Math.hypot(x - pipeX, z - pipeZ) < 0.2 + PLAYER_RADIUS) return false;
   }
+  if (isPositionWaitingForStreamedTile(x, z)) return false;
   for (const h of nearbyBuildings(x, z)) {
-    if (h.id && sourceIsEdited(h.id)) continue;
-    const dx = x - h.x,
-      dz = z - h.z,
-      c = Math.cos(h.rotation),
-      s = Math.sin(h.rotation);
-    const lx = dx * c - dz * s,
-      lz = dx * s + dz * c;
-    if (
-      privateHomeIds.has(h.id) &&
-      Math.abs(lx) < h.width / 2 + 1.6 + PLAYER_RADIUS &&
-      lz > -h.depth / 2 - 1.5 - PLAYER_RADIUS &&
-      lz < h.depth / 2 + 2.6 + PLAYER_RADIUS
-    )
-      return false;
-    const nx = Math.max(-h.width / 2 - 0.6, Math.min(lx, h.width / 2 + 0.6));
-    const nz = Math.max(-h.depth / 2 - 0.6, Math.min(lz, h.depth / 2 + 2.6));
-    if (Math.hypot(lx - nx, lz - nz) < PLAYER_RADIUS) return false;
+    if (pointBlockedByBuilding(x, z, h, privateHomeIds.has(h.id))) return false;
+  }
+  for (const h of queryStreamedBuildings(x, z)) {
+    if (pointBlockedByBuilding(x, z, h, isStreamedPrivateHome(h.id))) return false;
   }
   for (const obs of dynamicWorldObstacles) {
     if (obs.radius) {

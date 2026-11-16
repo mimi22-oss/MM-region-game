@@ -1,14 +1,28 @@
-import { useEffect,useRef, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useSyncExternalStore, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector3 } from 'three';
 import { worldMapLabels } from '../data/mapLabels';
-import { layoutMapLabels, type ProjectedLabel } from '../game/mapLabels';
+import { layoutMapLabels, uniqueMapLabels, type ProjectedLabel } from '../game/mapLabels';
 import { sceneGround } from '../game/groundSurface';
+import {
+  getStreamedChunkVersion,
+  getStreamedLabels,
+  subscribeStreamedChunks,
+} from '../game/streamedChunkRegistry';
+
+function useMergedMapLabels() {
+ const chunkVersion = useSyncExternalStore(subscribeStreamedChunks, getStreamedChunkVersion);
+ return useMemo(() => {
+  const streamed = getStreamedLabels();
+  return streamed.length ? uniqueMapLabels([...worldMapLabels, ...streamed]) : worldMapLabels;
+ }, [chunkVersion]);
+}
 
 type LabelHost = RefObject<HTMLDivElement | null>;
 export function MapLabelsOverlay({ host, hidden }: { host: LabelHost; hidden: boolean }) {
+ const labels = useMergedMapLabels();
  return <div ref={host} className="world-map-labels" hidden={hidden} aria-hidden="true">
-  {worldMapLabels.map(label => <div key={label.id} data-map-label={label.id} className={`world-map-label world-map-label--${label.kind}`}>
+  {labels.map(label => <div key={label.id} data-map-label={label.id} className={`world-map-label world-map-label--${label.kind}`}>
    {label.kind === 'place' && <span className="world-map-label-dot" />}
    <span>{label.name}</span>
   </div>)}
@@ -17,8 +31,16 @@ export function MapLabelsOverlay({ host, hidden }: { host: LabelHost; hidden: bo
 
 /** Project after Player's camera update. No extra scene renders, text textures or per-frame React state. */
 export function MapLabelsProjection({ host, enabled }: { host: LabelHost; enabled: boolean }) {
+ const labels = useMergedMapLabels();
  const state = useRef({ point: new Vector3(), direction: new Vector3(), nextLayout: 0, nextGround: 0,
   selected: new Set<string>(), heights: new Map<string, number>(), elements: new Map<string, HTMLDivElement>(),sizes:new Map<string,{width:number;height:number}>() });
+ useEffect(() => {
+  state.current.elements.clear();
+  state.current.sizes.clear();
+  state.current.heights.clear();
+  state.current.nextLayout = 0;
+  state.current.nextGround = 0;
+ }, [labels]);
  useEffect(()=>{
   const reset=()=>{state.current.sizes.clear();state.current.nextLayout=0;};
   window.addEventListener('resize',reset);document.fonts?.addEventListener('loadingdone',reset);
@@ -37,14 +59,14 @@ export function MapLabelsProjection({ host, enabled }: { host: LabelHost; enable
   const refresh = now >= s.nextLayout;
   if (now >= s.nextGround) {
    const ground = sceneGround(scene, now);
-   for (const label of worldMapLabels) s.heights.set(label.id, ground.height(label.x, label.z) + 3);
+   for (const label of labels) s.heights.set(label.id, ground.height(label.x, label.z) + 3);
    s.nextGround = now + 30;
   }
   // Read label sizes together, before any transform writes; avoid repeated forced layouts.
   if(refresh)for(const [id,element] of s.elements)if(!s.sizes.has(id))s.sizes.set(id,{width:element.offsetWidth,height:element.offsetHeight});
   camera.updateMatrixWorld();
   const candidates: ProjectedLabel[] = [];
-  for (const label of worldMapLabels) {
+  for (const label of labels) {
    const element = s.elements.get(label.id);
    if (!element || (!refresh && !s.selected.has(label.id))) continue;
    s.point.set(label.x, s.heights.get(label.id) ?? 3, label.z);

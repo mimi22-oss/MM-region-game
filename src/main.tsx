@@ -15,6 +15,7 @@ import { MultiplayerSession } from './multiplayer/session';
 import { MultiplayerPanel } from './multiplayer/MultiplayerPanel';
 import { RemotePlayers } from './multiplayer/RemotePlayers';
 import { EnvironmentAudio } from './components/EnvironmentAudio';
+import { AudioDiagnosticsPanel } from './components/AudioDiagnosticsPanel';
 import { BalloonControls } from './components/BalloonControls';
 import { emptyBalloonStatus, clearBalloonInput, type BalloonStatus } from './game/balloonRide';
 import { isVehicleWaitingPickupLocked, useVehicleWaiting } from './game/vehicleWaiting';
@@ -103,7 +104,7 @@ import {
   detectLocation,
   type DetectedLocation,
 } from "./game/locationDetect";
-import { syncAllWorldEdits } from "./game/editorRegions";
+import { syncAllWorldEdits } from "./game/worldEditsSync";
 import {
   getGhostEncounterInteraction,
   useActiveGhostZones,
@@ -793,6 +794,7 @@ function App() {
     <main className={night ? "night-mode" : ""} data-time-period={environment.period}>
       <GhostGameOver/>
       <EnvironmentAudio period={environment.period} volume={environment.preferences.volume} enabled={environment.preferences.sound} active={visible&&!loading}/>
+      <AudioDiagnosticsPanel />
       <div className="game-content" inert={loading}>
       <div
         className="scene-wrap"
@@ -878,6 +880,10 @@ function App() {
               onViewPosition={viewPosition}
               initialSave={initialSave}
               onSaveSnapshot={handleSaveSnapshot}
+              onMoveIntent={(dx, dz, yaw, sprinting, dtMs) =>
+                multiplayer.sendMoveIntent(dx, dz, yaw, sprinting, dtMs)
+              }
+              reconcilePlayer={(x, z) => multiplayer.reconcileLocalPosition(x, z)}
             />
             <MapLabelsProjection host={mapLabelsHost} enabled={!loading && !mapOpen && !first && !intro.active} />
           </Canvas>

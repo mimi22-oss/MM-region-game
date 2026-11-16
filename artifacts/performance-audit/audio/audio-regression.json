@@ -5,7 +5,81 @@
     "emitters": 2,
     "contextState": "running"
   },
+  "decodedAll": {
+    "warehouse-drone": {
+      "duration": 16,
+      "channels": 1,
+      "sampleRate": 48000
+    },
+    "eerie-wind": {
+      "duration": 16,
+      "channels": 1,
+      "sampleRate": 48000
+    },
+    "chase-tension": {
+      "duration": 8,
+      "channels": 1,
+      "sampleRate": 48000
+    },
+    "spectral-cackle": {
+      "duration": 3,
+      "channels": 1,
+      "sampleRate": 48000
+    },
+    "spectral-shriek": {
+      "duration": 2,
+      "channels": 1,
+      "sampleRate": 48000
+    },
+    "ghost-whisper": {
+      "duration": 4,
+      "channels": 1,
+      "sampleRate": 48000
+    },
+    "rusted-door-creak": {
+      "duration": 3,
+      "channels": 1,
+      "sampleRate": 48000
+    },
+    "wood-cracks": {
+      "duration": 2,
+      "channels": 1,
+      "sampleRate": 48000
+    },
+    "distant-footsteps": {
+      "duration": 4,
+      "channels": 1,
+      "sampleRate": 48000
+    },
+    "horror-sting": {
+      "duration": 3,
+      "channels": 1,
+      "sampleRate": 48000
+    },
+    "ghost-grab-impact": {
+      "duration": 1,
+      "channels": 1,
+      "sampleRate": 48000
+    }
+  },
   "warehouseZone": true,
-  "noAudioFiles": true,
+  "chaseAndGrab": {
+    "c1": 1,
+    "c2": 1,
+    "grab": "opus"
+  },
+  "proceduralFallback": {
+    "cueMode": "procedural",
+    "bedMode": "procedural",
+    "sources": 6,
+    "opusSupported": false
+  },
+  "diagUi": {
+    "ctx": "running",
+    "enabled": "ON",
+    "opus": "supported",
+    "file": "events/horror-sting.opus",
+    "err": "none"
+  },
   "errors": []
 }

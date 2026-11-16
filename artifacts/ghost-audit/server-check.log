@@ -1,0 +1,4 @@
+
+> mm-region-game@1.0.0 server:check
+> tsc -p server/tsconfig.json
+

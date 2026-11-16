@@ -14,3 +14,5 @@ map/
 *.jks
 *.keystore
 android/keystore.properties
+artifacts/phase2-pipeline/
+pipelines/quarantine/

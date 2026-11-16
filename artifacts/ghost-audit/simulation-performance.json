@@ -1,0 +1,195 @@
+{
+  "note": "Pinned source, instrumented Node simulation only, flat walkable stub, snapshots allocated as production. No render/GPU/Android. Collision timer measures callback overhead, not full map collision cost.",
+  "results": [
+    {
+      "mode": "near-chasing-open",
+      "count": 1,
+      "frames": 200,
+      "simulationSeconds": 10,
+      "meanStepBatchMs": 0.024519500000000107,
+      "p95BatchMs": 0.06869999999997844,
+      "maxBatchMs": 1.7811999999999557,
+      "collisionMs": 0.4513000000004581,
+      "collisionChecks": 1969,
+      "pathMs": 0,
+      "pathCalls": 0,
+      "stalled": 0,
+      "displacement": 40.634999999999856,
+      "heapDeltaBytes": 1345736,
+      "stateCounts": {
+        "CHASING": 200
+      }
+    },
+    {
+      "mode": "near-chasing-open",
+      "count": 3,
+      "frames": 200,
+      "simulationSeconds": 10,
+      "meanStepBatchMs": 0.047185000000000345,
+      "p95BatchMs": 0.09199999999998454,
+      "maxBatchMs": 3.435200000000009,
+      "collisionMs": 0.8847000000015441,
+      "collisionChecks": 5919,
+      "pathMs": 0,
+      "pathCalls": 0,
+      "stalled": 0,
+      "displacement": 124.57999999999963,
+      "heapDeltaBytes": -2337544,
+      "stateCounts": {
+        "CHASING": 600
+      }
+    },
+    {
+      "mode": "near-chasing-open",
+      "count": 10,
+      "frames": 200,
+      "simulationSeconds": 10,
+      "meanStepBatchMs": 0.044407000000000495,
+      "p95BatchMs": 0.129099999999994,
+      "maxBatchMs": 1.9151999999999703,
+      "collisionMs": 1.8009000000041624,
+      "collisionChecks": 19726,
+      "pathMs": 0,
+      "pathCalls": 0,
+      "stalled": 0,
+      "displacement": 414.37499999999767,
+      "heapDeltaBytes": -1236832,
+      "stateCounts": {
+        "CHASING": 2000
+      }
+    },
+    {
+      "mode": "near-chasing-open",
+      "count": 50,
+      "frames": 200,
+      "simulationSeconds": 10,
+      "meanStepBatchMs": 0.14719449999999823,
+      "p95BatchMs": 0.4592000000000098,
+      "maxBatchMs": 0.6832000000000562,
+      "collisionMs": 6.76649999999222,
+      "collisionChecks": 98658,
+      "pathMs": 0,
+      "pathCalls": 0,
+      "stalled": 0,
+      "displacement": 2081.2100000002256,
+      "heapDeltaBytes": -440816,
+      "stateCounts": {
+        "CHASING": 10000
+      }
+    },
+    {
+      "mode": "near-chasing-open",
+      "count": 100,
+      "frames": 200,
+      "simulationSeconds": 10,
+      "meanStepBatchMs": 0.25452099999999916,
+      "p95BatchMs": 0.8862000000000307,
+      "maxBatchMs": 1.883799999999951,
+      "collisionMs": 13.529399999999669,
+      "collisionChecks": 197296,
+      "pathMs": 0,
+      "pathCalls": 0,
+      "stalled": 0,
+      "displacement": 4151.774999999788,
+      "heapDeltaBytes": 1830664,
+      "stateCounts": {
+        "CHASING": 20000
+      }
+    },
+    {
+      "mode": "far-suspended",
+      "count": 1,
+      "frames": 200,
+      "simulationSeconds": 10,
+      "meanStepBatchMs": 0.0019440000000025747,
+      "p95BatchMs": 0.0025000000000545697,
+      "maxBatchMs": 0.03440000000000509,
+      "collisionMs": 0,
+      "collisionChecks": 0,
+      "pathMs": 0,
+      "pathCalls": 0,
+      "stalled": 0,
+      "displacement": 0,
+      "heapDeltaBytes": 359360,
+      "stateCounts": {
+        "CHASING": 200
+      }
+    },
+    {
+      "mode": "far-suspended",
+      "count": 3,
+      "frames": 200,
+      "simulationSeconds": 10,
+      "meanStepBatchMs": 0.005241499999998496,
+      "p95BatchMs": 0.009500000000002728,
+      "maxBatchMs": 0.07019999999999982,
+      "collisionMs": 0,
+      "collisionChecks": 0,
+      "pathMs": 0,
+      "pathCalls": 0,
+      "stalled": 0,
+      "displacement": 0,
+      "heapDeltaBytes": 902800,
+      "stateCounts": {
+        "CHASING": 600
+      }
+    },
+    {
+      "mode": "far-suspended",
+      "count": 10,
+      "frames": 200,
+      "simulationSeconds": 10,
+      "meanStepBatchMs": 0.012433500000011009,
+      "p95BatchMs": 0.015100000000074942,
+      "maxBatchMs": 0.07590000000004693,
+      "collisionMs": 0,
+      "collisionChecks": 0,
+      "pathMs": 0,
+      "pathCalls": 0,
+      "stalled": 0,
+      "displacement": 0,
+      "heapDeltaBytes": 2813360,
+      "stateCounts": {
+        "CHASING": 2000
+      }
+    },
+    {
+      "mode": "far-suspended",
+      "count": 50,
+      "frames": 200,
+      "simulationSeconds": 10,
+      "meanStepBatchMs": 0.02850250000000358,
+      "p95BatchMs": 0.05349999999998545,
+      "maxBatchMs": 0.7339000000000624,
+      "collisionMs": 0,
+      "collisionChecks": 0,
+      "pathMs": 0,
+      "pathCalls": 0,
+      "stalled": 0,
+      "displacement": 0,
+      "heapDeltaBytes": -5805864,
+      "stateCounts": {
+        "CHASING": 10000
+      }
+    },
+    {
+      "mode": "far-suspended",
+      "count": 100,
+      "frames": 200,
+      "simulationSeconds": 10,
+      "meanStepBatchMs": 0.046116999999998715,
+      "p95BatchMs": 0.05719999999996617,
+      "maxBatchMs": 0.9096999999999298,
+      "collisionMs": 0,
+      "collisionChecks": 0,
+      "pathMs": 0,
+      "pathCalls": 0,
+      "stalled": 0,
+      "displacement": 0,
+      "heapDeltaBytes": 3640336,
+      "stateCounts": {
+        "CHASING": 20000
+      }
+    }
+  ]
+}

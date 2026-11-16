@@ -2,7 +2,9 @@ import { useEffect,useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { mobileQuality } from '../game/sceneBudget';
 import { startupDiagnostics } from '../game/startupDiagnostics';
-import { publishPerfSnapshot } from '../game/perfMetrics';
+import { publishPerfSnapshot, recordDprAdaptation, recordFrameSample } from '../game/perfMetrics';
+import { getStreamedChunkStats } from '../game/streamedChunkRegistry';
+import { sharedStreamedAssetPool } from '../game/streamedAssetPool';
 import { getRuntimePlatform } from '../services/platform';
 
 /** Adapt laptops as well as phones, keeping DOM labels and controls sharp. */
@@ -23,12 +25,15 @@ export function FrameBudget({paused=false,onDprChange}:{paused?:boolean;onDprCha
   const s=stats.current;
   const safeDt=Math.min(dt,.25);
   // Report actual elapsed frame time; clamping hides the stalls we are measuring.
+  recordFrameSample(dt*1000);
   s.perfSeconds+=dt;s.perfFrames++;
   if(s.perfSeconds>=1){
    const fps=Math.round((s.perfFrames/s.perfSeconds)*10)/10;
    const avgFrameMs=s.perfFrames>0?Math.round((s.perfSeconds*1000/s.perfFrames)*10)/10:0;
    const mem=(performance as unknown as {memory?:{usedJSHeapSize?:number}}).memory;
    const heapUsedMb=mem&&typeof mem.usedJSHeapSize==='number'?Math.round((mem.usedJSHeapSize/(1024*1024))*10)/10:null;
+   const streamed=getStreamedChunkStats();
+   const pool=sharedStreamedAssetPool.getStats();
    publishPerfSnapshot({
     fps,
     avgFrameMs,
@@ -40,6 +45,10 @@ export function FrameBudget({paused=false,onDprChange}:{paused?:boolean;onDprCha
     heapUsedMb,
     platform:getRuntimePlatform(),
     updatedAt:Date.now(),
+    residentChunks:streamed.residentChunks,
+    buildingColliders:streamed.buildingColliders,
+    poolGeometries:pool.geometriesActive,
+    poolMaterials:pool.materialsActive,
    });
    s.perfSeconds=0;s.perfFrames=0;
   }
@@ -49,6 +58,7 @@ export function FrameBudget({paused=false,onDprChange}:{paused?:boolean;onDprCha
   const dpr=gl.getPixelRatio();
   if(s.frames/s.seconds<(mobileQuality?26:40)&&dpr>.75){
    const next=dpr>1?1:dpr>.85?.85:.75;
+   recordDprAdaptation(next);
    // Canvas re-applies its dpr prop on parent renders. Keep that prop in sync
    // or walking HUD updates continually undo adaptation and resize the canvas.
    (onDprChange??setDpr)(next);

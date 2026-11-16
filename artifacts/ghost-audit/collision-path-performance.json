@@ -1,0 +1,17 @@
+{
+  "collision": {
+    "count": 10000,
+    "meanMs": 0.020826639999999685,
+    "p95Ms": 0.048199999999951615,
+    "maxMs": 0.7117999999999824
+  },
+  "valid": 6525,
+  "pathfinding": {
+    "count": 2000,
+    "meanMs": 0.004190200000001198,
+    "p95Ms": 0.00909999999998945,
+    "maxMs": 0.6091000000000122
+  },
+  "waypoints": 24,
+  "note": "Pinned authored warehouse map; Node microbenchmarks after warmup; queries include walkability+capsule/tree checks, not render/Android or per-frame whole scene costs."
+}

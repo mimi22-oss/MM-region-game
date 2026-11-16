@@ -4,6 +4,7 @@ import {resolve,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 
 const hash=value=>createHash('sha256').update(value).digest('hex').slice(0,20);
+const sha256=value=>createHash('sha256').update(value).digest('hex');
 const stable=value=>Array.isArray(value)?value.map(stable):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(k=>[k,stable(value[k])])):value;
 export const MAP_TILE_LIMITS={maxFeatures:256,maxBytes:262144,maxCoordinates:8192};
 
@@ -34,8 +35,9 @@ export function geometryMetrics(geometry){
 }
 
 /** Offline only: do not parse source collections in the game's main thread. */
-export function buildMapTiles(collection,{dataset,limits={}}={}){
+export function buildMapTiles(collection,{dataset,limits={},schemaVersion=1,regionId,authority='publisher-manifest'}={}){
  if(!/^[a-z0-9][a-z0-9-]{0,63}$/.test(dataset??''))throw new Error('Use a lowercase dataset slug');
+ if(schemaVersion!==1&&schemaVersion!==2)throw new Error(`Unsupported map tile schemaVersion: ${schemaVersion}`);
  if(collection?.type!=='FeatureCollection'||!Array.isArray(collection.features)||collection.crs)throw new Error('Expected WGS84 FeatureCollection without legacy crs');
  limits={...MAP_TILE_LIMITS,...limits};
  for(const [key,max] of Object.entries(MAP_TILE_LIMITS))if(!Number.isSafeInteger(limits[key])||limits[key]<1||limits[key]>max)throw new Error(`Invalid budget: ${key} (maximum ${max})`);
@@ -57,15 +59,37 @@ export function buildMapTiles(collection,{dataset,limits={}}={}){
   for(const i of items){for(let axis=0;axis<2;axis++){bbox[axis]=Math.min(bbox[axis],i.bbox[axis]);bbox[axis+2]=Math.max(bbox[axis+2],i.bbox[axis+2]);}coordinates+=i.coordinateCount;bytes+=i.bytes;}
   if(items.length<=limits.maxFeatures&&coordinates<=limits.maxCoordinates&&bytes<=limits.maxBytes){
    const text=wrap(items.map(i=>i.feature)),id=String(tiles.length).padStart(6,'0'),url=`tiles/${id}.${hash(text)}.json`;
-   files.set(url,text);tiles.push({id,url,bbox,bytes:Buffer.byteLength(text),featureCount:items.length,coordinateCount:coordinates});return;
+   files.set(url,text);
+   const tile={id,url,bbox,bytes:Buffer.byteLength(text),featureCount:items.length,coordinateCount:coordinates};
+   if(schemaVersion===2){
+    tile.sha256=sha256(text);
+    const deps=new Set();
+    for(const item of items){
+     const p=item.feature.properties;
+     if(p&&typeof p.assetId==='string'&&p.assetId)deps.add(p.assetId);
+    }
+    if(deps.size)tile.dependencies=[...deps].sort();
+   }
+   tiles.push(tile);return;
   }
   const axis=bbox[2]-bbox[0]>=bbox[3]-bbox[1]?0:1;
   items.sort((a,b)=>(a.bbox[axis]+a.bbox[axis+2])-(b.bbox[axis]+b.bbox[axis+2])||a.key.localeCompare(b.key));
   const mid=Math.floor(items.length/2);split(items.slice(0,mid));split(items.slice(mid));
  };
  split(items);
- const version=hash(JSON.stringify({dataset,limits,tiles}));
- return {manifest:{schemaVersion:1,dataset,version,crs:'EPSG:4326',featureCount:items.length,limits,tiles},files};
+ const version=hash(JSON.stringify({schemaVersion,dataset,regionId:regionId??null,limits,tiles}));
+ const manifest={
+  schemaVersion,
+  dataset,
+  ...(schemaVersion===2&&regionId?{regionId}:{}),
+  version,
+  crs:'EPSG:4326',
+  ...(schemaVersion===2?{authority}:{}),
+  featureCount:items.length,
+  limits,
+  tiles,
+ };
+ return {manifest,files};
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){

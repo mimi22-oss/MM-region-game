@@ -29,7 +29,7 @@ import {
 	kyarInnLakeStructures,
 } from './kyarinn/index.ts';
 
-import { kanbaleVillage, kanbaleDrain } from './kanbale/index.ts';
+import { kanbaleVillage, kanbaleDrain } from './kanbale/kanbaleMeta.ts';
 import { natmyaungVillage } from './natmyaung/index.ts';
 import {
 	siTharVillage,

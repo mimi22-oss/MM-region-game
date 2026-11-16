@@ -1,11 +1,15 @@
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { ward } from '../data/ward';
 import { kalayVillages } from '../data/villages';
 import { myotharCenterBuildings } from '../data/wards/myothar/center/myotharCenterBuildings';
 import { myotharCenterRoads } from '../data/wards/myothar/center/myotharCenterRoads';
-import { kanbaleRoads } from '../data/villages/kanbale/kanbaleRoads';
 import { kanbaleDrainSvgPath } from '../data/villages/kanbale/kanbaleDrain';
 import { natmyaungRoads } from '../data/villages/natmyaung/natmyaungRoads';
+import {
+  getCachedKanbaleStreamedData,
+  loadKanbaleStreamedData,
+  type KanbaleStreamedData,
+} from '../game/kanbaleTiledEditor';
 import {
 	kalayArea1Roads,
 	nankaleinCreek,
@@ -45,7 +49,7 @@ const yards = kalayArea1Buildings.map(b => {
 }).join('');
 
 const roads = [...ward.roads, ...kalayVillages.filter(v => v.id !== 'kanbale' && v.id !== 'natmyaung').flatMap(v => v.roads)].map(rectanglePath).join('');
-const polylines = [...myotharCenterRoads, ...kanbaleRoads, ...natmyaungRoads, ...kalayArea1Roads];
+const staticPolylines = [...myotharCenterRoads, ...natmyaungRoads, ...kalayArea1Roads];
 const trees = [...ward.trees, ...kalayVillages.flatMap(v => v.trees), ...kalayArea1Trees].map(t => `M${(t.x - 1.5).toFixed(1)},${t.z.toFixed(1)}a1.5,1.5 0 1,0 3,0a1.5,1.5 0 1,0 -3,0`).join('');
 
 const nankaleinCreekPath = nankaleinCreek.worldPoints
@@ -58,6 +62,30 @@ const teaShop = nankaleinTeaShopData;
 const teaShopRotDeg = (-teaShop.rotation * 180) / Math.PI;
 
 export const MapSelectionMap = memo(function MapSelectionMap() {
+	const [kanbaleData, setKanbaleData] = useState<KanbaleStreamedData | null>(() =>
+		getCachedKanbaleStreamedData(),
+	);
+
+	useEffect(() => {
+		let cancelled = false;
+		if (!kanbaleData) {
+			void loadKanbaleStreamedData()
+				.then((data) => {
+					if (!cancelled) setKanbaleData(data);
+				})
+				.catch(() => {
+					// Ignore offline fetch failure in 2D selector preview
+				});
+		}
+		return () => {
+			cancelled = true;
+		};
+	}, [kanbaleData]);
+
+	const polylines = kanbaleData
+		? [...staticPolylines, ...kanbaleData.roads]
+		: staticPolylines;
+
 	return (
 		<g pointerEvents="none" aria-hidden="true">
 			{/* ၁။ မြေပြင် အောက်ခံ (Ground Terrain) */}

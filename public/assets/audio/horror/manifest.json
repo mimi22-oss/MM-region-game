@@ -1,0 +1,109 @@
+{
+  "pack": "MM Region Game \u2014 Original Procedural Horror Audio",
+  "version": "1.0.0",
+  "codec": "Opus in Ogg",
+  "sampleRateHz": 48000,
+  "channels": 1,
+  "notes": "All sounds are newly synthesized, not recorded human voices. Use fallback codecs for incompatible browsers. Loops are approximate and may need playback crossfades.",
+  "assets": [
+    {
+      "id": "warehouse-drone",
+      "category": "ambience",
+      "file": "ambience/warehouse-drone.opus",
+      "durationSeconds": 16.0,
+      "loop": true,
+      "bitrateKbps": 48,
+      "sha256": "8da2e4f886b9500ab2b9eb91e02afbfa05677043177e8aa0b3b1a9c1a170446d"
+    },
+    {
+      "id": "eerie-wind",
+      "category": "ambience",
+      "file": "ambience/eerie-wind.opus",
+      "durationSeconds": 16.0,
+      "loop": true,
+      "bitrateKbps": 40,
+      "sha256": "cabedacc65d219fd141b29471ea5bec20154d6e53677ff8c59fcd48c60039c24"
+    },
+    {
+      "id": "chase-tension",
+      "category": "ambience",
+      "file": "ambience/chase-tension.opus",
+      "durationSeconds": 8.0,
+      "loop": true,
+      "bitrateKbps": 48,
+      "sha256": "fede11b6ff3e29f2333db62df82f5d2d9bdd5492429f7306cda04c1c7758812d"
+    },
+    {
+      "id": "spectral-cackle",
+      "category": "ghost",
+      "file": "ghost/spectral-cackle.opus",
+      "durationSeconds": 3.0,
+      "loop": false,
+      "bitrateKbps": 40,
+      "sha256": "ba3cc1cf378831931ef7d888344880f475e8d9b8c1e8997897929430830a19a7"
+    },
+    {
+      "id": "spectral-shriek",
+      "category": "ghost",
+      "file": "ghost/spectral-shriek.opus",
+      "durationSeconds": 2.0,
+      "loop": false,
+      "bitrateKbps": 48,
+      "sha256": "d1c8f5e294a36c6609685d7c6503e8dd091ef3908352c9119240b48fbca3dff5"
+    },
+    {
+      "id": "ghost-whisper",
+      "category": "ghost",
+      "file": "ghost/ghost-whisper.opus",
+      "durationSeconds": 4.0,
+      "loop": false,
+      "bitrateKbps": 32,
+      "sha256": "a8ec55f8e8dc74b567b53db26a54c787f8bbbf64024ca44462113288faeebdc1"
+    },
+    {
+      "id": "rusted-door-creak",
+      "category": "environment",
+      "file": "environment/rusted-door-creak.opus",
+      "durationSeconds": 3.0,
+      "loop": false,
+      "bitrateKbps": 40,
+      "sha256": "b9bb305ecc6d64df1e04de15cc3d2d1f2d17fb7448c3d2d046d4aa6a45ef1e8a"
+    },
+    {
+      "id": "wood-cracks",
+      "category": "environment",
+      "file": "environment/wood-cracks.opus",
+      "durationSeconds": 2.0,
+      "loop": false,
+      "bitrateKbps": 40,
+      "sha256": "bcdce9ea7d44e3d7be3086a2214afbc631b46ac38947550b8c5258ae23fbf1bf"
+    },
+    {
+      "id": "distant-footsteps",
+      "category": "environment",
+      "file": "environment/distant-footsteps.opus",
+      "durationSeconds": 4.0,
+      "loop": false,
+      "bitrateKbps": 32,
+      "sha256": "e2872f35333e8de871d0b54d71cd791e8ee0611f6658256ac515b21a67c561c0"
+    },
+    {
+      "id": "horror-sting",
+      "category": "events",
+      "file": "events/horror-sting.opus",
+      "durationSeconds": 3.0,
+      "loop": false,
+      "bitrateKbps": 48,
+      "sha256": "575e15093a7014f19a1b7278b2107f200c16cc120f42a2765b4266b4681d8c0c"
+    },
+    {
+      "id": "ghost-grab-impact",
+      "category": "events",
+      "file": "events/ghost-grab-impact.opus",
+      "durationSeconds": 1.0,
+      "loop": false,
+      "bitrateKbps": 40,
+      "sha256": "5d423981899432bf55080d89dd87e85f5da4aa4e0579a37016c7484b5f001733"
+    }
+  ]
+}

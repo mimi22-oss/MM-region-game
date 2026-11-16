@@ -1,0 +1,314 @@
+{
+  "cases": [
+    {
+      "id": "ghost-1",
+      "approach": {
+        "x": 68.07384530189086,
+        "z": 37.55597991468237,
+        "start": {
+          "state": "CHASING",
+          "homeProtected": false,
+          "playerKilled": false,
+          "chaseSpeed": 3.2567999999821176,
+          "attackEnabled": true,
+          "collisionEnabled": true,
+          "x": 49.78151383123486,
+          "z": 25.33343478825112,
+          "yaw": -0.9330857712253279,
+          "opacity": 1,
+          "visible": true,
+          "activeClip": {
+            "clipId": "flee_01",
+            "loop": true,
+            "speedScale": 0.9046666666616993
+          },
+          "currentWaypointId": "patrol-east-main-mouth",
+          "targetWaypointId": "patrol-east-main-mouth",
+          "scareTriggerCount": 0,
+          "crossingCount": 0,
+          "fallTriggerCount": 0,
+          "encounterCount": 1,
+          "chaseThreshold": 3,
+          "encounterCycleCount": 1,
+          "chaseTriggerCount": 1,
+          "grabCount": 0,
+          "playerInsideEncounterZone": true,
+          "audioCue": null,
+          "grabInteraction": {
+            "active": false,
+            "phase": "none",
+            "seq": 0,
+            "ghostX": 49.78151383123486,
+            "ghostZ": 25.33343478825112,
+            "fallProgress": 0
+          },
+          "distToPlayerM": 18.264615677552502,
+          "hasLineOfSight": true
+        }
+      },
+      "states": [
+        "CHASING",
+        "GRABBING"
+      ],
+      "moved": 20.41134180000928,
+      "grabbed": true,
+      "last": {
+        "state": "GRABBING",
+        "homeProtected": false,
+        "playerKilled": false,
+        "chaseSpeed": 0,
+        "attackEnabled": true,
+        "collisionEnabled": true,
+        "x": 66.75292428426332,
+        "z": 36.67336870832502,
+        "yaw": 0.9817477042468095,
+        "opacity": 1,
+        "visible": true,
+        "activeClip": {
+          "clipId": "freaky",
+          "loop": true,
+          "speedScale": 1.2
+        },
+        "currentWaypointId": "patrol-east-main-mouth",
+        "targetWaypointId": "patrol-east-main-mouth",
+        "scareTriggerCount": 0,
+        "crossingCount": 0,
+        "fallTriggerCount": 0,
+        "encounterCount": 2,
+        "chaseThreshold": 3,
+        "encounterCycleCount": 1,
+        "chaseTriggerCount": 2,
+        "grabCount": 1,
+        "playerInsideEncounterZone": true,
+        "audioCue": {
+          "seq": 1,
+          "cue": "grab-impact"
+        },
+        "grabInteraction": {
+          "active": true,
+          "phase": "neck-grab",
+          "seq": 1,
+          "ghostX": 66.75292428426332,
+          "ghostZ": 36.67336870832502,
+          "fallProgress": 0
+        },
+        "distToPlayerM": 1.5886581999907174,
+        "hasLineOfSight": true
+      }
+    },
+    {
+      "id": "ghost-2",
+      "approach": {
+        "x": 16.521,
+        "z": 58.69,
+        "start": {
+          "state": "HIDING",
+          "homeProtected": false,
+          "playerKilled": false,
+          "chaseSpeed": 0,
+          "attackEnabled": false,
+          "collisionEnabled": true,
+          "x": 12.021,
+          "z": 58.69,
+          "yaw": 2.3427427798066387,
+          "opacity": 1,
+          "visible": true,
+          "activeClip": {
+            "clipId": "dig",
+            "loop": true,
+            "speedScale": 1
+          },
+          "currentWaypointId": "hide-west-main-alley",
+          "targetWaypointId": "hide-west-main-alley",
+          "scareTriggerCount": 0,
+          "crossingCount": 0,
+          "fallTriggerCount": 0,
+          "encounterCount": 0,
+          "chaseThreshold": 3,
+          "encounterCycleCount": 1,
+          "chaseTriggerCount": 0,
+          "grabCount": 0,
+          "playerInsideEncounterZone": false,
+          "audioCue": null,
+          "grabInteraction": {
+            "active": false,
+            "phase": "none",
+            "seq": 0,
+            "ghostX": 12.021,
+            "ghostZ": 58.69,
+            "fallProgress": 0
+          },
+          "distToPlayerM": 59.90465984716311,
+          "hasLineOfSight": false
+        }
+      },
+      "states": [
+        "HIDING",
+        "CHASING",
+        "GRABBING"
+      ],
+      "moved": 2.8973920400032895,
+      "grabbed": true,
+      "last": {
+        "state": "GRABBING",
+        "homeProtected": false,
+        "playerKilled": false,
+        "chaseSpeed": 0,
+        "attackEnabled": true,
+        "collisionEnabled": true,
+        "x": 14.91839204000329,
+        "z": 58.69,
+        "yaw": 1.5707963267948966,
+        "opacity": 1,
+        "visible": true,
+        "activeClip": {
+          "clipId": "freaky",
+          "loop": true,
+          "speedScale": 1.2
+        },
+        "currentWaypointId": "hide-west-main-alley",
+        "targetWaypointId": "hide-west-main-alley",
+        "scareTriggerCount": 0,
+        "crossingCount": 0,
+        "fallTriggerCount": 0,
+        "encounterCount": 1,
+        "chaseThreshold": 3,
+        "encounterCycleCount": 1,
+        "chaseTriggerCount": 1,
+        "grabCount": 1,
+        "playerInsideEncounterZone": true,
+        "audioCue": {
+          "seq": 1,
+          "cue": "grab-impact"
+        },
+        "grabInteraction": {
+          "active": true,
+          "phase": "neck-grab",
+          "seq": 1,
+          "ghostX": 14.91839204000329,
+          "ghostZ": 58.69,
+          "fallProgress": 0
+        },
+        "distToPlayerM": 1.6026079599967105,
+        "hasLineOfSight": true
+      }
+    },
+    {
+      "id": "ghost-3",
+      "approach": {
+        "x": 59.76179532511287,
+        "z": 28.6108343236509,
+        "start": {
+          "state": "HIDING",
+          "homeProtected": false,
+          "playerKilled": false,
+          "chaseSpeed": 0,
+          "attackEnabled": false,
+          "collisionEnabled": true,
+          "x": 50.523,
+          "z": 24.784,
+          "yaw": -0.9330857712253272,
+          "opacity": 1,
+          "visible": true,
+          "activeClip": {
+            "clipId": "depressed",
+            "loop": true,
+            "speedScale": 1
+          },
+          "currentWaypointId": "patrol-east-main-mouth",
+          "targetWaypointId": "patrol-east-main-mouth",
+          "scareTriggerCount": 0,
+          "crossingCount": 0,
+          "fallTriggerCount": 0,
+          "encounterCount": 0,
+          "chaseThreshold": 5,
+          "encounterCycleCount": 1,
+          "chaseTriggerCount": 0,
+          "grabCount": 0,
+          "playerInsideEncounterZone": false,
+          "audioCue": null,
+          "grabInteraction": {
+            "active": false,
+            "phase": "none",
+            "seq": 0,
+            "ghostX": 50.523,
+            "ghostZ": 24.784,
+            "fallProgress": 0
+          },
+          "distToPlayerM": 48.0182552785917,
+          "hasLineOfSight": false
+        }
+      },
+      "states": [
+        "HIDING",
+        "OBSERVING_PLAYER",
+        "CHASING",
+        "GRABBING"
+      ],
+      "moved": 8.40702885000006,
+      "grabbed": true,
+      "last": {
+        "state": "GRABBING",
+        "homeProtected": false,
+        "playerKilled": false,
+        "chaseSpeed": 0,
+        "attackEnabled": true,
+        "collisionEnabled": true,
+        "x": 58.29008188374696,
+        "z": 28.001230656310362,
+        "yaw": 1.1780972450961757,
+        "opacity": 1,
+        "visible": true,
+        "activeClip": {
+          "clipId": "freaky",
+          "loop": true,
+          "speedScale": 1.2
+        },
+        "currentWaypointId": "patrol-east-main-mouth",
+        "targetWaypointId": "patrol-east-main-mouth",
+        "scareTriggerCount": 0,
+        "crossingCount": 0,
+        "fallTriggerCount": 0,
+        "encounterCount": 1,
+        "chaseThreshold": 5,
+        "encounterCycleCount": 1,
+        "chaseTriggerCount": 1,
+        "grabCount": 1,
+        "playerInsideEncounterZone": true,
+        "audioCue": {
+          "seq": 1,
+          "cue": "grab-impact"
+        },
+        "grabInteraction": {
+          "active": true,
+          "phase": "neck-grab",
+          "seq": 1,
+          "ghostX": 58.29008188374696,
+          "ghostZ": 28.001230656310362,
+          "fallProgress": 0
+        },
+        "distToPlayerM": 1.5929711499999404,
+        "hasLineOfSight": true
+      }
+    }
+  ],
+  "pausedUnchanged": true,
+  "registryReleased": true,
+  "audioFiles": [
+    "http://127.0.0.1:5199/assets/audio/horror/ghost/spectral-cackle.opus",
+    "http://127.0.0.1:5199/assets/audio/horror/ghost/spectral-shriek.opus",
+    "http://127.0.0.1:5199/assets/audio/horror/events/horror-sting.opus",
+    "http://127.0.0.1:5199/assets/audio/horror/ambience/chase-tension.opus",
+    "http://127.0.0.1:5199/assets/audio/horror/events/ghost-grab-impact.opus",
+    "http://127.0.0.1:5199/assets/audio/horror/ghost/ghost-whisper.opus"
+  ],
+  "errors": [],
+  "frameSample": {
+    "frames": 901,
+    "avgFps": 54.22875990080889,
+    "maxCalls": 3,
+    "maxTriangles": 57291,
+    "maxTextures": 6
+  },
+  "note": "Pinned source, real GhostNpc/GLB/mixer/AI, proxy nested player group, software WebGL. No full Player controller or physical Android."
+}

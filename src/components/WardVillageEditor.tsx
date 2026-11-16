@@ -1,5 +1,5 @@
 import {HOME_SAFE_ZONE_TAG,validHomePolygon} from '../game/playerHomeProtection';
-import React, { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent } from 'react';
 import {
 	aiLayoutPrompt,
 	downloadLayout,
@@ -15,6 +15,7 @@ import {
 	REGIONS,
 	regionCenter,
 	loadRegionLayout,
+	loadRegionLayoutAsync,
 	saveRegionLayout,
 	importGeoJSONFeatures,
 } from '../game/editorRegions';
@@ -33,7 +34,7 @@ import { AssetAiEditor } from './AssetAiEditor';
 import { AssetAiAdd } from './AssetAiAdd';
 import type { AssetEdit } from '../game/assetAiEdit';
 import { getBuiltInEdit } from '../game/builtInAssetEdits';
-import { getRegionAuthoredFeatures } from '../game/regionObjectsMigration';
+import { getRegionAuthoredFeaturesAsync } from '../game/regionObjectsMigration';
 import { deleteSelection, editVertex, expandGroups, extendLine, joinLines, removeVertex, transformSelection } from '../game/layoutTransforms';
 import {
 	canCreateMapFeature,
@@ -43,7 +44,10 @@ import {
 	canImportOrModifyRegion,
 	createMapAccessContext,
 	filterPermittedLayoutChanges,
+	getActiveAuthoritySession,
 	isOwnHomeFeature,
+	resolveCurrentMapAccessContext,
+	subscribeAuthoritySession,
 	type MapAccessContext,
 } from '../game/mapPermissions';
 
@@ -185,7 +189,15 @@ export default function WardVillageEditor({
 	onClose?: () => void;
 	accessContext?: MapAccessContext;
 }) {
-	const access = useMemo(() => accessContext ?? createMapAccessContext('admin'), [accessContext]);
+	const authority = useSyncExternalStore(
+		subscribeAuthoritySession,
+		getActiveAuthoritySession,
+		getActiveAuthoritySession,
+	);
+	const access = useMemo(
+		() => resolveCurrentMapAccessContext(accessContext ?? createMapAccessContext('admin')),
+		[accessContext, authority.mode, authority.serverRole],
+	);
 	const isAdmin = access.role === 'admin';
 	const [region, setRegion] = useState('myothar');
 	const [layout, setLayout] = useState<WorldLayout>(() => loadRegionLayout('myothar'));
@@ -718,24 +730,28 @@ export default function WardVillageEditor({
 		e.target.value = '';
 	};
 
-	const handleImportAuthoredObjects = () => {
+	const regionLoadSeqRef = useRef(0);
+
+	const handleImportAuthoredObjects = async () => {
 		if (!canImportOrModifyRegion(access)) {
 			setMessage('🔒 3D Objects Import ကို Admin ကသာ ပြုလုပ်နိုင်ပါသည်။');
 			return;
 		}
-		const authored = getRegionAuthoredFeatures(region);
+		const targetRegion = region;
+		const authored = await getRegionAuthoredFeaturesAsync(targetRegion);
 		if (!authored.length) {
-			setMessage(`No authored objects configured for region '${region}'.`);
+			setMessage(`No authored objects configured for region '${targetRegion}'.`);
 			return;
 		}
-		const existingIds = new Set(layout.features.map((f) => f.id));
+		const currentLayout = layoutRef.current;
+		const existingIds = new Set(currentLayout.features.map((f) => f.id));
 		const toAdd = authored.filter((f) => !existingIds.has(f.id));
 		if (!toAdd.length) {
-			setMessage(`All ${authored.length} authored objects for '${region}' are already in the layout.`);
+			setMessage(`All ${authored.length} authored objects for '${targetRegion}' are already in the layout.`);
 			return;
 		}
 		const restored = new Set(toAdd.map(f => f.metadata?.sourceId));
-		commit({ ...layout, features: [...layout.features, ...toAdd], deletedSourceIds: layout.deletedSourceIds?.filter(id => !restored.has(id)) });
+		commit({ ...currentLayout, features: [...currentLayout.features, ...toAdd], deletedSourceIds: currentLayout.deletedSourceIds?.filter(id => !restored.has(id)) });
 		setSelection(toAdd.map(f => f.id));
 		setMessage(`Imported ${toAdd.length} authored 3D objects into editable layout.`);
 	};
@@ -791,10 +807,8 @@ export default function WardVillageEditor({
 								onChange={(e) => {
 									const id = e.target.value;
 									if (dirty && !window.confirm('Save မလုပ်ရသေးသော အပြောင်းအလဲများကို ပယ်ဖျက်ပြီး ရွာပြောင်းမလား? Discard unsaved changes?')) return;
+									const seq = ++regionLoadSeqRef.current;
 									setRegion(id);
-									const next = loadRegionLayout(id);
-									updateLayout(next);
-									setSavedLayout(next);
 									setView((v) => ({ ...v, ...regionCenter(id, initialCenter), span: 1100 }));
 									setHistory([]);
 									setFuture([]);
@@ -802,7 +816,23 @@ export default function WardVillageEditor({
 									setDraft([]);
 									setExtendEnd(null);
 									setPlacingAssetId(null);
-									setMessage(`Loaded region '${id}'.`);
+									if (id === 'kanbale') {
+										setMessage(`Loading streamed chunks for '${id}'…`);
+										void loadRegionLayoutAsync(id).then((next) => {
+											if (regionLoadSeqRef.current !== seq) return;
+											updateLayout(next);
+											setSavedLayout(next);
+											setMessage(`Loaded region '${id}' (${next.features.length} features).`);
+										}).catch((err) => {
+											if (regionLoadSeqRef.current !== seq) return;
+											setMessage(`Failed to load '${id}': ${String(err)}`);
+										});
+									} else {
+										const next = loadRegionLayout(id);
+										updateLayout(next);
+										setSavedLayout(next);
+										setMessage(`Loaded region '${id}'.`);
+									}
 								}}
 							>
 								{REGIONS.map((r) => (

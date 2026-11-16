@@ -89,12 +89,37 @@ test('bot routes join lanes to highways, reject blocked crossings and reverse at
 });
 
 test('all villages have safe bot patrols with access to a main road',async()=>{
+ const { readFile } = await import('node:fs/promises');
+ const { join } = await import('node:path');
  const {ward}=await import('../src/data/ward.ts');const {kalayVillages}=await import('../src/data/villages/index.ts');const {canStand}=await import('../src/game/collision.ts');const {buildRoadGraph}=await import('../src/game/robotRoutes.ts');
+ const { decodeStreamedTileFeatures, registerStreamedChunk, unregisterStreamedChunk } = await import('../src/game/streamedChunkRegistry.ts');
+ const kanbaleCfg = JSON.parse(await readFile('src/data/kanbaleDataset.json', 'utf8'));
  for(const region of [{id:'myothar',roads:ward.roads},...kalayVillages]){
-  const clear=(x:number,z:number)=>[[0,0],[0.08,0],[-0.08,0],[0,0.08],[0,-0.08]].every(([dx,dz])=>canStand(x+dx,z+dz));
-  const graph=buildRoadGraph(region.roads,clear),lanes=graph.map((n,i)=>n.lane&&n.links.length?i:-1).filter(i=>i>=0);assert.ok(lanes.length>=8,region.id);
-  const seen=new Set(lanes),queue=[...lanes];for(let i=0;i<queue.length;i++)for(const j of graph[queue[i]].links)if(!seen.has(j)){seen.add(j);queue.push(j)}assert.ok([...seen].some(i=>!graph[i].lane),region.id+' connects to highway');
-  for(const n of graph)for(const j of n.links){const b=graph[j];for(let t=0;t<=1;t+=0.25)assert.ok(clear(n.x+(b.x-n.x)*t,n.z+(b.z-n.z)*t),region.id+' patrol edge is clear')}
+  let roads = region.roads;
+  const registeredKeys: string[] = [];
+  if (region.streamed && region.id === 'kanbale') {
+   const manifestPath = join('public', String(kanbaleCfg.manifest).replace(/^\/+/, ''));
+   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+   const tileRoot = join(manifestPath, '..');
+   const allPlots: typeof roads = [];
+   for (const t of manifest.tiles) {
+    const payload = JSON.parse(await readFile(join(tileRoot, t.url), 'utf8'));
+    const decoded = decodeStreamedTileFeatures(payload, kanbaleCfg.projection);
+    const key = `perf-test:kanbale:${t.id}`;
+    registeredKeys.push(key);
+    registerStreamedChunk(key, { regionId: 'kanbale', ...decoded });
+    allPlots.push(...decoded.roadPlots);
+   }
+   roads = allPlots;
+  }
+  try {
+   const clear=(x:number,z:number)=>[[0,0],[0.08,0],[-0.08,0],[0,0.08],[0,-0.08]].every(([dx,dz])=>canStand(x+dx,z+dz));
+   const graph=buildRoadGraph(roads,clear),lanes=graph.map((n,i)=>n.lane&&n.links.length?i:-1).filter(i=>i>=0);assert.ok(lanes.length>=8,region.id);
+   const seen=new Set(lanes),queue=[...lanes];for(let i=0;i<queue.length;i++)for(const j of graph[queue[i]].links)if(!seen.has(j)){seen.add(j);queue.push(j)}assert.ok([...seen].some(i=>!graph[i].lane),region.id+' connects to highway');
+   for(const n of graph)for(const j of n.links){const b=graph[j];for(let t=0;t<=1;t+=0.25)assert.ok(clear(n.x+(b.x-n.x)*t,n.z+(b.z-n.z)*t),region.id+' patrol edge is clear')}
+  } finally {
+   for (const k of registeredKeys) unregisterStreamedChunk(k);
+  }
  }
 });
 

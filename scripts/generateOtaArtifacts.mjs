@@ -4,6 +4,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import {
   APP_NATIVE_BASELINE,
+  buildContentPacks,
   classifyAssetCategory,
   DEFAULT_GITHUB_REPO,
   DEFAULT_OTA_BASE_URL,
@@ -203,6 +204,18 @@ for (const item of discovered) {
 }
 
 const generatedAt = new Date().toISOString();
+const contentPacks = await buildContentPacks(
+  manifestFiles,
+  {
+    version,
+    schemaVersion: APP_NATIVE_BASELINE.otaSchemaVersion,
+    minNativeVersion,
+    ...(maxNativeVersion ? { maxNativeVersion } : {}),
+    minAndroidVersionCode,
+  },
+  (buf) => sha256Hex(Buffer.from(buf)),
+);
+
 const assetManifest = validateAssetManifest({
   schemaVersion: APP_NATIVE_BASELINE.otaSchemaVersion,
   version,
@@ -214,10 +227,24 @@ const assetManifest = validateAssetManifest({
   minAndroidVersionCode,
   totalBytes,
   files: manifestFiles,
+  packs: contentPacks,
 });
 
 const assetManifestJson = `${JSON.stringify(assetManifest, null, 2)}\n`;
 const assetManifestSha256 = sha256Hex(Buffer.from(assetManifestJson, 'utf8'));
+
+const packsIndex = {
+  schemaVersion: APP_NATIVE_BASELINE.otaSchemaVersion,
+  version,
+  channel,
+  generatedAt,
+  assetManifestSha256,
+  minNativeVersion,
+  ...(maxNativeVersion ? { maxNativeVersion } : {}),
+  minAndroidVersionCode,
+  packs: contentPacks,
+};
+const packsIndexJson = `${JSON.stringify(packsIndex, null, 2)}\n`;
 
 const nativeCompat = {
   schemaVersion: APP_NATIVE_BASELINE.otaSchemaVersion,
@@ -248,6 +275,10 @@ zipEntries.push({
 zipEntries.push({
   relativePath: 'ota/native-compat.json',
   bytes: Buffer.from(nativeCompatJson, 'utf8'),
+});
+zipEntries.push({
+  relativePath: 'ota/packs.json',
+  bytes: Buffer.from(packsIndexJson, 'utf8'),
 });
 
 const zipBuffer = buildDeterministicZipBuffer(zipEntries);
@@ -287,16 +318,19 @@ fs.mkdirSync(outArtifactDir, { recursive: true });
 
 fs.writeFileSync(path.join(distOtaDir, 'asset-manifest.json'), assetManifestJson, 'utf8');
 fs.writeFileSync(path.join(distOtaDir, 'native-compat.json'), nativeCompatJson, 'utf8');
+fs.writeFileSync(path.join(distOtaDir, 'packs.json'), packsIndexJson, 'utf8');
 fs.writeFileSync(path.join(distOtaDir, `${channel}.json`), releaseDescriptorJson, 'utf8');
 
 fs.writeFileSync(path.join(outArtifactDir, zipFileName), zipBuffer);
 fs.writeFileSync(path.join(outArtifactDir, 'asset-manifest.json'), assetManifestJson, 'utf8');
 fs.writeFileSync(path.join(outArtifactDir, 'native-compat.json'), nativeCompatJson, 'utf8');
+fs.writeFileSync(path.join(outArtifactDir, 'packs.json'), packsIndexJson, 'utf8');
 fs.writeFileSync(path.join(outArtifactDir, `${channel}.json`), releaseDescriptorJson, 'utf8');
 
 const checksumLines = [
   `${bundleSha256}  ${zipFileName}`,
   `${assetManifestSha256}  asset-manifest.json`,
+  `${sha256Hex(Buffer.from(packsIndexJson, 'utf8'))}  packs.json`,
   `${sha256Hex(Buffer.from(releaseDescriptorJson, 'utf8'))}  ${channel}.json`,
   `${sha256Hex(Buffer.from(nativeCompatJson, 'utf8'))}  native-compat.json`,
 ].join('\n');
@@ -309,6 +343,12 @@ console.log(
       channel,
       fileCount: manifestFiles.length,
       uncompressedBytes: totalBytes,
+      packs: contentPacks.map((p) => ({
+        id: p.id,
+        fileCount: p.fileCount,
+        totalBytes: p.totalBytes,
+        required: p.required,
+      })),
       bundleZip: path.relative(rootDir, path.join(outArtifactDir, zipFileName)),
       bundleBytes: zipBuffer.length,
       bundleSha256,

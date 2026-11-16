@@ -10,6 +10,30 @@ export type AssetCategory =
   | 'app-bundle'
   | 'other-offline';
 
+export type ContentPackKind =
+  | 'core-shell'
+  | 'characters'
+  | 'motions'
+  | 'ghost-npc'
+  | 'map-region'
+  | 'media';
+
+export interface ContentPackDescriptor {
+  readonly id: string;
+  readonly name: string;
+  readonly kind: ContentPackKind;
+  readonly required: boolean;
+  readonly version: string;
+  readonly sha256: string;
+  readonly totalBytes: number;
+  readonly fileCount: number;
+  readonly paths: readonly string[];
+  readonly minNativeVersion: string;
+  readonly maxNativeVersion?: string;
+  readonly minAndroidVersionCode: number;
+  readonly schemaVersion: number;
+}
+
 export interface VersionedAssetEntry {
   readonly path: string;
   readonly sha256: string;
@@ -29,6 +53,7 @@ export interface VersionedAssetManifest {
   readonly minAndroidVersionCode: number;
   readonly totalBytes: number;
   readonly files: readonly VersionedAssetEntry[];
+  readonly packs?: readonly ContentPackDescriptor[];
 }
 
 export interface CapacitorDeltaEntry {
@@ -209,46 +234,53 @@ export function isVersionWithinBounds(version: string, minVersion: string, maxVe
   return true;
 }
 
-export function checkUpdateCompatibility(
-  release: ChannelReleaseDescriptor | null | undefined,
+function validateNativeCompatibilityGate(
+  descriptor: {
+    readonly version: string;
+    readonly schemaVersion: number;
+    readonly minNativeVersion: string;
+    readonly maxNativeVersion?: string;
+    readonly minAndroidVersionCode: number;
+    readonly requiresNativeApk?: boolean;
+  } | null | undefined,
   local: LocalNativeRuntimeInfo,
-  options?: { allowChannelSwitch?: boolean; allowLocalDevHttp?: boolean },
-): UpdateCompatibilityResult {
-  if (!release || typeof release !== 'object' || typeof release.version !== 'string') {
+  label: string,
+): UpdateCompatibilityResult | null {
+  if (!descriptor || typeof descriptor !== 'object' || typeof descriptor.version !== 'string') {
     return {
       compatible: false,
       updateAvailable: false,
       requiresNativeApk: false,
       reason: 'malformed_descriptor',
-      message: 'Update descriptor is missing version metadata.',
+      message: `${label} is missing version metadata.`,
     };
   }
 
   try {
-    parseSemver(release.version);
-    parseSemver(release.minNativeVersion);
-    if (release.maxNativeVersion) parseSemver(release.maxNativeVersion);
+    parseSemver(descriptor.version);
+    parseSemver(descriptor.minNativeVersion);
+    if (descriptor.maxNativeVersion) parseSemver(descriptor.maxNativeVersion);
   } catch {
     return {
       compatible: false,
       updateAvailable: false,
       requiresNativeApk: false,
       reason: 'malformed_descriptor',
-      message: `Invalid semantic version in update descriptor (${release.version}).`,
+      message: `Invalid semantic version in ${label.toLowerCase()} (${descriptor.version}).`,
     };
   }
 
-  if (release.schemaVersion !== local.schemaVersion) {
+  if (descriptor.schemaVersion !== local.schemaVersion) {
     return {
       compatible: false,
       updateAvailable: false,
       requiresNativeApk: true,
       reason: 'schema_mismatch',
-      message: `OTA schema v${release.schemaVersion} does not match app schema v${local.schemaVersion}; APK update required.`,
+      message: `OTA schema v${descriptor.schemaVersion} does not match app schema v${local.schemaVersion}; APK update required.`,
     };
   }
 
-  if (release.requiresNativeApk) {
+  if (descriptor.requiresNativeApk) {
     return {
       compatible: false,
       updateAvailable: false,
@@ -258,24 +290,37 @@ export function checkUpdateCompatibility(
     };
   }
 
-  if (!isVersionWithinBounds(local.nativeVersion, release.minNativeVersion, release.maxNativeVersion)) {
+  if (!isVersionWithinBounds(local.nativeVersion, descriptor.minNativeVersion, descriptor.maxNativeVersion)) {
     return {
       compatible: false,
       updateAvailable: false,
       requiresNativeApk: true,
       reason: 'requires_native_apk',
-      message: `Installed APK (${local.nativeVersion}) is outside supported native range ${release.minNativeVersion}${release.maxNativeVersion ? `–${release.maxNativeVersion}` : '+'}.`,
+      message: `Installed APK (${local.nativeVersion}) is outside supported native range ${descriptor.minNativeVersion}${descriptor.maxNativeVersion ? `–${descriptor.maxNativeVersion}` : '+'}.`,
     };
   }
 
-  if (local.androidVersionCode < release.minAndroidVersionCode) {
+  if (local.androidVersionCode < descriptor.minAndroidVersionCode) {
     return {
       compatible: false,
       updateAvailable: false,
       requiresNativeApk: true,
       reason: 'requires_native_apk',
-      message: `Installed Android versionCode ${local.androidVersionCode} is below required ${release.minAndroidVersionCode}.`,
+      message: `Installed Android versionCode ${local.androidVersionCode} is below required ${descriptor.minAndroidVersionCode}.`,
     };
+  }
+
+  return null;
+}
+
+export function checkUpdateCompatibility(
+  release: ChannelReleaseDescriptor | null | undefined,
+  local: LocalNativeRuntimeInfo,
+  options?: { allowChannelSwitch?: boolean; allowLocalDevHttp?: boolean },
+): UpdateCompatibilityResult {
+  const gateError = validateNativeCompatibilityGate(release, local, 'Update descriptor');
+  if (gateError || !release) {
+    return gateError!;
   }
 
   if (!isValidSha256(release.bundleSha256) || !isValidSha256(release.assetManifestSha256)) {
@@ -453,6 +498,95 @@ export function validateAssetManifest(raw: unknown): VersionedAssetManifest {
     );
   }
 
+  let normalizedPacks: ContentPackDescriptor[] | undefined;
+  if (candidate.packs !== undefined) {
+    if (!Array.isArray(candidate.packs)) {
+      throw new Error('Asset manifest packs must be an array');
+    }
+    const fileMap = new Map(normalizedFiles.map((f) => [f.path, f]));
+    const packIds = new Set<string>();
+    normalizedPacks = [];
+    for (const rawPack of candidate.packs) {
+      if (!rawPack || typeof rawPack !== 'object') {
+        throw new Error('Content pack entry must be an object');
+      }
+      const p = rawPack as Record<string, unknown>;
+      if (typeof p.id !== 'string' || !p.id.trim()) {
+        throw new Error('Content pack missing id');
+      }
+      const packId = p.id.trim();
+      if (packIds.has(packId)) {
+        throw new Error(`Duplicate content pack id: ${packId}`);
+      }
+      packIds.add(packId);
+      if (typeof p.name !== 'string' || !p.name.trim()) {
+        throw new Error(`Content pack "${packId}" missing name`);
+      }
+      if (!isValidSha256(p.sha256)) {
+        throw new Error(`Content pack "${packId}" has invalid SHA-256`);
+      }
+      if (typeof p.version !== 'string' || !p.version.trim()) {
+        throw new Error(`Content pack "${packId}" missing version`);
+      }
+      parseSemver(p.version);
+      if (!Array.isArray(p.paths) || p.paths.length === 0) {
+        throw new Error(`Content pack "${packId}" must include at least one path`);
+      }
+      const cleanPaths = p.paths.map((item) => {
+        if (typeof item !== 'string' || !item.trim()) {
+          throw new Error(`Content pack "${packId}" contains invalid path`);
+        }
+        const norm = normalizeAssetPath(item);
+        if (!fileMap.has(norm)) {
+          throw new Error(`Content pack "${packId}" references missing manifest file: ${norm}`);
+        }
+        return norm;
+      });
+      const expectedBytes = cleanPaths.reduce((acc, item) => acc + (fileMap.get(item)?.bytes ?? 0), 0);
+      const declaredPackBytes = typeof p.totalBytes === 'number' ? p.totalBytes : expectedBytes;
+      if (declaredPackBytes !== expectedBytes) {
+        throw new Error(
+          `Content pack "${packId}" totalBytes (${declaredPackBytes}) does not match file sum (${expectedBytes})`,
+        );
+      }
+      const declaredCount = typeof p.fileCount === 'number' ? p.fileCount : cleanPaths.length;
+      if (declaredCount !== cleanPaths.length) {
+        throw new Error(`Content pack "${packId}" fileCount (${declaredCount}) mismatch`);
+      }
+      const minNative =
+        typeof p.minNativeVersion === 'string' && p.minNativeVersion.trim()
+          ? p.minNativeVersion.trim()
+          : candidate.minNativeVersion.trim();
+      parseSemver(minNative);
+      if (p.maxNativeVersion !== undefined && typeof p.maxNativeVersion !== 'string') {
+        throw new Error(`Content pack "${packId}" maxNativeVersion must be a string`);
+      }
+      if (typeof p.maxNativeVersion === 'string') {
+        parseSemver(p.maxNativeVersion);
+      }
+      const minCode =
+        typeof p.minAndroidVersionCode === 'number' && Number.isInteger(p.minAndroidVersionCode)
+          ? p.minAndroidVersionCode
+          : candidate.minAndroidVersionCode;
+      normalizedPacks.push({
+        id: packId,
+        name: p.name.trim(),
+        kind: (typeof p.kind === 'string' ? p.kind : 'media') as ContentPackKind,
+        required: Boolean(p.required),
+        version: p.version.trim(),
+        sha256: p.sha256.toLowerCase(),
+        totalBytes: expectedBytes,
+        fileCount: cleanPaths.length,
+        paths: cleanPaths,
+        minNativeVersion: minNative,
+        ...(typeof p.maxNativeVersion === 'string' ? { maxNativeVersion: p.maxNativeVersion.trim() } : {}),
+        minAndroidVersionCode: minCode,
+        schemaVersion:
+          typeof p.schemaVersion === 'number' ? p.schemaVersion : candidate.schemaVersion,
+      });
+    }
+  }
+
   return {
     schemaVersion: candidate.schemaVersion,
     version: candidate.version.trim(),
@@ -464,6 +598,7 @@ export function validateAssetManifest(raw: unknown): VersionedAssetManifest {
     minAndroidVersionCode: candidate.minAndroidVersionCode,
     totalBytes: sumBytes,
     files: normalizedFiles,
+    ...(normalizedPacks ? { packs: normalizedPacks } : {}),
   };
 }
 
@@ -601,5 +736,209 @@ export function classifyChangedPathsForRelease(
     otaPaths,
     docsOrCiPaths,
     reasons,
+  };
+}
+
+function formatDatasetLabel(slug: string): string {
+  return slug
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+export function classifyContentPack(relativePath: string): {
+  packId: string;
+  name: string;
+  kind: ContentPackKind;
+  required: boolean;
+} {
+  const clean = normalizeAssetPath(relativePath);
+  const lower = clean.toLowerCase();
+
+  if (lower === 'models/ghost-woman.glb' || lower.startsWith('motions/ghost/')) {
+    return {
+      packId: 'npc-ghost',
+      name: 'Ghost NPC Pack',
+      kind: 'ghost-npc',
+      required: true,
+    };
+  }
+
+  if (
+    lower.startsWith('models/') ||
+    /^assets\/(boy|girl)-[a-z0-9_-]+\.glb$/.test(lower)
+  ) {
+    return {
+      packId: 'characters-core',
+      name: 'Characters & Avatars Pack',
+      kind: 'characters',
+      required: true,
+    };
+  }
+
+  if (lower.startsWith('motions/')) {
+    return {
+      packId: 'motions-shared',
+      name: 'Shared Motion Library',
+      kind: 'motions',
+      required: false,
+    };
+  }
+
+  if (lower.startsWith('map/')) {
+    const parts = lower.split('/');
+    const datasetSlug = parts.length >= 3 && parts[1] ? parts[1] : '';
+    if (datasetSlug) {
+      return {
+        packId: `region-${datasetSlug}`,
+        name: `${formatDatasetLabel(datasetSlug)} Map Pack`,
+        kind: 'map-region',
+        required: false,
+      };
+    }
+    return {
+      packId: 'map-shared',
+      name: 'Shared Map Pack',
+      kind: 'map-region',
+      required: true,
+    };
+  }
+
+  return {
+    packId: 'core-shell',
+    name: 'Core App Shell',
+    kind: 'core-shell',
+    required: true,
+  };
+}
+
+export function serializeContentPackDigestInput(entries: readonly VersionedAssetEntry[]): Uint8Array {
+  const sorted = [...entries].sort((a, b) => a.path.localeCompare(b.path));
+  const text = sorted.map((e) => `${e.path}:${e.sha256.toLowerCase()}:${e.bytes}`).join('\n');
+  return new TextEncoder().encode(text);
+}
+
+export async function buildContentPacks(
+  files: readonly VersionedAssetEntry[],
+  meta: {
+    version: string;
+    schemaVersion: number;
+    minNativeVersion: string;
+    maxNativeVersion?: string;
+    minAndroidVersionCode: number;
+  },
+  hashBytes: (bytes: Uint8Array) => Promise<string> | string,
+): Promise<ContentPackDescriptor[]> {
+  const buckets = new Map<
+    string,
+    {
+      meta: { packId: string; name: string; kind: ContentPackKind; required: boolean };
+      entries: VersionedAssetEntry[];
+      totalBytes: number;
+    }
+  >();
+
+  for (const entry of files) {
+    const info = classifyContentPack(entry.path);
+    let bucket = buckets.get(info.packId);
+    if (!bucket) {
+      bucket = { meta: info, entries: [], totalBytes: 0 };
+      buckets.set(info.packId, bucket);
+    }
+    bucket.entries.push(entry);
+    bucket.totalBytes += entry.bytes;
+  }
+
+  const order: Record<ContentPackKind, number> = {
+    'core-shell': 0,
+    characters: 1,
+    'ghost-npc': 2,
+    motions: 3,
+    'map-region': 4,
+    media: 5,
+  };
+
+  const sortedBuckets = Array.from(buckets.values()).sort((a, b) => {
+    const kindDiff = order[a.meta.kind] - order[b.meta.kind];
+    return kindDiff !== 0 ? kindDiff : a.meta.packId.localeCompare(b.meta.packId);
+  });
+
+  const descriptors: ContentPackDescriptor[] = [];
+  for (const bucket of sortedBuckets) {
+    const digestInput = serializeContentPackDigestInput(bucket.entries);
+    const sha256 = (await hashBytes(digestInput)).toLowerCase();
+    const paths = bucket.entries.map((e) => e.path).sort();
+    descriptors.push({
+      id: bucket.meta.packId,
+      name: bucket.meta.name,
+      kind: bucket.meta.kind,
+      required: bucket.meta.required,
+      version: meta.version,
+      sha256,
+      totalBytes: bucket.totalBytes,
+      fileCount: bucket.entries.length,
+      paths,
+      minNativeVersion: meta.minNativeVersion,
+      ...(meta.maxNativeVersion ? { maxNativeVersion: meta.maxNativeVersion } : {}),
+      minAndroidVersionCode: meta.minAndroidVersionCode,
+      schemaVersion: meta.schemaVersion,
+    });
+  }
+  return descriptors;
+}
+
+export function checkContentPackCompatibility(
+  pack: ContentPackDescriptor | null | undefined,
+  local: LocalNativeRuntimeInfo,
+  installedPackVersion?: string | null,
+): UpdateCompatibilityResult {
+  const gateError = validateNativeCompatibilityGate(
+    pack,
+    local,
+    pack?.id ? `Content pack "${pack.id}" descriptor` : 'Content pack descriptor',
+  );
+  if (gateError || !pack) {
+    return gateError!;
+  }
+
+  if (!isValidSha256(pack.sha256)) {
+    return {
+      compatible: false,
+      updateAvailable: false,
+      requiresNativeApk: false,
+      reason: 'invalid_checksum',
+      message: `Pack "${pack.id}" checksum failed SHA-256 format validation.`,
+    };
+  }
+
+  if (installedPackVersion) {
+    const cmp = compareSemver(pack.version, installedPackVersion);
+    if (cmp === 0) {
+      return {
+        compatible: true,
+        updateAvailable: false,
+        requiresNativeApk: false,
+        reason: 'up_to_date',
+        message: `Pack "${pack.name}" is already cached at v${installedPackVersion}.`,
+      };
+    }
+    if (cmp < 0) {
+      return {
+        compatible: false,
+        updateAvailable: false,
+        requiresNativeApk: false,
+        reason: 'downgrade_blocked',
+        message: `Refusing pack downgrade for "${pack.id}" (${installedPackVersion} -> ${pack.version}).`,
+      };
+    }
+  }
+
+  return {
+    compatible: true,
+    updateAvailable: true,
+    requiresNativeApk: false,
+    reason: 'compatible',
+    message: `Pack "${pack.name}" v${pack.version} compatible.`,
   };
 }

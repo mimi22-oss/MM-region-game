@@ -4,7 +4,7 @@ import { Group, Mesh } from 'three';
 import { RobotCharacter } from '../components/RobotCharacter';
 import { playerPalette } from '../game/robotAppearance';
 import { sceneGround } from '../game/groundSurface';
-import type { PresencePlayer } from '../../shared/network';
+import type { PresencePlayer, WorldSnapshotGhost } from '../../shared/network';
 import type { MultiplayerSession } from './session';
 
 const noRaycast = () => {};
@@ -30,8 +30,42 @@ const RemoteAvatar = memo(function RemoteAvatar({ player }: { player: PresencePl
   </group>;
 });
 
+const AuthoritativeGhostMarker = memo(function AuthoritativeGhostMarker({
+  ghost,
+}: {
+  ghost: WorldSnapshotGhost;
+}) {
+  const root = useRef<Group>(null);
+  useLayoutEffect(() => {
+    root.current?.traverse(object => { if (object instanceof Mesh) object.raycast = noRaycast; });
+  }, []);
+  useFrame(({ scene, clock }) => {
+    if (root.current) root.current.position.y = sceneGround(scene, clock.elapsedTime).height(ghost.x, ghost.z) + 0.05;
+  });
+  if (ghost.state === 'BANISHED') return null;
+  const ringColor = ghost.homeProtected ? '#22c55e' : ghost.state === 'GRABBING' || ghost.state === 'CHASING' ? '#ef4444' : '#c084fc';
+  return (
+    <group
+      ref={root}
+      name={`authoritative-ghost-${ghost.id}`}
+      position={[ghost.x, 0.05, ghost.z]}
+      rotation={[0, ghost.yaw, 0]}
+    >
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.7, 0.95, 24]} />
+        <meshBasicMaterial color={ringColor} />
+      </mesh>
+    </group>
+  );
+});
+
 export function RemotePlayers({ session }: { session: MultiplayerSession }) {
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot);
-  return <>{snapshot.players.filter(player => player.sessionId !== snapshot.sessionId)
-    .map(player => <RemoteAvatar key={player.sessionId} player={player} />)}</>;
+  return <>
+    {snapshot.players
+      .filter(player => player.sessionId !== snapshot.sessionId)
+      .map(player => <RemoteAvatar key={player.sessionId} player={player} />)}
+    {snapshot.mode === 'authoritative-v2' &&
+      snapshot.ghosts.map(ghost => <AuthoritativeGhostMarker key={ghost.id} ghost={ghost} />)}
+  </>;
 }

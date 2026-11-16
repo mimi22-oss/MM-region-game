@@ -30,3 +30,20 @@ export class TownPresenceState extends Schema {
   }
 }
 defineTypes(TownPresenceState, { players: { map: PlayerPresence } });
+
+export class TownAuthoritativeMetaState extends Schema {
+  declare protocolVersion: number;
+  declare serverTick: number;
+  declare onlineCount: number;
+  declare avgTickMs: number;
+  constructor() {
+    super();
+    Object.assign(this, { protocolVersion: 2, serverTick: 0, onlineCount: 0, avgTickMs: 0 });
+  }
+}
+defineTypes(TownAuthoritativeMetaState, {
+  protocolVersion: 'uint8',
+  serverTick: 'uint32',
+  onlineCount: 'uint16',
+  avgTickMs: 'float32',
+});

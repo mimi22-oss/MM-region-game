@@ -1,19 +1,38 @@
+import type { AuthorityOwner, RegionId, SpatialChunkManifestV2 } from '../../shared/contracts/index.ts';
+import { CONTRACT_SCHEMA_VERSIONS, parseAssetId, parseRegionId } from '../../shared/contracts/index.ts';
+
 /** Payloads are fetched JSON, never dynamic JS imports: eviction can release their memory. */
 export type TileBounds = [number, number, number, number];
-export type MapTile = {id:string;url:string;bbox:TileBounds;bytes:number;featureCount:number;coordinateCount:number};
-export type MapManifest = {schemaVersion:1;dataset:string;version:string;crs:'EPSG:4326';featureCount:number;limits:{maxFeatures:number;maxBytes:number;maxCoordinates:number};tiles:MapTile[]};
+export type MapTile = {id:string;url:string;bbox:TileBounds;bytes:number;featureCount:number;coordinateCount:number;sha256?:string;dependencies?:string[]};
+export type MapManifest = {
+ schemaVersion:1|2;
+ dataset:string;
+ regionId?:string;
+ version:string;
+ crs:'EPSG:4326';
+ authority?:AuthorityOwner;
+ featureCount:number;
+ limits:{maxFeatures:number;maxBytes:number;maxCoordinates:number};
+ tiles:MapTile[];
+};
 type Branch = {bbox:TileBounds;left?:Branch;right?:Branch;tile?:MapTile};
 const distance = (b:TileBounds,x:number,y:number) => Math.hypot(Math.max(b[0]-x,0,x-b[2]),Math.max(b[1]-y,0,y-b[3]));
 
 export function validateManifest(value:unknown):MapManifest {
  const m=value as MapManifest;
- if(!m||m.schemaVersion!==1||m.crs!=='EPSG:4326'||!m.dataset||!m.version||!Array.isArray(m.tiles)||!m.limits)throw new Error('Invalid map manifest');
+ if(!m||(m.schemaVersion!==1&&m.schemaVersion!==2)||m.crs!=='EPSG:4326'||!m.dataset||!m.version||!Array.isArray(m.tiles)||!m.limits)throw new Error('Invalid map manifest');
+ if(m.regionId!==undefined)parseRegionId(m.regionId);
  for(const n of [m.limits.maxBytes,m.limits.maxFeatures,m.limits.maxCoordinates])if(!Number.isSafeInteger(n)||n<=0)throw new Error('Invalid map limits');
  const ids=new Set<string>();let count=0;
  for(const t of m.tiles){
   if(!t.id||ids.has(t.id)||!/^tiles\/[a-zA-Z0-9._-]+\.json$/.test(t.url))throw new Error('Invalid or duplicate tile');
   ids.add(t.id);
   if(!Array.isArray(t.bbox)||t.bbox.length!==4||!t.bbox.every(Number.isFinite)||t.bbox[0]>t.bbox[2]||t.bbox[1]>t.bbox[3]||t.bbox[0]<-180||t.bbox[2]>180||t.bbox[1]<-90||t.bbox[3]>90)throw new Error('Invalid tile bounds');
+  if(t.sha256!==undefined&&!/^[0-9a-f]{64}$/.test(t.sha256))throw new Error('Invalid tile checksum');
+  if(t.dependencies!==undefined){
+   if(!Array.isArray(t.dependencies))throw new Error('Invalid tile dependencies');
+   t.dependencies.forEach(dep=>parseAssetId(dep));
+  }
   for(const [n,max] of [[t.bytes,m.limits.maxBytes],[t.featureCount,m.limits.maxFeatures],[t.coordinateCount,m.limits.maxCoordinates]])if(!Number.isSafeInteger(n)||n<1||n>max)throw new Error('Tile exceeds manifest budget');
   count+=t.featureCount;
  }
@@ -48,15 +67,34 @@ export class MapTileIndex {
  }
 }
 
+async function sha256HexBytes(chunks: readonly Uint8Array[], totalBytes: number): Promise<string | null> {
+ const subtle = globalThis.crypto?.subtle;
+ if (!subtle) return null;
+ const combined = new Uint8Array(totalBytes);
+ let offset = 0;
+ for (const chunk of chunks) {
+  combined.set(chunk, offset);
+  offset += chunk.byteLength;
+ }
+ const digest = new Uint8Array(await subtle.digest('SHA-256', combined));
+ let hex = '';
+ for (let i = 0; i < digest.length; i++) hex += digest[i].toString(16).padStart(2, '0');
+ return hex;
+}
+
 /** Bound the response BEFORE JSON.parse, even if Content-Length is absent/incorrect. */
-export async function fetchMapJson(url:string,signal:AbortSignal,maxBytes:number):Promise<unknown>{
+export async function fetchMapJson(url:string,signal:AbortSignal,maxBytes:number,expectedSha256?:string):Promise<unknown>{
  const response=await fetch(url,{signal});
  if(!response.ok)throw new Error(`Map download failed (${response.status})`);
  if(Number(response.headers.get('content-length'))>maxBytes){await response.body?.cancel();throw new Error('Map response exceeds byte budget');}
  if(!response.body)throw new Error('Map response has no body');
- const reader=response.body.getReader(),decoder=new TextDecoder();let bytes=0,text='';
- try{while(true){const next=await reader.read();if(next.done)break;bytes+=next.value.byteLength;if(bytes>maxBytes)throw new Error('Map response exceeds byte budget');text+=decoder.decode(next.value,{stream:true});}text+=decoder.decode();}
+ const reader=response.body.getReader(),decoder=new TextDecoder(),chunks:Uint8Array[]=[];let bytes=0,text='';
+ try{while(true){const next=await reader.read();if(next.done)break;bytes+=next.value.byteLength;if(bytes>maxBytes)throw new Error('Map response exceeds byte budget');if(expectedSha256)chunks.push(next.value);text+=decoder.decode(next.value,{stream:true});}text+=decoder.decode();}
  finally{await reader.cancel();reader.releaseLock();}
+ if(expectedSha256){
+  const actual=await sha256HexBytes(chunks,bytes);
+  if(actual&&actual!==expectedSha256)throw new Error('Map tile checksum mismatch');
+ }
  return JSON.parse(text);
 }
 
@@ -126,7 +164,36 @@ export async function openMapDataset(manifestUrl:string,signal:AbortSignal,mobil
  const manifest=validateManifest(await fetchMapJson(url.href,signal,4*1024*1024));
  if(manifest.limits.maxBytes>262144||manifest.limits.maxFeatures>256||manifest.limits.maxCoordinates>8192)throw new Error('Dataset exceeds client tile budget');
  const index=new MapTileIndex(manifest.tiles);
- const store=new MapTileStore(manifest,async (tile,requestSignal)=>await fetchMapJson(new URL(tile.url,url).href,requestSignal,tile.bytes) as MapTilePayload,
+ const store=new MapTileStore(manifest,async (tile,requestSignal)=>await fetchMapJson(new URL(tile.url,url).href,requestSignal,tile.bytes,tile.sha256) as MapTilePayload,
   {maxTiles:mobile?4:8,maxActive:mobile?2:4,maxBytes:mobile?1048576:2097152,concurrency:2});
  return {manifest,index,store};
+}
+
+/** Wraps legacy v1 map manifests in the Phase 1 v2 chunk contract without modifying checked-in JSON. */
+export function upgradeManifestToV2(
+ manifest: MapManifest,
+ opts?: { regionId?: string; authority?: Extract<AuthorityOwner, 'publisher-manifest' | 'local-offline'>; dependencies?: readonly string[] },
+): SpatialChunkManifestV2 {
+ validateManifest(manifest);
+ const regionId: RegionId | undefined = opts?.regionId ? parseRegionId(opts.regionId) : undefined;
+ const dependencies = (opts?.dependencies ?? []).map((id) => parseAssetId(id));
+ return {
+  schemaVersion: CONTRACT_SCHEMA_VERSIONS.worldChunk,
+  dataset: manifest.dataset,
+  ...(regionId ? { regionId } : {}),
+  version: manifest.version,
+  crs: manifest.crs,
+  featureCount: manifest.featureCount,
+  limits: { ...manifest.limits },
+  authority: opts?.authority ?? 'publisher-manifest',
+  tiles: manifest.tiles.map((t) => ({
+   id: t.id,
+   url: t.url,
+   bbox: [t.bbox[0], t.bbox[1], t.bbox[2], t.bbox[3]] as const,
+   bytes: t.bytes,
+   featureCount: t.featureCount,
+   coordinateCount: t.coordinateCount,
+   ...(dependencies.length > 0 ? { dependencies } : {}),
+  })),
+ };
 }

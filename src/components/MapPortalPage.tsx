@@ -1,9 +1,12 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import {
   canOpenMapTool,
   createMapAccessContext,
+  getActiveAuthoritySession,
   getStoredMapRole,
+  resolveCurrentMapAccessContext,
   setStoredMapRole,
+  subscribeAuthoritySession,
   type MapPortalTool,
   type MapRole,
 } from '../game/mapPermissions';
@@ -26,13 +29,18 @@ function readInitialTool(): MapPortalTool | null {
 export default function MapPortalPage() {
   const [role, setRole] = useState<MapRole>(() => getStoredMapRole());
   const [activeTool, setActiveTool] = useState<MapPortalTool | null>(() => readInitialTool());
-
-  const accessContext = useMemo(
-    () => createMapAccessContext(role, PLAYER_OWNER),
-    [role],
+  const authority = useSyncExternalStore(
+    subscribeAuthoritySession,
+    getActiveAuthoritySession,
+    getActiveAuthoritySession,
   );
 
-  const isAdmin = role === 'admin';
+  const accessContext = useMemo(
+    () => resolveCurrentMapAccessContext(createMapAccessContext(role, PLAYER_OWNER)),
+    [role, authority.mode, authority.serverRole],
+  );
+
+  const isAdmin = accessContext.role === 'admin';
   const canGeoJson = canOpenMapTool('geojson', accessContext);
 
   const handleSelectRole = (nextRole: MapRole) => {

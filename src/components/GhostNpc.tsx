@@ -55,6 +55,13 @@ import {
   releaseSharedGhostAudio,
   type GhostHorrorAudio,
 } from '../game/ghostAudio.ts';
+import {
+  acquireSharedHorrorMixer,
+  releaseSharedHorrorMixer,
+  type HorrorAudioMixer,
+} from '../game/audio/HorrorAudioMixer.ts';
+import { sharedHorrorAssetLoader } from '../game/audio/HorrorAudioAssetLoader.ts';
+import { setGhostAudioDiagnostics } from '../game/audio/horrorAudioDiagnostics.ts';
 import {gameAudio} from '../game/gameAudio.ts';
 import { sceneGround } from '../game/groundSurface.ts';
 import { getQualityPreset } from '../game/qualityPreset.ts';
@@ -371,6 +378,14 @@ export function GhostNpc({
 
   useEffect(() => {
     if (!loadArmed) return;
+    void sharedHorrorAssetLoader.preload([
+      'ghost-whisper',
+      'spectral-cackle',
+      'spectral-shriek',
+      'horror-sting',
+      'chase-tension',
+      'ghost-grab-impact',
+    ]);
     let live = true;
     loadGhostModelOnce()
       .then((gltf) => {
@@ -434,6 +449,7 @@ function LoadedGhostNpc({
     materials: Material[];
     ai: GhostAiController;
     audio: GhostHorrorAudio;
+    mixerAudio: HorrorAudioMixer;
     y: number;
     grounded: boolean;
     groundTimer: number;
@@ -441,6 +457,13 @@ function LoadedGhostNpc({
     lastAppliedOpacity: number;
     lastAudioSeq: number;
     lastSafetyState:string;
+    lastAiState: string;
+    audioClockSec: number;
+    lastStingAt: number;
+    lastIdleChatterAt: number;
+    lastNearThreatAt: number;
+    lastGrabImpactSeq: number;
+    lastClipCueAt: number;
     lastKillSeq:number;
     grabPose:ReturnType<typeof createGhostGrabPose>;
     audioSync:HorrorAnimationSync;
@@ -574,6 +597,7 @@ function LoadedGhostNpc({
     };
 
     const audio = acquireSharedGhostAudio();
+    const mixerAudio = acquireSharedHorrorMixer();
     const detachAudio=gameAudio.attach();
     const unlockAudio = (event:Event) => {if(event.isTrusted)audio.unlock();};
     if (typeof document !== 'undefined') {
@@ -588,6 +612,11 @@ function LoadedGhostNpc({
       if (typeof document !== 'undefined') {
         document.removeEventListener('pointerdown', unlockAudio);
         document.removeEventListener('keydown', unlockAudio);
+      }
+      mixerAudio.releaseOwner(ghostId);
+      releaseSharedHorrorMixer();
+      if (ghostId === 'ghost-1') {
+        setGhostAudioDiagnostics(null);
       }
       audio.release(ghostId);detachAudio();
       releaseSharedGhostAudio();
@@ -608,6 +637,7 @@ function LoadedGhostNpc({
       materials,
       ai,
       audio,
+      mixerAudio,
       y: 0,
       grounded: false,
       groundTimer: 0.4,
@@ -615,6 +645,13 @@ function LoadedGhostNpc({
       lastAppliedOpacity: -1,
       lastAudioSeq: 0,
       lastSafetyState:'',
+      lastAiState: '',
+      audioClockSec: 0,
+      lastStingAt: -Infinity,
+      lastIdleChatterAt: 2,
+      lastNearThreatAt: -Infinity,
+      lastGrabImpactSeq: -1,
+      lastClipCueAt: -Infinity,
       lastKillSeq:-1,
       grabPose:createGhostGrabPose(cloned),
       audioSync:new HorrorAnimationSync(),
@@ -725,19 +762,109 @@ function LoadedGhostNpc({
     );
 
     root.userData.ghostAttackEnabled=snap.attackEnabled;root.userData.ghostCollisionEnabled=snap.collisionEnabled;
+    rig.audioClockSec += dt;
     const retreating=snap.state==='RETREAT'||snap.state==='FADE_OUT';
-    if(retreating&&rig.lastSafetyState!==snap.state)rig.audio.stop(ghostId);
+    const despawned=snap.state==='DESPAWNING'||snap.state==='DORMANT';
+    if((retreating&&rig.lastSafetyState!==snap.state)||snap.state==='DORMANT'||!shouldRun){
+     rig.audio.stop(ghostId);
+     rig.mixerAudio.stopOwner(ghostId);
+    }
     rig.lastSafetyState=snap.state;
-    const audible=soundRef.current.enabled&&shouldRun&&snap.visible&&snap.distToPlayerM<=65;
-    rig.audio.position(ghostId,snap.x,rig.y+1.5,snap.z,audible);
-    rig.audio.sustain(ghostId,'ghost_ambient',audible&&!retreating&&snap.state!=='CHASING');
-    rig.audio.sustain(ghostId,'ghost_chase_tension',audible&&snap.state==='CHASING');
+    const audible=soundRef.current.enabled&&soundRef.current.volume>0&&shouldRun&&snap.visible&&snap.distToPlayerM<=65&&!document.hidden;
+    const ghostPos={x:snap.x,y:rig.y+1.5,z:snap.z};
+    rig.audio.position(ghostId,ghostPos.x,ghostPos.y,ghostPos.z,audible);
+    rig.mixerAudio.positionOwner(ghostId,ghostPos.x,ghostPos.y,ghostPos.z,audible,soundRef.current.volume);
+    rig.audio.sustain(ghostId,'ghost_ambient',audible&&!retreating&&!despawned&&snap.state!=='CHASING');
+
+    // CHASING: start chase tension once and scale intensity as ghost approaches; fade out on retreat/despawn.
+    const chasingActive=audible&&snap.state==='CHASING';
+    if(chasingActive){
+     const chaseIntensity=Math.max(0.28,Math.min(1,1-(snap.distToPlayerM-3)/30))*(snap.homeProtected?0.15:1);
+     rig.mixerAudio.setChaseTension(ghostId,true,chaseIntensity,dt);
+    }else{
+     rig.mixerAudio.setChaseTension(ghostId,false,0,dt);
+    }
+
+    // DETECTED: brief horror sting once on detection transition with cooldown.
+    const enteredDetected=(snap.state==='OBSERVING_PLAYER'||snap.state==='SCARING')&&rig.lastAiState!=='OBSERVING_PLAYER'&&rig.lastAiState!=='SCARING';
+    if(audible&&enteredDetected&&rig.audioClockSec-rig.lastStingAt>=10){
+     rig.lastStingAt=rig.audioClockSec;
+     rig.mixerAudio.playCue({assetId:'horror-sting',fallbackPreset:'ghost_warning',bus:'horrorEvents',owner:ghostId,position:ghostPos,volume:0.78});
+    }
+
+    // GRABBING: play grab impact strictly once per unique grab interaction seq.
+    if(audible&&snap.state==='GRABBING'&&snap.grabInteraction.phase==='neck-grab'&&snap.grabInteraction.seq!==rig.lastGrabImpactSeq){
+     rig.lastGrabImpactSeq=snap.grabInteraction.seq;
+     rig.mixerAudio.playCue({assetId:'ghost-grab-impact',fallbackPreset:'ghost_grab',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.92});
+    }
+
+    // Existing Ghost AI discrete cue events (scream / evil-laugh / flee-scare).
+    if(snap.audioCue&&snap.audioCue.seq!==rig.lastAudioSeq){
+     rig.lastAudioSeq=snap.audioCue.seq;
+     if(audible){
+      if(snap.audioCue.cue==='scream'){
+       rig.lastClipCueAt=rig.audioClockSec;
+       rig.mixerAudio.playCue({assetId:'spectral-shriek',fallbackPreset:'ghost_scream',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.88});
+      }else if(snap.audioCue.cue==='evil-laugh'){
+       rig.lastClipCueAt=rig.audioClockSec;
+       rig.mixerAudio.playCue({assetId:'spectral-cackle',fallbackPreset:'ghost_evil_laugh',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.85});
+      }else if(snap.audioCue.cue==='flee-scare'){
+       rig.mixerAudio.playCue({assetId:'horror-sting',fallbackPreset:'ghost_warning',bus:'horrorEvents',owner:ghostId,volume:0.78});
+      }
+     }
+    }
+
+    // NEAR PLAYER: spatial shriek or cackle with cooldown when closing distance.
+    if(audible&&!retreating&&snap.distToPlayerM<=14&&(snap.state==='CHASING'||snap.state==='OBSERVING_PLAYER')&&rig.audioClockSec-rig.lastNearThreatAt>=8.5){
+     rig.lastNearThreatAt=rig.audioClockSec;
+     const nearAsset=snap.state==='CHASING'?'spectral-shriek':'spectral-cackle';
+     rig.mixerAudio.playCue({assetId:nearAsset,fallbackPreset:nearAsset==='spectral-shriek'?'ghost_scream':'ghost_evil_laugh',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.8});
+    }
+
+    // IDLE: occasional distant whisper or spectral cackle while patrolling/hiding nearby.
+    const isIdlePatrol=snap.state==='HIDING'||snap.state==='WANDERING'||snap.state==='ROAD_CROSSING'||snap.state==='COOLDOWN'||snap.state==='RETURNING_HOME';
+    if(audible&&!retreating&&isIdlePatrol&&rig.audioClockSec-rig.lastIdleChatterAt>=15){
+     rig.lastIdleChatterAt=rig.audioClockSec;
+     const idleAsset=snap.distToPlayerM<=36&&Math.floor(rig.audioClockSec)%3===0?'spectral-cackle':'ghost-whisper';
+     rig.mixerAudio.playCue({assetId:idleAsset,fallbackPreset:idleAsset==='spectral-cackle'?'ghost_evil_laugh':'ghost_whisper',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.56});
+    }
+
     const actualClip=rig.currentClipKey.split(':')[0];
     const clip=cachedGhostClips.get(actualClip as GhostClipId);
     const action=clip?rig.mixer.existingAction(clip):null;
     rig.audioSync.step({state:snap.state,clip:action?.isRunning()&&(!retreating||actualClip==='depressed')?actualClip:'',clipTime:action?.time??0,clipDuration:clip?.duration??0,
       moving:snap.state==='FLEEING'||snap.state==='CHASING'||snap.state==='WANDERING'||snap.state==='ROAD_CROSSING'||snap.state==='RETURNING_HOME',
-      grabPhase:snap.grabInteraction.phase,visible:snap.visible},preset=>{if(audible)rig.audio.play(preset,1,ghostId);});
+      grabPhase:snap.grabInteraction.phase,visible:snap.visible},preset=>{
+      if(!audible)return;
+      if(preset==='ghost_grab')return;
+      if((preset==='ghost_scream'||preset==='ghost_evil_laugh')&&rig.audioClockSec-rig.lastClipCueAt<0.35)return;
+      if(preset==='ghost_footsteps'){
+       rig.mixerAudio.playCue({assetId:'distant-footsteps',fallbackPreset:'ghost_footsteps',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.42});
+       return;
+      }
+      if(preset==='ghost_whisper'){
+       rig.mixerAudio.playCue({assetId:'ghost-whisper',fallbackPreset:'ghost_whisper',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.65});
+       return;
+      }
+      if(preset==='ghost_warning'){
+       rig.mixerAudio.playCue({assetId:'horror-sting',fallbackPreset:'ghost_warning',bus:'horrorEvents',owner:ghostId,volume:0.75});
+       return;
+      }
+      if(preset==='ghost_scream'){
+       rig.mixerAudio.playCue({assetId:'spectral-shriek',fallbackPreset:'ghost_scream',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.86});
+       return;
+      }
+      if(preset==='ghost_evil_laugh'){
+       rig.mixerAudio.playCue({assetId:'spectral-cackle',fallbackPreset:'ghost_evil_laugh',bus:'ghostEffects',owner:ghostId,position:ghostPos,volume:0.82});
+       return;
+      }
+      rig.audio.play(preset,1,ghostId);
+     });
+
+    if(snap.state==='CHASING'||snap.state==='GRABBING'||snap.state==='SCARING'||snap.state==='OBSERVING_PLAYER'||ghostId==='ghost-1'){
+     setGhostAudioDiagnostics({ghostId,state:snap.state,distToPlayerM:Math.round(snap.distToPlayerM*10)/10,chaseActive:chasingActive});
+    }
+    rig.lastAiState=snap.state;
 
     const withinVis = snap.visible && snap.distToPlayerM <= DEFAULT_GHOST_AI_CONFIG.visibleDistanceM;
     root.visible = withinVis;

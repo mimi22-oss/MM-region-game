@@ -1,0 +1,1110 @@
+{
+  "final": {
+    "body": "🔊 Audio: running\n♥\n♥\n♥\n♥\n♥\n♥\n▲\n▶\n▼\n◀\nခုန်\nပြေး\nစတင်မယ်\nလမ်းညွှန်",
+    "ghosts": [
+      {
+        "ghostId": "ghost-1",
+        "zoneId": "warehouse-row",
+        "snapshot": {
+          "state": "CHASING",
+          "homeProtected": false,
+          "playerKilled": false,
+          "chaseSpeed": 0.30000000000000004,
+          "attackEnabled": true,
+          "collisionEnabled": true,
+          "x": 50.51094808649471,
+          "z": 24.792930362862776,
+          "yaw": -0.9330857712253272,
+          "opacity": 1,
+          "visible": true,
+          "activeClip": {
+            "clipId": "flee_02",
+            "loop": true,
+            "speedScale": 0.25
+          },
+          "currentWaypointId": "patrol-east-main-mouth",
+          "targetWaypointId": "patrol-east-main-mouth",
+          "scareTriggerCount": 0,
+          "crossingCount": 0,
+          "fallTriggerCount": 0,
+          "encounterCount": 1,
+          "chaseThreshold": 5,
+          "encounterCycleCount": 1,
+          "chaseTriggerCount": 1,
+          "grabCount": 0,
+          "playerInsideEncounterZone": true,
+          "audioCue": null,
+          "grabInteraction": {
+            "active": false,
+            "phase": "none",
+            "seq": 0,
+            "ghostX": 50.51094808649471,
+            "ghostZ": 24.792930362862776,
+            "fallProgress": 0
+          },
+          "distToPlayerM": 19.134720797544976,
+          "hasLineOfSight": true
+        }
+      }
+    ],
+    "startup": {
+      "sessionId": "1794809524841-8hy17",
+      "ready": true,
+      "firstFrameMs": 12200.1,
+      "timeToReadyMs": 27119.1,
+      "contextLostCount": 0,
+      "contextRestoredCount": 0,
+      "lastCompletedStage": "game-ready",
+      "lastCrash": null,
+      "checkpoints": [
+        {
+          "stage": "app-boot",
+          "timestampMs": 7327.1,
+          "heapUsedMb": 43.8,
+          "details": {
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+            "viewport": {
+              "width": 640,
+              "height": 480,
+              "dpr": 1
+            },
+            "hardwareConcurrency": 8,
+            "mobile": false
+          }
+        },
+        {
+          "stage": "map-parse",
+          "timestampMs": 7435.4,
+          "heapUsedMb": 47.8,
+          "details": {
+            "regionCount": 11
+          }
+        },
+        {
+          "stage": "lighting-init",
+          "timestampMs": 10738.3,
+          "heapUsedMb": 81.3,
+          "details": {
+            "shadows": false
+          }
+        },
+        {
+          "stage": "canvas-init",
+          "timestampMs": 10774.2,
+          "heapUsedMb": 81.3
+        },
+        {
+          "stage": "webgl-created",
+          "timestampMs": 10797.4,
+          "heapUsedMb": 83.5,
+          "details": {
+            "dpr": 1,
+            "maxAnisotropy": 16
+          }
+        },
+        {
+          "stage": "map-data-load",
+          "timestampMs": 10804.8,
+          "heapUsedMb": 83.5,
+          "details": {
+            "regionId": "myothar",
+            "name": "မြို့သာရပ်ကွက် · ကလေးမြို့"
+          }
+        },
+        {
+          "stage": "first-frame",
+          "timestampMs": 12200.1,
+          "heapUsedMb": 93.4,
+          "details": {
+            "calls": 0,
+            "triangles": 0
+          }
+        },
+        {
+          "stage": "texture-load",
+          "timestampMs": 14063.3,
+          "heapUsedMb": 119.7,
+          "details": {
+            "regionId": "myothar"
+          }
+        },
+        {
+          "stage": "building-geom",
+          "timestampMs": 23427.7,
+          "heapUsedMb": 354.4,
+          "details": {
+            "regionId": "myothar"
+          }
+        },
+        {
+          "stage": "game-ready",
+          "timestampMs": 27119.1,
+          "heapUsedMb": 397.6
+        }
+      ]
+    },
+    "gameOver": false
+  },
+  "extra": {
+    "zones": [
+      {
+        "ghostId": "ghost-1",
+        "zoneId": "warehouse-row",
+        "zoneName": "သိုလှောင်ရုံတန်း · မြို့သာ နယ်မြေ (၅)",
+        "x": 35.149,
+        "z": 36.176
+      },
+      {
+        "ghostId": "ghost-2",
+        "zoneId": "monastery-pitch-edge",
+        "zoneName": "ဘုန်းကြီးကျောင်းနှင့် ဘောလုံးကွင်းဘေး · နယ်မြေ (၅)",
+        "x": 141.421,
+        "z": -70.711
+      },
+      {
+        "ghostId": "ghost-3",
+        "zoneId": "rice-mill-south",
+        "zoneName": "ဆန်စက်ရုံဝင်းနှင့် တောင်ဘက်လမ်း · နယ်မြေ (၅)",
+        "x": 262.337,
+        "z": 184.555
+      }
+    ],
+    "perf": {
+      "fps": 1.7,
+      "avgFrameMs": 574.8,
+      "dpr": 0.85,
+      "drawCalls": 1737,
+      "triangles": 639015,
+      "geometries": 1542,
+      "textures": 6,
+      "heapUsedMb": 418.7,
+      "platform": "web",
+      "updatedAt": 1794809564162,
+      "residentChunks": 0,
+      "buildingColliders": 0,
+      "poolGeometries": 0,
+      "poolMaterials": 0,
+      "minFps": 0.4,
+      "p1Fps": 0.4,
+      "p5Fps": 0.4,
+      "p50Fps": 1.5,
+      "p95FrameMs": 1228,
+      "p99FrameMs": 1491.9,
+      "maxFrameMs": 2772.3,
+      "sampleCount": 11
+    },
+    "audio": {
+      "audioContextState": "running",
+      "soundEnabled": true,
+      "masterVolume": 0.3,
+      "activeBuses": {
+        "ambience": {
+          "gain": 1,
+          "activeVoices": 2
+        },
+        "ghostEffects": {
+          "gain": 0.7,
+          "activeVoices": 0
+        },
+        "horrorEvents": {
+          "gain": 1,
+          "activeVoices": 0
+        },
+        "chaseMusic": {
+          "gain": 1,
+          "activeVoices": 1
+        }
+      },
+      "warehouseZoneStatus": {
+        "band": "encounter",
+        "inZone": true,
+        "preloaded": true,
+        "distanceM": 0,
+        "period": "night",
+        "bedMode": "opus",
+        "sources": 2,
+        "nodes": 4,
+        "disposed": false
+      },
+      "currentGhostState": {
+        "ghostId": "ghost-1",
+        "state": "CHASING",
+        "distToPlayerM": 19.1,
+        "chaseActive": true
+      },
+      "currentAudioFile": "ambience/chase-tension.opus",
+      "lastPlaybackError": null,
+      "opusSupport": {
+        "supported": true,
+        "oggOpus": "probably",
+        "rawOpus": "",
+        "mediaSourceOpus": true,
+        "runtimeDecodeOk": true,
+        "method": "decode-verified",
+        "detail": "Verified via decodeAudioData (ambience/warehouse-drone.opus)"
+      }
+    }
+  },
+  "trace": [
+    {
+      "body": "MM Region Game"
+    },
+    {
+      "body": "MM Region Game"
+    },
+    {
+      "body": "MM Region Game"
+    },
+    {
+      "body": "🔊 Audio: locked\nစတင်မယ်\nလမ်းညွှန်\nမြို့သာရပ်ကွက်",
+      "startup": {
+        "sessionId": "1794809524841-8hy17",
+        "ready": false,
+        "firstFrameMs": null,
+        "timeToReadyMs": null,
+        "contextLostCount": 0,
+        "contextRestoredCount": 0,
+        "lastCompletedStage": "map-parse",
+        "lastCrash": null,
+        "checkpoints": [
+          {
+            "stage": "app-boot",
+            "timestampMs": 7327.1,
+            "heapUsedMb": 43.8,
+            "details": {
+              "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+              "viewport": {
+                "width": 640,
+                "height": 480,
+                "dpr": 1
+              },
+              "hardwareConcurrency": 8,
+              "mobile": false
+            }
+          },
+          {
+            "stage": "map-parse",
+            "timestampMs": 7435.4,
+            "heapUsedMb": 47.8,
+            "details": {
+              "regionCount": 11
+            }
+          }
+        ]
+      }
+    },
+    {
+      "body": "🔊 Audio: locked\nစတင်မယ်\nလမ်းညွှန်\nမြို့သာရပ်ကွက်",
+      "startup": {
+        "sessionId": "1794809524841-8hy17",
+        "ready": false,
+        "firstFrameMs": 12200.1,
+        "timeToReadyMs": null,
+        "contextLostCount": 0,
+        "contextRestoredCount": 0,
+        "lastCompletedStage": "first-frame",
+        "lastCrash": null,
+        "checkpoints": [
+          {
+            "stage": "app-boot",
+            "timestampMs": 7327.1,
+            "heapUsedMb": 43.8,
+            "details": {
+              "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+              "viewport": {
+                "width": 640,
+                "height": 480,
+                "dpr": 1
+              },
+              "hardwareConcurrency": 8,
+              "mobile": false
+            }
+          },
+          {
+            "stage": "map-parse",
+            "timestampMs": 7435.4,
+            "heapUsedMb": 47.8,
+            "details": {
+              "regionCount": 11
+            }
+          },
+          {
+            "stage": "lighting-init",
+            "timestampMs": 10738.3,
+            "heapUsedMb": 81.3,
+            "details": {
+              "shadows": false
+            }
+          },
+          {
+            "stage": "canvas-init",
+            "timestampMs": 10774.2,
+            "heapUsedMb": 81.3
+          },
+          {
+            "stage": "webgl-created",
+            "timestampMs": 10797.4,
+            "heapUsedMb": 83.5,
+            "details": {
+              "dpr": 1,
+              "maxAnisotropy": 16
+            }
+          },
+          {
+            "stage": "map-data-load",
+            "timestampMs": 10804.8,
+            "heapUsedMb": 83.5,
+            "details": {
+              "regionId": "myothar",
+              "name": "မြို့သာရပ်ကွက် · ကလေးမြို့"
+            }
+          },
+          {
+            "stage": "first-frame",
+            "timestampMs": 12200.1,
+            "heapUsedMb": 93.4,
+            "details": {
+              "calls": 0,
+              "triangles": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "body": "🔊 Audio: locked\nစတင်မယ်\nလမ်းညွှန်\nမြို့သာရပ်ကွက်",
+      "startup": {
+        "sessionId": "1794809524841-8hy17",
+        "ready": false,
+        "firstFrameMs": 12200.1,
+        "timeToReadyMs": null,
+        "contextLostCount": 0,
+        "contextRestoredCount": 0,
+        "lastCompletedStage": "building-geom",
+        "lastCrash": null,
+        "checkpoints": [
+          {
+            "stage": "app-boot",
+            "timestampMs": 7327.1,
+            "heapUsedMb": 43.8,
+            "details": {
+              "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+              "viewport": {
+                "width": 640,
+                "height": 480,
+                "dpr": 1
+              },
+              "hardwareConcurrency": 8,
+              "mobile": false
+            }
+          },
+          {
+            "stage": "map-parse",
+            "timestampMs": 7435.4,
+            "heapUsedMb": 47.8,
+            "details": {
+              "regionCount": 11
+            }
+          },
+          {
+            "stage": "lighting-init",
+            "timestampMs": 10738.3,
+            "heapUsedMb": 81.3,
+            "details": {
+              "shadows": false
+            }
+          },
+          {
+            "stage": "canvas-init",
+            "timestampMs": 10774.2,
+            "heapUsedMb": 81.3
+          },
+          {
+            "stage": "webgl-created",
+            "timestampMs": 10797.4,
+            "heapUsedMb": 83.5,
+            "details": {
+              "dpr": 1,
+              "maxAnisotropy": 16
+            }
+          },
+          {
+            "stage": "map-data-load",
+            "timestampMs": 10804.8,
+            "heapUsedMb": 83.5,
+            "details": {
+              "regionId": "myothar",
+              "name": "မြို့သာရပ်ကွက် · ကလေးမြို့"
+            }
+          },
+          {
+            "stage": "first-frame",
+            "timestampMs": 12200.1,
+            "heapUsedMb": 93.4,
+            "details": {
+              "calls": 0,
+              "triangles": 0
+            }
+          },
+          {
+            "stage": "texture-load",
+            "timestampMs": 14063.3,
+            "heapUsedMb": 119.7,
+            "details": {
+              "regionId": "myothar"
+            }
+          },
+          {
+            "stage": "building-geom",
+            "timestampMs": 23427.7,
+            "heapUsedMb": 354.4,
+            "details": {
+              "regionId": "myothar"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "body": "🔊 Audio: locked\nစတင်မယ်\nလမ်းညွှန်\nမြို့သာရပ်ကွက်",
+      "startup": {
+        "sessionId": "1794809524841-8hy17",
+        "ready": false,
+        "firstFrameMs": 12200.1,
+        "timeToReadyMs": null,
+        "contextLostCount": 0,
+        "contextRestoredCount": 0,
+        "lastCompletedStage": "building-geom",
+        "lastCrash": null,
+        "checkpoints": [
+          {
+            "stage": "app-boot",
+            "timestampMs": 7327.1,
+            "heapUsedMb": 43.8,
+            "details": {
+              "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+              "viewport": {
+                "width": 640,
+                "height": 480,
+                "dpr": 1
+              },
+              "hardwareConcurrency": 8,
+              "mobile": false
+            }
+          },
+          {
+            "stage": "map-parse",
+            "timestampMs": 7435.4,
+            "heapUsedMb": 47.8,
+            "details": {
+              "regionCount": 11
+            }
+          },
+          {
+            "stage": "lighting-init",
+            "timestampMs": 10738.3,
+            "heapUsedMb": 81.3,
+            "details": {
+              "shadows": false
+            }
+          },
+          {
+            "stage": "canvas-init",
+            "timestampMs": 10774.2,
+            "heapUsedMb": 81.3
+          },
+          {
+            "stage": "webgl-created",
+            "timestampMs": 10797.4,
+            "heapUsedMb": 83.5,
+            "details": {
+              "dpr": 1,
+              "maxAnisotropy": 16
+            }
+          },
+          {
+            "stage": "map-data-load",
+            "timestampMs": 10804.8,
+            "heapUsedMb": 83.5,
+            "details": {
+              "regionId": "myothar",
+              "name": "မြို့သာရပ်ကွက် · ကလေးမြို့"
+            }
+          },
+          {
+            "stage": "first-frame",
+            "timestampMs": 12200.1,
+            "heapUsedMb": 93.4,
+            "details": {
+              "calls": 0,
+              "triangles": 0
+            }
+          },
+          {
+            "stage": "texture-load",
+            "timestampMs": 14063.3,
+            "heapUsedMb": 119.7,
+            "details": {
+              "regionId": "myothar"
+            }
+          },
+          {
+            "stage": "building-geom",
+            "timestampMs": 23427.7,
+            "heapUsedMb": 354.4,
+            "details": {
+              "regionId": "myothar"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "body": "🔊 Audio: locked\n♥\n♥\n♥\n♥\n♥\n♥\n▲\n▶\n▼\n◀\nခုန်\nပြေး\nMultiplayer · offline\nစတင်မယ်\nလမ်းညွှန်",
+      "ghosts": [],
+      "startup": {
+        "sessionId": "1794809524841-8hy17",
+        "ready": true,
+        "firstFrameMs": 12200.1,
+        "timeToReadyMs": 27119.1,
+        "contextLostCount": 0,
+        "contextRestoredCount": 0,
+        "lastCompletedStage": "game-ready",
+        "lastCrash": null,
+        "checkpoints": [
+          {
+            "stage": "app-boot",
+            "timestampMs": 7327.1,
+            "heapUsedMb": 43.8,
+            "details": {
+              "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+              "viewport": {
+                "width": 640,
+                "height": 480,
+                "dpr": 1
+              },
+              "hardwareConcurrency": 8,
+              "mobile": false
+            }
+          },
+          {
+            "stage": "map-parse",
+            "timestampMs": 7435.4,
+            "heapUsedMb": 47.8,
+            "details": {
+              "regionCount": 11
+            }
+          },
+          {
+            "stage": "lighting-init",
+            "timestampMs": 10738.3,
+            "heapUsedMb": 81.3,
+            "details": {
+              "shadows": false
+            }
+          },
+          {
+            "stage": "canvas-init",
+            "timestampMs": 10774.2,
+            "heapUsedMb": 81.3
+          },
+          {
+            "stage": "webgl-created",
+            "timestampMs": 10797.4,
+            "heapUsedMb": 83.5,
+            "details": {
+              "dpr": 1,
+              "maxAnisotropy": 16
+            }
+          },
+          {
+            "stage": "map-data-load",
+            "timestampMs": 10804.8,
+            "heapUsedMb": 83.5,
+            "details": {
+              "regionId": "myothar",
+              "name": "မြို့သာရပ်ကွက် · ကလေးမြို့"
+            }
+          },
+          {
+            "stage": "first-frame",
+            "timestampMs": 12200.1,
+            "heapUsedMb": 93.4,
+            "details": {
+              "calls": 0,
+              "triangles": 0
+            }
+          },
+          {
+            "stage": "texture-load",
+            "timestampMs": 14063.3,
+            "heapUsedMb": 119.7,
+            "details": {
+              "regionId": "myothar"
+            }
+          },
+          {
+            "stage": "building-geom",
+            "timestampMs": 23427.7,
+            "heapUsedMb": 354.4,
+            "details": {
+              "regionId": "myothar"
+            }
+          },
+          {
+            "stage": "game-ready",
+            "timestampMs": 27119.1,
+            "heapUsedMb": 397.6
+          }
+        ]
+      }
+    },
+    {
+      "body": "🔊 Audio: locked\n♥\n♥\n♥\n♥\n♥\n♥\n▲\n▶\n▼\n◀\nခုန်\nပြေး\nMultiplayer · offline\nစတင်မယ်\nလမ်းညွှန်",
+      "ghosts": [],
+      "startup": {
+        "sessionId": "1794809524841-8hy17",
+        "ready": true,
+        "firstFrameMs": 12200.1,
+        "timeToReadyMs": 27119.1,
+        "contextLostCount": 0,
+        "contextRestoredCount": 0,
+        "lastCompletedStage": "game-ready",
+        "lastCrash": null,
+        "checkpoints": [
+          {
+            "stage": "app-boot",
+            "timestampMs": 7327.1,
+            "heapUsedMb": 43.8,
+            "details": {
+              "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+              "viewport": {
+                "width": 640,
+                "height": 480,
+                "dpr": 1
+              },
+              "hardwareConcurrency": 8,
+              "mobile": false
+            }
+          },
+          {
+            "stage": "map-parse",
+            "timestampMs": 7435.4,
+            "heapUsedMb": 47.8,
+            "details": {
+              "regionCount": 11
+            }
+          },
+          {
+            "stage": "lighting-init",
+            "timestampMs": 10738.3,
+            "heapUsedMb": 81.3,
+            "details": {
+              "shadows": false
+            }
+          },
+          {
+            "stage": "canvas-init",
+            "timestampMs": 10774.2,
+            "heapUsedMb": 81.3
+          },
+          {
+            "stage": "webgl-created",
+            "timestampMs": 10797.4,
+            "heapUsedMb": 83.5,
+            "details": {
+              "dpr": 1,
+              "maxAnisotropy": 16
+            }
+          },
+          {
+            "stage": "map-data-load",
+            "timestampMs": 10804.8,
+            "heapUsedMb": 83.5,
+            "details": {
+              "regionId": "myothar",
+              "name": "မြို့သာရပ်ကွက် · ကလေးမြို့"
+            }
+          },
+          {
+            "stage": "first-frame",
+            "timestampMs": 12200.1,
+            "heapUsedMb": 93.4,
+            "details": {
+              "calls": 0,
+              "triangles": 0
+            }
+          },
+          {
+            "stage": "texture-load",
+            "timestampMs": 14063.3,
+            "heapUsedMb": 119.7,
+            "details": {
+              "regionId": "myothar"
+            }
+          },
+          {
+            "stage": "building-geom",
+            "timestampMs": 23427.7,
+            "heapUsedMb": 354.4,
+            "details": {
+              "regionId": "myothar"
+            }
+          },
+          {
+            "stage": "game-ready",
+            "timestampMs": 27119.1,
+            "heapUsedMb": 397.6
+          }
+        ]
+      }
+    },
+    {
+      "body": "🔊 Audio: locked\n♥\n♥\n♥\n♥\n♥\n♥\n▲\n▶\n▼\n◀\nခုန်\nပြေး\nMultiplayer · offline\nစတင်မယ်\nလမ်းညွှန်",
+      "ghosts": [],
+      "startup": {
+        "sessionId": "1794809524841-8hy17",
+        "ready": true,
+        "firstFrameMs": 12200.1,
+        "timeToReadyMs": 27119.1,
+        "contextLostCount": 0,
+        "contextRestoredCount": 0,
+        "lastCompletedStage": "game-ready",
+        "lastCrash": null,
+        "checkpoints": [
+          {
+            "stage": "app-boot",
+            "timestampMs": 7327.1,
+            "heapUsedMb": 43.8,
+            "details": {
+              "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+              "viewport": {
+                "width": 640,
+                "height": 480,
+                "dpr": 1
+              },
+              "hardwareConcurrency": 8,
+              "mobile": false
+            }
+          },
+          {
+            "stage": "map-parse",
+            "timestampMs": 7435.4,
+            "heapUsedMb": 47.8,
+            "details": {
+              "regionCount": 11
+            }
+          },
+          {
+            "stage": "lighting-init",
+            "timestampMs": 10738.3,
+            "heapUsedMb": 81.3,
+            "details": {
+              "shadows": false
+            }
+          },
+          {
+            "stage": "canvas-init",
+            "timestampMs": 10774.2,
+            "heapUsedMb": 81.3
+          },
+          {
+            "stage": "webgl-created",
+            "timestampMs": 10797.4,
+            "heapUsedMb": 83.5,
+            "details": {
+              "dpr": 1,
+              "maxAnisotropy": 16
+            }
+          },
+          {
+            "stage": "map-data-load",
+            "timestampMs": 10804.8,
+            "heapUsedMb": 83.5,
+            "details": {
+              "regionId": "myothar",
+              "name": "မြို့သာရပ်ကွက် · ကလေးမြို့"
+            }
+          },
+          {
+            "stage": "first-frame",
+            "timestampMs": 12200.1,
+            "heapUsedMb": 93.4,
+            "details": {
+              "calls": 0,
+              "triangles": 0
+            }
+          },
+          {
+            "stage": "texture-load",
+            "timestampMs": 14063.3,
+            "heapUsedMb": 119.7,
+            "details": {
+              "regionId": "myothar"
+            }
+          },
+          {
+            "stage": "building-geom",
+            "timestampMs": 23427.7,
+            "heapUsedMb": 354.4,
+            "details": {
+              "regionId": "myothar"
+            }
+          },
+          {
+            "stage": "game-ready",
+            "timestampMs": 27119.1,
+            "heapUsedMb": 397.6
+          }
+        ]
+      }
+    },
+    {
+      "body": "🔊 Audio: locked\n♥\n♥\n♥\n♥\n♥\n♥\n▲\n▶\n▼\n◀\nခုန်\nပြေး\nMultiplayer · offline\nစတင်မယ်\nလမ်းညွှန်",
+      "ghosts": [],
+      "startup": {
+        "sessionId": "1794809524841-8hy17",
+        "ready": true,
+        "firstFrameMs": 12200.1,
+        "timeToReadyMs": 27119.1,
+        "contextLostCount": 0,
+        "contextRestoredCount": 0,
+        "lastCompletedStage": "game-ready",
+        "lastCrash": null,
+        "checkpoints": [
+          {
+            "stage": "app-boot",
+            "timestampMs": 7327.1,
+            "heapUsedMb": 43.8,
+            "details": {
+              "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+              "viewport": {
+                "width": 640,
+                "height": 480,
+                "dpr": 1
+              },
+              "hardwareConcurrency": 8,
+              "mobile": false
+            }
+          },
+          {
+            "stage": "map-parse",
+            "timestampMs": 7435.4,
+            "heapUsedMb": 47.8,
+            "details": {
+              "regionCount": 11
+            }
+          },
+          {
+            "stage": "lighting-init",
+            "timestampMs": 10738.3,
+            "heapUsedMb": 81.3,
+            "details": {
+              "shadows": false
+            }
+          },
+          {
+            "stage": "canvas-init",
+            "timestampMs": 10774.2,
+            "heapUsedMb": 81.3
+          },
+          {
+            "stage": "webgl-created",
+            "timestampMs": 10797.4,
+            "heapUsedMb": 83.5,
+            "details": {
+              "dpr": 1,
+              "maxAnisotropy": 16
+            }
+          },
+          {
+            "stage": "map-data-load",
+            "timestampMs": 10804.8,
+            "heapUsedMb": 83.5,
+            "details": {
+              "regionId": "myothar",
+              "name": "မြို့သာရပ်ကွက် · ကလေးမြို့"
+            }
+          },
+          {
+            "stage": "first-frame",
+            "timestampMs": 12200.1,
+            "heapUsedMb": 93.4,
+            "details": {
+              "calls": 0,
+              "triangles": 0
+            }
+          },
+          {
+            "stage": "texture-load",
+            "timestampMs": 14063.3,
+            "heapUsedMb": 119.7,
+            "details": {
+              "regionId": "myothar"
+            }
+          },
+          {
+            "stage": "building-geom",
+            "timestampMs": 23427.7,
+            "heapUsedMb": 354.4,
+            "details": {
+              "regionId": "myothar"
+            }
+          },
+          {
+            "stage": "game-ready",
+            "timestampMs": 27119.1,
+            "heapUsedMb": 397.6
+          }
+        ]
+      }
+    },
+    {
+      "body": "🔊 Audio: locked\n♥\n♥\n♥\n♥\n♥\n♥\n▲\n▶\n▼\n◀\nခုန်\nပြေး\nMultiplayer · offline\nစတင်မယ်\nလမ်းညွှန်",
+      "ghosts": [
+        {
+          "ghostId": "ghost-1",
+          "zoneId": "warehouse-row",
+          "snapshot": {
+            "state": "SPAWNING",
+            "homeProtected": false,
+            "playerKilled": false,
+            "chaseSpeed": 0,
+            "attackEnabled": false,
+            "collisionEnabled": true,
+            "x": 50.523,
+            "z": 24.784,
+            "yaw": -0.9330857712253272,
+            "opacity": 0.05555555555555556,
+            "visible": true,
+            "activeClip": {
+              "clipId": "dig",
+              "loop": true,
+              "speedScale": 1
+            },
+            "currentWaypointId": "patrol-east-main-mouth",
+            "targetWaypointId": "patrol-east-main-mouth",
+            "scareTriggerCount": 0,
+            "crossingCount": 0,
+            "fallTriggerCount": 0,
+            "encounterCount": 0,
+            "chaseThreshold": 5,
+            "encounterCycleCount": 1,
+            "chaseTriggerCount": 0,
+            "grabCount": 0,
+            "playerInsideEncounterZone": false,
+            "audioCue": null,
+            "grabInteraction": {
+              "active": false,
+              "phase": "none",
+              "seq": 0,
+              "ghostX": 50.523,
+              "ghostZ": 24.784,
+              "fallProgress": 0
+            },
+            "distToPlayerM": 19.134720797544976,
+            "hasLineOfSight": true
+          }
+        }
+      ],
+      "startup": {
+        "sessionId": "1794809524841-8hy17",
+        "ready": true,
+        "firstFrameMs": 12200.1,
+        "timeToReadyMs": 27119.1,
+        "contextLostCount": 0,
+        "contextRestoredCount": 0,
+        "lastCompletedStage": "game-ready",
+        "lastCrash": null,
+        "checkpoints": [
+          {
+            "stage": "app-boot",
+            "timestampMs": 7327.1,
+            "heapUsedMb": 43.8,
+            "details": {
+              "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+              "viewport": {
+                "width": 640,
+                "height": 480,
+                "dpr": 1
+              },
+              "hardwareConcurrency": 8,
+              "mobile": false
+            }
+          },
+          {
+            "stage": "map-parse",
+            "timestampMs": 7435.4,
+            "heapUsedMb": 47.8,
+            "details": {
+              "regionCount": 11
+            }
+          },
+          {
+            "stage": "lighting-init",
+            "timestampMs": 10738.3,
+            "heapUsedMb": 81.3,
+            "details": {
+              "shadows": false
+            }
+          },
+          {
+            "stage": "canvas-init",
+            "timestampMs": 10774.2,
+            "heapUsedMb": 81.3
+          },
+          {
+            "stage": "webgl-created",
+            "timestampMs": 10797.4,
+            "heapUsedMb": 83.5,
+            "details": {
+              "dpr": 1,
+              "maxAnisotropy": 16
+            }
+          },
+          {
+            "stage": "map-data-load",
+            "timestampMs": 10804.8,
+            "heapUsedMb": 83.5,
+            "details": {
+              "regionId": "myothar",
+              "name": "မြို့သာရပ်ကွက် · ကလေးမြို့"
+            }
+          },
+          {
+            "stage": "first-frame",
+            "timestampMs": 12200.1,
+            "heapUsedMb": 93.4,
+            "details": {
+              "calls": 0,
+              "triangles": 0
+            }
+          },
+          {
+            "stage": "texture-load",
+            "timestampMs": 14063.3,
+            "heapUsedMb": 119.7,
+            "details": {
+              "regionId": "myothar"
+            }
+          },
+          {
+            "stage": "building-geom",
+            "timestampMs": 23427.7,
+            "heapUsedMb": 354.4,
+            "details": {
+              "regionId": "myothar"
+            }
+          },
+          {
+            "stage": "game-ready",
+            "timestampMs": 27119.1,
+            "heapUsedMb": 397.6
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "note": "Actual main.tsx/Player/Town application, fresh profile, saved warehouse start, manual night, intro off, mobile quality on desktop SwiftShader. No key/mouse chase intervention; real Android and audible output not verified."
+}

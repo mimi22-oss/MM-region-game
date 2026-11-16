@@ -9,7 +9,13 @@
  * - Physical collision properties (box / cylinder / none)
  */
 
-import { loadCustomAssets, type CustomAsset } from './customAssets';
+import { loadCustomAssets, type CustomAsset } from './customAssets.ts';
+import {
+  CONTRACT_SCHEMA_VERSIONS,
+  parseAssetId,
+  validateAssetDefinitionV2,
+  type AssetDefinitionV2,
+} from '../../shared/contracts/index.ts';
 
 export type AssetCategory =
   | 'buildings'
@@ -827,4 +833,88 @@ export function searchAssets(query: string, category?: AssetCategory): AssetDefi
       a.tags.some(t => t.toLowerCase().includes(q))
     );
   });
+}
+
+/**
+ * Adapts legacy `ASSET_REGISTRY` entries and custom localStorage assets into
+ * versioned engine-independent `AssetDefinitionV2` contracts without altering legacy IDs.
+ */
+export function toAssetDefinitionV2(def: AssetDefinition): AssetDefinitionV2 {
+  const assetId = parseAssetId(def.assetId);
+  return validateAssetDefinitionV2({
+    schemaVersion: CONTRACT_SCHEMA_VERSIONS.assetDefinition,
+    assetId,
+    version: '1.0.0',
+    name: def.name,
+    nameMm: def.nameMm,
+    category: def.category,
+    rendererHint: def.sourceComponent,
+    provenance: def.customModel
+      ? { sourceType: 'ai-custom', sourceRef: def.customModel.id }
+      : { sourceType: 'procedural', sourceRef: def.sourceComponent },
+    bounds: {
+      width: def.defaultDimensions.width,
+      depth: def.defaultDimensions.depth,
+      height: def.defaultDimensions.height ?? Math.max(def.defaultDimensions.width, def.defaultDimensions.depth),
+    },
+    collision: { ...def.collision },
+    footprint2d: {
+      shape: def.footprint.shape,
+      defaultWidth: def.footprint.defaultWidth,
+      defaultDepth: def.footprint.defaultDepth,
+      color: def.footprint.color,
+      stroke: def.footprint.stroke,
+      ...(def.footprint.roofRidge !== undefined ? { roofRidge: def.footprint.roofRidge } : {}),
+    },
+    lods: [{ level: 0, maxTriangles: def.category === 'buildings' ? 4000 : 1500 }],
+    budgets: { maxTriangles: 4000, maxTexturePx: 1024, maxBytes: 2_097_152 },
+    dependencies: [],
+    authority: def.customModel ? 'local-offline' : 'publisher-manifest',
+    tags: [...def.tags],
+  });
+}
+
+export function listAssetDefinitionsV2(): AssetDefinitionV2[] {
+  const byId = new Map<string, AssetDefinitionV2>();
+  for (const def of ASSET_LIST) {
+    const v2 = toAssetDefinitionV2(def);
+    byId.set(v2.assetId, v2);
+  }
+  for (const [id, published] of publishedV2Registry) {
+    byId.set(id, published);
+  }
+  return Array.from(byId.values());
+}
+
+const publishedV2Registry = new Map<string, AssetDefinitionV2>();
+
+/**
+ * Registers content-addressed assets published by the Phase 2 pipeline without
+ * modifying or overwriting existing legacy `ASSET_REGISTRY` entries or 2D footprints.
+ */
+export function registerPublishedAssetV2(entry: unknown): AssetDefinitionV2 {
+  const validated = validateAssetDefinitionV2(entry);
+  publishedV2Registry.set(validated.assetId, validated);
+  return validated;
+}
+
+export function registerPublishedManifestV2(manifest: { assets: readonly unknown[] }): number {
+  let count = 0;
+  for (const item of manifest.assets) {
+    registerPublishedAssetV2(item);
+    count++;
+  }
+  return count;
+}
+
+export function getAssetDefinitionV2(assetId: string | undefined): AssetDefinitionV2 | undefined {
+  if (!assetId) return undefined;
+  const published = publishedV2Registry.get(assetId);
+  if (published) return published;
+  const legacy = ASSET_REGISTRY[assetId];
+  return legacy ? toAssetDefinitionV2(legacy) : undefined;
+}
+
+export function clearPublishedAssetsV2(): void {
+  publishedV2Registry.clear();
 }

@@ -1,49 +1,68 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   kanbaleVillage,
-  kanbaleBuildings,
-  kanbaleRoads,
   kanbaleBoundarySvgPath,
   kanbaleDrain,
   kanbaleDrainSvgPath,
-  type KanbaleBuildingData,
-} from '../../../data/villages/kanbale';
+} from '../../../data/villages/kanbale/kanbaleMeta';
 import { hasCustomBuilding } from './KanbaleCustomBuildings';
+import {
+  getCachedKanbaleStreamedData,
+  loadKanbaleStreamedData,
+  type KanbaleStreamedData,
+} from '../../../game/kanbaleTiledEditor';
+import type { StreamedBuildingRecord } from '../../../game/streamedChunkRegistry';
+
+export type KanbalePlanBuilding = StreamedBuildingRecord;
 
 export interface KanbalePlanProps {
   labels?: boolean;
   onSelectLocation?: (id: string) => void;
-  onSelectBuilding?: (building: KanbaleBuildingData) => void;
+  onSelectBuilding?: (building: KanbalePlanBuilding) => void;
 }
 
 /**
  * ကံပုလဲရွာ (Kanbale Village) — 2D Map SVG Plan Component
- * Minimap နှင့် Full Ward/Village Plan များတွင် တကယ့် OpenStreetMap Data အတိုင်း ရေးဆွဲပြသပေးသည်။
- *
- * ပါဝင်သော Feature များ:
- * - Village Boundary (ရွာနယ်နိမိတ် မျဉ်းကြောင်း)
- * - Real OSM Road Paths (ရွာတွင်းလမ်း ကွန်ရက်)
- * - Building Footprints (အိမ်ခြေ ၆၈၀ လုံး၏ တကယ့် Polygon ပုံသဏ္ဌာန်များ)
- * - Custom Farmhouse Highlight (`way/403027623` ရွှေဝါရောင် အမှတ်အသား)
- * - Interactive Building Selection (နှိပ်လိုက်ပါက Building ID, OSM ID, ဧရိယာ ပြသခြင်း)
- * - Fast-Travel / Teleport Target Link
+ * Reads detailed footprints and roads on demand from versioned streamed JSON chunks.
  */
 export function KanbalePlan({
   labels = true,
   onSelectLocation,
   onSelectBuilding,
 }: KanbalePlanProps) {
+  const [streamed, setStreamed] = useState<KanbaleStreamedData | null>(() =>
+    getCachedKanbaleStreamedData(),
+  );
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(
     'way/403027623',
   );
 
-  const selectedBuilding = kanbaleBuildings.find(
+  useEffect(() => {
+    let cancelled = false;
+    if (!streamed) {
+      void loadKanbaleStreamedData()
+        .then((data) => {
+          if (!cancelled) setStreamed(data);
+        })
+        .catch(() => {
+          // Offline / unavailable tiles degrade safely to boundary + drain outline
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [streamed]);
+
+  const buildings = streamed?.buildings ?? [];
+  const roads = streamed?.roads ?? [];
+
+  const selectedBuilding = buildings.find(
     (b) => b.id === selectedBuildingId,
   );
 
   const handleBuildingClick = (
     e: React.MouseEvent,
-    building: KanbaleBuildingData,
+    building: KanbalePlanBuilding,
   ) => {
     e.stopPropagation();
     setSelectedBuildingId((prev) => (prev === building.id ? null : building.id));
@@ -52,9 +71,6 @@ export function KanbalePlan({
 
   return (
     <g id="village-kanbale-plan">
-      {/* ======================================================== */}
-      {/* ၁။ ရွာနယ်နိမိတ် အောက်ခံနှင့် နယ်နိမိတ်မျဉ်း (Boundary) */}
-      {/* ======================================================== */}
       <path
         d={kanbaleBoundarySvgPath}
         fill="rgba(136, 156, 98, 0.22)"
@@ -64,11 +80,8 @@ export function KanbalePlan({
         strokeLinejoin="round"
       />
 
-      {/* ======================================================== */}
-      {/* ၂။ OSM လမ်းကြောင်းများ (Road Polylines) */}
-      {/* ======================================================== */}
       <g id="kanbale-plan-roads">
-        {kanbaleRoads.map((road) => (
+        {roads.map((road) => (
           <polyline
             key={`plan-road-${road.id}`}
             points={road.worldPoints.map((p) => `${p[0]},${p[1]}`).join(' ')}
@@ -81,11 +94,7 @@ export function KanbalePlan({
         ))}
       </g>
 
-      {/* ======================================================== */}
-      {/* ၂.၅။ ရေနုတ်မြောင်း (Waterway Drain Path & Bridges) */}
-      {/* ======================================================== */}
       <g id="kanbale-plan-drain">
-        {/* မြောင်းဘောင် (Earthen/Concrete Trench Bank) */}
         <path
           d={kanbaleDrainSvgPath}
           fill="none"
@@ -95,7 +104,6 @@ export function KanbalePlan({
           strokeLinejoin="round"
           opacity="0.85"
         />
-        {/* ရေပြင်အလွှာ (Water Channel Ribbon) */}
         <path
           d={kanbaleDrainSvgPath}
           fill="none"
@@ -105,7 +113,6 @@ export function KanbalePlan({
           strokeLinejoin="round"
           opacity="0.95"
         />
-        {/* တံတားများ (Bridges & Culverts) */}
         {kanbaleDrain.bridges.map((b, i) => {
           const x = b.u * Math.cos(Math.PI / 4) + b.v * Math.sin(Math.PI / 4);
           const z = -b.u * Math.sin(Math.PI / 4) + b.v * Math.cos(Math.PI / 4);
@@ -120,43 +127,35 @@ export function KanbalePlan({
                 y={-b.depth / 2}
                 width={b.width}
                 height={b.depth}
-                fill={isAh1 ? '#596663' : '#b7ad95'}
-                stroke="#2d3748"
+                fill={isAh1 ? '#334155' : '#78716c'}
+                stroke="#1e293b"
                 strokeWidth="0.4"
+                rx="0.5"
               />
               {isAh1 && (
-                <>
-                  <line
-                    x1={-b.width / 2}
-                    y1={-b.depth / 2}
-                    x2={b.width / 2}
-                    y2={-b.depth / 2}
-                    stroke="#eee8d5"
-                    strokeWidth="0.5"
-                  />
-                  <line
-                    x1={-b.width / 2}
-                    y1={b.depth / 2}
-                    x2={b.width / 2}
-                    y2={b.depth / 2}
-                    stroke="#eee8d5"
-                    strokeWidth="0.5"
-                  />
-                </>
+                <line
+                  x1={0}
+                  y1={-b.depth / 2}
+                  x2={0}
+                  y2={b.depth / 2}
+                  stroke="#facc15"
+                  strokeWidth="0.3"
+                  strokeDasharray="1.5 1.5"
+                />
               )}
             </g>
           );
         })}
         {labels && (
-          <g transform="translate(101.96 -214.02)">
+          <g transform="translate(80 -35)">
             <rect
               x="-24"
-              y="-7"
+              y="-6"
               width="48"
-              height="14"
+              height="12"
               rx="3"
-              fill="#1e293b"
-              fillOpacity="0.85"
+              fill="#0f172a"
+              opacity="0.85"
               stroke="#4d9395"
               strokeWidth="0.6"
             />
@@ -174,11 +173,8 @@ export function KanbalePlan({
         )}
       </g>
 
-      {/* ======================================================== */}
-      {/* ၃။ အဆောက်အအုံများ (Building Footprint Polygons) */}
-      {/* ======================================================== */}
       <g id="kanbale-plan-buildings">
-        {kanbaleBuildings.map((b) => {
+        {buildings.map((b) => {
           const isSelected = selectedBuildingId === b.id;
           const isCustom = hasCustomBuilding(b.id);
           const ptsStr = b.polygonPoints
@@ -217,9 +213,6 @@ export function KanbalePlan({
         })}
       </g>
 
-      {/* ======================================================== */}
-      {/* ၄။ Custom Model စံပြအိမ် အထူးအမှတ်အသား (Star Marker) */}
-      {/* ======================================================== */}
       <g
         transform={`translate(${kanbaleVillage.x} ${kanbaleVillage.z})`}
         style={{ cursor: 'pointer' }}
@@ -245,9 +238,6 @@ export function KanbalePlan({
         )}
       </g>
 
-      {/* ======================================================== */}
-      {/* ၄.၁။ Custom Model ကံပုလဲကျောင်း အထူးအမှတ်အသား (School Landmark Star Marker) */}
-      {/* ======================================================== */}
       <g
         transform="translate(451.73 -569.03)"
         style={{ cursor: 'pointer' }}
@@ -273,15 +263,11 @@ export function KanbalePlan({
         )}
       </g>
 
-      {/* ======================================================== */}
-      {/* ၅။ ရွေးချယ်ထားသော အဆောက်အအုံ အချက်အလက် Card Popup */}
-      {/* ======================================================== */}
       {selectedBuilding && (
         <g
           transform={`translate(${selectedBuilding.x + 8} ${selectedBuilding.z - 8})`}
           style={{ pointerEvents: 'none' }}
         >
-          {/* Card Background */}
           <rect
             x="-4"
             y="-18"
@@ -293,7 +279,6 @@ export function KanbalePlan({
             strokeWidth="1.0"
             opacity="0.95"
           />
-          {/* Building Title */}
           <text
             x="4"
             y="-9"
@@ -309,7 +294,6 @@ export function KanbalePlan({
                   ? '★ Custom အဆောက်အအုံ'
                   : 'OSM အဆောက်အအုံ'}
           </text>
-          {/* Details */}
           <text x="4" y="-3" fontSize="3.8" fill="#e2e8f0">
             ID: {selectedBuilding.id}
           </text>
@@ -317,14 +301,11 @@ export function KanbalePlan({
             ဧရိယာ: {selectedBuilding.area} m² | အမြင့်: {selectedBuilding.height}m
           </text>
           <text x="4" y="9" fontSize="3.2" fill="#64748b">
-            OSM ID: {selectedBuilding.osmId}
+            OSM ID: {selectedBuilding.osmId ?? ''}
           </text>
         </g>
       )}
 
-      {/* ======================================================== */}
-      {/* ၆။ ရွာအမည် စာသားနှင့် Teleport သွားရောက်နိုင်သော ခလုတ် */}
-      {/* ======================================================== */}
       {labels && (
         <g
           className="map-region-clickable"

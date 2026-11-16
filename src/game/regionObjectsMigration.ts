@@ -10,24 +10,22 @@ import { siTharBuildings } from '../data/villages/sithar/sitharBuildings.ts';
 import { siTharRoads } from '../data/villages/sithar/sitharRoads.ts';
 import { natmyaungBuildings } from '../data/villages/natmyaung/natmyaungBuildings.ts';
 import { natmyaungRoads } from '../data/villages/natmyaung/natmyaungRoads.ts';
-import { kanbaleBuildings } from '../data/villages/kanbale/kanbaleBuildings.ts';
-import { kanbaleRoads } from '../data/villages/kanbale/kanbaleRoads.ts';
 import { mangoTrees } from '../data/mangoTrees.ts';
 import { tamarindTrees } from '../data/tamarindTrees.ts';
 import { parkedCars } from '../data/cars.ts';
 import { BALLOON_LAUNCH } from './balloonRide.ts';
+import { getAuthoredRegionIds, normalizeAuthoredRegionId } from './worldEditsSync.ts';
+import {
+  getCachedKanbaleAuthoredFeatures,
+  loadKanbaleAuthoredFeatures,
+} from './kanbaleTiledEditor.ts';
+
+export { getAuthoredRegionIds, normalizeAuthoredRegionId };
 
 type Rectangle = { id?: string; name?: string; x: number; z: number; width: number; depth: number; rotation?: number; color?: string; roof?: string };
 type Building = Rectangle & { houseWidth?: number; houseLength?: number; wallColor?: string; roofColor?: string; type?: string; kind?: string; height?: number };
 type Line = { id: string; name?: string; width: number; worldPoints: [number, number][] };
 
-/** UI aliases never become runtime source identities. */
-export function normalizeAuthoredRegionId(id: string): string {
-  return id === 'myotha' ? 'myothar' : id === 'sitha' ? 'sithar' : id;
-}
-export function getAuthoredRegionIds(): string[] {
-  return ['myothar', 'kalay-area-1', ...kalayVillages.map(v => v.id)];
-}
 function markSource(region: string, feature: LayoutFeature): LayoutFeature {
   const { points, rotation, dimensions, width, assetId, color, roofColor, name } = feature;
   const sourceSnapshot = JSON.parse(JSON.stringify({ points, rotation, dimensions, width, assetId, color, roofColor, name }));
@@ -181,11 +179,11 @@ export function getRegionAuthoredFeatures(regionId: string): LayoutFeature[] {
     features.push(line({id:nankaleinCreek.id,name:nankaleinCreek.name,width:nankaleinCreek.waterWidth,worldPoints:nankaleinCreek.worldPoints as [number,number][]},'canal'));
   } else {
     const village=kalayVillages.find(v=>v.id===region); if(!village)return [];
+    if(region==='kanbale') return getCachedKanbaleAuthoredFeatures();
     if(region==='sithar') addBuildings(siTharBuildings,'building:sithar-house');
     else if(region==='natmyaung') addBuildings(natmyaungBuildings,'building:natmyaung-house');
-    else if(region==='kanbale') kanbaleBuildings.forEach(b=>features.push(building(b,b.id.includes('403030614')?'building:village-school':b.id.includes('403027623')?'building:rice-mill':'building:sithar-house')));
     else addBuildings(village.houses);
-    const roads=region==='sithar'?siTharRoads:region==='natmyaung'?natmyaungRoads:region==='kanbale'?kanbaleRoads:undefined;
+    const roads=region==='sithar'?siTharRoads:region==='natmyaung'?natmyaungRoads:undefined;
     if(roads) roads.forEach(r=>features.push(line(r))); else village.roads.forEach(r=>features.push(roadRectangle(r)));
     addRectangles(village.fields,'field','လယ်ကွင်း'); addRectangles(village.bundedFields,'field','လယ်ကွင်း'); addRectangles(village.separationFields,'field','လယ်ကွင်း'); addRectangles(village.ponds??[],'pond','ရေကန်');
     addTrees(village.trees,'canopy'); addTrees(village.largeTrees,'large'); addTrees(village.farmTrees,'farm'); features.push(...villageCanals(village));
@@ -201,6 +199,17 @@ export function getRegionAuthoredFeatures(regionId: string): LayoutFeature[] {
   const unique=new Map<string,LayoutFeature>();
   for(const feature of features) unique.set(feature.id,markSource(region,feature));
   return [...unique.values()];
+}
+
+export async function getRegionAuthoredFeaturesAsync(
+  regionId: string,
+  readJson?: (url: string, maxBytes: number, expectedSha256?: string) => Promise<unknown>,
+): Promise<LayoutFeature[]> {
+  const region = normalizeAuthoredRegionId(regionId);
+  if (region === 'kanbale') {
+    return loadKanbaleAuthoredFeatures(readJson);
+  }
+  return getRegionAuthoredFeatures(region);
 }
 /** Detached lookup suitable for edit baseline comparison. */
 export function getAuthoredFeature(regionId:string,sourceId:string):LayoutFeature|undefined {

@@ -17,7 +17,13 @@ import {
 } from '../game/updateSafety.ts';
 import { isNativeAndroid } from './platform.ts';
 import { isNetworkOnline, subscribeNetworkState } from './networkStatus.ts';
-import { AssetCacheManager, type AssetSyncProgressEvent } from './assetCacheManager.ts';
+import {
+  AssetCacheManager,
+  requestPersistentOfflineStorage,
+  type AssetSyncProgressEvent,
+  type ContentPackStatus,
+  type StorageBackendKind,
+} from './assetCacheManager.ts';
 
 export const OTA_STORAGE_KEY = 'mm-ota-state-v1';
 
@@ -67,6 +73,11 @@ export interface OtaUpdateState {
   readonly lastError: string | null;
   readonly offlineFallbackReady: boolean;
   readonly pendingApplyOnSafeBoundary: boolean;
+  readonly storageBackend: StorageBackendKind;
+  readonly storagePersisted: boolean | null;
+  readonly storageUsedBytes: number;
+  readonly storageQuotaBytes: number | null;
+  readonly contentPacks: readonly ContentPackStatus[];
 }
 
 interface PersistedOtaMeta {
@@ -332,6 +343,11 @@ export class OtaCoordinator {
       lastError: null,
       offlineFallbackReady: this.assetCache.hasOfflineCopy(),
       pendingApplyOnSafeBoundary: false,
+      storageBackend: this.assetCache.getStorageBackend(),
+      storagePersisted: null,
+      storageUsedBytes: 0,
+      storageQuotaBytes: null,
+      contentPacks: this.assetCache.getPackSummaries(null),
     };
   }
 
@@ -345,6 +361,8 @@ export class OtaCoordinator {
       ...partial,
       activeAssetVersion: this.assetCache.getActiveVersion(),
       offlineFallbackReady: this.assetCache.hasOfflineCopy(),
+      storageBackend: this.assetCache.getStorageBackend(),
+      contentPacks: partial.contentPacks ?? this.assetCache.getPackSummaries(this.pendingManifest),
       safety: evaluateUpdateApplySafety(this.busyContext),
     };
     this.emit();
@@ -456,6 +474,7 @@ export class OtaCoordinator {
           const expected = persisted.pendingApply;
           if (bundleId !== expected.bundleId && bundleVersion !== expected.version) {
             await this.assetCache.rollbackToPrevious();
+            await this.assetCache.rollbackPacksForCodeVersion(expected.version);
             rollbackNote = {
               failedVersion: expected.version,
               recoveredToVersion: bundleVersion,
@@ -471,6 +490,9 @@ export class OtaCoordinator {
           const errored = listResult.bundles.find((b) => b.status === 'error');
           if (errored) {
             await this.assetCache.rollbackToPrevious();
+            if (errored.version) {
+              await this.assetCache.rollbackPacksForCodeVersion(errored.version);
+            }
             rollbackNote = {
               failedVersion: errored.version || errored.id,
               recoveredToVersion: bundleVersion,
@@ -522,6 +544,7 @@ export class OtaCoordinator {
             timestamp: new Date().toISOString(),
           };
           void this.assetCache.rollbackToPrevious();
+          void this.assetCache.rollbackPacksForCodeVersion(failedVersion);
           this.persistMeta({ pendingApply: null, rollbackNotification: rollbackNote });
           this.patchState({
             phase: 'rolled_back',
@@ -540,6 +563,7 @@ export class OtaCoordinator {
       }
     }
 
+    await this.refreshStorageDiagnostics();
     return this.state;
   }
 
@@ -751,6 +775,7 @@ export class OtaCoordinator {
         signal,
         onProgress: handleAssetProgress,
       });
+      await this.refreshStorageDiagnostics();
 
       let bundleId: string | null = null;
       if (this.checkNativeAndroid()) {
@@ -853,9 +878,135 @@ export class OtaCoordinator {
     return { applied: true, deferred: false };
   }
 
+  async refreshStorageDiagnostics(): Promise<void> {
+    const [usedBytes, quota] = await Promise.all([
+      this.assetCache.getStorageUsageBytes().catch(() => 0),
+      requestPersistentOfflineStorage(),
+    ]);
+    this.patchState({
+      storageBackend: this.assetCache.getStorageBackend(),
+      storagePersisted: quota.persisted,
+      storageUsedBytes: usedBytes,
+      storageQuotaBytes: quota.quotaBytes,
+      contentPacks: this.assetCache.getPackSummaries(this.pendingManifest),
+    });
+  }
+
+  async downloadContentPack(packId: string, signal?: AbortSignal): Promise<OtaUpdateState> {
+    if (!this.getOnline()) {
+      this.patchState({
+        online: false,
+        phase: 'offline',
+        statusMessage: 'Offline · Cannot download content pack without connection',
+      });
+      return this.state;
+    }
+
+    const safety = evaluateUpdateApplySafety(this.busyContext);
+    if (!safety.safeToDownloadInBackground) {
+      this.patchState({
+        phase: 'deferred_busy',
+        statusMessage: `Pack download deferred: ${safety.summaryEn}`,
+      });
+      return this.state;
+    }
+
+    try {
+      let manifest = this.pendingManifest;
+      if (!manifest) {
+        const manifestUrl =
+          this.state.availableRelease?.assetManifestUrl ??
+          `${this.state.updateBaseUrl}/ota/asset-manifest.json`;
+        const res = await this.fetcher(manifestUrl, signal);
+        const raw = await parseOtaJsonResponse<unknown>(res, manifestUrl, 'Content pack manifest');
+        manifest = validateAssetManifest(raw);
+        this.pendingManifest = manifest;
+      }
+
+      const result = await this.assetCache.syncPack(manifest, packId, {
+        assetBaseUrl: this.state.updateBaseUrl,
+        codeVersion: this.state.currentVersion,
+        localNative: {
+          nativeVersion: this.state.nativeVersion,
+          androidVersionCode: this.state.androidVersionCode,
+          schemaVersion: APP_NATIVE_BASELINE.otaSchemaVersion,
+          currentVersion: this.state.currentVersion,
+          channel: this.state.channel,
+        },
+        signal,
+        onProgress: (ev) => {
+          const pct =
+            ev.totalDownloadBytes > 0
+              ? Math.round((ev.downloadedBytes / ev.totalDownloadBytes) * 100)
+              : 50;
+          this.patchState({
+            phase: ev.phase === 'verifying' ? 'verifying' : 'downloading',
+            downloadPercent: pct,
+            downloadedBytes: ev.downloadedBytes,
+            totalDownloadBytes: ev.totalDownloadBytes,
+            statusMessage: `Syncing pack ${packId} (${ev.completedFiles}/${ev.totalFiles})...`,
+          });
+        },
+      });
+
+      await this.refreshStorageDiagnostics();
+      this.patchState({
+        phase: 'up_to_date',
+        downloadPercent: 100,
+        lastError: null,
+        statusMessage: `Cached pack "${packId}" v${result.version} (${Math.round(result.totalBytes / 1024)} KB offline-ready).`,
+      });
+      return this.state;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Content pack download failed';
+      this.patchState({
+        phase: 'failed',
+        lastError: msg,
+        statusMessage: `Pack "${packId}" failed safely (existing offline copy preserved): ${msg}`,
+      });
+      return this.state;
+    }
+  }
+
+  async rollbackContentPack(packId: string): Promise<void> {
+    const restored = await this.assetCache.rollbackPack(packId);
+    await this.refreshStorageDiagnostics();
+    this.patchState({
+      phase: 'rolled_back',
+      statusMessage: restored
+        ? `Rolled back pack "${packId}" to v${restored.version}.`
+        : `Cleared "${packId}" cache override · APK bundled fallback active.`,
+    });
+  }
+
+  async verifyOfflineIntegrity(): Promise<{
+    ok: boolean;
+    missingPaths: string[];
+    corruptedPaths: string[];
+    offlineFallbackReady: boolean;
+    storageBackend: StorageBackendKind;
+    storageUsedBytes: number;
+  }> {
+    const integrity = await this.assetCache.verifyActiveIntegrity();
+    await this.refreshStorageDiagnostics();
+    const state = this.getState();
+    this.patchState({
+      statusMessage: integrity.ok
+        ? `Verified offline integrity (${state.storageBackend}, ${Math.round(state.storageUsedBytes / 1024)} KB cached · fallback ready)`
+        : `Integrity check found ${integrity.missingPaths.length} missing and ${integrity.corruptedPaths.length} corrupted file(s).`,
+    });
+    return {
+      ...integrity,
+      offlineFallbackReady: state.offlineFallbackReady,
+      storageBackend: state.storageBackend,
+      storageUsedBytes: state.storageUsedBytes,
+    };
+  }
+
   async rollbackManually(): Promise<void> {
     this.flushSaveFn();
     await this.assetCache.rollbackToPrevious();
+    await this.refreshStorageDiagnostics();
     if (this.checkNativeAndroid()) {
       this.persistMeta({
         pendingApply: null,

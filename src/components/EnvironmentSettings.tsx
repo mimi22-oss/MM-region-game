@@ -7,6 +7,7 @@ import {
  setGhostDevForceActive,
  useGhostDevSettings,
 } from '../game/ghostConfig';
+import { AudioDiagnosticsContent } from './AudioDiagnosticsPanel';
 
 export function useEnvironmentTime(){
  const [preferences,setPreferences]=useState(savedEnvironmentPreferences);
@@ -46,14 +47,22 @@ export function EnvironmentSettings({value,onChange,onChoose,now,period}:{
   {(['ghost','ambience'] as const).map(channel=><label key={channel} className="environment-volume">{channel==='ghost'?'Ghost':'Ambience'} <output>{Math.round(mix[channel]*100)}%</output><input aria-label={`${channel} volume`} type="range" min="0" max="100" step="5" value={Math.round(mix[channel]*100)} onChange={e=>setHorrorMix(channel,Number(e.target.value)/100)}/></label>)}
   <FestivalSettings now={now}/>
   {showGhostDev && (
-   <label className="environment-sound" style={{ marginTop: '6px' }}>
-    <input
-     type="checkbox"
-     checked={ghostDev.forceActive}
-     onChange={e => setGhostDevForceActive(e.target.checked)}
-    />{' '}
-    Dev · ညသရဲ စမ်းသပ်ရန် (Warehouse)
-   </label>
+   <>
+    <label className="environment-sound" style={{ marginTop: '6px' }}>
+     <input
+      type="checkbox"
+      checked={ghostDev.forceActive}
+      onChange={e => setGhostDevForceActive(e.target.checked)}
+     />{' '}
+     Dev · ညသရဲ စမ်းသပ်ရန် (Warehouse)
+    </label>
+    <details style={{ marginTop: '8px', padding: '8px', borderRadius: '8px', background: 'rgba(15, 23, 42, 0.6)' }}>
+     <summary style={{ cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Dev · Audio Diagnostics</summary>
+     <div style={{ marginTop: '6px' }}>
+      <AudioDiagnosticsContent compact />
+     </div>
+    </details>
+   </>
   )}
   <small style={{ display: 'block', marginTop: '6px' }}>ဂိမ်းထဲကို နှိပ်ပြီးနောက် အသံစပါမည်။ N နှိပ်၍ Manual အချိန်ပြောင်းနိုင်သည်။</small>
  </section>;

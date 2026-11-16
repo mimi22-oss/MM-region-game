@@ -94,6 +94,8 @@ export const Player = memo(function Player({
  onPosition,
  initialSave,
  onSaveSnapshot,
+ onMoveIntent,
+ reconcilePlayer,
 }:{
  character?:CharacterKind;
  speedLimit?:number;braking?:boolean;accelerating?:boolean;controlsBlocked?:boolean;dismountRequest?:number;onRideStatus?:(s:RideStatus)=>void;
@@ -118,6 +120,8 @@ export const Player = memo(function Player({
  onPosition:(x:number,z:number,yaw?:number)=>void;
  initialSave?:import('../game/gameSave').GameSaveData|null;
  onSaveSnapshot?:(snap:{x:number;z:number;yaw:number;pitch:number;zoom:number;topDown:boolean;first:boolean})=>void;
+ onMoveIntent?:(dx:number,dz:number,yaw:number,sprinting:boolean,dtMs:number)=>void;
+ reconcilePlayer?:(x:number,z:number)=>{x:number;z:number}|null;
 }){
  const appearance=useAppearance();
  const {camera,gl,scene}=useThree();
@@ -701,9 +705,12 @@ export const Player = memo(function Player({
    s.camX=s.x;s.camZ=s.z;
   }else{
    const speed=fast?PLAYER_ON_FOOT_SPEED.run:touch?.active?Math.min(PLAYER_ON_FOOT_SPEED.run,PLAYER_ON_FOOT_SPEED.walk*mobileScale):PLAYER_ON_FOOT_SPEED.walk;
-   const vx=(-Math.sin(yaw)*forward+Math.cos(yaw)*right)*speed,vz=(-Math.cos(yaw)*forward-Math.sin(yaw)*right)*speed;
+   const dirX=-Math.sin(yaw)*forward+Math.cos(yaw)*right,dirZ=-Math.cos(yaw)*forward-Math.sin(yaw)*right;
+   const vx=dirX*speed,vz=dirZ*speed;
    const mx=vx*dt,mz=vz*dt;
    if(!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0){
+    const hasMove=forward!==0||right!==0;
+    if(onMoveIntent)onMoveIntent(hasMove?dirX:0,hasMove?dirZ:0,s.bodyYaw,fast,dt*1000);
     const j=jump.current;
     const pose=jumpPose.current;
     if(character==='cartoon'&&wantsJump&&!j.airborne){
@@ -729,6 +736,10 @@ export const Player = memo(function Player({
      if(character==='cartoon')rememberJumpMomentum(j,dt?(s.x-oldX)/dt:0,dt?(s.z-oldZ)/dt:0,dt);
     }
     if((!contact||contact==='obstacle')&&rideLife.crashTime<=0)rideLife.contact=false;
+    if(reconcilePlayer&&!j.airborne){
+     const fix=reconcilePlayer(s.x,s.z);
+     if(fix&&clear(fix.x,fix.z)){s.x=fix.x;s.z=fix.z;}
+    }
     if(hitWalkingContact(contact)){
      if(j.airborne){s.x=j.safeX;s.z=j.safeZ;}jump.current=createHumanJump();jumpPose.current=createJumpPose();
      fallYaw.current=Math.hypot(mx,mz)>.0001?Math.atan2(-mx,-mz):s.bodyYaw;
