@@ -19,17 +19,18 @@ export function ThreeGhostsMissionHud() {
   const [pickup, setPickup] = useState({ near: false, ready: false, progress: 0 });
   const [message, setMessage] = useState('');
 
-  // Initial collapsed state: default collapsed on mobile (<=768px), open on desktop
+  // Initial collapsed state: default collapsed (ghost-hud-body hidden until clicked)
   const [collapsed, setCollapsed] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === 'undefined') return true;
     try {
       const stored = localStorage.getItem(STORAGE_COLLAPSED_KEY);
       if (stored !== null) return stored === 'true';
-      return window.innerWidth <= 768;
+      return true;
     } catch {
-      return false;
+      return true;
     }
   });
+  const [isMobile, setIsMobile] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth <= 768);
 
   // Draggable positioning state
   const [position, setPosition] = useState<Position | null>(() => {
@@ -116,6 +117,7 @@ export function ThreeGhostsMissionHud() {
   // Keep within bounds on window resize
   useEffect(() => {
     const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
       setPosition(prev => (prev ? clampPosition(prev.x, prev.y) : null));
     };
     window.addEventListener('resize', handleResize);
@@ -230,49 +232,120 @@ export function ThreeGhostsMissionHud() {
       aria-label="Ghost Mission HUD"
     >
       {collapsed ? (
-        /* ===================================================================
-           COLLAPSED PILL: Minimal Floating Gaming Badge with 👻 & Down Arrow
-           =================================================================== */
-        <div
-          className="ghost-hud-pill"
-          role="button"
-          tabIndex={0}
-          aria-expanded={false}
-          aria-label="Ghost Mission toggle - Click or drag anywhere"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerCancel}
-          onKeyDown={e => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              toggleCollapse();
-            }
-          }}
-        >
-          {/* Ghost emoji + Down chevron toggle right beside it */}
-          <div className="ghost-hud-pill-icon-group" title="ဖွင့်ရန် နှိပ်ပါ / နေရာရွှေ့ရန် ဖိဆွဲပါ">
-            <span className="ghost-hud-ghost-emoji" role="img" aria-hidden="true">
-              👻
-            </span>
-            <span className="ghost-hud-chevron-btn" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </span>
+        isMobile ? (
+          /* ===================================================================
+             COLLAPSED PILL: Minimal Floating Gaming Badge with 👻 & Down Arrow (Mobile)
+             =================================================================== */
+          <div
+            className="ghost-hud-pill"
+            role="button"
+            tabIndex={0}
+            aria-expanded={false}
+            aria-label="Ghost Mission toggle - Click or drag anywhere"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleCollapse();
+              }
+            }}
+          >
+            {/* Ghost emoji + Down chevron toggle right beside it */}
+            <div className="ghost-hud-pill-icon-group" title="ဖွင့်ရန် နှိပ်ပါ / နေရာရွှေ့ရန် ဖိဆွဲပါ">
+              <span className="ghost-hud-ghost-emoji" role="img" aria-hidden="true">
+                👻
+              </span>
+              <span className="ghost-hud-chevron-btn" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </span>
+            </div>
+
+            <span className="ghost-hud-pill-label">Mission</span>
+
+            {/* Quick status badge */}
+            {progress.completed ? (
+              <span className="ghost-hud-pill-badge completed">✓ ပြီးပြီ</span>
+            ) : isCombatActive ? (
+              <span className="ghost-hud-pill-badge combat">⚔️ Combat</span>
+            ) : (
+              <span className="ghost-hud-pill-badge">{totalEncountered}/3</span>
+            )}
           </div>
+        ) : (
+          /* ===================================================================
+             COLLAPSED CARD: Minimal Header Card without ghost-hud-body (Desktop)
+             =================================================================== */
+          <div
+            className="ghost-hud-card ghost-hud-card-collapsed"
+            role="region"
+            aria-label="Ghost Mission Details"
+            onClick={toggleCollapse}
+          >
+            {/* Draggable Header */}
+            <div
+              className="ghost-hud-header"
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerCancel}
+              title="ဖွင့်ရန် နှိပ်ပါ / နေရာရွှေ့ရန် ဖိဆွဲပါ"
+            >
+              <div className="ghost-hud-header-left">
+                <span className="ghost-hud-drag-grip" aria-hidden="true">
+                  ⠿
+                </span>
+                <div className="ghost-hud-title-wrap">
+                  <span className="ghost-hud-ghost-emoji" role="img" aria-hidden="true">
+                    👻
+                  </span>
+                  {/* Down chevron toggle right beside ghost icon for fast expanding */}
+                  <span className="ghost-hud-chevron-btn" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </span>
+                  <span className="ghost-hud-title">Ghost Mission</span>
+                </div>
+              </div>
 
-          <span className="ghost-hud-pill-label">Mission</span>
+              <div className="ghost-hud-header-actions" onPointerDown={e => e.stopPropagation()}>
+                {progress.completed ? (
+                  <span className="ghost-hud-badge-tag" style={{ background: 'rgba(16,185,129,0.3)', color: '#6ee7b7' }}>
+                    ✓ Completed
+                  </span>
+                ) : isCombatActive ? (
+                  <span className="ghost-hud-badge-tag" style={{ background: 'rgba(239,68,68,0.3)', color: '#fca5a5' }}>
+                    ⚔️ Combat
+                  </span>
+                ) : (
+                  <span className="ghost-hud-badge-tag">
+                    {totalEncountered}/3 ရှာပြီး
+                  </span>
+                )}
 
-          {/* Quick status badge */}
-          {progress.completed ? (
-            <span className="ghost-hud-pill-badge completed">✓ ပြီးပြီ</span>
-          ) : isCombatActive ? (
-            <span className="ghost-hud-pill-badge combat">⚔️ Combat</span>
-          ) : (
-            <span className="ghost-hud-pill-badge">{totalEncountered}/3</span>
-          )}
-        </div>
+                <button
+                  type="button"
+                  className="ghost-hud-collapse-btn"
+                  onClick={e => {
+                    e.stopPropagation();
+                    toggleCollapse();
+                  }}
+                  title="Mission panel ဖွင့်မည် (Expand)"
+                  aria-label="Expand Ghost Mission HUD"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )
       ) : (
         /* ===================================================================
            EXPANDED VIEW: Full Gaming Mission Tracker Card

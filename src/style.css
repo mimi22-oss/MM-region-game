@@ -125,6 +125,8 @@ header p {
 	right: max(24px, calc(env(safe-area-inset-right, 0px) + 16px));
 	z-index: 15;
 	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
 }
 
 .settings-wrap.settings-wrap-open {
@@ -800,7 +802,7 @@ main.night-mode .map-haunt-note {
 	position: static;
 	z-index: 15;
 	display: flex;
-	flex-direction: row;
+	flex-direction: column;
 	align-items: center;
 	gap: 8px;
 }
@@ -2121,7 +2123,7 @@ main.night-mode .home-guidance-pill {
 		right: auto !important;
 		bottom: auto !important;
 		left: auto !important;
-		flex-direction: row !important;
+		flex-direction: column !important;
 		align-items: center !important;
 		gap: 6px !important;
 		z-index: 15 !important;
@@ -7467,29 +7469,39 @@ main.night-mode .settings-menu .guide-list kbd {
 
 .settings-wrap {
 	gap: 8px;
-	align-items: center;
+	align-items: flex-end;
 }
 
-.hud-menu-items {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	animation: hudMenuReveal 0.16s ease-out;
+.settings-wrap.settings-wrap-open {
+	align-items: stretch;
 }
 
 .hud-menu-btn {
 	position: relative;
+	order: -1;
+}
+
+.hud-menu-items {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 8px;
+	max-height: calc(100dvh - 84px);
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 2px;
+	animation: hudMenuReveal 0.16s ease-out;
 }
 
 @keyframes hudMenuReveal {
 	from {
 		opacity: 0;
-		transform: translateX(8px) scale(0.96);
+		transform: translateY(-8px) scale(0.96);
 	}
 
 	to {
 		opacity: 1;
-		transform: translateX(0) scale(1);
+		transform: translateY(0) scale(1);
 	}
 }
 
@@ -8151,5 +8163,5 @@ main.night-mode .settings-menu .guide-list kbd {
 }
 .weapon-menu select { font: inherit; font-size: 13px; min-height: 28px; }
 @media (max-width: 480px) {
-  .hud-menu-items:has(.weapon-menu) { flex-wrap: wrap; justify-content: flex-end; }
+  .hud-menu-items:has(.weapon-menu) { flex-direction: column; align-items: flex-end; }
 }

@@ -76,7 +76,7 @@ export function ThreeGhostsMissionScene() {
       if (onFoot && distance <= ENCOUNTER_RADIUS_M) markGhostEncounter(id);
     }
     updateGhostGuard(clock.elapsedTime,playerPos.x,playerPos.z);
-    if (import.meta.env.DEV && clock.elapsedTime - lastDevMapUpdate.current >= 0.25) {
+    if (clock.elapsedTime - lastDevMapUpdate.current >= 0.25) {
       lastDevMapUpdate.current = clock.elapsedTime;
       // Hidden render roots can lag behind AI; the publisher resolves the current source.
       const ghosts = GHOST_IDS.map(id => {

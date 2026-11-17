@@ -1,7 +1,7 @@
 export type TimePeriod = 'morning' | 'day' | 'evening' | 'night';
 export type TimeMode = 'auto' | TimePeriod;
 export type EnvironmentPreferences = {mode: TimeMode; sound: boolean; volume: number};
-export const ENVIRONMENT_STORAGE_KEY = 'mm-town-environment-v1';
+export const ENVIRONMENT_STORAGE_KEY = 'mm-town-environment-v2';
 export const TIME_PERIODS: {id: TimePeriod; label: string; icon: string; range: string; minute: number}[] = [
  {id:'morning',label:'မနက်',icon:'🌅',range:'05:00 – 10:59',minute:420},
  {id:'day',label:'နေ့လယ်',icon:'☀️',range:'11:00 – 16:29',minute:780},
@@ -18,19 +18,31 @@ export function environmentMinute(mode: TimeMode, date = new Date()) {
  return mode==='auto'?localMinute(date):TIME_PERIODS.find(p=>p.id===mode)!.minute;
 }
 export function parseEnvironmentPreferences(raw: string|null): EnvironmentPreferences {
- const defaults:EnvironmentPreferences={mode:'auto',sound:true,volume:.3};
+ const defaults:EnvironmentPreferences={mode:'night',sound:true,volume:.3};
  try {
   const value=JSON.parse(raw??'null');
   if(!value||typeof value!=='object')return defaults;
   return {
-   mode:value.mode==='auto'||TIME_PERIODS.some(p=>p.id===value.mode)?value.mode:'auto',
+   mode:value.mode==='auto'||TIME_PERIODS.some(p=>p.id===value.mode)?value.mode:'night',
    sound:typeof value.sound==='boolean'?value.sound:true,
    volume:typeof value.volume==='number'&&Number.isFinite(value.volume)?Math.max(0,Math.min(1,value.volume)):.3,
   };
  }catch{return defaults;}
 }
 export function savedEnvironmentPreferences(){
- try{return parseEnvironmentPreferences(localStorage.getItem(ENVIRONMENT_STORAGE_KEY));}catch{return parseEnvironmentPreferences(null);}
+ try{
+  const stored = localStorage.getItem(ENVIRONMENT_STORAGE_KEY);
+  if (stored !== null) return parseEnvironmentPreferences(stored);
+  const legacy = localStorage.getItem('mm-town-environment-v1');
+  if (legacy !== null) {
+   const parsedLegacy = parseEnvironmentPreferences(legacy);
+   const mode = parsedLegacy.mode === 'auto' ? 'night' : parsedLegacy.mode;
+   const migrated: EnvironmentPreferences = { ...parsedLegacy, mode };
+   try { localStorage.setItem(ENVIRONMENT_STORAGE_KEY, JSON.stringify(migrated)); } catch {}
+   return migrated;
+  }
+  return parseEnvironmentPreferences(null);
+ }catch{return parseEnvironmentPreferences(null);}
 }
 
 export type EnvironmentPalette = {

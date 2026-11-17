@@ -23,6 +23,7 @@ import { BalloonControls } from './components/BalloonControls';
 import { emptyBalloonStatus, clearBalloonInput, type BalloonStatus } from './game/balloonRide';
 import { isVehicleWaitingPickupLocked, useVehicleWaiting } from './game/vehicleWaiting';
 import {LifeMeter} from './components/LifeMeter';
+import { GhostRadar } from './components/GhostRadar';
 import { RideControls } from './components/RideControls';
 import { CarControls } from './components/CarControls';
 import { GuideDialog } from './components/GuideDialog';
@@ -901,7 +902,12 @@ function App() {
         </SceneError>
         <MapLabelsOverlay host={mapLabelsHost} hidden={loading || mapOpen || first || intro.active} />
       </div>
-      {!intro.active && !loading && !rideStatus.riding && !carStatus.driving && !balloonStatus.riding && <div className="player-life"><LifeMeter lives={rideStatus.lives}/></div>}
+      {!intro.active && !loading && !rideStatus.riding && !carStatus.driving && !balloonStatus.riding && (
+        <>
+          <div className="player-life"><LifeMeter lives={rideStatus.lives}/></div>
+          <GhostRadar />
+        </>
+      )}
       {rideStatus.crashed && (rideStatus.damage??1)>0 && (
         <div className="ride-crash-banner" role="alert">
           <span className="ride-crash-icon">💥</span>

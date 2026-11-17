@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {environmentBlend,environmentMinute,localMinute,periodAtMinute,parseEnvironmentPreferences,TIME_PERIODS} from '../src/game/environmentTime.ts';
+import {environmentBlend,environmentMinute,localMinute,periodAtMinute,parseEnvironmentPreferences,savedEnvironmentPreferences,TIME_PERIODS,ENVIRONMENT_STORAGE_KEY} from '../src/game/environmentTime.ts';
 
 test('device-local clock follows all four exact boundaries, including midnight',()=>{
  const cases:[number,string][]=[[0,'night'],[299.99,'night'],[300,'morning'],[659.99,'morning'],[660,'day'],[989.99,'day'],[990,'evening'],[1139.99,'evening'],[1140,'night'],[1439.99,'night'],[1440,'night']];
@@ -16,14 +16,26 @@ test('manual time stays independent of device time; switching to auto catches up
  assert.equal(periodAtMinute(environmentMinute('auto',new Date(2026,9,27,19))),'night');
 });
 test('saved settings survive reload, reject malformed modes and clamp audio volume',()=>{
- assert.deepEqual(parseEnvironmentPreferences(null),{mode:'auto',sound:true,volume:.3});
+ assert.deepEqual(parseEnvironmentPreferences(null),{mode:'night',sound:true,volume:.3});
  assert.deepEqual(parseEnvironmentPreferences('{bad'),parseEnvironmentPreferences(null));
  for(const mode of ['auto',...TIME_PERIODS.map(p=>p.id)]){
   const setting={mode,sound:false,volume:.65};assert.deepEqual(parseEnvironmentPreferences(JSON.stringify(setting)),setting);
  }
- assert.deepEqual(parseEnvironmentPreferences('{"mode":"sunset","sound":"yes","volume":100}'),{mode:'auto',sound:true,volume:1});
+ assert.deepEqual(parseEnvironmentPreferences('{"mode":"sunset","sound":"yes","volume":100}'),{mode:'night',sound:true,volume:1});
  assert.equal(parseEnvironmentPreferences('{"volume":-2}').volume,0);
  assert.equal(parseEnvironmentPreferences('{"volume":null}').volume,.3);
+});
+test('default environment time is night for ghost mission and auto can be selected in settings',()=>{
+ // Default is night
+ assert.equal(parseEnvironmentPreferences(null).mode,'night');
+
+ // If stored preference is auto, it is respected and parsed as auto
+ const autoSetting = JSON.stringify({mode:'auto',sound:true,volume:0.3});
+ assert.equal(parseEnvironmentPreferences(autoSetting).mode,'auto');
+
+ // If stored preference is another time period, it is respected
+ const daySetting = JSON.stringify({mode:'day',sound:true,volume:0.3});
+ assert.equal(parseEnvironmentPreferences(daySetting).mode,'day');
 });
 test('atmosphere stays continuous across the cycle and uses bounded light/fog values',()=>{
  function sample(minute:number,key:'lamps'|'stars'|'sunlight'|'elevation'|'fogNear'|'fogFar'){

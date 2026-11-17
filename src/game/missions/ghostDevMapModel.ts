@@ -32,3 +32,57 @@ export function devMapProjection(points: ReadonlyArray<{ x: number; z: number }>
   return { x: (x: number) => 160 + (x - (minX + maxX) / 2) * scale,
     y: (z: number) => 120 + (z - (minZ + maxZ) / 2) * scale, scale };
 }
+
+/**
+ * Uniform world scale for circular radar (square viewBox e.g. 200x200 with center at (100, 100)).
+ * Preserves exact X/Z aspect ratio with no stretching or distortion.
+ */
+export function circularRadarProjection(
+  points: ReadonlyArray<{ x: number; z: number }>,
+  size = 200,
+  padding = 24
+) {
+  const minX = Math.min(...points.map(p => p.x)) - padding;
+  const maxX = Math.max(...points.map(p => p.x)) + padding;
+  const minZ = Math.min(...points.map(p => p.z)) - padding;
+  const maxZ = Math.max(...points.map(p => p.z)) + padding;
+  const spanX = maxX - minX || 1;
+  const spanZ = maxZ - minZ || 1;
+  const maxSpan = Math.max(spanX, spanZ);
+  const scale = (size - padding * 2) / maxSpan;
+  const centerX = (minX + maxX) / 2;
+  const centerZ = (minZ + maxZ) / 2;
+  const cx = size / 2;
+  const cy = size / 2;
+  return {
+    x: (xVal: number) => cx + (xVal - centerX) * scale,
+    y: (zVal: number) => cy + (zVal - centerZ) * scale,
+    scale,
+    radius: (size / 2) - 4,
+    cx,
+    cy,
+    centerX,
+    centerZ,
+  };
+}
+
+/**
+ * Clamps coordinates to stay within the radar circular boundary with an indication if clamped.
+ */
+export function clampToRadarCircle(
+  x: number,
+  y: number,
+  cx = 100,
+  cy = 100,
+  maxRadius = 88
+): { x: number; y: number; clamped: boolean; angleRad: number } {
+  const dx = x - cx;
+  const dy = y - cy;
+  const dist = Math.hypot(dx, dy);
+  const angleRad = Math.atan2(dy, dx);
+  if (dist <= maxRadius) {
+    return { x, y, clamped: false, angleRad };
+  }
+  const factor = maxRadius / dist;
+  return { x: cx + dx * factor, y: cy + dy * factor, clamped: true, angleRad };
+}
