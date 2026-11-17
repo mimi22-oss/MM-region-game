@@ -77,13 +77,13 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
         ပွဲတော်ကာလ: {TAZAUNGDAING_START_DATE} မှ {TAZAUNGDAING_END_DATE} အထိ
       </small>
 
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
         <button
           type="button"
           className={`time-btn${config.scheduleMode === 'auto' ? ' time-btn-active' : ''}`}
           aria-pressed={config.scheduleMode === 'auto'}
           onClick={() => updateFestivalConfiguration({ scheduleMode: 'auto' })}
-          style={{ flex: 1, fontSize: '11px', padding: '5px 8px' }}
+          style={{ flex: '1 1 140px', minWidth: 0, fontSize: '11px', padding: '5px 8px', boxSizing: 'border-box' }}
         >
           📅 Auto (15–24 Nov 2026)
         </button>
@@ -97,7 +97,7 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
               enabled: active,
             })
           }
-          style={{ flex: 1, fontSize: '11px', padding: '5px 8px' }}
+          style={{ flex: '1 1 120px', minWidth: 0, fontSize: '11px', padding: '5px 8px', boxSizing: 'border-box' }}
         >
           🔧 Manual Admin
         </button>
@@ -112,6 +112,9 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
           fontSize: '12.5px',
           fontWeight: 500,
           marginBottom: '8px',
+          minWidth: 0,
+          maxWidth: '100%',
+          boxSizing: 'border-box',
         }}
       >
         <input
@@ -119,7 +122,7 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
           checked={active}
           onChange={(e) => setFestivalEnabled(e.target.checked)}
         />
-        <span>မီးပုံးပျံပွဲတော်နှင့် မီးထွန်းအလှဆင်မှု ဖွင့်မည်</span>
+        <span style={{ minWidth: 0, overflowWrap: 'break-word' }}>မီးပုံးပျံပွဲတော်နှင့် မီးထွန်းအလှဆင်မှု ဖွင့်မည်</span>
       </label>
 
       {active && (
@@ -131,10 +134,24 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
             borderRadius: '8px',
             background: 'rgba(0,0,0,0.22)',
             fontSize: '12px',
+            boxSizing: 'border-box',
+            width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
+            overflow: 'hidden',
           }}
         >
-          <label style={{ display: 'grid', gap: '4px' }}>
-            <span>📍 ပွဲတော်နယ်မြေ (Festival Zone)</span>
+          <label
+            style={{
+              display: 'grid',
+              gap: '4px',
+              minWidth: 0,
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
+            <span style={{ minWidth: 0, overflowWrap: 'break-word' }}>📍 ပွဲတော်နယ်မြေ (Festival Zone)</span>
             <select
               aria-label="ပွဲတော်နယ်မြေ ရွေးချယ်ရန်"
               value={config.activeZoneId}
@@ -142,12 +159,19 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
                 updateFestivalConfiguration({ activeZoneId: e.target.value })
               }
               style={{
+                width: '100%',
+                maxWidth: '100%',
+                minWidth: 0,
+                boxSizing: 'border-box',
                 padding: '5px 8px',
                 borderRadius: '6px',
                 background: 'rgba(20, 32, 40, 0.92)',
                 color: '#fff',
                 border: '1px solid rgba(255,255,255,0.18)',
                 fontSize: '12px',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
               }}
             >
               <option value="all">
@@ -166,11 +190,15 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
                 gap: '6px',
+                width: '100%',
+                maxWidth: '100%',
+                minWidth: 0,
+                boxSizing: 'border-box',
               }}
             >
-              <label style={{ display: 'grid', gap: '2px', fontSize: '11px' }}>
+              <label style={{ display: 'grid', gap: '2px', fontSize: '11px', minWidth: 0, boxSizing: 'border-box' }}>
                 <span>Center X</span>
                 <input
                   type="number"
@@ -185,6 +213,9 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
                   }
                   style={{
                     width: '100%',
+                    maxWidth: '100%',
+                    minWidth: 0,
+                    boxSizing: 'border-box',
                     padding: '4px',
                     borderRadius: '4px',
                     background: 'rgba(20,32,40,0.9)',
@@ -193,7 +224,7 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
                   }}
                 />
               </label>
-              <label style={{ display: 'grid', gap: '2px', fontSize: '11px' }}>
+              <label style={{ display: 'grid', gap: '2px', fontSize: '11px', minWidth: 0, boxSizing: 'border-box' }}>
                 <span>Center Z</span>
                 <input
                   type="number"
@@ -208,6 +239,9 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
                   }
                   style={{
                     width: '100%',
+                    maxWidth: '100%',
+                    minWidth: 0,
+                    boxSizing: 'border-box',
                     padding: '4px',
                     borderRadius: '4px',
                     background: 'rgba(20,32,40,0.9)',
@@ -216,7 +250,7 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
                   }}
                 />
               </label>
-              <label style={{ display: 'grid', gap: '2px', fontSize: '11px' }}>
+              <label style={{ display: 'grid', gap: '2px', fontSize: '11px', minWidth: 0, boxSizing: 'border-box' }}>
                 <span>Radius (m)</span>
                 <input
                   type="number"
@@ -233,6 +267,9 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
                   }
                   style={{
                     width: '100%',
+                    maxWidth: '100%',
+                    minWidth: 0,
+                    boxSizing: 'border-box',
                     padding: '4px',
                     borderRadius: '4px',
                     background: 'rgba(20,32,40,0.9)',
@@ -244,8 +281,19 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
             </div>
           )}
 
-          <label className="environment-volume" style={{ fontSize: '11.5px' }}>
-            <span>ဇုန်တစ်ခုလျှင် မီးပုံးပျံအရေအတွက်</span>
+          <label
+            className="environment-volume"
+            style={{
+              fontSize: '11.5px',
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+              boxSizing: 'border-box',
+            }}
+          >
+            <span style={{ minWidth: 0, overflowWrap: 'break-word' }}>
+              ဇုန်တစ်ခုလျှင် မီးပုံးပျံအရေအတွက်
+            </span>
             <output>{config.balloonsPerZone}</output>
             <input
               aria-label="ဇုန်တစ်ခုလျှင် မီးပုံးပျံအရေအတွက်"
@@ -259,6 +307,12 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
                   balloonsPerZone: Number(e.target.value),
                 })
               }
+              style={{
+                width: '100%',
+                maxWidth: '100%',
+                boxSizing: 'border-box',
+                margin: 0,
+              }}
             />
           </label>
 
@@ -269,6 +323,9 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
               gap: '8px',
               cursor: 'pointer',
               fontSize: '11.5px',
+              minWidth: 0,
+              maxWidth: '100%',
+              boxSizing: 'border-box',
             }}
           >
             <input
@@ -280,7 +337,7 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
                 })
               }
             />
-            <span>မြေပြင် ပွဲတော်မီးပုံးတိုင်များနှင့် အလှဆင်မီးပုံးပျံများ ပြမည်</span>
+            <span style={{ minWidth: 0, overflowWrap: 'break-word' }}>မြေပြင် ပွဲတော်မီးပုံးတိုင်များနှင့် အလှဆင်မီးပုံးပျံများ ပြမည်</span>
           </label>
 
           <label
@@ -290,6 +347,9 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
               gap: '8px',
               cursor: 'pointer',
               fontSize: '11.5px',
+              minWidth: 0,
+              maxWidth: '100%',
+              boxSizing: 'border-box',
             }}
           >
             <input
@@ -301,23 +361,41 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
                 })
               }
             />
-            <span>နေ့ခင်းဘက်တွင်ပါ မီးပုံးပျံလွှင့်တင်ပွဲ စမ်းသပ်ကြည့်မည်</span>
+            <span style={{ minWidth: 0, overflowWrap: 'break-word' }}>နေ့ခင်းဘက်တွင်ပါ မီးပုံးပျံလွှင့်တင်ပွဲ စမ်းသပ်ကြည့်မည်</span>
           </label>
 
-          <label style={{ display: 'grid', gap: '4px', fontSize: '11.5px' }}>
-            <span>Quality Preset ({activeQuality.label})</span>
+          <label
+            style={{
+              display: 'grid',
+              gap: '4px',
+              fontSize: '11.5px',
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+              boxSizing: 'border-box',
+            }}
+          >
+            <span style={{ minWidth: 0, overflowWrap: 'break-word' }}>
+              Quality Preset ({activeQuality.label})
+            </span>
             <select
               aria-label="Quality Preset"
               value={qualityMode}
               onChange={(e) => setQualityPresetMode(e.target.value as QualityPresetMode)}
               style={{
                 width: '100%',
+                maxWidth: '100%',
+                minWidth: 0,
+                boxSizing: 'border-box',
                 padding: '5px 8px',
                 borderRadius: '6px',
                 background: 'rgba(20,32,40,0.9)',
                 color: '#fff',
                 border: '1px solid rgba(255,255,255,0.18)',
                 fontSize: '12px',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
               }}
             >
               <option value="auto">Auto (Device)</option>
@@ -332,7 +410,16 @@ export function FestivalSettings({ now = new Date() }: { now?: Date }) {
             type="button"
             className="time-btn"
             onClick={() => resetFestivalConfiguration(now)}
-            style={{ fontSize: '11px', padding: '4px 8px', marginTop: '2px' }}
+            style={{
+              fontSize: '11px',
+              padding: '5px 8px',
+              marginTop: '2px',
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+              boxSizing: 'border-box',
+              wordBreak: 'break-word',
+            }}
           >
             ↺ ပွဲတော် မူလဆက်တင်သို့ ပြန်ထားမည်
           </button>

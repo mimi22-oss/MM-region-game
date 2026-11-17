@@ -169,6 +169,8 @@ header p {
 .settings-menu {
 	position: relative;
 	width: min(980px, calc(100vw - 32px));
+	max-width: 100vw;
+	box-sizing: border-box;
 	max-height: min(680px, calc(100dvh - 32px));
 	display: flex;
 	flex-direction: column;
@@ -232,6 +234,7 @@ header p {
 .cam-zoom-row {
 	display: flex;
 	gap: 8px;
+	flex-wrap: wrap;
 }
 
 .cam-zoom-row .cam-btn {
@@ -248,6 +251,11 @@ header p {
 	color: #163e36;
 	cursor: pointer;
 	text-align: center;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	word-break: break-word;
+	overflow-wrap: break-word;
 	transition:
 		background 0.15s,
 		color 0.15s;
@@ -283,6 +291,15 @@ header p {
 	justify-content: space-between;
 	align-items: center;
 	gap: 8px;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.guide-list li > span {
+	min-width: 0;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 .guide-list kbd {
@@ -678,6 +695,7 @@ main.night-mode .map-haunt-note {
 .time-btn-row {
 	display: flex;
 	gap: 8px;
+	flex-wrap: wrap;
 }
 
 .time-btn {
@@ -695,6 +713,11 @@ main.night-mode .map-haunt-note {
 	font-weight: 600;
 	color: #163e36;
 	cursor: pointer;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	word-break: break-word;
+	overflow-wrap: break-word;
 	transition: all 0.15s ease;
 }
 
@@ -2693,11 +2716,18 @@ main.night-mode .home-guidance-pill {
 	margin-bottom: 12px;
 	color: #173e35;
 	background: #edf5ed;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	overflow: hidden;
 }
 
 .robot-location-toggle,
 .robot-copy {
 	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
 	border: 0;
 	border-radius: 6px;
 	padding: 10px;
@@ -2706,35 +2736,54 @@ main.night-mode .home-guidance-pill {
 	color: #173e35;
 	cursor: pointer;
 	font-weight: 600;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 .robot-location-panel strong {
 	display: block;
 	font-size: 12px;
 	margin: 10px 0;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 .robot-location-panel dl {
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 6px;
 	font-size: 11px;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.robot-location-panel dt {
+	min-width: 0;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 .robot-location-panel dd {
 	margin: 0;
 	font-variant-numeric: tabular-nums;
 	overflow-wrap: anywhere;
+	min-width: 0;
 }
 
 .robot-location-panel p,
 .robot-location-panel [role="status"] {
 	font-size: 11px;
 	line-height: 1.6;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 .robot-location-panel textarea {
 	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
 	margin-top: 8px;
 	padding: 7px;
 	border: 1px solid #8aaa9a;
@@ -2764,8 +2813,11 @@ main.night-mode .home-guidance-pill {
 
 .character-options {
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 8px;
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
 }
 
 .character-options button {
@@ -2780,6 +2832,18 @@ main.night-mode .home-guidance-pill {
 	color: #31234f;
 	text-align: left;
 	cursor: pointer;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	overflow-wrap: break-word;
+	word-break: break-word;
+}
+
+.character-options button > span:last-child {
+	min-width: 0;
+	flex: 1 1 auto;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 .character-options button[aria-pressed="true"] {
@@ -5215,7 +5279,10 @@ main.night-mode .guide-btn-secondary:hover {
 .appearance-tabs {
 	display: flex;
 	gap: 5px;
-	margin-bottom: 12px
+	margin-bottom: 12px;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
 }
 
 .appearance-tabs button {
@@ -5226,7 +5293,10 @@ main.night-mode .guide-btn-secondary:hover {
 	background: #fffaf0;
 	color: inherit;
 	font: inherit;
-	cursor: pointer
+	cursor: pointer;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
 }
 
 .appearance-tabs button[aria-selected="true"] {
@@ -5241,11 +5311,17 @@ main.night-mode .guide-btn-secondary:hover {
 	justify-content: space-between;
 	gap: 10px;
 	margin: 9px 0;
-	font-size: 11px
+	font-size: 11px;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
 }
 
 .appearance-field>span {
-	flex: 1
+	flex: 1;
+	min-width: 0;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 .appearance-field select {
@@ -5256,7 +5332,10 @@ main.night-mode .guide-btn-secondary:hover {
 	padding: 6px;
 	background: #fffdf5;
 	color: #234d43;
-	font: inherit
+	font: inherit;
+	box-sizing: border-box;
+	text-overflow: ellipsis;
+	overflow: hidden;
 }
 
 .appearance-field input[type="color"] {
@@ -5266,21 +5345,31 @@ main.night-mode .guide-btn-secondary:hover {
 	border: 1px solid #b6c8b7;
 	border-radius: 6px;
 	background: white;
-	cursor: pointer
+	cursor: pointer;
+	box-sizing: border-box;
+	flex-shrink: 0;
 }
 
 .appearance-field input[type="range"] {
 	width: 55%;
-	accent-color: #25634f
+	max-width: 55%;
+	min-width: 0;
+	box-sizing: border-box;
+	accent-color: #25634f;
 }
 
 .appearance-colors {
 	display: flex;
-	gap: 10px
+	gap: 10px;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
 }
 
 .appearance-colors>.appearance-field {
-	flex: 1
+	flex: 1;
+	min-width: 0;
+	max-width: 100%;
 }
 
 .appearance-settings p,
@@ -6063,16 +6152,32 @@ body:has(.balloon-controls-layer) .player-life {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 8px;
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
 }
 
 .environment-periods .time-btn {
 	flex-direction: column;
 	gap: 3px;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	text-align: center;
+}
+
+.environment-periods .time-btn span {
+	min-width: 0;
+	max-width: 100%;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 .environment-periods small {
 	font-size: 10px;
 	opacity: .8;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 .environment-sound {
@@ -6081,10 +6186,16 @@ body:has(.balloon-controls-layer) .player-life {
 	align-items: center;
 	font-size: 12px;
 	cursor: pointer;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 .environment-sound input {
 	accent-color: #267865;
+	flex-shrink: 0;
 }
 
 .environment-volume {
@@ -6093,14 +6204,30 @@ body:has(.balloon-controls-layer) .player-life {
 	align-items: center;
 	gap: 8px;
 	font-size: 11px;
+	min-width: 0;
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.environment-volume > span,
+.environment-volume > label {
+	min-width: 0;
+	max-width: 100%;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 
 .environment-volume output {
 	margin-left: auto;
+	flex-shrink: 0;
 }
 
 .environment-volume input {
 	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+	margin: 0;
 	accent-color: #267865;
 	cursor: pointer;
 }
@@ -6505,6 +6632,9 @@ body:has(.balloon-controls-layer) .player-life {
 
 .settings-detail-card {
 	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	overflow: hidden;
 	padding: 14px;
 	border-radius: 14px;
 	border: 1px solid rgba(246, 206, 108, 0.2);
@@ -6596,6 +6726,21 @@ main.night-mode .settings-menu .appearance-field input[type="color"] {
 	background: rgba(34, 13, 6, 0.9);
 	border-color: rgba(246, 206, 108, 0.28);
 	color: #f7eedb;
+	box-sizing: border-box;
+	max-width: 100%;
+}
+
+.settings-menu select {
+	box-sizing: border-box;
+	max-width: 100%;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+
+.settings-menu input[type="range"],
+.settings-menu input[type="number"] {
+	box-sizing: border-box;
+	max-width: 100%;
 }
 
 .settings-menu .appearance-field select option,
@@ -6756,6 +6901,12 @@ main.night-mode .settings-menu .guide-list kbd {
 @media (max-width: 560px) {
 	.settings-menu-header {
 		padding: 12px 14px 10px;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.settings-menu-header-actions {
+		flex-wrap: wrap;
 	}
 
 	.settings-menu-title-group h2 {
@@ -6785,10 +6936,107 @@ main.night-mode .settings-menu .guide-list kbd {
 		min-height: 76px;
 		padding: 10px 6px;
 		gap: 6px;
+		min-width: 0;
+		box-sizing: border-box;
+		overflow: hidden;
 	}
 
 	.settings-tile-label {
 		font-size: 11px;
+		overflow-wrap: break-word;
+		word-break: break-word;
+		max-width: 100%;
+	}
+}
+
+@media (max-width: 420px) {
+	.settings-menu {
+		width: calc(100vw - 12px);
+		max-width: calc(100vw - 12px);
+		border-radius: 14px;
+	}
+
+	.settings-menu-header {
+		padding: 10px 10px 8px;
+		gap: 6px;
+	}
+
+	.settings-menu-title-group h2 {
+		font-size: 15px;
+	}
+
+	.settings-header-pill {
+		height: 28px;
+		padding: 0 8px;
+		font-size: 10.5px;
+		max-width: 110px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.settings-menu-close {
+		width: 30px;
+		height: 30px;
+		font-size: 14px;
+	}
+
+	.settings-menu-body {
+		padding: 12px 8px 16px;
+	}
+
+	.settings-detail-card {
+		padding: 10px 8px;
+		border-radius: 10px;
+	}
+
+	.settings-tile {
+		min-height: 70px;
+		padding: 8px 4px;
+	}
+
+	.settings-tile-label {
+		font-size: 10px;
+	}
+}
+
+@media (max-width: 380px) {
+	.character-options {
+		grid-template-columns: 1fr;
+	}
+
+	.environment-periods {
+		grid-template-columns: 1fr;
+	}
+
+	.appearance-colors {
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.appearance-field {
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.appearance-field select,
+	.appearance-field input[type="range"] {
+		max-width: 100%;
+		width: 100%;
+	}
+
+	.robot-location-panel dl {
+		grid-template-columns: 1fr;
+	}
+
+	.cam-zoom-row {
+		flex-direction: column;
+	}
+}
+
+@media (max-width: 350px) {
+	.settings-icon-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 6px;
 	}
 }
 
