@@ -1,0 +1,57 @@
+✔ ordinary walls block without recoil, damage or recovery time, and allow walking along the edge (3.8884ms)
+✔ a tree contact triggers a short upright recoil without damage or repeated triggering (1.3616ms)
+✔ tree classification covers town, village, orchard and estate trunks without classifying a house as a tree (3.8976ms)
+✔ a car moving into a standing person is fatal, while a robot contact causes upright recoil (1.5802ms)
+✔ recoil retreats one step opposite the impact direction at any frame rate (2.6876ms)
+✔ recoil pauses with zero time and stops before a thin wall or another actor (2.0242ms)
+✔ recoil can escape an initially overlapping robot but stops at the next robot (1.1981ms)
+✔ car impacts cost exactly 1.5 lives per distinct collision and a second crash restarts (2.8854ms)
+✔ swept walking checks catch cars before entering them and stationary clear ground does not cause falls (1.0741ms)
+✔ skirts have visible outer and inner surfaces all around, and covered steps stay inside their hem (43.2093ms)
+✔ motorcycle sleeves have solid caps at both ends (10.2819ms)
+✔ car shell leaves the lap and footwell empty while preserving solid doors, hood and boot (44.6726ms)
+✔ driver grips stay on the steering rim in both directions and at full lock (2.2307ms)
+✔ the driver can see through the hollow windshield frame (9.052ms)
+✔ Ackermann front wheels and differential travel match the inside and outside turning radii (1.6075ms)
+✔ steering has a finite rate, self-centers, reduces with speed and reverses yaw when backing (5.9535ms)
+✔ side-door boarding checks the approach, and exit cannot immediately auto-board again (1.1428ms)
+✔ neutral and depressed clutch disconnect the engine; gear changes need the clutch (0.9852ms)
+✔ four gears cap speed, braking overrides gas, and direction changes need a stop (11.4673ms)
+✔ whole-car swept footprint stops at a narrow barrier, pauses, and steers only while moving (1.1833ms)
+✔ parked-car collision follows the driven position and does not block its own driver (3.7678ms)
+✔ car summon appears only after standing still for 3 seconds in the summon zone and drives car to main road front facing South, and returns after 10s if not boarded (2.3376ms)
+✔ automatic drive shifts up and down without a clutch, while P/R/D have brake and direction interlocks (13.3155ms)
+✔ car customization is isolated to the player car and does not swap a moving chassis (2.7046ms)
+✔ runtime mount replacement cannot inherit data or be deleted/updated by the old mount (3.0761ms)
+✔ all ghost IDs move independently; invalid values cannot poison fresh positions (2.2195ms)
+✔ fresh movement beats guard/spawn; stale data and unseeded guard never appear LIVE (0.8358ms)
+✔ map uses uniform X/Z scale; resizing SVG does not change world projection (1.1175ms)
+✔ equipped sword resolves real GLB/procedural hand anchors and detects detached rigs (1.7933ms)
+✔ held GLB hierarchy has a grip pivot and human-size blade without changing shared resources (6.5508ms)
+✔ blade grip points forward/down on rotated rigs and then follows hand animation (2.0268ms)
+✔ saved mission progress survives load; unique encounters and live sword distances preserve progression (80.3552ms)
+✔ buffered six-hit combo advances once in its window; timeout, early input and recovery are enforced (2.1209ms)
+✔ death, incapacitation, pause and unequip suppress attacks; defensive windows are bounded (0.4687ms)
+✔ one mixer finishes actions, never restarts on renders, and samples only active clip time at 15/30/60Hz (8.1168ms)
+✔ replacement animation owners and cleanup cannot disable a new character driver (0.6465ms)
+✔ swept blade hits across a frame and misses remote/behind volumes, including point segments (0.6584ms)
+✔ guard contact follows animation marker; protection, parry and invalid contact preempt death (0.6055ms)
+✔ ghost reaction and engagement state stays independent; stale completion cannot clear a newer stun (0.3302ms)
+✔ real damage resolver requires active blade contact, facing and group clearance; hits once, emits impacts and death (5.5239ms)
+✔ all supplied GLBs load: counts, bindings, finite transforms and every exact combat clip playback (114.0927ms)
+✔ production rigs place the support palm on the pommel for two-hand cuts and release it for horizontal cuts (444.9862ms)
+ℹ boy max two-hand gap 0.28 cm; minimum free-hand clearance 18.90 cm
+ℹ girl max two-hand gap 0.37 cm; minimum free-hand clearance 24.00 cm
+ℹ canolia-character max two-hand gap 0.35 cm; minimum free-hand clearance 25.08 cm
+✔ extracted wait_car GLB has zero meshes/images/scale tracks and matches source wait.001 duration (70.9443ms)
+✔ retargets wait.001 onto boy.glb & girl.glb with zero horizontal drift and clean Idle/Walk/Jump blending (220.1259ms)
+✔ vehicle waiting state machine walks all 8 states from Call to Ride and Exit (3.4231ms)
+✔ cancellation, interruption, repeated requests, cache reuse, and future vehicle types work cleanly (47.0619ms)
+ℹ tests 46
+ℹ suites 0
+ℹ pass 46
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10333.1933

@@ -50,7 +50,9 @@ try{
  for(const [kind,clip] of [['boy','Slash_Left'],['girl','Heavy_Slash'],['canolia','Slash_Overhead']]){
   await evaluate(`window.combatTest.kind('${kind}')`);
   await waitFor(`window.combatTest.inspect().kind==='${kind}'&&window.combatTest.inspect().swords===1&&window.combatTest.inspect().state.ready&&window.combatTest.inspect().state.capable`);
-  await evaluate(`window.combatTest.freezeClip='${clip}';window.combatTest.attack('${clip}')`);
+  await sleep(350);
+  const request=await evaluate(`window.combatTest.freezeClip='${clip}';window.combatTest.attack('${clip}');window.combatTest.inspect().state`);
+  assert.equal(request.clip,clip,JSON.stringify(request));
   await waitFor('window.combatTest.paused===true');
   const shot=await call('Page.captureScreenshot',{format:'png'});
   await writeFile(join(out,kind+'-'+clip+'.png'),Buffer.from(shot.data,'base64'));
@@ -86,10 +88,24 @@ try{
  await evaluate(`window.combatTest.far();window.combatTest.guard('ghost-1',${field.x},${field.z-1.1});window.combatTest.trimHp('ghost-1')`);await sleep(100);
  await evaluate(`window.combatTest.attack('Slash_Left')`);await waitFor(`window.combatTest.hp().hp['ghost-1']===0`);
  const dying=await evaluate('window.combatTest.inspect()');await waitFor('window.combatTest.inspect().ghosts[0].visible===false');const dead=await evaluate('window.combatTest.inspect()');assert.equal(dead.ghosts[0].visible,false);assert.equal(dead.ghosts[0].runtime,undefined);
+ for(const id of ['ghost-2','ghost-3']){
+  await evaluate(`window.combatTest.far();window.combatTest.guard('${id}',${field.x},${field.z-1.1});window.combatTest.trimHp('${id}')`);
+  await waitFor(`Math.abs(window.combatTest.inspect().ghosts.find(g=>g.id==='${id}').runtime?.z-(${field.z-1.1}))<.01&&!window.combatTest.inspect().state.busy`);
+  await evaluate("window.combatTest.attack('Slash_Left')");
+  await waitFor(`window.combatTest.hp().hp['${id}']===0`);
+ }
+ await waitFor("window.combatTest.hp().completed&&window.combatTest.inspect().swords===0&&document.querySelector('select[aria-label=Weapon]')?.value===''");
+ const selectWeapon=async value=>evaluate(`(()=>{const s=document.querySelector('select[aria-label=Weapon]');s.value='${value}';s.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+ await selectWeapon('ghost-sword');
+ await waitFor('window.combatTest.inspect().swords===1&&window.combatTest.inspect().state.ready');
+ await evaluate("window.combatTest.attack('Heavy_Slash')");
+ await selectWeapon('');
+ await waitFor('window.combatTest.inspect().swords===0&&!window.combatTest.inspect().state.busy&&!window.combatTest.inspect().state.ready');
+ assert.equal(await evaluate("window.combatTest.attack('attack');window.combatTest.inspect().state.busy"),false);
  await evaluate('window.combatTest.npcs(false);window.combatTest.mount(false)');await sleep(350);
  assert.equal(await evaluate('window.combatTest.inspect().state.capable'),false);assert.equal(await evaluate('window.combatTest.inspect().state.ready'),false);
  assert.equal(errors.length,0,JSON.stringify(errors));
- const result={passed:true,pickupClearanceAndTiming:true,combo,cases,firstHit:{before,startup,active,hit},dying,dead,cleanup:true,errors,frames:await evaluate('window.combatTest.frames')};
+ const result={passed:true,pickupClearanceAndTiming:true,weaponMenu:true,combo,cases,firstHit:{before,startup,active,hit},dying,dead,cleanup:true,errors,frames:await evaluate('window.combatTest.frames')};
  await writeFile(join(out,'runtime.json'),JSON.stringify(result));console.log(JSON.stringify({passed:true,characters:cases.map(c=>c.kind),clipsPerCharacter:cases.map(c=>c.animations.length),singleHit:true,shieldAndMiss:true,death:true,cleanup:true,errors}));
 }finally{
  if(ws?.readyState===WebSocket.OPEN){ws.send(JSON.stringify({id:9999999,method:'Browser.close'}));await sleep(250);}

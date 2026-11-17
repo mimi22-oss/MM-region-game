@@ -1,0 +1,653 @@
+/* ==========================================================================
+   GHOST MISSION V2 — IMMERSIVE GAMING HUD & COMPACT DRAGGABLE CONTROLS
+   ========================================================================== */
+
+/* Root HUD Positioning Container */
+.ghost-hud-container {
+  position: fixed;
+  z-index: 85;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  pointer-events: auto;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Myanmar", sans-serif;
+  transition: opacity 0.2s ease;
+}
+
+/* ==========================================================================
+   1. COLLAPSED VIEW: Minimal Floating Gaming Pill
+   ========================================================================== */
+.ghost-hud-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px 6px 10px;
+  background: linear-gradient(135deg, rgba(18, 12, 34, 0.92) 0%, rgba(32, 20, 56, 0.88) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 14px rgba(168, 85, 247, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #f1f5f9;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: grab;
+  transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ghost-hud-pill:hover {
+  border-color: rgba(192, 132, 252, 0.85);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65), 0 0 20px rgba(192, 132, 252, 0.45);
+  transform: translateY(-1px);
+}
+
+.ghost-hud-pill:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+.ghost-hud-pill-icon-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ghost-hud-ghost-emoji {
+  font-size: 18px;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.6));
+  animation: ghostFloatingGlow 3s ease-in-out infinite alternate;
+}
+
+.ghost-hud-chevron-btn {
+  background: transparent;
+  border: none;
+  color: #c084fc;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.15s ease;
+}
+
+.ghost-hud-chevron-btn:hover {
+  color: #f3e8ff;
+  transform: scale(1.15);
+}
+
+.ghost-hud-pill-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #f8fafc;
+  letter-spacing: 0.2px;
+}
+
+.ghost-hud-pill-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(168, 85, 247, 0.25);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #e9d5ff;
+}
+
+.ghost-hud-pill-badge.completed {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: rgba(16, 185, 129, 0.45);
+  color: #6ee7b7;
+}
+
+.ghost-hud-pill-badge.combat {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
+  animation: pulseCombatBadge 1.8s infinite;
+}
+
+/* ==========================================================================
+   2. EXPANDED VIEW: Full Gaming Mission Card
+   ========================================================================== */
+.ghost-hud-card {
+  width: 310px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 120px);
+  background: linear-gradient(155deg, rgba(16, 11, 30, 0.95) 0%, rgba(24, 16, 46, 0.92) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 24px rgba(139, 92, 246, 0.22);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: ghostCardAppear 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Header & Drag Area */
+.ghost-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: linear-gradient(90deg, rgba(88, 28, 135, 0.35) 0%, rgba(139, 92, 246, 0.15) 100%);
+  border-bottom: 1px solid rgba(168, 85, 247, 0.25);
+  cursor: grab;
+  position: relative;
+}
+
+.ghost-hud-header:active {
+  cursor: grabbing;
+}
+
+.ghost-hud-header-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.ghost-hud-drag-grip {
+  color: #94a3b8;
+  opacity: 0.5;
+  font-size: 14px;
+  line-height: 1;
+  cursor: grab;
+}
+
+.ghost-hud-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ghost-hud-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f3e8ff;
+  letter-spacing: 0.3px;
+  text-shadow: 0 0 10px rgba(192, 132, 252, 0.4);
+}
+
+.ghost-hud-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ghost-hud-collapse-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: 8px;
+  color: #e9d5ff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ghost-hud-collapse-btn:hover {
+  background: rgba(168, 85, 247, 0.4);
+  border-color: rgba(192, 132, 252, 0.65);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.ghost-hud-collapse-btn:active {
+  transform: scale(0.92);
+}
+
+/* Scrollable Content Body */
+.ghost-hud-body {
+  padding: 12px 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100vh - 180px);
+}
+
+.ghost-hud-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.ghost-hud-body::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.3);
+}
+
+.ghost-hud-body::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.4);
+  border-radius: 4px;
+}
+
+/* Sections & Cards */
+.ghost-hud-section {
+  background: rgba(20, 14, 38, 0.55);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: 11px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ghost-hud-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #c084fc;
+}
+
+.ghost-hud-badge-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(168, 85, 247, 0.25);
+  color: #e9d5ff;
+}
+
+/* Encounter Nodes (Stage 1) */
+.ghost-hud-encounter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.ghost-hud-encounter-node {
+  background: rgba(15, 10, 30, 0.6);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 8px;
+  padding: 5px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  font-size: 11px;
+  transition: all 0.2s ease;
+}
+
+.ghost-hud-encounter-node.encountered {
+  background: rgba(168, 85, 247, 0.18);
+  border-color: rgba(192, 132, 252, 0.6);
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.2);
+}
+
+.ghost-hud-encounter-node .node-id {
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.ghost-hud-encounter-node .node-scale {
+  font-size: 9.5px;
+  color: #94a3b8;
+}
+
+.ghost-hud-encounter-node .node-status {
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.ghost-hud-encounter-node.encountered .node-status {
+  color: #34d399;
+}
+
+.ghost-hud-encounter-node:not(.encountered) .node-status {
+  color: #94a3b8;
+}
+
+/* Sword Objective (Stage 2) */
+.ghost-hud-sword-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.ghost-hud-sword-icon {
+  font-size: 16px;
+}
+
+.ghost-hud-sword-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+
+.ghost-hud-sword-state {
+  font-weight: 600;
+}
+
+.ghost-hud-sword-state.collected {
+  color: #34d399;
+}
+
+.ghost-hud-sword-state.ready {
+  color: #facc15;
+  animation: swordReadyGlow 1.8s infinite alternate;
+}
+
+.ghost-hud-sword-state.locked {
+  color: #94a3b8;
+}
+
+.ghost-hud-sword-hint {
+  font-size: 10.5px;
+  color: #cbd5e1;
+  opacity: 0.85;
+}
+
+/* Boss Health Bars (Stage 3) */
+.ghost-hud-boss-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ghost-hud-boss-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ghost-hud-boss-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.ghost-hud-boss-name {
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.ghost-hud-boss-hp-text {
+  font-variant-numeric: tabular-nums;
+  font-size: 10.5px;
+  color: #cbd5e1;
+}
+
+.ghost-hud-boss-hp-text.dead {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.ghost-hud-hp-bar-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.ghost-hud-hp-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ef4444 0%, #a855f7 100%);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+}
+
+.ghost-hud-hp-bar-fill.boss3 {
+  background: linear-gradient(90deg, #dc2626 0%, #9333ea 60%, #ec4899 100%);
+}
+
+.ghost-hud-hp-bar-fill.dead {
+  background: #475569;
+  box-shadow: none;
+}
+
+/* Notification & Message Toast */
+.ghost-hud-message {
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fef08a;
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+/* Interactive Sword Pickup Button & Progress */
+.ghost-hud-pickup-box {
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.45) 0%, rgba(20, 14, 38, 0.6) 100%);
+  border: 1px solid rgba(250, 204, 21, 0.5);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.2);
+}
+
+.ghost-hud-pickup-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+  border: none;
+  border-radius: 8px;
+  color: #1a1002;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.35);
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.ghost-hud-pickup-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.ghost-hud-pickup-btn:active {
+  transform: scale(0.98);
+}
+
+.ghost-hud-pickup-progress-track {
+  width: 100%;
+  height: 5px;
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ghost-hud-pickup-progress-bar {
+  height: 100%;
+  background: #facc15;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 8px #facc15;
+}
+
+/* Reward Callout */
+.ghost-hud-reward-box {
+  padding: 7px 10px;
+  border-radius: 9px;
+  font-size: 11.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ghost-hud-reward-box.completed {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.1) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #a7f3d0;
+  font-weight: 600;
+}
+
+.ghost-hud-reward-box.locked {
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   3. COMBAT CONTROLS STYLED GAMING ACTION BUTTONS
+   ========================================================================== */
+.ghost-hud-combat-wrap {
+  margin-top: 2px;
+  padding: 8px 10px;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ghost-hud-combat-status {
+  font-size: 11px;
+  font-weight: 600;
+  color: #fca5a5;
+  font-variant-numeric: tabular-nums;
+}
+
+.ghost-hud-combat-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.ghost-hud-combat-btn {
+  padding: 6px 9px;
+  border-radius: 7px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: linear-gradient(135deg, rgba(185, 28, 28, 0.5) 0%, rgba(127, 29, 29, 0.6) 100%);
+  color: #fee2e2;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ghost-hud-combat-btn:hover {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.7) 0%, rgba(153, 27, 27, 0.8) 100%);
+  border-color: rgba(248, 113, 113, 0.7);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.ghost-hud-combat-btn:active {
+  transform: scale(0.96);
+}
+
+.ghost-hud-combat-btn.defend {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.35) 0%, rgba(29, 78, 216, 0.45) 100%);
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #dbeafe;
+}
+
+.ghost-hud-combat-btn.defend:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.6) 0%, rgba(29, 78, 216, 0.7) 100%);
+  border-color: rgba(147, 197, 253, 0.7);
+  color: #fff;
+}
+
+.ghost-hud-combat-select {
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.ghost-hud-combat-tip {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   4. ANIMATIONS & KEYFRAMES
+   ========================================================================== */
+@keyframes ghostFloatingGlow {
+  0% {
+    transform: translateY(0px) scale(1);
+    filter: drop-shadow(0 0 4px rgba(192, 132, 252, 0.5));
+  }
+  100% {
+    transform: translateY(-2px) scale(1.06);
+    filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.85));
+  }
+}
+
+@keyframes ghostCardAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(-6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes swordReadyGlow {
+  0% {
+    text-shadow: 0 0 4px rgba(250, 204, 21, 0.4);
+  }
+  100% {
+    text-shadow: 0 0 12px rgba(250, 204, 21, 0.9);
+  }
+}
+
+@keyframes pulseCombatBadge {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+  }
+}
+
+/* ==========================================================================
+   5. MOBILE RESPONSIVE TUNING
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* On mobile, collapsed pill is especially compact */
+  .ghost-hud-pill {
+    padding: 5px 10px 5px 8px;
+    font-size: 12px;
+    gap: 5px;
+  }
+
+  .ghost-hud-ghost-emoji {
+    font-size: 16px;
+  }
+
+  .ghost-hud-card {
+    width: 290px;
+    max-width: calc(100vw - 20px);
+    max-height: calc(100vh - 100px);
+  }
+
+  .ghost-hud-body {
+    max-height: calc(100vh - 150px);
+    padding: 10px 12px;
+    gap: 8px;
+  }
+}

@@ -1,3 +1,4 @@
+import {WeaponMenu} from './components/combat/WeaponMenu';
 import { ThreeGhostsMissionHud } from './components/ThreeGhostsMissionHud';
 import {GhostGameOver} from './components/GhostGameOver';
 import '@fontsource/noto-sans-myanmar/400.css';
@@ -1090,6 +1091,7 @@ function App() {
                 )}
                 {navigationNotice && <p role="status">{navigationNotice}</p>}
               </div>
+              <WeaponMenu/>
               <UpdateTriggerButton
                 active={updatesOpen}
                 onClick={() => {

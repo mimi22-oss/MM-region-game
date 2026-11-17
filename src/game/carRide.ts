@@ -25,7 +25,7 @@ export function wheelStepDistances(distance:number,steering:number,size=1){
   return [Math.hypot(rearRadius,wheelbase),rearRadius].map(r=>distance*r/centerRadius);
  });
 }
-export const currentCar = () => driveableCars.find(car => car.id === carRide.carId);
+export const currentCar = () => driveableCars.find(car => car.id === carRide.carId) ?? null;
 export const gearLabel = (gear: CarGear) => gear === -1 ? 'R' : gear === 0 ? 'N' : String(gear);
 export function clearCarInput() { Object.assign(carInput, { throttle: false, brake: false, clutch: false, steer: 0, exit: false }); }
 export const gearSpeed = (gear: CarGear) => ({ '-1': 10, 0: 0, 1: 20, 2: 40, 3: 65, 4: 100 }[gear] / 3.6);

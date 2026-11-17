@@ -1,5 +1,5 @@
-import {useLayoutEffect,useRef,useState,type RefObject} from 'react';
-import {createPortal,useFrame} from '@react-three/fiber';
+import {useEffect,useLayoutEffect,useRef,useState,type RefObject} from 'react';
+import {createPortal,useFrame,useThree} from '@react-three/fiber';
 import {Group,Vector3,type Object3D} from 'three';
 import {useThreeGhostsMission} from '../game/missions/threeGhostsMission';
 import {belongsToAvatar,findSwordHand,swordGripRotation} from '../game/missions/ghostSwordAttachment';
@@ -10,11 +10,27 @@ import {motorcycleRide} from '../game/motorcycleRide';
 import {GhostSwordModel} from './GhostSwordModel';
 import {registerCombatWeapon} from '../game/combat/combatRuntime';
 
+import {SwordCombatVFX} from './combat/SwordCombatVFX';
+import {requestSwordAttack} from '../game/combat/combatInput';
 import {combatGrip} from '../game/combat/SwordPose';
 
 export function HeldGhostSword({avatar}:{avatar:RefObject<Group|null>}){
   const progress=useThreeGhostsMission();
-  return progress.swordCollected?<EquippedSword avatar={avatar}/>:null;
+  const scene=useThree(state=>state.scene);
+  const equipped=progress.equippedWeapon==='ghost-sword';
+  useEffect(()=>{
+    if(!equipped)return;
+    const attack=(e:KeyboardEvent)=>{
+      if(e.code!=='KeyF'||e.repeat||e.altKey||e.ctrlKey||e.metaKey||
+         (e.target instanceof HTMLElement && (e.target.isContentEditable||e.target.closest('input,textarea,select'))))return;
+      e.preventDefault();
+      requestSwordAttack(e.shiftKey?'Heavy_Slash':'attack');
+    };
+    window.addEventListener('keydown',attack);
+    return ()=>window.removeEventListener('keydown',attack);
+  },[equipped]);
+  return <>{equipped&&<EquippedSword avatar={avatar}/>}
+    {progress.swordCollected&&createPortal(<SwordCombatVFX/>,scene)}</>;
 }
 function EquippedSword({avatar}:{avatar:RefObject<Group|null>}){
   const [hand,setHand]=useState<Object3D|null>(null),lastCheck=useRef(-Infinity);

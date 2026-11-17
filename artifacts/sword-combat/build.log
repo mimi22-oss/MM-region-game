@@ -4,7 +4,7 @@
 
 vite v6.4.5 building for production...
 transforming...
-✓ 467 modules transformed.
+✓ 470 modules transformed.
 rendering chunks...
 computing gzip size...
 dist/candle-preview.html                                               0.47 kB │ gzip:   0.36 kB
@@ -14,8 +14,8 @@ dist/assets/noto-sans-myanmar-latin-ext-600-normal-CHsBsS8r.woff2      6.65 kB
 dist/assets/noto-sans-myanmar-latin-ext-700-normal-Bkvv9Icw.woff       8.57 kB
 dist/assets/noto-sans-myanmar-latin-ext-400-normal-DRGWNQyd.woff       8.62 kB
 dist/assets/noto-sans-myanmar-latin-ext-600-normal-Ul_FWO-3.woff       8.64 kB
-dist/assets/noto-sans-myanmar-latin-700-normal-BQvPCnvz.woff2         10.45 kB
 dist/assets/noto-sans-myanmar-latin-400-normal-Dt7kQkP-.woff2         10.45 kB
+dist/assets/noto-sans-myanmar-latin-700-normal-BQvPCnvz.woff2         10.45 kB
 dist/assets/noto-sans-myanmar-latin-600-normal-zzKSSZfK.woff2         10.61 kB
 dist/index.html                                                       10.63 kB │ gzip:   2.91 kB
 dist/assets/noto-sans-myanmar-latin-700-normal-B-fuSLfn.woff          13.21 kB
@@ -34,42 +34,42 @@ dist/assets/MapPortalPage-CMRn9cmo.css                                 4.72 kB �
 dist/assets/assetAiEdit-r_7PtwiE.css                                   6.81 kB │ gzip:   2.14 kB
 dist/assets/WardVillageEditor-BjtSW_DH.css                            19.76 kB │ gzip:   3.83 kB
 dist/assets/AssetLibraryPage-C42AD0jo.css                             39.22 kB │ gzip:   7.59 kB
-dist/assets/main-f895ExPz.css                                        128.49 kB │ gzip:  23.85 kB
-dist/assets/web-Dfpt8ODJ.js                                            0.41 kB │ gzip:   0.27 kB
-dist/assets/index-CVvS9Nnk.js                                          0.70 kB │ gzip:   0.34 kB
-dist/assets/Lane-BTgKvuRn.js                                           0.83 kB │ gzip:   0.44 kB
-dist/assets/web-CUtPR6DV.js                                            0.87 kB │ gzip:   0.42 kB
-dist/assets/web-CKUCF9kr.js                                            1.18 kB │ gzip:   0.57 kB
-dist/assets/index-BS3tj8TJ.js                                          2.12 kB │ gzip:   0.68 kB
-dist/assets/SiTharVillage-WuRHlhSY.js                                  2.33 kB │ gzip:   1.16 kB
-dist/assets/kanbaleTiledEditor-CJKCK4LL.js                             2.61 kB │ gzip:   1.20 kB
-dist/assets/NatmyaungVillage-ih0HJFzj.js                               2.78 kB │ gzip:   1.24 kB
-dist/assets/KanbaleVillage-BASOxkdz.js                                 2.82 kB │ gzip:   1.16 kB
-dist/assets/candles-DwUMpxSx.js                                        2.96 kB │ gzip:   1.39 kB
-dist/assets/index-CAyxw-XW.js                                          3.57 kB │ gzip:   1.21 kB
-dist/assets/index-DJnNDdZ7.js                                          3.78 kB │ gzip:   1.27 kB
-dist/assets/Canal-TaWct0SR.js                                          4.13 kB │ gzip:   1.42 kB
-dist/assets/web-B5clyX_W.js                                            5.37 kB │ gzip:   1.43 kB
-dist/assets/index-8nRguloq.js                                          5.99 kB │ gzip:   1.91 kB
-dist/assets/assetAiEdit-CTC29epM.js                                    7.32 kB │ gzip:   3.10 kB
-dist/assets/index-DkKElW_W.js                                          7.91 kB │ gzip:   2.13 kB
-dist/assets/MapPortalPage-B2OqV01c.js                                 10.69 kB │ gzip:   3.00 kB
-dist/assets/index-CCyjXJXE.js                                         13.37 kB │ gzip:   3.46 kB
-dist/assets/index-DA6Q6yot.js                                         13.89 kB │ gzip:   3.38 kB
-dist/assets/index-70OyIdB5.js                                         14.93 kB │ gzip:   3.85 kB
-dist/assets/NatmyaungPlan-B5XEJvnq.js                                 15.71 kB │ gzip:   4.59 kB
-dist/assets/TazaungdaingScene-BKRbRuFt.js                             17.85 kB │ gzip:   6.84 kB
-dist/assets/ProceduralHuman-CC5RMC5b.js                               29.15 kB │ gzip:  10.48 kB
-dist/assets/MapSelectionTool-BlcFhJw6.js                              41.10 kB │ gzip:  12.19 kB
-dist/assets/WardVillageEditor-CtOQyZqn.js                             71.48 kB │ gzip:  21.33 kB
-dist/assets/index-Ch2S4AMG.js                                         88.95 kB │ gzip:  20.75 kB
-dist/assets/index-Dmff3Vnz.js                                        110.62 kB │ gzip:  35.27 kB
-dist/assets/AssetLibraryPage-BkFgQYb_.js                             114.68 kB │ gzip:  28.97 kB
-dist/assets/Candle-CojaU2Q7.js                                     1,141.09 kB │ gzip: 317.03 kB
-dist/assets/main-BY9srvus.js                                       2,324.74 kB │ gzip: 529.45 kB
+dist/assets/main-_DmtIlfu.css                                        138.67 kB │ gzip:  25.92 kB
+dist/assets/web-CZ5DTTNt.js                                            0.41 kB │ gzip:   0.27 kB
+dist/assets/index-DEWUn8uX.js                                          0.70 kB │ gzip:   0.34 kB
+dist/assets/Lane-DHfhl9ku.js                                           0.83 kB │ gzip:   0.44 kB
+dist/assets/web-CHDswCfP.js                                            0.87 kB │ gzip:   0.42 kB
+dist/assets/web-D6HeEJOq.js                                            1.18 kB │ gzip:   0.57 kB
+dist/assets/index-4k8ZmEAW.js                                          2.12 kB │ gzip:   0.69 kB
+dist/assets/SiTharVillage-pCsh566u.js                                  2.34 kB │ gzip:   1.16 kB
+dist/assets/kanbaleTiledEditor-DA-j5k64.js                             2.61 kB │ gzip:   1.20 kB
+dist/assets/NatmyaungVillage-Dl_JW3V1.js                               2.78 kB │ gzip:   1.24 kB
+dist/assets/KanbaleVillage-BNxQkbeF.js                                 2.82 kB │ gzip:   1.16 kB
+dist/assets/candles-BqE0X9jM.js                                        2.96 kB │ gzip:   1.40 kB
+dist/assets/index-BLX8C0I4.js                                          3.57 kB │ gzip:   1.21 kB
+dist/assets/index-Cwgw_dgL.js                                          3.78 kB │ gzip:   1.27 kB
+dist/assets/Canal-VWpHYojQ.js                                          4.13 kB │ gzip:   1.42 kB
+dist/assets/web-DsTC4i_C.js                                            5.37 kB │ gzip:   1.43 kB
+dist/assets/index-goZrrcC5.js                                          5.99 kB │ gzip:   1.92 kB
+dist/assets/assetAiEdit-7WyqNHQC.js                                    7.32 kB │ gzip:   3.10 kB
+dist/assets/index-ISdf9bOG.js                                          7.91 kB │ gzip:   2.13 kB
+dist/assets/MapPortalPage-CTAHIpg2.js                                 10.69 kB │ gzip:   3.00 kB
+dist/assets/index-BmV7JCSJ.js                                         13.37 kB │ gzip:   3.46 kB
+dist/assets/index-BiStZ3AA.js                                         13.89 kB │ gzip:   3.39 kB
+dist/assets/index-BpZseNIw.js                                         14.93 kB │ gzip:   3.85 kB
+dist/assets/NatmyaungPlan-BOznekgm.js                                 15.71 kB │ gzip:   4.59 kB
+dist/assets/TazaungdaingScene-BIZLeyzF.js                             17.85 kB │ gzip:   6.84 kB
+dist/assets/ProceduralHuman-ic__FZFq.js                               29.16 kB │ gzip:  10.48 kB
+dist/assets/MapSelectionTool-Cs6hxQyb.js                              41.10 kB │ gzip:  12.19 kB
+dist/assets/WardVillageEditor-Gt9P1ybo.js                             71.48 kB │ gzip:  21.33 kB
+dist/assets/index-C8e-jnCs.js                                         88.95 kB │ gzip:  20.75 kB
+dist/assets/index-Cp7wQvXG.js                                        110.62 kB │ gzip:  35.27 kB
+dist/assets/AssetLibraryPage-B5RD6iQI.js                             114.68 kB │ gzip:  28.97 kB
+dist/assets/Candle-Hf9uP7Qq.js                                     1,141.09 kB │ gzip: 317.04 kB
+dist/assets/main-DvU_cdEF.js                                       2,336.79 kB │ gzip: 532.22 kB
 
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-✓ built in 16.07s
+✓ built in 20.49s

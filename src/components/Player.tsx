@@ -463,7 +463,7 @@ export const Player = memo(function Player({
     if(mobileInput?.current)resetMobileInput(mobileInput.current);onMode(false);onTopDown(false);onZoom(6);completePlayerRespawn();
    }
   }
-  if(life.phase==='dead'){playerCombat.context(getThreeGhostsProgress().swordCollected,false,false,true);s.keys.clear();s.jumpRequested=false;if(mobileInput?.current)resetMobileInput(mobileInput.current);return;}
+  if(life.phase==='dead'){playerCombat.context(getThreeGhostsProgress().equippedWeapon==='ghost-sword',false,false,true);s.keys.clear();s.jumpRequested=false;if(mobileInput?.current)resetMobileInput(mobileInput.current);return;}
   if(tickRideLife(mapOpen||controlsBlocked?0:dt)){
    interruptVehicleWaiting();
    if(balloonRide.riding)resetBalloon();
@@ -514,7 +514,7 @@ export const Player = memo(function Player({
   const ghostGrabbedOnFoot=ghostInteraction.active&&!balloonRide.riding&&!motorcycleRide.riding&&!currentCar();
   const combatReaction=playerCombat.clip==='Hit_React'||playerCombat.clip==='Knockback';
   const combatAllowed=!loading&&!controlsBlocked&&!mapOpen&&!introOwnsCamera&&!rideLife.crashTime&&(!ghostGrabbedOnFoot||combatReaction)&&!enteringVehicle&&!pickupLocked&&!balloonRide.riding&&!motorcycleRide.riding&&!currentCar()&&!jump.current.airborne;
-  playerCombat.context(getThreeGhostsProgress().swordCollected,combatAllowed,controlsBlocked||mapOpen||document.hidden,false);
+  playerCombat.context(getThreeGhostsProgress().equippedWeapon==='ghost-sword',combatAllowed,controlsBlocked||mapOpen||document.hidden,false);
   const wantsJump=!playerCombat.movementLocked&&!pickupLocked&&!enteringVehicle&&!ghostGrabbedOnFoot&&(s.jumpRequested||!!touch?.jump);s.jumpRequested=false;if(touch)touch.jump=false;
   if(touch){
    if(touch.panX||touch.panY){panView(touch.panX,touch.panY);touch.panX=0;touch.panY=0;}

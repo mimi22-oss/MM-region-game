@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import {Canvas,useFrame,useThree} from '@react-three/fiber';
 import {Group,Vector3} from 'three';
 import {CartoonCharacter,type CharacterMotion} from '../../src/components/CartoonCharacter';
+import {WeaponMenu} from '../../src/components/combat/WeaponMenu';
 import {HeldGhostSword} from '../../src/components/HeldGhostSword';
 import {ThreeGhostsMissionScene,requestThreeGhostsAction} from '../../src/components/ThreeGhostsMissionScene';
 import {GhostNpc} from '../../src/components/GhostNpc';
@@ -38,7 +39,7 @@ function Fixture(){const [kind,setKind]=useState('boy'),[mounted,setMounted]=use
    renders:{calls:gl.info.render.calls,triangles:gl.info.render.triangles,textures:gl.info.memory.textures},rigCount:root?.children.filter(c=>c.name.startsWith('glb-')||c.name==='blender-character').length};
  };
  useFrame((_,dt)=>{
-  const p=getThreeGhostsProgress();playerCombat.context(p.swordCollected,true,!!api.combatTest.paused,getPlayerDeathState().phase!=='alive');
+  const p=getThreeGhostsProgress();playerCombat.context(p.equippedWeapon==='ghost-sword',true,!!api.combatTest.paused,getPlayerDeathState().phase!=='alive');
   motion.current.distance+=dt*motion.current.speed;
  },-1);
  useFrame((_,dt)=>{if(api.combatTest.closeup){
@@ -62,4 +63,4 @@ function Fixture(){const [kind,setKind]=useState('boy'),[mounted,setMounted]=use
  <ThreeGhostsMissionScene/>
  </>;
 }
-createRoot(document.getElementById('root')!).render(<React.StrictMode><Canvas shadows={false} dpr={1} style={{width:640,height:480}} camera={{position:[field.x+4,3,field.z+5],fov:55}}><Fixture/></Canvas></React.StrictMode>);
+createRoot(document.getElementById('root')!).render(<React.StrictMode><WeaponMenu/><Canvas shadows={false} dpr={1} style={{width:640,height:480}} camera={{position:[field.x+4,3,field.z+5],fov:55}}><Fixture/></Canvas></React.StrictMode>);

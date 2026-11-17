@@ -18,10 +18,11 @@ export interface ThreeGhostsProgress {
   version: 1;
   encountered: GhostId[];
   swordCollected: boolean;
+  equippedWeapon: 'ghost-sword' | null;
   hp: Record<GhostId, number>;
   completed: boolean;
 }
-const initial = (): ThreeGhostsProgress => ({ version: 1, encountered: [], swordCollected: false,
+const initial = (): ThreeGhostsProgress => ({ version: 1, encountered: [], swordCollected: false, equippedWeapon:null,
   hp: { 'ghost-1': 100, 'ghost-2': 150, 'ghost-3': 200 }, completed: false });
 function load(): ThreeGhostsProgress {
   if (typeof localStorage === 'undefined') return initial();
@@ -36,7 +37,10 @@ function load(): ThreeGhostsProgress {
     const encountered = GHOST_IDS.filter(id => raw.encountered?.includes(id));
     const swordCollected = Boolean(raw.swordCollected) && encountered.length === 3;
     const completed = swordCollected && GHOST_IDS.every(id => hp[id] === 0);
-    return { version: 1, encountered, swordCollected, hp, completed };
+    // Legacy completed saves enter the inventory with empty hands. An unfinished quest
+    // keeps its already-collected sword equipped so the player can finish the encounter.
+    const equippedWeapon = swordCollected && (!completed || raw.equippedWeapon === 'ghost-sword') ? 'ghost-sword' : null;
+    return { version: 1, encountered, swordCollected, equippedWeapon, hp, completed };
   } catch { return initial(); }
 }
 let progress: ThreeGhostsProgress = load();
@@ -50,6 +54,11 @@ export function getThreeGhostsProgress() { return progress; }
 export function subscribeThreeGhostsMission(fn: () => void) { subscribers.add(fn); return () => { subscribers.delete(fn); }; }
 export function useThreeGhostsMission() { return useSyncExternalStore(subscribeThreeGhostsMission, getThreeGhostsProgress, getThreeGhostsProgress); }
 export function hasCompletedThreeGhostsMission() { return progress.completed; }
+export function selectMissionWeapon(weapon: ThreeGhostsProgress['equippedWeapon']) {
+  if (!progress.completed || !progress.swordCollected || (weapon !== null && weapon !== 'ghost-sword')) return false;
+  if (progress.equippedWeapon !== weapon) publish({ ...progress, equippedWeapon: weapon });
+  return true;
+}
 export function isGhostDefeated(id: string) { return GHOST_IDS.includes(id as GhostId) && progress.hp[id as GhostId] === 0; }
 export function markGhostEncounter(id: string) {
   if (!GHOST_IDS.includes(id as GhostId) || progress.encountered.includes(id as GhostId) || progress.completed) return false;
@@ -58,7 +67,7 @@ export function markGhostEncounter(id: string) {
 }
 export function collectGhostSword() {
   if (progress.swordCollected || progress.encountered.length !== 3) return false;
-  publish({ ...progress, swordCollected: true });
+  publish({ ...progress, swordCollected: true, equippedWeapon: 'ghost-sword' });
   return true;
 }
 /** Reaching the unlocked sword is sufficient: no interaction key, hold timer or guard-distance gate. */
@@ -73,6 +82,7 @@ export function damageMissionGhost(id: string, amount: number) {
   const ghostId = id as GhostId;
   if (progress.hp[ghostId] === 0) return false;
   const hp = { ...progress.hp, [ghostId]: Math.max(0, progress.hp[ghostId] - amount) };
-  publish({ ...progress, hp, completed: GHOST_IDS.every(ghost => hp[ghost] === 0) });
+  const completed = GHOST_IDS.every(ghost => hp[ghost] === 0);
+  publish({ ...progress, hp, completed, equippedWeapon: completed ? null : progress.equippedWeapon });
   return true;
 }

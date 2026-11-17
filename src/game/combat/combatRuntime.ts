@@ -33,7 +33,7 @@ export function combatLineClear(ax:number,az:number,bx:number,bz:number){
 /** Called by the player's one mixer owner, after each bounded animation substep. */
 export function sampleCombatBlade(active:boolean){
  active=active&&playerCombat.phase==='ACTIVE'&&playerCombat.actionActive;
- if(!weapon||!playerCombat.running||!active){previousValid=false;previousActive=false;return;}
+ if(!weapon||!playerCombat.running||!active||getThreeGhostsProgress().equippedWeapon!=='ghost-sword'){previousValid=false;previousActive=false;return;}
  weapon.root.updateWorldMatrix(true,false);
  weapon.base.getWorldPosition(base);weapon.tip.getWorldPosition(tip);
  if(lastSequence!==playerCombat.sequence){lastSequence=playerCombat.sequence;previousValid=false;previousActive=false;}

@@ -1,9 +1,1 @@
-file:///C:/Users/EBPMyanmar/Desktop/Myanmar-Town-Prototype/scripts/checkSwordCombat.mjs:28
- const waitFor=async expression=>{const end=Date.now()+90000;while(!await evaluate(expression)){if(Date.now()>end||errors.length)throw Error('Wait failed '+expression+' '+JSON.stringify(errors));await sleep(100);}};
-                                                                                                                                       ^
-
-Error: Wait failed window.combatTest.paused===true []
-    at waitFor (file:///C:/Users/EBPMyanmar/Desktop/Myanmar-Town-Prototype/scripts/checkSwordCombat.mjs:28:136)
-    at async file:///C:/Users/EBPMyanmar/Desktop/Myanmar-Town-Prototype/scripts/checkSwordCombat.mjs:72:3
-
-Node.js v24.19.0
+{"passed":true,"characters":["boy","girl","canolia"],"clipsPerCharacter":[18,18,18],"singleHit":true,"shieldAndMiss":true,"death":true,"cleanup":true,"errors":[]}

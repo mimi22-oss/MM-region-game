@@ -7890,3 +7890,18 @@ main.night-mode .settings-menu .guide-list kbd {
 	color: #e2e8f0;
 	resize: vertical;
 }
+
+.weapon-menu {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 3px 6px;
+  border-radius: 8px;
+  background: #18242e;
+  color: white;
+  font-size: 11px;
+}
+.weapon-menu select { font: inherit; font-size: 13px; min-height: 28px; }
+@media (max-width: 480px) {
+  .hud-menu-items:has(.weapon-menu) { flex-wrap: wrap; justify-content: flex-end; }
+}

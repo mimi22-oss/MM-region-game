@@ -1,7 +1,6 @@
 import {playerCombat} from '../game/combat/combatRuntime';
 import type {CombatCommand} from '../game/combat/AttackDefinitions';
-import {SwordCombatVFX} from './combat/SwordCombatVFX';
-import {stopSpecialAction} from '../game/specialActions';
+import {requestSwordAttack} from '../game/combat/combatInput';
 import { getGhostRuntime } from '../game/missions/ghostRuntimeRegistry';
 import { swordGuardClear, updateGhostGuard } from '../game/missions/ghostGuardCoordinator';
 import { useEffect, useMemo, useRef } from 'react';
@@ -21,12 +20,10 @@ import {
 } from '../game/missions/threeGhostsMission';
 
 /** Commands originate in user input, not a render loop. */
-let pendingAction: 'attack' | 'interact' | null = null;
-export let selectedSwordAttack:CombatCommand='combo';
-export function selectSwordAttack(command:CombatCommand){selectedSwordAttack=command;}
+let pendingAction: 'interact' | null = null;
 export function requestThreeGhostsAction(action: 'attack' | 'interact' | CombatCommand) {
  if(action==='interact'){pendingAction=action;return;}
- if(playerCombat.request(action==='attack'?selectedSwordAttack:action))stopSpecialAction(true);
+ requestSwordAttack(action);
 }
 export const ghostMissionProximity = { nearSword: false, nearGhost: false, pickupReady: false, pickupProgress: 0, lastMessage: '' };
 
@@ -50,7 +47,6 @@ export function ThreeGhostsMissionScene() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat || e.altKey || e.ctrlKey || e.metaKey || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.code === 'KeyF') {e.preventDefault();requestThreeGhostsAction(e.shiftKey?'Heavy_Slash':'attack');}
       if (e.code === 'KeyE') requestThreeGhostsAction('interact');
     };
     window.addEventListener('keydown', onKey);
@@ -110,12 +106,12 @@ export function ThreeGhostsMissionScene() {
 
   });
 
-  return <><SwordCombatVFX/><group ref={sword} name="ghost-mission-sword" position={[area5.pitch.x, 2.5, area5.pitch.z]}>
+  return <group ref={sword} name="ghost-mission-sword" position={[area5.pitch.x, 2.5, area5.pitch.z]}>
     <GhostSwordModel/>
     <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.75, 0]}>
       <torusGeometry args={[1.3, 0.09, 8, 40]} />
       <meshBasicMaterial color="#ff4a70" />
     </mesh>
     <pointLight color="#ff4255" intensity={3} distance={15} />
-  </group></>;
+  </group>;
 }

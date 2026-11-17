@@ -95,8 +95,8 @@ test('saved mission progress survives load; unique encounters and live sword dis
   const guard = await import('../src/game/missions/ghostGuardCoordinator.ts');
   const {area5} = await import('../src/data/wards/myothar/area5.ts');
   const cars=await import('../src/game/carRide.ts');
-  cars.enterCar(cars.driveableCars[0]);assert.equal(cars.currentCar(),null);
-  assert.deepEqual(mission.getThreeGhostsProgress(),saved);
+  cars.enterCar(cars.driveableCars[0]);assert.ok(!cars.currentCar());
+  assert.deepEqual(mission.getThreeGhostsProgress(),{...saved,equippedWeapon:null});
   assert.equal(mission.markGhostEncounter('ghost-1'),false);
   assert.equal(mission.collectGhostSword(),false);
   mission.markGhostEncounter('ghost-2'); mission.markGhostEncounter('ghost-3');
@@ -117,10 +117,22 @@ test('saved mission progress survives load; unique encounters and live sword dis
   // No guard-clearance input or key/timer is required; touching the radius boundary collects once.
   assert.equal(mission.tryAutoCollectGhostSword(3.2,0,0,0,true),true);
   assert.equal(mission.tryAutoCollectGhostSword(0,0,0,0,true),false);
+  assert.equal(mission.getThreeGhostsProgress().equippedWeapon,'ghost-sword');
+  assert.equal(mission.selectMissionWeapon(null),false);
   for (const id of mission.GHOST_IDS) mission.damageMissionGhost(id,mission.GHOST_STATS[id].maxHp);
   assert.equal(mission.hasCompletedThreeGhostsMission(),true);
   cars.enterCar(cars.driveableCars[0]);assert.equal(cars.currentCar(),cars.driveableCars[0]);cars.parkCar();
-  assert.equal(JSON.parse(storage.get(key)!).completed,true);
+  assert.equal(mission.getThreeGhostsProgress().equippedWeapon,null);
+  assert.equal(mission.selectMissionWeapon('ghost-sword'),true);
+  const reloaded=await import('../src/game/missions/threeGhostsMission.ts?equipped');
+  assert.equal(reloaded.getThreeGhostsProgress().equippedWeapon,'ghost-sword');
+  assert.equal(reloaded.selectMissionWeapon(null),true);
+  const stored=JSON.parse(storage.get(key)!);
+  assert.equal(stored.completed,true);assert.equal(stored.equippedWeapon,null);
+  delete stored.equippedWeapon;storage.set(key,JSON.stringify(stored));
+  const legacy=await import('../src/game/missions/threeGhostsMission.ts?legacy');
+  assert.equal(legacy.getThreeGhostsProgress().equippedWeapon,null);
+  assert.equal(legacy.selectMissionWeapon('ghost-sword'),true);
   leases.forEach(lease=>lease.release());
   delete (globalThis as {localStorage?:unknown}).localStorage;
 });

@@ -23,6 +23,7 @@ test('top-right HUD consolidates location, teleport, actions, updates, and setti
   assert.ok(gatedSlice.includes('className="location-actions"'), 'locate actions inside menu tray');
   assert.ok(gatedSlice.includes('handleToggleTeleportMode'), 'teleport button inside menu tray');
   assert.ok(gatedSlice.includes('<ActionMenu'), 'Special Actions button inside menu tray');
+  assert.ok(gatedSlice.includes('<WeaponMenu'), 'earned weapons are selectable inside the main menu');
   assert.ok(gatedSlice.includes('<UpdateTriggerButton'), 'App Updates icon inside menu tray');
   assert.ok(gatedSlice.includes('settings-btn'), 'settings-btn inside menu tray');
   assert.ok(gatedSlice.includes('setSettingsOpen(true)'), 'clicking settings-btn opens settings-menu dialog');
