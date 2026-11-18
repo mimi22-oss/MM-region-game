@@ -512,6 +512,7 @@ export const Player = memo(function Player({
   }
   const ghostInteraction=getGhostEncounterInteraction();
   const ghostGrabbedOnFoot=ghostInteraction.active&&!balloonRide.riding&&!motorcycleRide.riding&&!currentCar();
+  if(ghostGrabbedOnFoot&&touch)resetMobileInput(touch);
   const combatReaction=playerCombat.clip==='Hit_React'||playerCombat.clip==='Knockback';
   const combatAllowed=!loading&&!controlsBlocked&&!mapOpen&&!introOwnsCamera&&!rideLife.crashTime&&(!ghostGrabbedOnFoot||combatReaction)&&!enteringVehicle&&!pickupLocked&&!balloonRide.riding&&!motorcycleRide.riding&&!currentCar()&&!jump.current.airborne;
   playerCombat.context(getThreeGhostsProgress().equippedWeapon==='ghost-sword',combatAllowed,controlsBlocked||mapOpen||document.hidden,false);
@@ -543,10 +544,10 @@ export const Player = memo(function Player({
    }
   }
   const len=Math.hypot(forward,right);if(len){forward/=len;right/=len;}
-  const fast=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight')||!!touch?.sprint;
+  const fast=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight')||!!touch?.sprint||!!touch?.lockedSprint;
   const mobileScale=touch?.active?touch.moveScale:1;
-  if(touch?.autoDirection&&s.autoHeadingSession!==touch.session){s.autoHeadingSession=touch.session;s.autoHeadingYaw=s.yaw;}
-  const yaw=mapOpen?0:touch?.autoDirection?s.autoHeadingYaw:s.yaw;
+  if((touch?.autoDirection||touch?.walkLocked)&&s.autoHeadingSession!==touch.session){s.autoHeadingSession=touch.session;s.autoHeadingYaw=s.yaw;}
+  const yaw=mapOpen?0:(touch?.autoDirection||touch?.walkLocked)?s.autoHeadingYaw:s.yaw;
   if(len>0&&s.distance<=20&&!s.topDown)s.panning=false;
   if(wantsJump&&!introOwnsCamera&&!balloonRide.riding&&character==='cartoon'&&!currentCar()&&!motorcycleRide.riding&&!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0&&(s.distance>20||s.topDown||s.panning)){
    s.first=false;s.topDown=false;s.panning=false;s.pitch=-.12;s.distance=6;s.targetDistance=6;
@@ -642,7 +643,7 @@ export const Player = memo(function Player({
    s.x=car.x;s.z=car.z;s.bodyYaw=car.yaw;s.camX=s.x;s.camZ=s.z;
    if(!paused&&Math.abs(car.speed)>.1)s.yaw+=Math.atan2(Math.sin(car.yaw-s.yaw),Math.cos(car.yaw-s.yaw))*Math.min(1,dt*5);
   }else if(ride.riding){
-   const isShift=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight')||!!touch?.sprint;
+   const isShift=s.keys.has('ShiftLeft')||s.keys.has('ShiftRight')||!!touch?.sprint||!!touch?.lockedSprint;
    const isBtnAcc=accelerating||ride.accelerating;
    const isBoosting=isShift||isBtnAcc;
    const isBrk=braking||ride.braking||s.keys.has('Space');

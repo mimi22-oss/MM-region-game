@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { toWorld } from '../src/data/ward.ts';
 import {
+  COMPUTER_SUBSCRIPTION_CONFIG,
   DEFAULT_SUBSCRIPTION_BILLBOARD,
+  SMART_TV_SUBSCRIPTION_CONFIG,
   SUBSCRIPTION_WEBSITE_URL,
   computeSubscriptionBillboardWorldPose,
 } from '../src/data/subscriptionBillboard.ts';
@@ -15,6 +17,7 @@ import {
   markBillboardPointerConsumed,
   openSubscriptionShop,
   registerBillboardTapHandler,
+  reportSubscriptionScreenDistance,
   resetSubscriptionShopForTests,
   setSubscriptionPlayerDistance,
   setSubscriptionShopUrl,
@@ -133,4 +136,41 @@ test('Subscription billboard tap and crosshair handlers prevent duplicate pointe
 
   unregister();
   resetSubscriptionShopForTests();
+});
+
+test('Smart TV and Computer screen billboard configurations compute valid poses and multi-screen distances', () => {
+  resetSubscriptionShopForTests();
+
+  // Validate URLs match the requested subscription app URL
+  assert.equal(SMART_TV_SUBSCRIPTION_CONFIG.url, 'https://subscription-app-nine-phi.vercel.app/');
+  assert.equal(COMPUTER_SUBSCRIPTION_CONFIG.url, 'https://subscription-app-nine-phi.vercel.app/');
+
+  // World poses compute properly inside Farmhouse geometry
+  const tvPose = computeSubscriptionBillboardWorldPose(SMART_TV_SUBSCRIPTION_CONFIG);
+  assert.ok(Number.isFinite(tvPose.x) && Number.isFinite(tvPose.y) && Number.isFinite(tvPose.z));
+  assert.equal(tvPose.y, 1.55);
+  assert.ok(tvPose.rotationY > 0);
+
+  const pcPose = computeSubscriptionBillboardWorldPose(COMPUTER_SUBSCRIPTION_CONFIG);
+  assert.ok(Number.isFinite(pcPose.x) && Number.isFinite(pcPose.y) && Number.isFinite(pcPose.z));
+  assert.equal(pcPose.y, 1.22);
+  assert.ok(pcPose.rotationY > 0);
+
+  // Multi-screen proximity distance resolution picks minimum across active displays
+  reportSubscriptionScreenDistance('smart-tv', 6.5, 5);
+  assert.equal(getSubscriptionShopState().isNearBillboard, false);
+  assert.equal(getSubscriptionShopState().playerDistanceM, 6.5);
+
+  // When player moves closer to the computer monitor (e.g. 2.1m), it activates proximity
+  reportSubscriptionScreenDistance('computer-monitor', 2.1, 4);
+  assert.equal(getSubscriptionShopState().isNearBillboard, true);
+  assert.equal(getSubscriptionShopState().playerDistanceM, 2.1);
+
+  // When computer screen is cleared, falls back to TV distance
+  reportSubscriptionScreenDistance('computer-monitor', null);
+  assert.equal(getSubscriptionShopState().isNearBillboard, false);
+  assert.equal(getSubscriptionShopState().playerDistanceM, 6.5);
+
+  resetSubscriptionShopForTests();
+  assert.equal(getSubscriptionShopState().playerDistanceM, null);
 });

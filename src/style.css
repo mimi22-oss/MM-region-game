@@ -8165,3 +8165,37 @@ main.night-mode .settings-menu .guide-list kbd {
 @media (max-width: 480px) {
   .hud-menu-items:has(.weapon-menu) { flex-direction: column; align-items: flex-end; }
 }
+/* Keep the joystick centre available for dragging back to neutral. */
+.mobile-controls .mobile-walk-stop {
+  top: -82px;
+  width: 64px;
+  height: 44px;
+  border-radius: 12px;
+}
+.mobile-fight-buttons {
+  position: absolute;
+  right: calc(max(22px, env(safe-area-inset-right)) + 84px);
+  bottom: max(28px, calc(env(safe-area-inset-bottom) + 16px));
+  display: grid;
+  gap: 6px;
+  z-index: 11;
+  pointer-events: auto;
+}
+.mobile-fight-buttons button {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  width: 52px;
+  min-height: 46px;
+  padding: 3px;
+  color: #fff3df;
+  background: #3b241ee8;
+  border: 1px solid #eab878;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 10px;
+  touch-action: none;
+}
+.mobile-fight-buttons button span { font-size: 20px; line-height: 22px; }
+.mobile-fight-buttons button:active { background: #8d482c; }
+.mobile-fight-buttons button:focus-visible { outline: 3px solid #ffe0a5; }

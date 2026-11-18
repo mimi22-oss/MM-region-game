@@ -71,3 +71,54 @@ test('motorcycle auto speed respects configured speed limits and braking',()=>{
   assert.equal(motorcycleRide.speed,0);
  }finally{Object.assign(motorcycleRide,original);}
 });
+
+test('walking joystick locks an exact diagonal after three steady seconds and stops on short release',()=>{
+ const {input,g}=setup();g.walkLockEnabled=true;
+ g.down(1,'left',100,100);g.move(1,130,60);hold(g,2950);
+ assert.equal(input.walkLocked,false);g.up(1);assert.equal(input.active,false);
+ g.down(2,'left',100,100);g.move(2,130,60);hold(g,2950);
+ assert.equal(input.walkLocked,false);hold(g,50);assert.equal(input.walkLocked,true);
+ g.up(2);assert.equal(input.active,true);assert.equal(input.forward,.8);assert.equal(input.right,.6);
+});
+
+test('changing the held position restarts the timer, while small finger jitter is tolerated',()=>{
+ const {input,g}=setup();g.walkLockEnabled=true;
+ g.down(1,'left',100,100);g.move(1,100,60);hold(g,2900);
+ g.move(1,140,100);hold(g,200);assert.equal(input.walkLocked,false);
+ g.move(1,141,102);hold(g,2800);assert.equal(input.walkLocked,true);
+});
+
+test('locked steering persists, camera look preserves motion, and neutral stops immediately',()=>{
+ const {input,g}=setup();g.walkLockEnabled=true;
+ g.down(1,'left',100,100);g.move(1,100,60);hold(g,3000);g.up(1);
+ for(const [x,y,forward,right] of [[140,100,0,1],[60,100,0,-1],[100,140,-1,0]]){
+  g.down(2,'left',100,100);g.move(2,x,y);g.up(2);
+  assert.equal(input.walkLocked,true);assert.equal(input.forward||0,forward);assert.equal(input.right||0,right);
+ }
+ const direction={forward:input.forward,right:input.right};
+ g.down(3,'right',300,100);g.move(3,350,140);
+ assert.deepEqual({forward:input.forward,right:input.right},direction);
+ assert.equal(input.sprint,false);assert.equal(input.lookX,50);g.up(3);
+ g.down(4,'left',100,100);g.move(4,100,100);
+ assert.equal(input.walkLocked,false);assert.equal(input.active,false);assert.equal(input.stopRequested,true);
+ g.up(4);hold(g,4000);assert.equal(input.active,false);
+});
+
+test('walking lock captures running and cannot survive stop, external reset, or cancelled gestures',()=>{
+ for(const cancel of ['stop','clear','reset'] as const){
+  const {input,g}=setup();g.walkLockEnabled=true;
+  g.down(1,'left',100,100);g.move(1,100,60);input.sprint=true;hold(g,3000);
+  input.sprint=false;assert.equal(input.lockedSprint,true);
+  if(cancel==='reset')resetMobileInput(input);else g[cancel]();
+  hold(g,4000);g.up(1);assert.equal(input.active,false);assert.equal(input.walkLocked,false);assert.equal(input.lockedSprint,false);
+ }
+});
+
+test('two fingers can steer and look independently after walking locks',()=>{
+ const {input,g}=setup();g.walkLockEnabled=true;
+ g.down(1,'left',100,100);g.move(1,100,60);hold(g,3000);
+ g.down(2,'right',300,100);g.move(1,140,100);g.move(2,340,130);
+ assert.equal(g.pinching,false);assert.equal(input.walkLocked,true);
+ assert.equal(input.right,1);assert.equal(input.lookX,40);
+ g.up(1);g.up(2);assert.equal(input.active,true);
+});

@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type RefObject, type PointerEvent } from 'react';
 import { MobileGesture, type MobileInput, type MobileDirection } from '../game/mobileInput';
+import {useThreeGhostsMission} from '../game/missions/threeGhostsMission';
+import {requestSwordAttack} from '../game/combat/combatInput';
+import type {CombatCommand} from '../game/combat/AttackDefinitions';
 import { tryTapSubscriptionBillboard } from '../game/subscriptionShop';
 
 export function MobileControls({
@@ -7,15 +10,20 @@ export function MobileControls({
 	disabled,
 	canJump = false,
 	flying = false,
+	onFoot = true,
 	onInteract,
 }: {
 	input: RefObject<MobileInput>;
 	disabled: boolean;
 	canJump?: boolean;
 	flying?: boolean;
+	onFoot?: boolean;
 	onInteract: () => void;
 }) {
-	const gesture = useRef(new MobileGesture(input.current));
+  const mission=useThreeGhostsMission();
+  const walkMode=onFoot&&!flying;
+  const [walkLocked,setWalkLocked]=useState(false);
+  const gesture = useRef(new MobileGesture(input.current));
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const [held, setHeld] = useState(false);
 	const [sprinting, setSprinting] = useState(false);
@@ -45,8 +53,10 @@ export function MobileControls({
 	const syncAuto = useCallback(() => {
         const current=input.current;
         setAutoMove(old=>old.direction===current.autoDirection&&old.speed===current.moveScale?old:{direction:current.autoDirection,speed:current.moveScale});
+        setWalkLocked(current.walkLocked);
+        setSprinting(current.sprint||current.lockedSprint);
         setHeld(current.active||gesture.current.pinching);
-        if(current.autoDirection)updateKnob(current.right*30,-current.forward*30,true);
+        if(current.autoDirection||current.walkLocked)updateKnob(current.right*30,-current.forward*30,true);
         else if(!current.active)updateKnob(0,0,false);
     },[input,updateKnob]);
     useEffect(()=>{
@@ -55,6 +65,7 @@ export function MobileControls({
         const interval=setInterval(()=>{const now=performance.now();gesture.current.advanceTick(now-last);last=now;syncAuto();},50);
         return ()=>clearInterval(interval);
     },[disabled,held,autoMove.direction,syncAuto]);
+
 
 	const clear = useCallback(() => {
 		if (timer.current) clearTimeout(timer.current);
@@ -70,6 +81,7 @@ export function MobileControls({
 	}, [input, updateKnob,syncAuto]);
 
 	useEffect(() => {
+        gesture.current.walkLockEnabled=walkMode;
 		clear();
 		const visibility = () => {
 			if (document.hidden) clear();
@@ -87,7 +99,7 @@ export function MobileControls({
 			document.removeEventListener('visibilitychange', visibility);
 			media.removeEventListener('change', changed);
 		};
-	}, [disabled, clear]);
+	}, [disabled, clear, walkMode]);
 
 	const tapStart = useRef<{ pointerId: number; x: number; y: number; t: number } | null>(null);
 	const down = (e: PointerEvent<HTMLDivElement>, side: 'left' | 'right') => {
@@ -141,18 +153,18 @@ export function MobileControls({
 			}
 		}
 
-        if(side==='left'&&tick)gesture.current.downTick(e.pointerId,tick,e.clientX,e.clientY,startX,startY);
+        if(side==='left'&&tick&&!walkMode)gesture.current.downTick(e.pointerId,tick,e.clientX,e.clientY,startX,startY);
         else gesture.current.down(e.pointerId, side, startX, startY, direction);
 		e.currentTarget.setPointerCapture(e.pointerId);
 		onInteract();
 
-		if (side === 'left'&&!tick) {
+		if (side === 'left'&&(!tick||walkMode)) {
 			const dx = e.clientX - startX;
 			const dy = e.clientY - startY;
 			updateKnob(dx, dy, true);
 			if (Math.hypot(dx, dy) >= 10) {
 				gesture.current.move(e.pointerId, e.clientX, e.clientY);
-			} else if (!timer.current) {
+			} else if (!timer.current&&!walkMode) {
 				timer.current = setTimeout(() => {
 					timer.current = null;
 					gesture.current.hold();
@@ -186,6 +198,7 @@ export function MobileControls({
                     gesture.current.fingers.size <= 1 &&
                     !gesture.current.pinching &&
                     !gesture.current.tick &&
+                    !input.current.active &&
                     performance.now() - tap.t <= 3000 &&
                     Math.hypot(e.clientX - tap.x, e.clientY - tap.y) <= 10 &&
                     !(e.target instanceof Element && e.target.closest('button')) &&
@@ -215,6 +228,10 @@ export function MobileControls({
         syncAuto();
 	};
 
+  const fight=(command:CombatCommand)=>{
+    if(requestSwordAttack(command)){clear();gesture.current.stop();}
+    onInteract();
+  };
 	if (disabled) return null;
 
 	return (
@@ -244,15 +261,15 @@ export function MobileControls({
                             className={`mobile-joystick-tick mobile-joystick-tick-${direction}`}
                             aria-label={`${['ရှေ့','ညာ','နောက်','ဘယ်'][i]} · ဖိထားလျှင် Auto`}
                             aria-pressed={autoMove.direction===direction}
-                            title="ဖိထားရန်: Auto · ထပ်ဖိထားရန်: အရှိန်တိုး · တစ်ချက်နှိပ်ရန်: ပုံမှန်အရှိန်"
+                            title={walkMode?"၃ စက္ကန့် ထိန်းထားလျှင် Lock":"ဖိထားလျှင် Auto"}
                             onClick={e=>{if(e.detail===0){gesture.current.activateTick(direction);onInteract();syncAuto();}}}
                         >{['▲','▶','▼','◀'][i]}</button>)}
                     </div>
-                    {autoMove.direction&&<>
-                        <div className="mobile-auto-status" role="status">Auto · {autoMove.speed}×</div>
-                        <button type="button" className="mobile-auto-stop" aria-label="Auto ရပ်မည်"
+                    {(autoMove.direction||walkLocked)&&<>
+                        <div className="mobile-auto-status" role="status">{walkLocked?(sprinting?"🔒 ပြေး":"🔒 လျှောက်"):`Auto · ${autoMove.speed}×`}</div>
+                        <button type="button" className={walkMode?"mobile-auto-stop mobile-walk-stop":"mobile-auto-stop"} aria-label="Auto ရပ်မည်"
                             onPointerDown={e=>{e.preventDefault();e.stopPropagation();clear();gesture.current.stop();syncAuto();onInteract();}}
-                            onClick={e=>{if(e.detail===0){clear();gesture.current.stop();syncAuto();onInteract();}}}>■</button>
+                            onClick={e=>{if(e.detail===0){clear();gesture.current.stop();syncAuto();onInteract();}}}>{walkMode?"■ Stop":"■"}</button>
                     </>}
 
 					<div ref={knobRef} className="mobile-joystick-knob" aria-hidden="true">
@@ -269,6 +286,12 @@ export function MobileControls({
 				onPointerCancel={release}
 				onLostPointerCapture={release}
 			/>
+      {canJump&&mission.equippedWeapon==='ghost-sword'&&<div className="mobile-fight-buttons" aria-label="တိုက်ခိုက်ရေး">
+        {([['combo','⚔','ခုတ်'],['Heavy_Slash','✦','အားပြင်း'],['Sword_Block','🛡','ကာ']] as const).map(([command,icon,label])=>
+          <button key={command} type="button" aria-label={label} onPointerDown={e=>{
+            e.preventDefault();e.stopPropagation();fight(command);
+          }} onClick={e=>{if(e.detail===0)fight(command);}}><span aria-hidden="true">{icon}</span>{label}</button>)}
+      </div>}
 			{canJump && <button type="button" className="mobile-sprint-btn mobile-jump-btn"
                 aria-label="ခုန်ရန် (Space)" title="ခုန်ရန် · Space"
                 onPointerDown={e => {e.preventDefault();e.stopPropagation();input.current.jump=true;onInteract();}}
@@ -298,15 +321,18 @@ export function MobileControls({
 				type="button"
 				className={`mobile-sprint-btn${sprinting ? ' mobile-sprint-btn-active' : ''}`}
 				aria-label="အမြန်ပြေးရန် ခလုတ် (ပြေး)"
-				title="အမြန်ပြေးရန် ဖိထားပါ (ပြေး)"
+				title={walkLocked?"လျှောက် / ပြေး ပြောင်းရန်":"အမြန်ပြေးရန် ဖိထားပါ (ပြေး)"}
 				onPointerDown={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
 					try {
 						e.currentTarget.setPointerCapture(e.pointerId);
 					} catch {}
-					if (input.current) input.current.sprint = true;
-					setSprinting(true);
+					if(input.current.walkLocked){
+                      input.current.lockedSprint=!input.current.lockedSprint;
+                      input.current.sprint=false;
+                    }else input.current.sprint=true;
+					syncAuto();
 					onInteract();
 				}}
 				onPointerUp={(e) => {
@@ -316,15 +342,15 @@ export function MobileControls({
 						e.currentTarget.releasePointerCapture(e.pointerId);
 					} catch {}
 					if (input.current) input.current.sprint = false;
-					setSprinting(false);
+					syncAuto();
 				}}
 				onPointerCancel={() => {
 					if (input.current) input.current.sprint = false;
-					setSprinting(false);
+					syncAuto();
 				}}
 				onLostPointerCapture={() => {
 					if (input.current) input.current.sprint = false;
-					setSprinting(false);
+					syncAuto();
 				}}
 			>
 				<div className="mobile-sprint-btn-inner">

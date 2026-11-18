@@ -143,6 +143,8 @@ export function setSubscriptionShopUrl(url: string): void {
   emit();
 }
 
+const activeScreenDistances = new Map<string, { dist: number; threshold: number }>();
+
 export function setSubscriptionPlayerDistance(
   distanceM: number | null,
   thresholdM = DEFAULT_SUBSCRIPTION_BILLBOARD.interactionDistanceM,
@@ -156,6 +158,40 @@ export function setSubscriptionPlayerDistance(
     isNearBillboard: near,
   };
   emit();
+}
+
+/**
+ * Reports distance for a specific subscription display screen (Smart TV, Computer monitor, Wall billboard)
+ * and resolves the minimum distance across all active screens so proximity prompt stays active wherever player stands.
+ */
+export function reportSubscriptionScreenDistance(
+  screenId: string,
+  distanceM: number | null,
+  thresholdM = DEFAULT_SUBSCRIPTION_BILLBOARD.interactionDistanceM,
+): void {
+  if (distanceM === null || !Number.isFinite(distanceM)) {
+    activeScreenDistances.delete(screenId);
+  } else {
+    activeScreenDistances.set(screenId, { dist: distanceM, threshold: thresholdM });
+  }
+
+  if (activeScreenDistances.size === 0) {
+    setSubscriptionPlayerDistance(null, thresholdM);
+    return;
+  }
+
+  let minDist: number | null = null;
+  let minThreshold = thresholdM;
+  for (const { dist, threshold } of activeScreenDistances.values()) {
+    if (dist !== null && Number.isFinite(dist)) {
+      if (minDist === null || dist < minDist) {
+        minDist = dist;
+        minThreshold = threshold;
+      }
+    }
+  }
+
+  setSubscriptionPlayerDistance(minDist, minThreshold);
 }
 
 /** Marks the current click as handled by the 3D billboard so Canvas pointer lock stays suppressed. */
@@ -207,5 +243,6 @@ export function resetSubscriptionShopForTests(): void {
   state = initialState();
   lastBillboardClickAtMs = -Infinity;
   registeredTapHandlers.clear();
+  activeScreenDistances.clear();
   emit();
 }

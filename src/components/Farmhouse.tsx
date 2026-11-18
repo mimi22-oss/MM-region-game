@@ -8,6 +8,11 @@ import { Box } from './Primitives';
 import { DoubleSide } from 'three';
 import { CarCallSpotMarker } from './CarCallSpotMarker';
 import { sourceIsEdited } from '../game/worldEdits';
+import {
+  DEFAULT_SUBSCRIPTION_BILLBOARD,
+  SMART_TV_SUBSCRIPTION_CONFIG,
+  COMPUTER_SUBSCRIPTION_CONFIG,
+} from '../data/subscriptionBillboard';
 import { SubscriptionBillboard } from './SubscriptionBillboard';
 import { CatCompanion } from './CatCompanion';
 
@@ -500,15 +505,12 @@ export function FarmhouseBuilding({ ignoreEdits = false }: { ignoreEdits?: boole
 						<boxGeometry args={[2.1, 1.2, 0.06]} />
 						<meshStandardMaterial color="#111317" roughness={0.3} metalness={0.6} />
 					</mesh>
-					<mesh position={[0, 0, 0.033]}>
-						<planeGeometry args={[2.02, 1.12]} />
-						<meshStandardMaterial
-							color="#0e3860"
-							emissive="#38bdf8"
-							emissiveIntensity={0.55}
-							roughness={0.1}
-						/>
-					</mesh>
+					{/* ၇၅ လက်မ စမတ်တီဗွီကြီး Subscription Shop Display */}
+					<SubscriptionBillboard
+						config={SMART_TV_SUBSCRIPTION_CONFIG}
+						variant="tv"
+						position={[0, 0, 0.033]}
+					/>
 					<mesh position={[0, -0.68, 0.05]}>
 						<boxGeometry args={[1.6, 0.09, 0.1]} />
 						<meshStandardMaterial color="#181a1f" roughness={0.6} />
@@ -713,15 +715,12 @@ export function FarmhouseBuilding({ ignoreEdits = false }: { ignoreEdits?: boole
 						<boxGeometry args={[0.9, 0.54, 0.04]} />
 						<meshStandardMaterial color="#16181c" metalness={0.6} roughness={0.3} />
 					</mesh>
-					<mesh position={[0, 0, 0.022]}>
-						<planeGeometry args={[0.86, 0.5]} />
-						<meshStandardMaterial
-							color="#092238"
-							emissive="#38bdf8"
-							emissiveIntensity={0.65}
-							roughness={0.1}
-						/>
-					</mesh>
+					{/* ၂၇ လက်မ ကွေးညွတ် စခရင် Subscription Shop Display */}
+					<SubscriptionBillboard
+						config={COMPUTER_SUBSCRIPTION_CONFIG}
+						variant="monitor"
+						position={[0, 0, 0.022]}
+					/>
 				</group>
 
 				{/* ကွန်ပျူတာ စက်ကေ့စ် (Desktop PC Gaming Tower Case with RGB Lighting) */}

@@ -928,6 +928,7 @@ function App() {
         key={navigationRequest?.seq ?? 0}
         input={mobileInput}
         flying={balloonStatus.riding}
+        onFoot={!rideStatus.riding&&!carStatus.driving&&!rideStatus.crashed}
         canJump={!balloonStatus.riding && character === "cartoon" && !rideStatus.riding && !carStatus.driving && !rideStatus.crashed}
         disabled={mapOpen || settingsOpen || loading || carStatus.driving || subscriptionShop.isOpen || !visible}
         onInteract={activateMobile}

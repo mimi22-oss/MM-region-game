@@ -54,6 +54,42 @@ export const DEFAULT_SUBSCRIPTION_BILLBOARD: SubscriptionBillboardConfig = {
 };
 
 /**
+ * 75-inch Widescreen Smart TV mounted on the media console in the Farmhouse
+ * living room entertainment lounge at `lx = +2.6, lz = -4.6, ly = 1.55`.
+ */
+export const SMART_TV_SUBSCRIPTION_CONFIG: SubscriptionBillboardConfig = {
+  id: 'farmhouse-smart-tv-subscription-shop',
+  anchorBuildingId: farmhouse.id,
+  localOffset: { x: 2.6, y: 1.55, z: -4.567 },
+  localRotationY: 0,
+  size: { width: 2.02, height: 1.12, depth: 0.04 },
+  url: SUBSCRIPTION_WEBSITE_URL,
+  title: 'Subscription Shop (Smart TV)',
+  subtitle: 'Digital Accounts & Licenses · TV App',
+  interactionDistanceM: 5,
+  maxClickDistanceM: 22,
+  enforceDistance: false,
+};
+
+/**
+ * 27-inch Curved Desktop PC Monitor on the computer workstation desk
+ * in the Farmhouse study corner at `lx = -3.95, lz = +2.2, ly = 1.22`.
+ */
+export const COMPUTER_SUBSCRIPTION_CONFIG: SubscriptionBillboardConfig = {
+  id: 'farmhouse-computer-subscription-shop',
+  anchorBuildingId: farmhouse.id,
+  localOffset: { x: -3.95, y: 1.22, z: 2.2 },
+  localRotationY: Math.PI / 2,
+  size: { width: 0.86, height: 0.5, depth: 0.03 },
+  url: SUBSCRIPTION_WEBSITE_URL,
+  title: 'Subscription Shop (Desktop PC)',
+  subtitle: 'https://subscription-app-nine-phi.vercel.app/',
+  interactionDistanceM: 4,
+  maxClickDistanceM: 20,
+  enforceDistance: false,
+};
+
+/**
  * Computes world `(x, y, z)`, AH1-local `(u, v)`, and yaw `rotationY` for the
  * Subscription Shop billboard from its active configuration.
  */

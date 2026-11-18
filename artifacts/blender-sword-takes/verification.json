@@ -1,0 +1,34 @@
+{
+  "girl": {
+    "Slash_Left": {
+      "duration": 0.62,
+      "samples": 63,
+      "animated_bones": 50,
+      "ankle_drift_game_m": 3.9583604999383365e-07,
+      "support_grip_error_game_m": null
+    },
+    "Heavy_Slash": {
+      "duration": 1.1,
+      "samples": 111,
+      "animated_bones": 50,
+      "ankle_drift_game_m": 4.6952275989100845e-07,
+      "support_grip_error_game_m": 0.0019407149804362637
+    }
+  },
+  "boy": {
+    "Slash_Left": {
+      "duration": 0.62,
+      "samples": 63,
+      "animated_bones": 50,
+      "ankle_drift_game_m": 3.23416905108499e-07,
+      "support_grip_error_game_m": null
+    },
+    "Heavy_Slash": {
+      "duration": 1.1,
+      "samples": 111,
+      "animated_bones": 50,
+      "ankle_drift_game_m": 3.478237933788249e-07,
+      "support_grip_error_game_m": 0.005159949039722013
+    }
+  }
+}
