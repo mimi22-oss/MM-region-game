@@ -122,3 +122,91 @@ test('two fingers can steer and look independently after walking locks',()=>{
  assert.equal(input.right,1);assert.equal(input.lookX,40);
  g.up(1);g.up(2);assert.equal(input.active,true);
 });
+
+test('mobile 6-rule action and character behavior: release <3s, hold 3s lock, release persists, steer, center stop, and stop button',()=>{
+ const {input,g}=setup();g.walkLockEnabled=true;
+
+ // Rule 1: Joystick ဆွဲပြီး 3s မပြည့်ခင် လွှတ် -> ရပ်မယ်
+ g.down(1,'left',100,100);
+ g.move(1,100,60); // dragged up/forward
+ hold(g,1500); // 1.5s
+ assert.ok(g.getLockHoldProgress()>=0.49&&g.getLockHoldProgress()<=0.52,'lock hold progress is ~50% at 1.5s');
+ assert.equal(input.walkLocked,false,'not locked before 3s');
+ g.up(1);
+ assert.equal(input.active,false,'stops on release before 3s');
+ assert.equal(g.getLockHoldProgress(),0,'progress resets on release');
+
+ // Rule 2: တစ်နေရာမှာ 3s ဖိထား -> Lock ဖြစ်မယ်
+ g.down(2,'left',100,100);
+ g.move(2,100,60);
+ hold(g,1500);
+ assert.ok(g.getLockHoldProgress()>=0.49&&g.getLockHoldProgress()<=0.52);
+ hold(g,1500); // reaches 3000ms
+ assert.equal(input.walkLocked,true,'locks after 3s continuous hold');
+ assert.equal(g.getLockHoldProgress(),0,'progress resets to 0 once locked');
+
+ // Rule 3: Lock ဖြစ်ပြီး လွှတ်လိုက် -> ဆက်သွားမယ်
+ g.up(2);
+ assert.equal(input.walkLocked,true,'remains locked after release');
+ assert.equal(input.active,true,'continues moving after release');
+ assert.equal(input.forward,1,'maintains forward vector');
+ assert.equal(input.right,0);
+
+ // Rule 4: Locked Joystick ကို ဘယ်/ညာ/အောက် ဆွဲ -> Direction ပြောင်းမယ်
+ // Drag right
+ g.down(3,'left',100,100);
+ g.move(3,140,100); // right
+ assert.equal(input.walkLocked,true);
+ assert.equal(input.forward||0,0);
+ assert.equal(input.right||0,1);
+ g.up(3);
+ assert.equal(input.walkLocked,true);
+ assert.equal(input.active,true);
+ assert.equal(input.right||0,1,'persists moving right after releasing steering');
+
+ // Drag down
+ g.down(4,'left',100,100);
+ g.move(4,100,140); // down
+ assert.equal(input.walkLocked,true);
+ assert.equal(input.forward||0,-1);
+ assert.equal(input.right||0,0);
+ g.up(4);
+ assert.equal(input.walkLocked,true);
+ assert.equal(input.active,true);
+ assert.equal(input.forward||0,-1,'persists moving down after releasing steering');
+
+ // Drag left
+ g.down(5,'left',100,100);
+ g.move(5,60,100); // left
+ assert.equal(input.walkLocked,true);
+ assert.equal(input.forward||0,0);
+ assert.equal(input.right||0,-1);
+ g.up(5);
+ assert.equal(input.walkLocked,true);
+ assert.equal(input.active,true);
+ assert.equal(input.right||0,-1,'persists moving left after releasing steering');
+
+ // Rule 5: Joystick ကို အလယ်ပြန်ဆွဲ -> Unlock + Stop
+ g.down(6,'left',100,100);
+ g.move(6,102,101); // within 10px deadzone (center)
+ assert.equal(input.walkLocked,false,'unlocks when dragged back to center');
+ assert.equal(input.active,false,'stops when dragged back to center');
+ assert.equal(input.stopRequested,true,'requests stop');
+ g.up(6);
+ assert.equal(input.walkLocked,false);
+ assert.equal(input.active,false);
+
+ // Rule 6: Stop Button နှိပ် -> ချက်ချင်းရပ်မယ်
+ // Re-lock first
+ g.down(7,'left',100,100);
+ g.move(7,100,60);
+ hold(g,3000);
+ assert.equal(input.walkLocked,true);
+ g.up(7);
+ assert.equal(input.active,true);
+ // Stop button triggers gesture.stop()
+ g.stop();
+ assert.equal(input.walkLocked,false,'stop button unlocks');
+ assert.equal(input.active,false,'stop button stops active motion');
+ assert.equal(input.stopRequested,true,'stop button sets stopRequested');
+});

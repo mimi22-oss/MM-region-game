@@ -2064,7 +2064,7 @@ main.night-mode .home-guidance-pill {
 	}
 
 	.location-toast-body strong {
-		font-size: 12px;
+		font-size: 9px;
 		color: #163e36;
 		line-height: 1.25;
 		white-space: nowrap;
@@ -2073,7 +2073,7 @@ main.night-mode .home-guidance-pill {
 	}
 
 	.location-toast-body span {
-		font-size: 10px;
+		font-size: 8px;
 		color: #4e675d;
 		line-height: 1.2;
 		white-space: nowrap;
@@ -5444,8 +5444,8 @@ main.night-mode .appearance-saved {
 
 .player-life {
 	position: fixed;
-	top: 3%;
-    right: 62px;
+	top: 5%;
+    right: 73px;
 	/* transform: translateX(100px); */
 	z-index: 12;
 	/* padding: 4px 10px; */
@@ -5494,8 +5494,8 @@ body:has(.balloon-controls-layer) .player-life {
 
 @media(max-width:600px) {
 	.player-life {
-		top: 10%;
-		right: 20px;
+		top: 2.5%;
+    	right: 60px;
 		/* padding: 4px 8px */
 	}
 
@@ -8800,12 +8800,192 @@ main.night-mode .weapon-keycap {
 		height: 38px;
 	}
 }
-/* Keep the joystick centre available for dragging back to neutral. */
+/* ==========================================================================
+   MOBILE JOYSTICK 3-SECOND AUTO-WALK / AUTO-RUN CRUISE LOCK
+   ========================================================================== */
+
+/* 3-Second Circular Charging Progress Ring */
+.mobile-joystick-lock-progress-wrap {
+	position: absolute;
+	inset: -4px;
+	pointer-events: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 5;
+}
+
+.mobile-joystick-lock-ring-svg {
+	position: absolute;
+	width: 136px;
+	height: 136px;
+	transform: rotate(-90deg);
+}
+
+.mobile-joystick-lock-ring-bg {
+	fill: none;
+	stroke: rgba(255, 255, 255, 0.16);
+	stroke-width: 3;
+}
+
+.mobile-joystick-lock-ring-fill {
+	fill: none;
+	stroke: #38bdf8;
+	stroke-width: 4;
+	stroke-linecap: round;
+	filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.85));
+	transition: stroke-dashoffset 0.05s linear;
+}
+
+.mobile-joystick-lock-hint {
+	position: absolute;
+	top: -34px;
+	left: 50%;
+	transform: translateX(-50%);
+	white-space: nowrap;
+	padding: 3px 9px;
+	border-radius: 999px;
+	background: rgba(15, 23, 42, 0.92);
+	color: #38bdf8;
+	border: 1px solid rgba(56, 189, 248, 0.6);
+	font-size: 11px;
+	font-weight: 700;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 10px rgba(56, 189, 248, 0.35);
+	animation: pulseLockHint 0.8s infinite alternate ease-in-out;
+}
+
+@keyframes pulseLockHint {
+	0% { transform: translateX(-50%) scale(1); }
+	100% { transform: translateX(-50%) scale(1.05); }
+}
+
+/* Locked Joystick Glow & Styling */
+.mobile-joystick.mobile-joystick-locked {
+	opacity: 0.98;
+	transform: scale(1.02);
+}
+
+.mobile-joystick.mobile-joystick-locked .mobile-joystick-ring {
+	border-color: #38bdf8;
+	box-shadow:
+		0 6px 24px rgba(0, 0, 0, 0.45),
+		0 0 20px rgba(56, 189, 248, 0.6),
+		inset 0 0 16px rgba(56, 189, 248, 0.35);
+}
+
+.mobile-joystick-knob.mobile-joystick-knob-locked {
+	border-color: #38bdf8;
+	box-shadow:
+		0 0 20px rgba(56, 189, 248, 0.95),
+		0 4px 14px rgba(0, 0, 0, 0.5),
+		inset 0 2px 4px #ffffff;
+}
+
+.mobile-joystick-knob.mobile-joystick-knob-locked .mobile-joystick-knob-core {
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: radial-gradient(circle, #38bdf8 40%, #0284c7 100%);
+	box-shadow: 0 0 10px rgba(56, 189, 248, 0.9);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.mobile-joystick-lock-icon {
+	font-size: 11px;
+	line-height: 1;
+	filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+/* Status Pill when Locked */
+.mobile-auto-status.mobile-auto-status-locked {
+	background: linear-gradient(135deg, rgba(14, 116, 144, 0.96), rgba(3, 105, 161, 0.96));
+	color: #f0f9ff;
+	border: 1.5px solid rgba(56, 189, 248, 0.85);
+	box-shadow:
+		0 6px 20px rgba(0, 0, 0, 0.45),
+		0 0 16px rgba(56, 189, 248, 0.5);
+	font-weight: 700;
+	letter-spacing: 0.3px;
+	padding: 5px 12px;
+	border-radius: 12px;
+}
+
+/* Walk Stop Button: placed above joystick with clear Stop label */
 .mobile-controls .mobile-walk-stop {
-  top: -82px;
-  width: 64px;
-  height: 44px;
-  border-radius: 12px;
+	top: -50px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 76px;
+	height: 38px;
+	border-radius: 999px;
+	background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+	color: #ffffff;
+	border: 1.5px solid #fca5a5;
+	box-shadow:
+		0 4px 16px rgba(185, 28, 28, 0.55),
+		0 0 14px rgba(239, 68, 68, 0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+	font-weight: 700;
+	font-size: 12px;
+	cursor: pointer;
+	touch-action: none;
+	z-index: 10;
+	transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mobile-controls .mobile-walk-stop:active {
+	transform: translateX(-50%) scale(0.93);
+	background: #991b1b;
+	box-shadow: 0 2px 8px rgba(185, 28, 28, 0.4);
+}
+
+.mobile-walk-stop-icon {
+	font-size: 13px;
+	line-height: 1;
+}
+
+.mobile-walk-stop-label {
+	font-size: 11.5px;
+	font-weight: 700;
+	letter-spacing: 0.3px;
+}
+
+/* Night Mode Overrides for Mobile Joystick Lock */
+main.night-mode .mobile-joystick.mobile-joystick-locked .mobile-joystick-ring {
+	border-color: #60a5fa;
+	box-shadow:
+		0 6px 24px rgba(0, 0, 0, 0.6),
+		0 0 22px rgba(96, 165, 250, 0.65),
+		inset 0 0 16px rgba(96, 165, 250, 0.35);
+}
+
+main.night-mode .mobile-joystick-knob.mobile-joystick-knob-locked {
+	border-color: #93c5fd;
+	box-shadow:
+		0 0 22px rgba(96, 165, 250, 0.95),
+		0 4px 14px rgba(0, 0, 0, 0.6),
+		inset 0 2px 4px #ffffff;
+}
+
+main.night-mode .mobile-joystick-lock-hint {
+	background: rgba(10, 18, 36, 0.95);
+	color: #93c5fd;
+	border-color: rgba(96, 165, 250, 0.7);
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 12px rgba(96, 165, 250, 0.45);
+}
+
+main.night-mode .mobile-auto-status.mobile-auto-status-locked {
+	background: linear-gradient(135deg, rgba(29, 78, 216, 0.95), rgba(30, 58, 138, 0.95));
+	color: #eff6ff;
+	border-color: rgba(147, 197, 253, 0.85);
+	box-shadow:
+		0 6px 20px rgba(0, 0, 0, 0.6),
+		0 0 16px rgba(96, 165, 250, 0.5);
 }
 .mobile-fight-buttons {
   position: absolute;

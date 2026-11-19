@@ -84,7 +84,7 @@ export function ThreeGhostsMissionScene() {
         return runtime ? { ...runtime } : { id, source: 'unavailable' as const };
       });
       window.dispatchEvent(new CustomEvent('mm-ghost-debug-positions', { detail: {
-        player: { x: playerPos.x, z: playerPos.z }, ghosts,
+        player: { x: playerPos.x, z: playerPos.z, yaw: player.rotation.y }, ghosts,
       } }));
     }
     const nearSword = Math.hypot(playerPos.x-area5.pitch.x,playerPos.z-area5.pitch.z)<=SWORD_PICKUP_RADIUS_M;

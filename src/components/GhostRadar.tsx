@@ -24,7 +24,7 @@ import {
 import './GhostRadar.css';
 
 type Snapshot = {
-  player: { x: number; z: number } | null;
+  player: { x: number; z: number; yaw?: number } | null;
   ghosts: Partial<GhostRuntimeEntry>[];
 };
 
@@ -482,9 +482,26 @@ export function GhostRadar() {
               );
             })}
 
-            {/* Player marker */}
+            {/* Player marker with head direction pointer */}
             {playerClamped && (
               <g>
+                {/* Vision cone & direction pointer rotated by character head orientation */}
+                {typeof snapshot.player?.yaw === 'number' && (
+                  <g transform={`rotate(${(-snapshot.player.yaw * 180) / Math.PI} ${playerClamped.x} ${playerClamped.y})`}>
+                    {/* Vision cone arc */}
+                    <path
+                      d={`M ${playerClamped.x} ${playerClamped.y} L ${playerClamped.x - 12} ${playerClamped.y - 25} A 28 28 0 0 1 ${playerClamped.x + 12} ${playerClamped.y - 25} Z`}
+                      fill="rgba(56, 189, 248, 0.3)"
+                    />
+                    {/* Head direction pointer triangle */}
+                    <polygon
+                      points={`${playerClamped.x},${playerClamped.y - 14} ${playerClamped.x - 4.5},${playerClamped.y - 4} ${playerClamped.x},${playerClamped.y - 6} ${playerClamped.x + 4.5},${playerClamped.y - 4}`}
+                      fill="#38bdf8"
+                      stroke="#ffffff"
+                      strokeWidth="0.8"
+                    />
+                  </g>
+                )}
                 <circle
                   cx={playerClamped.x}
                   cy={playerClamped.y}
@@ -502,7 +519,7 @@ export function GhostRadar() {
                 />
                 <text
                   x={playerClamped.x}
-                  y={playerClamped.y - 6}
+                  y={playerClamped.y + 11}
                   fill="#38bdf8"
                   fontSize="7"
                   fontWeight="bold"

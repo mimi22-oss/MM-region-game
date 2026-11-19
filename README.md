@@ -18,16 +18,55 @@ wards/index.tsx — ကလေးမြို့ရှိ ရပ်ကွက်�
 villages/tharsi/index.tsx — သာစည်ရွာ (Thar Si Village) 3D နှင့် 2D မြေပုံ component
 villages/index.tsx — ကလေးမြို့နယ်ရှိ ကျေးရွာများ (Villages) ကို ရွာအလိုက် စုစည်းသည့် component
 
-## Run
+## NPM Commands (Web Development)
 
-Node.js 22.18+ နှင့် npm လိုပါတယ်။ ဒီ folder ထဲ terminal ဖွင့်ပြီး:
+Node.js 22.18+ နှင့် npm လိုအပ်ပါသည်။ ဤ folder ထဲ terminal ဖွင့်ပြီး အောက်ပါ NPM script များကို သုံးနိုင်ပါသည်:
 
+### ၁။ စတင်အသုံးပြုခြင်းနှင့် Development
 ```sh
+# Dependencies ရယူသွင်းယူရန်
 npm install
+
+# Web Local Development Server စတင်ရန် (http://127.0.0.1:5173)
 npm run dev
+
+# Multiplayer Backend Server စတင်ရန် (လိုအပ်ပါက)
+npm run server:dev
+```
+ပြထားသော URL (ပုံမှန် http://127.0.0.1:5173) ကို desktop browser တွင် ဖွင့်ပါ။ `index.html` ကို double click ဖြင့် တိုက်ရိုက် မဖွင့်ပါနှင့်။
+
+### ၂။ Testing & Verification
+```sh
+# Automated Unit/Integration Tests အားလုံး run စစ်ဆေးရန်
+npm test
+
+# Multiplayer Tests သီးသန့် run ရန်
+npm run test:multiplayer
+
+# Ghost Mission Tests သီးသန့် run ရန်
+npm run test:ghost-mission
+
+# Map Data Audit စစ်ဆေးရန်
+npm run map:audit
 ```
 
-ပြထားသော URL (ပုံမှန် http://127.0.0.1:5173) ကို desktop browser မှာ ဖွင့်ပါ။ index.html ကို double click ဖြင့် မဖွင့်ပါနှင့်။
+### ၃။ Production Web Build & Preview
+```sh
+# TypeScript စစ်ဆေးပြီး Web Production Assets တည်ဆောက်ရန် (dist/ folder ထွက်မည်)
+npm run build
+
+# Build ထွက်ထားသော dist/ ကို local server ဖြင့် စမ်းသပ်ကြည့်ရှုရန်
+npm run preview
+```
+
+### ၄။ Capacitor Android Sync
+```sh
+# Web build အရင်လုပ်ပြီး Android assets/public/ ထဲသို့ တစ်ခါတည်း sync ကူးရန် (အသုံးအများဆုံး)
+npm run cap:sync
+
+# (သို့မဟုတ်) build မလုပ်ဘဲ လက်ရှိ dist/ ကိုသာ Android ထဲ sync ကူးရန်
+npm run android:sync
+```
 
 ## Controls
 
@@ -46,15 +85,83 @@ npm run dev
 - `src/game/collision.ts`: rotated footprint collision
 - `src/main.tsx`: HUD / minimap
 
-## စစ်ဆေးရန်
-
-```sh
-npm test
-npm run build
-npm run preview
-```
+## စစ်ဆေးရန် (Manual Verification)
 
 Manual check: Scene click → WASD → Shift → V → အိမ်/သစ်ပင်/နယ်နိမိတ် → Esc → click → R။ WebGL နှင့် hardware acceleration လိုပါတယ်။
+
+---
+
+## Android Build & Deploy Guide (Debug & Release)
+
+Capacitor ဖြင့် Android app build လုပ်ရာတွင် Code အပြောင်းအလဲများ App ထဲ အမှန်တကယ် ပါဝင်စေရန် **Web Build -> Capacitor Sync -> Android Gradle Build** အစဉ်အတိုင်း အဆင့်ဆင့် လုပ်ဆောင်ရပါမည်။
+
+### အရေးကြီးသော အခြေခံအဆင့် (Code ပြင်ပြီးတိုင်း အရင်လုပ်ရန်)
+```sh
+# အဆင့် ၁: TypeScript စစ်ဆေးပြီး Web Build အသစ် ထုတ်ယူပါ
+npm run build
+
+# အဆင့် ၂: ထွက်လာသော dist/ ဖိုင်များကို Android assets/public/ ထဲ ထည့်သွင်းပါ
+npx cap sync android
+```
+*(အထက်ပါ အဆင့်နှစ်ခုလုံးကို `npm run cap:sync` command တစ်ခုတည်းဖြင့်လည်း တန်းလုပ်နိုင်ပါသည်)*
+
+---
+
+### ၁။ Debug Build (စမ်းသပ်အသုံးပြုရန်)
+
+Debug APK သည် Development နှင့် စမ်းသပ်မှုများအတွက် အဆင်ပြေစေရန် signing key မလိုဘဲ အလွယ်တကူ build လုပ်နိုင်ပါသည်။
+
+```sh
+# Debug APK တည်ဆောက်ရန်
+.\android\gradlew.bat -p android assembleDebug
+```
+- **Output APK:** `android/app/build/outputs/apk/debug/app-debug.apk`
+
+```sh
+# ဖုန်းကို USB Debugging ဖွင့်ပြီး ကြိုးထိုးထားပါက တိုက်ရိုက် install လုပ်ရန်
+.\android\gradlew.bat -p android installDebug
+```
+
+> 💡 **Debug Build အတွက် One-line Command:**
+> ```powershell
+> npm run cap:sync; .\android\gradlew.bat -p android assembleDebug
+> ```
+
+---
+
+### ၂။ Release Build (ဖြန့်ချိရန် / Production အတွက်)
+
+Release build သည် Performance ကောင်းမွန်စေရန် optimize လုပ်ထားပြီး Signing Key (`android/keystore.properties` နှင့် `android/app/mm-region-release.jks`) ဖြင့် Sign ထိုးထားသော တရားဝင် app ဖြစ်ပါသည်။
+
+```sh
+# Release APK နှင့် Play Store App Bundle (AAB) နှစ်မျိုးလုံး တစ်ပြိုင်နက် ထုတ်ရန်
+.\android\gradlew.bat -p android assembleRelease bundleRelease
+
+# သို့မဟုတ် Release APK သီးသန့် ထုတ်ရန်
+.\android\gradlew.bat -p android assembleRelease
+
+# သို့မဟုတ် Play Store အတွက် AAB (Bundle) သီးသန့် ထုတ်ရန်
+.\android\gradlew.bat -p android bundleRelease
+```
+
+- **Release APK Output:** `android/app/build/outputs/apk/release/app-release.apk`  
+  *(ဖုန်းထဲ တိုက်ရိုက်သွင်းရန် သို့မဟုတ် မျှဝေရန်)*
+- **Release AAB Output:** `android/app/build/outputs/bundle/release/app-release.aab`  
+  *(Google Play Console သို့ Upload တင်ရန်)*
+
+> 💡 **Release Build အတွက် One-line Command:**
+> ```powershell
+> npm run cap:sync; .\android\gradlew.bat -p android assembleRelease bundleRelease
+> ```
+
+---
+
+### ⚠️ Android Troubleshooting & သတိပြုရန်များ
+
+1. **Android App တွင် Code update မဖြစ်ခြင်း:**  
+   Code ပြင်ပြီးသော်လည်း Android app တွင် မပြောင်းလဲပါက `npm run build` နှင့် `npx cap sync android` ပြုလုပ်ရန် ကျန်ခဲ့ခြင်းကြောင့် ဖြစ်တတ်ပါသည်။ အမြဲတမ်း `npm run cap:sync` ကို အရင် run ပေးပါ။
+2. **"App not installed" / Signature Conflict ဖြစ်ခြင်း:**  
+   ဖုန်းထဲတွင် ယခင်က **Debug APK** သွင်းထားခဲ့ပါက လက်မှတ် (Signature) မတူညီသည့်အတွက် **Release APK** ကို တိုက်ရိုက် update တင်၍ မရနိုင်ပါ။ ဖုန်းထဲရှိ app အဟောင်းကို **Uninstall အရင်လုပ်ပြီးမှသာ** Release APK အသစ်ကို install ပြုလုပ်ပါ။
 
 ## နောက်ဆုံး မြေပုံဖွဲ့စည်းပုံ
 

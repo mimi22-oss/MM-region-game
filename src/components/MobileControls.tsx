@@ -23,6 +23,8 @@ export function MobileControls({
   const mission=useThreeGhostsMission();
   const walkMode=onFoot&&!flying;
   const [walkLocked,setWalkLocked]=useState(false);
+  const [lockProgress,setLockProgress]=useState(0);
+  const prevWalkLocked=useRef(false);
   const gesture = useRef(new MobileGesture(input.current));
 	const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const [held, setHeld] = useState(false);
@@ -56,15 +58,31 @@ export function MobileControls({
         setWalkLocked(current.walkLocked);
         setSprinting(current.sprint||current.lockedSprint);
         setHeld(current.active||gesture.current.pinching);
-        if(current.autoDirection||current.walkLocked)updateKnob(current.right*30,-current.forward*30,true);
-        else if(!current.active)updateKnob(0,0,false);
+        if(!prevWalkLocked.current&&current.walkLocked){
+            if(typeof navigator!=='undefined'&&navigator.vibrate){
+                try{navigator.vibrate([40,30,60]);}catch{}
+            }
+        }
+        prevWalkLocked.current=current.walkLocked;
+        if(current.autoDirection||current.walkLocked){
+            if(!activePointerId.current){
+                updateKnob(current.right*30,-current.forward*30,true);
+            }
+        }
+        else if(!current.active&&!activePointerId.current)updateKnob(0,0,false);
     },[input,updateKnob]);
     useEffect(()=>{
-        if(disabled||(!held&&!autoMove.direction))return;
+        if(disabled||(!held&&!autoMove.direction&&!walkLocked))return;
         let last=performance.now();
-        const interval=setInterval(()=>{const now=performance.now();gesture.current.advanceTick(now-last);last=now;syncAuto();},50);
+        const interval=setInterval(()=>{
+            const now=performance.now();
+            gesture.current.advanceTick(now-last);
+            last=now;
+            setLockProgress(gesture.current.getLockHoldProgress());
+            syncAuto();
+        },50);
         return ()=>clearInterval(interval);
-    },[disabled,held,autoMove.direction,syncAuto]);
+    },[disabled,held,autoMove.direction,walkLocked,syncAuto]);
 
 
 	const clear = useCallback(() => {
@@ -77,6 +95,7 @@ export function MobileControls({
 		if (input.current) input.current.sprint = false;
 		setHeld(false);
 		setSprinting(false);
+		setLockProgress(0);
         syncAuto();
 	}, [input, updateKnob,syncAuto]);
 
@@ -218,13 +237,18 @@ export function MobileControls({
 		if (e.pointerId === activePointerId.current) {
 			activePointerId.current = null;
 			joystickAnchor.current = null;
-			updateKnob(0, 0, false);
+			if(input.current?.walkLocked){
+				updateKnob(input.current.right*30,-input.current.forward*30,true);
+			}else{
+				updateKnob(0, 0, false);
+			}
 		}
 		if (!gesture.current.fingers.size && timer.current) {
 			clearTimeout(timer.current);
 			timer.current = null;
 		}
 		setHeld(input.current.active || gesture.current.pinching);
+		setLockProgress(0);
         syncAuto();
 	};
 
@@ -249,9 +273,31 @@ export function MobileControls({
 			>
 				<div
 					ref={baseRef}
-					className={`mobile-joystick mobile-direction-pad${held ? ' mobile-joystick-active' : ''}`}
+					className={`mobile-joystick mobile-direction-pad${held ? ' mobile-joystick-active' : ''}${walkLocked ? ' mobile-joystick-locked' : ''}`}
 					aria-label="360 ဒီဂရီ လမ်းကြောင်း ထိန်းချုပ် Joystick"
 				>
+                    {/* SVG 3s Circular Countdown Meter */}
+                    {walkMode && !walkLocked && lockProgress > 0 && (
+                        <div className="mobile-joystick-lock-progress-wrap" aria-hidden="true">
+                            <svg className="mobile-joystick-lock-ring-svg" viewBox="0 0 136 136">
+                                <circle className="mobile-joystick-lock-ring-bg" cx="68" cy="68" r="62" />
+                                <circle
+                                    className="mobile-joystick-lock-ring-fill"
+                                    cx="68"
+                                    cy="68"
+                                    r="62"
+                                    style={{
+                                        strokeDasharray: 389.56,
+                                        strokeDashoffset: 389.56 * (1 - lockProgress),
+                                    }}
+                                />
+                            </svg>
+                            <div className="mobile-joystick-lock-hint">
+                                <span>🔒 Lock ({Math.ceil(Math.max(0.1, (1 - lockProgress) * 3))}s)</span>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="mobile-joystick-ring">
                         <div className="mobile-joystick-crosshair mobile-joystick-crosshair-v" />
                         <div className="mobile-joystick-crosshair mobile-joystick-crosshair-h" />
@@ -265,15 +311,26 @@ export function MobileControls({
                             onClick={e=>{if(e.detail===0){gesture.current.activateTick(direction);onInteract();syncAuto();}}}
                         >{['▲','▶','▼','◀'][i]}</button>)}
                     </div>
-                    {(autoMove.direction||walkLocked)&&<>
-                        <div className="mobile-auto-status" role="status">{walkLocked?(sprinting?"🔒 ပြေး":"🔒 လျှောက်"):`Auto · ${autoMove.speed}×`}</div>
-                        <button type="button" className={walkMode?"mobile-auto-stop mobile-walk-stop":"mobile-auto-stop"} aria-label="Auto ရပ်မည်"
-                            onPointerDown={e=>{e.preventDefault();e.stopPropagation();clear();gesture.current.stop();syncAuto();onInteract();}}
-                            onClick={e=>{if(e.detail===0){clear();gesture.current.stop();syncAuto();onInteract();}}}>{walkMode?"■ Stop":"■"}</button>
-                    </>}
+                    {autoMove.direction && !walkLocked && (
+                        <div className="mobile-auto-status" role="status">
+                            {`Auto · ${autoMove.speed}×`}
+                        </div>
+                    )}
+                    {(autoMove.direction || walkLocked) && (
+                        <button type="button" className={walkMode ? "mobile-auto-stop mobile-walk-stop" : "mobile-auto-stop"} aria-label="Auto ရပ်မည်"
+                            title="ရပ်မည် (Stop)"
+                            onPointerDown={e => { e.preventDefault(); e.stopPropagation(); clear(); gesture.current.stop(); syncAuto(); onInteract(); }}
+                            onClick={e => { if (e.detail === 0) { clear(); gesture.current.stop(); syncAuto(); onInteract(); } }}>
+                            <span className="mobile-walk-stop-icon">■</span>
+                            <span className="mobile-walk-stop-label">Stop</span>
+                        </button>
+                    )}
+					
 
-					<div ref={knobRef} className="mobile-joystick-knob" aria-hidden="true">
-						<div className="mobile-joystick-knob-core" />
+					<div ref={knobRef} className={`mobile-joystick-knob${walkLocked ? ' mobile-joystick-knob-locked' : ''}`} aria-hidden="true">
+						<div className="mobile-joystick-knob-core">
+                            {walkLocked && <span className="mobile-joystick-lock-icon">🔒</span>}
+                        </div>
 					</div>
 				</div>
 			</div>

@@ -117,6 +117,8 @@ import {
   useActiveGhostZones,
   useGhostThreatActive,
 } from "./game/ghostConfig";
+import { isGhostDefeated } from "./game/missions/threeGhostsMission";
+import type { GhostRuntimeEntry } from "./game/missions/ghostRuntimeRegistry";
 import { installOfflineAssetInterceptor } from "./services/offlineAssetResolver";
 import { otaCoordinator } from "./services/otaUpdater";
 import {
@@ -320,6 +322,39 @@ function App() {
     () => new Set(activeGhostZones.map((zone) => zone.zoneId)),
     [activeGhostZones],
   );
+  const [liveGhosts, setLiveGhosts] = useState<
+    Array<{ id: string; x: number; z: number; active: boolean; state: string }>
+  >([]);
+
+  useEffect(() => {
+    const handleGhostPositions = (e: Event) => {
+      const detail = (e as CustomEvent<{
+        player: { x: number; z: number; yaw?: number };
+        ghosts: Partial<GhostRuntimeEntry>[];
+      }>).detail;
+      if (detail?.ghosts) {
+        const live = detail.ghosts
+          .filter(
+            (g): g is Partial<GhostRuntimeEntry> & { x: number; z: number } =>
+              typeof g.x === "number" &&
+              typeof g.z === "number" &&
+              Number.isFinite(g.x) &&
+              Number.isFinite(g.z) &&
+              !isGhostDefeated(g.id || "")
+          )
+          .map((g) => ({
+            id: g.id || "ghost",
+            x: g.x,
+            z: g.z,
+            active: !!g.active,
+            state: g.state || "active",
+          }));
+        setLiveGhosts(live);
+      }
+    };
+    window.addEventListener("mm-ghost-debug-positions", handleGhostPositions);
+    return () => window.removeEventListener("mm-ghost-debug-positions", handleGhostPositions);
+  }, []);
   const viewPosition = useCallback(
     (x: number, z: number) => {
       viewPosRef.current.x = x;
@@ -685,8 +720,11 @@ function App() {
     posRef.current.x = x;
     posRef.current.z = z;
     if (yaw !== undefined) {
+      const prevYaw = robotYawRef.current;
       robotYawRef.current = yaw;
-      if (settingsOpenRef.current) setRobotYaw(yaw);
+      if (settingsOpenRef.current || mapOpenRef.current || Math.abs(prevYaw - yaw) > 0.035) {
+        setRobotYaw(yaw);
+      }
     }
     setPos((previous) => {
       if (settingsOpenRef.current || mapOpenRef.current) {
@@ -694,7 +732,7 @@ function App() {
       }
       const dx = previous.x - x;
       const dz = previous.z - z;
-      if (dx * dx + dz * dz > 1.44) {
+      if (dx * dx + dz * dz > 0.36) {
         return { x, z };
       }
       return previous;
@@ -1276,7 +1314,10 @@ function App() {
             setSettingsOpen(false);
             setMapOpen((v) => {
               const next = !v;
-              if (next) setPos({ x: posRef.current.x, z: posRef.current.z });
+              if (next) {
+                setPos({ x: posRef.current.x, z: posRef.current.z });
+                setRobotYaw(robotYawRef.current);
+              }
               return next;
             });
           }}
@@ -1366,6 +1407,7 @@ function App() {
                 )}
               </g>
             ))}
+          {/* Active Ghost Zones (Zone Area Indicators) */}
           {activeGhostZones.map((zone) => (
             <circle
               key={`ghost-zone:${zone.ghostId}:${zone.zoneId}`}
@@ -1378,14 +1420,126 @@ function App() {
               pointerEvents="none"
             />
           ))}
-          <circle
-            cx={pos.x}
-            cy={pos.z}
-            r={mapOpen ? "35" : "120"}
-            fill="#fff4b3"
-            stroke="#173d35"
-            strokeWidth={mapOpen ? "8" : "24"}
-          />
+
+          {/* Realtime Live Ghost Markers */}
+          {liveGhosts.map((g, idx) => {
+            const gr = mapOpen ? 38 : 110;
+            const ghostColors = ["#c084fc", "#fbbf24", "#fb7185"];
+            const color = ghostColors[idx % ghostColors.length];
+            return (
+              <g key={`live-ghost:${g.id}`} pointerEvents="none">
+                {/* Glowing aura */}
+                <circle
+                  cx={g.x}
+                  cy={g.z}
+                  r={gr * 1.3}
+                  fill={color}
+                  opacity={0.35}
+                />
+                {/* Core dot */}
+                <circle
+                  cx={g.x}
+                  cy={g.z}
+                  r={gr * 0.75}
+                  fill={color}
+                  stroke="#ffffff"
+                  strokeWidth={mapOpen ? 4 : 12}
+                />
+                {/* Ghost emoji */}
+                <text
+                  x={g.x}
+                  y={g.z + (mapOpen ? 12 : 36)}
+                  fontSize={mapOpen ? 36 : 100}
+                  textAnchor="middle"
+                  style={{ userSelect: "none" }}
+                >
+                  👻
+                </text>
+                {mapOpen && (
+                  <text
+                    x={g.x}
+                    y={g.z - gr - 8}
+                    fontSize={26}
+                    fontWeight="bold"
+                    fill={color}
+                    textAnchor="middle"
+                    stroke="#091622"
+                    strokeWidth={5}
+                    paintOrder="stroke"
+                  >
+                    {`သရဲ-${idx + 1}`}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+
+          {/* Realtime Player Marker with Head Direction Pointer */}
+          {(() => {
+            const pr = mapOpen ? 34 : 110;
+            const headingDeg = (-robotYaw * 180) / Math.PI;
+            return (
+              <g pointerEvents="none">
+                {/* Rotated group centered at (pos.x, pos.z) following head orientation */}
+                <g transform={`translate(${pos.x}, ${pos.z}) rotate(${headingDeg})`}>
+                  {/* Field of view / Vision cone (ရှေ့မြင်ကွင်း အလင်းရောင်ခြည်) */}
+                  <path
+                    d={`M 0 0 L ${-pr * 1.3} ${-pr * 2.5} A ${pr * 2.8} ${pr * 2.8} 0 0 1 ${pr * 1.3} ${-pr * 2.5} Z`}
+                    fill="rgba(56, 189, 248, 0.35)"
+                  />
+                  {/* Direction pointer triangle pointing in head direction (ဦးခေါင်းလှည့်ရာ ဦးတည်ချက်မြှားခေါင်း) */}
+                  <polygon
+                    points={`0,${-pr * 1.85} ${-pr * 0.55},${-pr * 0.35} 0,${-pr * 0.75} ${pr * 0.55},${-pr * 0.35}`}
+                    fill="#38bdf8"
+                    stroke="#0f172a"
+                    strokeWidth={mapOpen ? 3 : 9}
+                  />
+                  {/* Player outer glow */}
+                  <circle
+                    cx={0}
+                    cy={0}
+                    r={pr * 1.25}
+                    fill="rgba(56, 189, 248, 0.25)"
+                  />
+                  {/* Player body circle */}
+                  <circle
+                    cx={0}
+                    cy={0}
+                    r={pr}
+                    fill="#38bdf8"
+                    stroke="#ffffff"
+                    strokeWidth={mapOpen ? 5 : 16}
+                  />
+                  {/* Player inner face/core */}
+                  <circle
+                    cx={0}
+                    cy={0}
+                    r={pr * 0.52}
+                    fill="#0284c7"
+                  />
+                  {/* Forward-facing eyes showing gaze direction */}
+                  <circle cx={-pr * 0.22} cy={-pr * 0.22} r={pr * 0.16} fill="#ffffff" />
+                  <circle cx={pr * 0.22} cy={-pr * 0.22} r={pr * 0.16} fill="#ffffff" />
+                  <circle cx={-pr * 0.22} cy={-pr * 0.28} r={pr * 0.08} fill="#0369a1" />
+                  <circle cx={pr * 0.22} cy={-pr * 0.28} r={pr * 0.08} fill="#0369a1" />
+                </g>
+                {/* Horizontal "YOU" label that remains unrotated for clarity */}
+                <text
+                  x={pos.x}
+                  y={pos.z + pr * 1.55 + (mapOpen ? 18 : 55)}
+                  fontSize={mapOpen ? 26 : 75}
+                  fontWeight="bold"
+                  fill="#0284c7"
+                  textAnchor="middle"
+                  stroke="#ffffff"
+                  strokeWidth={mapOpen ? 4 : 12}
+                  paintOrder="stroke"
+                >
+                  YOU
+                </text>
+              </g>
+            );
+          })()}
         </svg>
         <small>
           {ward.currentArea} · သာစည် · ချင်းဆိုင် · ဇင်းကလင်း · ထိုမာ ·

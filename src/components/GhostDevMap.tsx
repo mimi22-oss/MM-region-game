@@ -6,7 +6,7 @@ import { GHOST_IDS, SWORD_PICKUP_RADIUS_M, useThreeGhostsMission } from '../game
 import type { GhostRuntimeEntry } from '../game/missions/ghostRuntimeRegistry';
 import { devMapProjection, selectDevMarker } from '../game/missions/ghostDevMapModel';
 
-type Snapshot = { player: { x: number; z: number } | null; ghosts: Partial<GhostRuntimeEntry>[] };
+type Snapshot = { player: { x: number; z: number; yaw?: number } | null; ghosts: Partial<GhostRuntimeEntry>[] };
 const EMPTY: Snapshot = { player: null, ghosts: [] };
 const COLORS = ['#c084fc', '#fbbf24', '#fb7185'];
 const distance = (a: { x?: number; z?: number }, b: { x: number; z: number } | null) =>
@@ -53,7 +53,19 @@ export default function GhostDevMap() {
             strokeDasharray={g.source === 'spawn' || g.source === 'guard' ? '3 2' : undefined} />
           <text x={x(g.x)} y={y(g.z)+3} fontSize="9" fontWeight="bold" fill="#111" textAnchor="middle">{i+1}</text>
         </g>)}
-        {snapshot.player && <g><circle cx={x(snapshot.player.x)} cy={y(snapshot.player.z)} r="6" fill="#38bdf8" stroke="white" /><text x={x(snapshot.player.x)+8} y={y(snapshot.player.z)-8} fill="white" fontSize="10">YOU</text></g>}
+        {snapshot.player && <g>
+          {typeof snapshot.player.yaw === 'number' && (
+            <polygon
+              transform={`rotate(${(-snapshot.player.yaw * 180) / Math.PI} ${x(snapshot.player.x)} ${y(snapshot.player.z)})`}
+              points={`${x(snapshot.player.x)},${y(snapshot.player.z) - 13} ${x(snapshot.player.x) - 4.5},${y(snapshot.player.z) - 3} ${x(snapshot.player.x) + 4.5},${y(snapshot.player.z) - 3}`}
+              fill="#38bdf8"
+              stroke="white"
+              strokeWidth="0.8"
+            />
+          )}
+          <circle cx={x(snapshot.player.x)} cy={y(snapshot.player.z)} r="6" fill="#38bdf8" stroke="white" />
+          <text x={x(snapshot.player.x)+8} y={y(snapshot.player.z)-8} fill="white" fontSize="10">YOU</text>
+        </g>}
       </svg>
       <div>Sword: X {field.x.toFixed(2)}, Z {field.z.toFixed(2)}</div>
       <div>Encounter: {progress.encountered.length}/3 · Sword Pickup: {pickupAllowed ? 'ALLOWED' : 'BLOCKED'}{progress.swordCollected ? ' (collected)' : ''}</div>

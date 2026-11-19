@@ -97,6 +97,10 @@ export class MobileGesture {
   input: MobileInput;
   walkLockEnabled = false;
   private steady: {id:number;x:number;y:number;elapsed:number}|null = null;
+  getLockHoldProgress(): number {
+    if (!this.walkLockEnabled || !this.steady || this.input.walkLocked || !this.input.active) return 0;
+    return Math.min(1, this.steady.elapsed / MOBILE_WALK_LOCK_MS);
+  }
   constructor(input: MobileInput) {
     this.input = input;
   }
@@ -167,6 +171,9 @@ export class MobileGesture {
     if (this.fingers.size >= 2) return;
     if(side==='left'&&!tick&&this.input.autoDirection){
       Object.assign(this.input,{autoDirection:null,moveScale:1,active:false,forward:0,right:0,stopRequested:true});
+    }
+    if (side === 'left' && this.walkLockEnabled && this.input.walkLocked) {
+      this.input.session++;
     }
     this.fingers.set(id, { id, side, x, y, startX: x, startY: y, direction });
     if (this.fingers.size === 2) {
@@ -256,7 +263,7 @@ export class MobileGesture {
         return;
       }
       const steady=this.steady;
-      if(!steady||Math.hypot(x-steady.x,y-steady.y)>8){
+      if(!steady||Math.hypot(x-steady.x,y-steady.y)>14){
         this.steady={id,x,y,elapsed:0};
       }
       if(!this.input.active)this.input.session++;
