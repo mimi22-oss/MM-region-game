@@ -63,7 +63,7 @@ async function parseAnimationOnlyGlb(relativePath:string):Promise<{gltf:GLTF;byt
 test('extracted dance GLBs contain zero meshes, zero images, zero scale tracks, and match source durations',async()=>{
  const srcInfo=await stat(new URL('../dance group.glb',import.meta.url));
  const srcGltf=await parseGlbStripTextures('../dance group.glb');
- const actions=listSpecialActions('dance');
+ const actions=listSpecialActions('dance').filter(a=>a.id!=='dance_07');
  assert.equal(actions.length,6);
 
  let totalExtractedBytes=0;
@@ -250,7 +250,7 @@ test('categorized Training, Reactions, and Movement registry metadata & extracte
  assert.deepEqual(
   categories.map(c=>({id:c.id,count:c.count})),
   [
-   {id:'dance',count:6},
+   {id:'dance',count:7},
    {id:'training',count:7},
    {id:'reactions',count:7},
    {id:'movement',count:3},
@@ -271,7 +271,7 @@ test('categorized Training, Reactions, and Movement registry metadata & extracte
 
  // Vehicle waiting remains excluded from manual tabs
  const manualActions=listManualSpecialActions();
- assert.equal(manualActions.length,23);
+ assert.equal(manualActions.length,24);
  assert.ok(manualActions.every(a=>a.id!=='vehicle-wait'));
  assert.equal(getSpecialAction('press-up')?.id,'press_up');
  assert.equal(getSpecialAction('warm_up')?.defaultLoop,true);

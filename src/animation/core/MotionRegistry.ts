@@ -21,6 +21,7 @@ export type MotionId =
   | 'dance_04'
   | 'dance_05'
   | 'dance_06'
+  | 'dance_07'
   | 'box_01'
   | 'box_02'
   | 'box_03'
@@ -39,6 +40,8 @@ export type MotionId =
   | 'dive'
   | 'turn'
   | 'vehicle-wait'
+  | 'sitting-idle'
+  | 'sit-to-stand'
   | (string & {});
 
 export interface MotionDefinition {
@@ -236,6 +239,7 @@ const DEFAULT_MOTIONS: MotionDefinition[] = [
   makeDanceDef('dance_04', 'Dance 04', 'အက ၄', 10.833),
   makeDanceDef('dance_05', 'Dance 05', 'အက ၅', 2.917),
   makeDanceDef('dance_06', 'Dance 06', 'အက ၆', 10.917),
+  makeDanceDef('dance_07', 'Dance 07', 'အက ၇ (Flair)', 1.033),
 
   // Training: Boxing
   makeActionDef({
@@ -492,6 +496,56 @@ const DEFAULT_MOTIONS: MotionDefinition[] = [
     rootMotion: 'in-place',
     autoTriggeredOnly: true,
   },
+
+  // Interactions: Sitting Idle on Chair (auto-controlled)
+  {
+    id: 'sitting-idle',
+    category: 'interactions',
+    subgroup: 'vehicle',
+    label: 'Sitting Idle',
+    myanmarLabel: 'ထိုင်ခုံတွင် ထိုင်နေသည်',
+    assetUrl: '/motions/interactions/sitting-idle.glb',
+    clipName: 'sitting-idle.001',
+    durationSec: 6.433,
+    defaultLoop: true,
+    allowLoopToggle: false,
+    allowRetrigger: false,
+    interruptibility: 'vehicle-only',
+    supportsGroupSync: false,
+    priority: 20,
+    defaultSpeed: 1,
+    crossFadeSec: 0.35,
+    fadeOutSec: 0.35,
+    endHoldSec: 0,
+    endPose: 'standing',
+    rootMotion: 'in-place',
+    autoTriggeredOnly: true,
+  },
+
+  // Interactions: Sit To Stand from Chair (auto-controlled)
+  {
+    id: 'sit-to-stand',
+    category: 'interactions',
+    subgroup: 'vehicle',
+    label: 'Sit To Stand',
+    myanmarLabel: 'ထိုင်ရာမှ ထရပ်သည်',
+    assetUrl: '/motions/interactions/sit-to-stand.glb',
+    clipName: 'sit-to-stand.001',
+    durationSec: 2.3,
+    defaultLoop: false,
+    allowLoopToggle: false,
+    allowRetrigger: false,
+    interruptibility: 'always',
+    supportsGroupSync: false,
+    priority: 25,
+    defaultSpeed: 1,
+    crossFadeSec: 0.25,
+    fadeOutSec: 0.25,
+    endHoldSec: 0.05,
+    endPose: 'standing',
+    rootMotion: 'in-place',
+    autoTriggeredOnly: true,
+  },
 ];
 
 const motionRegistry = new Map<string, MotionDefinition>(
@@ -501,6 +555,9 @@ const motionRegistry = new Map<string, MotionDefinition>(
 const motionAliases = new Map<string, string>([
   ['wait_car', 'vehicle-wait'],
   ['press-up', 'press_up'],
+  ['sit_idle', 'sitting-idle'],
+  ['sit-idle', 'sitting-idle'],
+  ['sit_stand', 'sit-to-stand'],
 ]);
 
 export function registerMotion(definition: MotionDefinition): void {

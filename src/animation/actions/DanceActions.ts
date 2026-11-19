@@ -13,6 +13,7 @@ export const DANCE_MOTION_IDS: readonly MotionId[] = [
   'dance_04',
   'dance_05',
   'dance_06',
+  'dance_07',
 ];
 
 export function listDanceActions(): MotionDefinition[] {

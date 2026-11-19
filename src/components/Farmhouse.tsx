@@ -510,6 +510,7 @@ export function FarmhouseBuilding({ ignoreEdits = false }: { ignoreEdits?: boole
 						config={SMART_TV_SUBSCRIPTION_CONFIG}
 						variant="tv"
 						position={[0, 0, 0.033]}
+						rotation={[0, 0, 0]}
 					/>
 					<mesh position={[0, -0.68, 0.05]}>
 						<boxGeometry args={[1.6, 0.09, 0.1]} />
@@ -720,6 +721,7 @@ export function FarmhouseBuilding({ ignoreEdits = false }: { ignoreEdits?: boole
 						config={COMPUTER_SUBSCRIPTION_CONFIG}
 						variant="monitor"
 						position={[0, 0, 0.022]}
+						rotation={[0, 0, 0]}
 					/>
 				</group>
 

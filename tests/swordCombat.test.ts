@@ -46,7 +46,7 @@ test('one mixer finishes actions, never restarts on renders, and samples only ac
   const {state,mixer,driver,samples}=synthetic();state.request('combo');
   const seq=state.sequence;for(let i=0;i<hz;i++)driver.update(1/hz);
   assert.equal(state.sequence,seq);assert.equal(state.actionActive,false);assert.equal(driver.currentClip,'Combat_Idle');
-  assert.ok(samples.length>0);assert.ok(samples.every(s=>s.phase==='ACTIVE'&&s.time>=.6*.24-1e-6&&s.time<=.6*.72+1e-6));
+  assert.ok(samples.length>0);assert.ok(samples.every(s=>s.phase==='ACTIVE'&&s.time>=.6*ATTACKS.Slash_Left!.activeStart-1e-6&&s.time<=.6*ATTACKS.Slash_Left!.activeEnd+1e-6));
   counts.push(samples.length);driver.dispose();
   assert.equal((mixer as unknown as {_listeners:{finished?:unknown[]}})._listeners.finished?.length??0,0);
  }
@@ -114,7 +114,7 @@ function strippedGlb(path:string){
 test('all supplied GLBs load: counts, bindings, finite transforms and every exact combat clip playback',async()=>{
  for(const [id,count] of [['boy',23],['girl',23],['canolia-character',32],['ghost-woman',4]] as const){
   const ghost=id==='ghost-woman',file=ghost?'public/models/enemies/ghost-woman-combat-animated.glb':`public/models/characters/${id}-combat-animated.glb`;
-  const model=await new GLTFLoader().parseAsync(strippedGlb(file),'');assert.equal(model.animations.length,count,id);
+  const model=await new GLTFLoader().parseAsync(strippedGlb(file),'');assert.equal(model.animations.length,count+(ghost?0:8),id);
   const mixer=new AnimationMixer(model.scene);
   for(const clip of model.animations){
    assert.ok(clip.duration>0);
@@ -200,5 +200,30 @@ test('production rigs place the support palm on the pommel for two-hand cuts and
   }
   t.diagnostic(id+' max two-hand gap '+(100*worstGrip).toFixed(2)+' cm; minimum free-hand clearance '+(100*closestFreeHand).toFixed(2)+' cm');
   mixer.uncacheRoot(root);
+ }
+});
+
+
+test('FBX sword clips own the mixer pose on all player rigs and retain full-body keyframes',async()=>{
+ for(const id of ['boy','girl','canolia-character']){
+  const model=await new GLTFLoader().parseAsync(strippedGlb('public/models/characters/'+id+'-combat-animated.glb'),'');
+  const controller=ready(),mixer=new AnimationMixer(model.scene);
+  const driver=new CombatAnimationDriver(mixer,model.scene,model.animations,controller);
+  for(const name of ['Slash_Left','Slash_Right','Slash_Overhead','Heavy_Slash','Jump_Slash','Sword_Block'] as const){
+   const source=model.animations.find(c=>c.name==='FBX_'+name)!;
+   assert.ok(source.tracks.length>=22,id+' '+name+' must animate torso, arms and legs');
+   assert.equal(controller.request(name),true);
+   driver.update(.1);assert.equal(driver.usesAuthoredPose,true);
+   assert.equal(driver.currentClip,name);
+   assert.equal(driver.clips.get(name)!.duration,source.duration);
+   assert.deepEqual(driver.clips.get(name)!.tracks[0].values,source.tracks[0].values);
+   for(let i=0;i<Math.ceil(source.duration*60)+2;i++)driver.update(1/60);
+   assert.equal(controller.actionActive,false,id+' '+name+' completes');
+  }
+  controller.speed=0;driver.update(.1);
+  assert.equal(driver.currentClip,'Combat_Idle');assert.equal(driver.usesAuthoredPose,true);
+  controller.speed=2;driver.update(.1);
+  assert.equal(driver.currentClip,'Sword_Walk');assert.equal(driver.usesAuthoredPose,true);
+  driver.dispose();
  }
 });

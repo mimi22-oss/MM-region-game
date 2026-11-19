@@ -19,8 +19,7 @@ export function getVehicleWaitingMotion(): MotionDefinition {
 export function isWaitingMotionId(id: string | null | undefined): boolean {
   if (!id) return false;
   const resolved = resolveMotionId(id);
-  const def = getMotion(resolved);
-  return def?.category === 'interactions' || resolved === VEHICLE_WAIT_ACTION_ID;
+  return resolved === VEHICLE_WAIT_ACTION_ID;
 }
 
 export function startVehicleWaitingMotion(actionId: MotionId = VEHICLE_WAIT_ACTION_ID): boolean {

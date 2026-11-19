@@ -69,6 +69,12 @@ export function fitSwordClips(root:Object3D, clips:readonly AnimationClip[]):rea
   main.fit(guardPoint,armPole);
   const guardBlade=weaponOrientation(18,43);
   const grip={rotation:orientation(main.c).invert().multiply(guardBlade),position:mainOffset};
+  const index=main.c.getObjectByName('mixamorigRightHandIndex1');
+  const pinky=main.c.getObjectByName('mixamorigRightHandPinky1');
+  if(index&&pinky){
+    const across=main.c.worldToLocal(world(index)).sub(main.c.worldToLocal(world(pinky))).normalize();
+    grip.rotation.setFromUnitVectors(new Vector3(0,-1,0),across);
+  }
   const leftGuard=center.clone().add(direction(-.46*handedness,-.40,-.37).multiplyScalar(reach));
   support.fit(leftGuard,supportPole);
   const leftNeutral=orientation(support.c);

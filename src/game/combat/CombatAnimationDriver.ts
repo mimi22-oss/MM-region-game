@@ -6,6 +6,7 @@ import {fitSwordClips} from './SwordPose.ts';
 
 /** Shares the character's existing mixer; the caller owns exactly one update path. */
 export class CombatAnimationDriver {
+ private authored=new Set<CombatClip>();
  readonly clips=new Map<CombatClip,AnimationClip>();private action:AnimationAction|null=null;
  private key='';private finished=false;private active=false;private disposed=false;
  private lease:ReturnType<CombatController['bindAnimation']>;
@@ -17,12 +18,18 @@ export class CombatAnimationDriver {
   sample:(active:boolean)=>void=()=>{},enter:()=>void=()=>{}){
   this.mixer=mixer;this.root=root;this.state=state;this.sample=sample;this.enter=enter;
   const fitted=fitSwordClips(root,clips);
-  for(const name of COMBAT_CLIPS){const clip=fitted.find(c=>c.name===name);if(clip&&clip.duration>0)this.clips.set(name,clip);}
+  for(const name of COMBAT_CLIPS){
+   const authored=clips.find(c=>c.name==='FBX_'+name);
+   const clip=authored?.clone()??fitted.find(c=>c.name===name);
+   if(clip&&clip.duration>0){clip.name=name;this.clips.set(name,clip);}
+   if(authored)this.authored.add(name);
+  }
   this.lease=state.bindAnimation(COMBAT_CLIPS.every(name=>this.clips.has(name)));
   mixer.addEventListener('finished',this.onFinished);
  }
  get enabled(){return this.lease.current()&&this.state.running;}
  get currentClip(){return this.action?.getClip().name??null;}
+ get usesAuthoredPose(){return this.action!==null&&this.authored.has(this.action.getClip().name as CombatClip);}
  get actionTime(){return this.action?.time??0;}
  update(dt:number){
   if(this.disposed)return false;

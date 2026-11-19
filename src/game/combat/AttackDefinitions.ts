@@ -5,8 +5,8 @@ export type CombatCommand = CombatClip | 'combo';
 export type AttackDefinition = {activeStart:number;activeEnd:number;bufferStart:number;direction:string;damaging:boolean};
 const attack=(direction:string,start=.24,end=.72):AttackDefinition=>({activeStart:start,activeEnd:end,bufferStart:.5,direction,damaging:true});
 export const ATTACKS:Partial<Record<CombatClip,AttackDefinition>>={
- Slash_Left:attack('left-to-right'),Slash_Right:attack('right-to-left'),Slash_Diagonal_Left:attack('diagonal-left'),Slash_Diagonal_Right:attack('diagonal-right'),
- Slash_Overhead:attack('down'),Slash_Rising:attack('up'),Slash_Middle:attack('middle'),Sword_Thrust:attack('forward',.28,.7),Heavy_Slash:attack('heavy-down',.32,.75),
- Spin_Slash:attack('spin',.2,.82),Jump_Slash:attack('jump-down',.3,.75),Combo_Finisher:attack('finisher',.25,.8),
+ Slash_Left:attack('left-to-right',.35,.75),Slash_Right:attack('right-to-left',.25,.75),Slash_Diagonal_Left:attack('diagonal-left'),Slash_Diagonal_Right:attack('diagonal-right'),
+ Slash_Overhead:attack('down',.45,.66),Slash_Rising:attack('up'),Slash_Middle:attack('middle'),Sword_Thrust:attack('forward',.28,.7),Heavy_Slash:attack('heavy-down',.45,.66),
+ Spin_Slash:attack('spin',.2,.82),Jump_Slash:attack('jump-down',.45,.66),Combo_Finisher:attack('finisher',.25,.8),
 };
 export const COMBAT_MODEL_URLS={boy:'/models/characters/boy-combat-animated.glb',girl:'/models/characters/girl-combat-animated.glb',canolia:'/models/characters/canolia-character-combat-animated.glb',ghost:'/models/enemies/ghost-woman-combat-animated.glb'} as const;

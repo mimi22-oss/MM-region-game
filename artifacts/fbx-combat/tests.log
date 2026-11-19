@@ -1,0 +1,22 @@
+✔ buffered six-hit combo advances once in its window; timeout, early input and recovery are enforced (6.8906ms)
+✔ death, incapacitation, pause and unequip suppress attacks; defensive windows are bounded (1.2055ms)
+✔ one mixer finishes actions, never restarts on renders, and samples only active clip time at 15/30/60Hz (36.9551ms)
+✔ replacement animation owners and cleanup cannot disable a new character driver (4.4874ms)
+✔ swept blade hits across a frame and misses remote/behind volumes, including point segments (2.3664ms)
+✔ guard contact follows animation marker; protection, parry and invalid contact preempt death (1.9494ms)
+✔ ghost reaction and engagement state stays independent; stale completion cannot clear a newer stun (1.0332ms)
+✔ real damage resolver requires active blade contact, facing and group clearance; hits once, emits impacts and death (20.6753ms)
+✔ all supplied GLBs load: counts, bindings, finite transforms and every exact combat clip playback (672.9352ms)
+✔ production rigs place the support palm on the pommel for two-hand cuts and release it for horizontal cuts (911.716ms)
+ℹ boy max two-hand gap 1.06 cm; minimum free-hand clearance 18.90 cm
+ℹ girl max two-hand gap 0.67 cm; minimum free-hand clearance 24.06 cm
+ℹ canolia-character max two-hand gap 0.52 cm; minimum free-hand clearance 25.12 cm
+✔ FBX sword clips own the mixer pose on all player rigs and retain full-body keyframes (788.3175ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4178.3455

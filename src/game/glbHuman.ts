@@ -452,7 +452,7 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
    eyeBlink.step(Math.min(delta??0,.06));
    playerCombat.speed=motion.speed;
    combat.update(delta??0);
-   for(const limb of limbs){
+   if(!combat.usesAuthoredPose)for(const limb of limbs){
     for(const finger of limb.fingers)for(const joint of finger.joints)joint.quaternion.copy(rest.get(joint)!);
     for(const joint of limb.thumb)joint.quaternion.copy(rest.get(joint)!);
     curlHandFast(limb,limb.hand.getWorldQuaternion(handWQForGrip),limb.side>0?.98:.58);

@@ -1,0 +1,177 @@
+{
+  "sources": {
+    "idle": {
+      "file": "Standing Idle.fbx",
+      "sha256": "8633d459beab6c4d63d505099cda65a81bc8056dac731785eae137137c14f898",
+      "duration": 1.8333333730697632,
+      "tracks": 53
+    },
+    "jump": {
+      "file": "Standing Melee Run Jump Attack.fbx",
+      "sha256": "69e80cd6fba40991152429ba6d2ae0366c42dabb219052cb7c5e80e48c4e77d9",
+      "duration": 3.6666667461395264,
+      "tracks": 53
+    },
+    "combo": {
+      "file": "Standing Melee Combo Attack Ver. 2.fbx",
+      "sha256": "80f3de696524e49fdaa656d3f1d1a4f4cddcfb990f6a38af037187a80c221208",
+      "duration": 4.199999809265137,
+      "tracks": 53
+    },
+    "block": {
+      "file": "Standing Block Idle.fbx",
+      "sha256": "5a3e425afa51c2703e2a044b3fa4fa88eeab85213d913ae85012d50a501e78a2",
+      "duration": 1.8333333730697632,
+      "tracks": 53
+    },
+    "walk": {
+      "file": "Standing Walk Forward.fbx",
+      "sha256": "88e51470ff57882993ac3e3589605338081f0593926ffda92a99d509af1d3227",
+      "duration": 1.3333333730697632,
+      "tracks": 53
+    }
+  },
+  "characters": {
+    "boy": {
+      "file": "C:\\Users\\EBPMyanmar\\Desktop\\Myanmar-Town-Prototype\\public\\models\\characters\\boy-combat-animated.glb",
+      "originalBytes": 3831796,
+      "bytes": 4577680,
+      "clips": [
+        {
+          "name": "Combat_Idle",
+          "duration": 1.8333333730697632,
+          "tracks": 53
+        },
+        {
+          "name": "Slash_Left",
+          "duration": 0.6,
+          "tracks": 53
+        },
+        {
+          "name": "Slash_Right",
+          "duration": 0.8,
+          "tracks": 53
+        },
+        {
+          "name": "Slash_Overhead",
+          "duration": 3.6666667461395264,
+          "tracks": 53
+        },
+        {
+          "name": "Jump_Slash",
+          "duration": 3.6666667461395264,
+          "tracks": 53
+        },
+        {
+          "name": "Heavy_Slash",
+          "duration": 3.6666667461395264,
+          "tracks": 53
+        },
+        {
+          "name": "Sword_Block",
+          "duration": 1.8333333730697632,
+          "tracks": 53
+        },
+        {
+          "name": "Sword_Walk",
+          "duration": 1.3333333730697632,
+          "tracks": 53
+        }
+      ]
+    },
+    "girl": {
+      "file": "C:\\Users\\EBPMyanmar\\Desktop\\Myanmar-Town-Prototype\\public\\models\\characters\\girl-combat-animated.glb",
+      "originalBytes": 8532700,
+      "bytes": 9278488,
+      "clips": [
+        {
+          "name": "Combat_Idle",
+          "duration": 1.8333333730697632,
+          "tracks": 53
+        },
+        {
+          "name": "Slash_Left",
+          "duration": 0.6,
+          "tracks": 53
+        },
+        {
+          "name": "Slash_Right",
+          "duration": 0.8,
+          "tracks": 53
+        },
+        {
+          "name": "Slash_Overhead",
+          "duration": 3.6666667461395264,
+          "tracks": 53
+        },
+        {
+          "name": "Jump_Slash",
+          "duration": 3.6666667461395264,
+          "tracks": 53
+        },
+        {
+          "name": "Heavy_Slash",
+          "duration": 3.6666667461395264,
+          "tracks": 53
+        },
+        {
+          "name": "Sword_Block",
+          "duration": 1.8333333730697632,
+          "tracks": 53
+        },
+        {
+          "name": "Sword_Walk",
+          "duration": 1.3333333730697632,
+          "tracks": 53
+        }
+      ]
+    },
+    "canolia-character": {
+      "file": "C:\\Users\\EBPMyanmar\\Desktop\\Myanmar-Town-Prototype\\public\\models\\characters\\canolia-character-combat-animated.glb",
+      "originalBytes": 2181588,
+      "bytes": 2491164,
+      "clips": [
+        {
+          "name": "Combat_Idle",
+          "duration": 1.8333333730697632,
+          "tracks": 22
+        },
+        {
+          "name": "Slash_Left",
+          "duration": 0.6,
+          "tracks": 22
+        },
+        {
+          "name": "Slash_Right",
+          "duration": 0.8,
+          "tracks": 22
+        },
+        {
+          "name": "Slash_Overhead",
+          "duration": 3.6666667461395264,
+          "tracks": 22
+        },
+        {
+          "name": "Jump_Slash",
+          "duration": 3.6666667461395264,
+          "tracks": 22
+        },
+        {
+          "name": "Heavy_Slash",
+          "duration": 3.6666667461395264,
+          "tracks": 22
+        },
+        {
+          "name": "Sword_Block",
+          "duration": 1.8333333730697632,
+          "tracks": 22
+        },
+        {
+          "name": "Sword_Walk",
+          "duration": 1.3333333730697632,
+          "tracks": 22
+        }
+      ]
+    }
+  }
+}

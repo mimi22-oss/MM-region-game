@@ -137,8 +137,8 @@ test('Girl (girl (1).glb & girl.glb) and Boy accurately retarget all 6 dances + 
   ]);
 
   const allMotions = listMotions();
-  assert.equal(allMotions.length, 24);
-  assert.equal(listDanceActions().length, 6);
+  assert.equal(allMotions.length, 27);
+  assert.equal(listDanceActions().length, 7);
   assert.equal(getMotion('vehicle-wait')?.clipName, 'wait.001');
   const baseLocomotionMotions = [...listDanceActions(), getMotion('vehicle-wait')!];
 
