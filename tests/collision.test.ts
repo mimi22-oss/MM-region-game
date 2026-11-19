@@ -441,8 +441,9 @@ test('winding canal connects Myothar Area 5 junction around paddies to western t
  assert.deepEqual(wc.points[0],[-160,388]);
  assert.deepEqual(wc.points.at(-1),[ew.uMin,ew.v]);
  const westFieldEdge=Math.min(...tharSiVillage.separationFields.map(f=>f.u!-f.width/2));
+ const northFieldEdge=Math.min(...tharSiVillage.separationFields.map(f=>f.v!-f.depth/2));
  for(const [u,v] of wc.points){
-  assert.ok(u<westFieldEdge,'winding canal stays west of separation paddies');
+  if(v>=northFieldEdge)assert.ok(u<westFieldEdge,'winding canal stays west of separation paddies');
   const p=toWorld(u,v);
   assert.equal(canStand(p.x,p.z),false,'winding canal water blocks walking');
  }

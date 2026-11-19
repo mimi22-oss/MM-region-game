@@ -3,6 +3,7 @@ import { angle, farmhouse } from '../data/ward.ts';
 import { nankaleinTeaShopData } from '../data/wards/kalayArea1/kalayArea1TeaShop.ts';
 import {
   getSpecialActionState,
+  loadRawSpecialActionAsset,
   playSpecialAction,
   resolveSpecialActionId,
   stopSpecialAction,
@@ -13,10 +14,14 @@ export const CHAIR_SIT_TO_STAND_ID = 'sit-to-stand';
 export const DEFAULT_STAND_HEIGHT = 0.45;
 export const PROXIMITY_SIT_DELAY_SEC = 2.0;
 export const CHAIR_PROXIMITY_RADIUS = 1.25;
-export const STAND_UP_TOTAL_DURATION_SEC = 1.85;
-export const STAND_UP_RISE_START_SEC = 0.55;
+export const STAND_UP_TOTAL_DURATION_SEC = 1.95;
+/** sit-to-stand.glb keeps hips seated during 0..0.82s and rises vertically during 0.82..1.60s. */
+export const STAND_UP_RISE_START_SEC = 0.82;
 export const STAND_UP_RISE_END_SEC = 1.6;
-export const STAND_UP_EARLY_WALK_SEC = 1.55;
+/** Only step out to the collision-free exit spot after the character has stood straight up off the chair. */
+export const STAND_UP_EXIT_START_SEC = 1.25;
+export const STAND_UP_EXIT_END_SEC = 1.9;
+export const STAND_UP_EARLY_WALK_SEC = 1.8;
 export const STAND_UP_RE_SIT_COOLDOWN_SEC = 2.5;
 
 export interface ChairSpot {
@@ -507,6 +512,10 @@ export function sitOnChair(
   runtime.cooldownChairId = null;
   runtime.cooldownTimer = 0;
   playSpecialAction(CHAIR_SITTING_IDLE_ID, { loop: true, force: true });
+  if (typeof window !== 'undefined') {
+    // Preload sit-to-stand GLB while seated so standing up transitions immediately with zero fetch lag
+    void loadRawSpecialActionAsset(CHAIR_SIT_TO_STAND_ID).catch(() => {});
+  }
   syncSnapshot(true);
 }
 
@@ -594,17 +603,24 @@ export function stepChairSitting(
     const exit = runtime.exitSpot ?? (chair ? { x: chair.x, z: chair.z } : { x: playerX, z: playerZ });
     runtime.standingUpTimer += Math.max(0, dt);
 
-    // Match sit-to-stand.glb hip rise curve: seated during 0..0.55s, rising during 0.55..1.60s, standing after 1.60s
+    // Match sit-to-stand.glb hip rise curve:
+    // 0..0.82s: still seated directly on chair (zero gap / zero horizontal slide)
+    // 0.82..1.60s: rise straight up off the chair
+    // 1.25..1.90s: once upright, glide smoothly out to the collision-free exit spot
     const riseProgress = smoothstep01(
       (runtime.standingUpTimer - STAND_UP_RISE_START_SEC) /
         (STAND_UP_RISE_END_SEC - STAND_UP_RISE_START_SEC),
+    );
+    const exitProgress = smoothstep01(
+      (runtime.standingUpTimer - STAND_UP_EXIT_START_SEC) /
+        (STAND_UP_EXIT_END_SEC - STAND_UP_EXIT_START_SEC),
     );
     runtime.standBlend = riseProgress;
 
     if (chair) {
       runtime.seatPos = {
-        x: chair.x + (exit.x - chair.x) * riseProgress,
-        z: chair.z + (exit.z - chair.z) * riseProgress,
+        x: chair.x + (exit.x - chair.x) * exitProgress,
+        z: chair.z + (exit.z - chair.z) * exitProgress,
       };
       runtime.seatYaw = chair.yaw ?? null;
       const seatedOffset =

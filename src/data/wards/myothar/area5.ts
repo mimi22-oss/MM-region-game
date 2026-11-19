@@ -52,7 +52,7 @@ export const area5={
   paths:[{...toWorld(106,302),width:196,depth:3,rotation:angle},{...toWorld(126,326),width:10,depth:46,rotation:angle}],
   fields:[351,372].map((v,i)=>({...toWorld(44,v),width:60,depth:16,rotation:angle,color:i?'#879963':'#6f9257'}))
  },
- southernFields:Array.from({length:6},(_,row)=>Array.from({length:5},(_,col)=>({id:`southern-field-${row}-${col}`,u:30+col*42,v:430+row*40,...toWorld(30+col*42,430+row*40),width:36,depth:34,rotation:angle,color:['#7e9c55','#a6af68','#8ca65c'][(row+col)%3]}))).flat(),
+ southernFields:Array.from({length:6},(_,row)=>Array.from({length:5},(_,col)=>({id:`southern-field-${row}-${col}`,u:174+col*42,v:430+row*40,...toWorld(174+col*42,430+row*40),width:36,depth:34,rotation:angle,color:['#7e9c55','#a6af68','#8ca65c'][(row+col)%3]}))).flat(),
  weipula:{name:'ဝေပုလ္လတောင်ကြီး',label:toWorld(280,4450),
    peaks:[...[-680,-530,-380,-220,-105,105,220,380,530,680].map((u,i)=>({u,v:4450,radius:[165,160,155,120,90,90,120,155,160,165][i],height:[850,1040,940,720,480,510,780,1100,980,870][i],plateau:0.58,obstacleRadius:6.5})),
     ...Array.from({length:34},(_,i)=>470+i*120).map((v,i)=>({u:-630,v,radius:105+(i%4)*5,height:350+i*30,plateau:0.45,obstacleRadius:6.5}))].map((m,i)=>({...m,id:`weipula-${i}`,...toWorld(m.u,m.v),color:i<10?'#526e71':'#60796a'}))},

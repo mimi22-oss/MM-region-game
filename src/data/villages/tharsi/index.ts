@@ -3,14 +3,14 @@ import type { House, RoadPlot, FieldPlot, TreePlot, WindingCanalPlot, EastWestCa
 
 /**
  * မြို့သာရပ်ကွက် · နယ်မြေ (၅) နှင့် သာစည်ရွာကြား ခြားထားသော လယ်ကွင်း ၆ ကွက်
- * (AH1 အနောက်ဘက်ခြမ်း၊ v = 425 မှ 615 အထိ ၆ ကွက်တန်းစီထားသည်)
+ * (သစ်တောအုပ်အနောက်ဘက် u = -237၊ v = 425 မှ 615 အထိ ၆ ကွက်တန်းစီရွှေ့ထားသည်)
  */
 export const separationFields: FieldPlot[] = [425, 463, 501, 539, 577, 615].map((v, i) => ({
  id: `myothar-tharsi-sep-field-${i + 1}`,
  row: i,
- u: -82,
+ u: -237,
  v,
- ...toWorld(-82, v),
+ ...toWorld(-237, v),
  width: 116,
  depth: 32,
  rotation: angle,
@@ -20,7 +20,7 @@ export const separationFields: FieldPlot[] = [425, 463, 501, 539, 577, 615].map(
 /**
  * မြို့သာရပ်ကွက် · နယ်မြေ (၅) ရှိ ရေမြောင်းဆုံရာနေရာ (-160, 388) မှ
  * မြောင်းတစ်ခုအဖြစ် လယ်ကွင်းများ အနောက်ဘက်ကနေ ကွေ့ကောက်စီးဆင်းလာပြီး
- * သာစည်ရွာ အနောက်ဘက် အရှေ့-အနောက် ရေမြောင်းထိပ် (-360, 658) နှင့် ပူးပေါင်းစီးဆင်းသော ရေမြောင်း
+ * သာစည်ရွာ အနောက်ဘက် အရှေ့-အနောက် ရေမြောင်းထိပ် (-395, 658) နှင့် ပူးပေါင်းစီးဆင်းသော ရေမြောင်း
  */
 export const connectingCanal: WindingCanalPlot = {
  id: 'tharsi-connecting-canal',
@@ -29,38 +29,39 @@ export const connectingCanal: WindingCanalPlot = {
  rotation: angle,
  points: [
   [-160, 388],
-  [-170, 412],
-  [-212, 442],
-  [-186, 478],
-  [-246, 516],
-  [-218, 554],
-  [-292, 592],
-  [-334, 626],
-  [-360, 658],
+  [-315, 404],
+  [-335, 442],
+  [-318, 478],
+  [-358, 516],
+  [-335, 554],
+  [-368, 592],
+  [-382, 626],
+  [-395, 658],
  ],
  bridges: [],
 };
 
 /**
  * လယ်ကွင်း ၆ ကွက်နှင့် သာစည်ရွာကြားတွင် AH1 လမ်းမကြီးကို ကန့်လန့်ဖြတ်သွားပြီး
- * အနောက်ဘက် ရေမြောင်းထိပ် (-360, 658) တွင် ကွေ့ကောက်ရေမြောင်းနှင့် ပူးပေါင်းစီးဆင်းသော အရှေ့-အနောက် ရေမြောင်း
+ * အနောက်ဘက် ရေမြောင်းထိပ် (-395, 658) တွင် ကွေ့ကောက်ရေမြောင်းနှင့် ပူးပေါင်းစီးဆင်းသော အရှေ့-အနောက် ရေမြောင်း
  */
 export const tharSiCanal: EastWestCanalPlot = {
  id: 'tharsi-ew-canal',
  name: 'သာစည် အရှေ့-အနောက် ရေမြောင်း',
- u: -65,
+ u: -82.5,
  v: 658,
- uMin: -360,
+ uMin: -395,
  uMax: 230,
- ...toWorld(-65, 658),
+ ...toWorld(-82.5, 658),
  width: 4.5,
- depth: 590,
+ depth: 625,
  rotation: angle,
  bridges: [{ u: 0, v: 658, width: 14, depth: 7 }],
 };
 
-// မိန်းလမ်းမကြီးဘေးတွင် ဘေးချင်းယှဉ် ၂ ရပ်ကွက်တန်း (မြောက်ဘက်ခြမ်း ၄ ကွက် + တောင်ဘက်ခြမ်း ၄ ကွက် = လမ်းသွယ် ၉ လမ်း)
-export const tharSiLanes = [672, 703, 734, 765, 796, 827, 858, 889, 920];
+// မိန်းလမ်းမကြီးဘေးတွင် ဘေးချင်းယှဉ် ၂ ရပ်ကွက်တန်း (မြောက်ဘက် သစ်တောအုပ်နေရာအလွတ် ချန်ထားပြီး v = 712..936)
+export const tharSiLanes = [712, 740, 768, 796, 824, 852, 880, 908, 936];
+const THARSI_MAIN_ROAD_V = 824;
 // အနောက်ဘက်သို့ ၃ တန်းစီ (၂ ရပ်ကွက် × ၃ တန်း = ၆ ရပ်ကွက်) ခွဲခြားပေးသော မြောက်-တောင် ရွာတွင်းလမ်းများ
 export const tharSiCrossLanes = [-114, -218, -322];
 export const tharSiEastCrossLanes = [56];
@@ -82,7 +83,7 @@ for (let tierIdx = 0; tierIdx < westSectionTiers.length; tierIdx++) {
   const startBlock = sideIdx * 4;
   for (let b = 0; b < 4; b++) {
    const baseV = tharSiLanes[startBlock + b];
-   for (const offsetV of [10, 21]) {
+   for (const offsetV of [9.5, 18.5]) {
     const v = baseV + offsetV;
     for (const u of tierCols) {
      const i = houses.length;
@@ -105,7 +106,7 @@ for (let tierIdx = 0; tierIdx < westSectionTiers.length; tierIdx++) {
 // AH1 အရှေ့ဘက်ခြမ်း — မိန်းလမ်းမကြီးနှင့် လယ်ကွင်းကြားတွင် အိမ်ခြေ ၂ တန်း (u = 24, 42)
 for (let block = 0; block < tharSiLanes.length - 1; block++) {
  const baseV = tharSiLanes[block];
- for (const offsetV of [10, 21]) {
+ for (const offsetV of [9.5, 18.5]) {
   const v = baseV + offsetV;
   for (const u of [24, 42]) {
    const i = houses.length;
@@ -124,11 +125,11 @@ for (let block = 0; block < tharSiLanes.length - 1; block++) {
 }
 
 const roads: RoadPlot[] = [
- // သာစည် ရွာမလမ်းမကြီး (ဘေးချင်းယှဉ် ၂ ရပ်ကွက်ကြား ဗဟိုလမ်းမကြီး v = 796)
+ // သာစည် ရွာမလမ်းမကြီး (ဘေးချင်းယှဉ် ၂ ရပ်ကွက်ကြား ဗဟိုလမ်းမကြီး v = 824)
  {
   id: 'tharsi-main-road',
   name: 'သာစည် ရွာမလမ်းမကြီး',
-  ...toWorld(-164, 796),
+  ...toWorld(-164, THARSI_MAIN_ROAD_V),
   width: 316,
   depth: 7.5,
   rotation: angle,
@@ -137,14 +138,14 @@ const roads: RoadPlot[] = [
  {
   id: 'tharsi-east-main-road',
   name: 'သာစည် အရှေ့ပိုင်း ရွာမလမ်း',
-  ...toWorld(31, 796),
+  ...toWorld(31, THARSI_MAIN_ROAD_V),
   width: 50,
   depth: 7.5,
   rotation: angle,
   main: true,
  },
  // အနောက်ဘက် ၆ ရပ်ကွက်အတွင်း အရှေ့-အနောက် လမ်းသွယ်များ
- ...tharSiLanes.filter(v => v !== 796).map((v, i) => ({
+ ...tharSiLanes.filter(v => v !== THARSI_MAIN_ROAD_V).map((v, i) => ({
   id: `tharsi-ew-lane-${i + 1}`,
   name: `သာစည် လမ်းသွယ် ${i + 1}`,
   ...toWorld(-164, v),
@@ -154,7 +155,7 @@ const roads: RoadPlot[] = [
   main: false,
  })),
  // အရှေ့ဘက် အိမ် ၂ တန်းအတွင်း အရှေ့-အနောက် လမ်းသွယ်များ
- ...tharSiLanes.filter(v => v !== 796).map((v, i) => ({
+ ...tharSiLanes.filter(v => v !== THARSI_MAIN_ROAD_V).map((v, i) => ({
   id: `tharsi-east-ew-lane-${i + 1}`,
   name: `သာစည် အရှေ့လမ်းသွယ် ${i + 1}`,
   ...toWorld(31, v),
@@ -167,9 +168,9 @@ const roads: RoadPlot[] = [
  ...tharSiCrossLanes.map((u, i) => ({
   id: `tharsi-ns-lane-${i + 1}`,
   name: `သာစည် ရပ်ကွက်ခြားလမ်း ${i + 1}`,
-  ...toWorld(u, 796),
+  ...toWorld(u, THARSI_MAIN_ROAD_V),
   width: 4.5,
-  depth: 252,
+  depth: 228,
   rotation: angle,
   main: false,
  })),
@@ -177,16 +178,16 @@ const roads: RoadPlot[] = [
  ...tharSiEastCrossLanes.map((u, i) => ({
   id: `tharsi-east-ns-lane-${i + 1}`,
   name: `သာစည် အရှေ့အတွင်းလမ်း ${i + 1}`,
-  ...toWorld(u, 796),
+  ...toWorld(u, THARSI_MAIN_ROAD_V),
   width: 4,
-  depth: 252,
+  depth: 228,
   rotation: angle,
   main: false,
  })),
 ];
 
 // အနောက်ဘက် ၆ ရပ်ကွက်၏ အနောက်ဘက်နှင့် တောင်ဖီလာတောင်ကြားရှိ လယ်ကွက်များ (ကန်သင်းရိုးပါ စပါးစိုက်ခင်း ၁၈ ကွက်)
-const bundedFields: FieldPlot[] = [688, 730, 772, 814, 856, 898].flatMap((v, row) =>
+const bundedFields: FieldPlot[] = [732, 770, 808, 846, 884, 922].flatMap((v, row) =>
  [-354, -398, -442].map((u, col) => ({
   id: `tharsi-paddy-${row}-${col}`,
   row,
@@ -194,21 +195,21 @@ const bundedFields: FieldPlot[] = [688, 730, 772, 814, 856, 898].flatMap((v, row
   v,
   ...toWorld(u, v),
   width: 38,
-  depth: 34,
+  depth: 32,
   rotation: angle,
   color: ['#7d9c54', '#98a85e', '#6f9252', '#a3ad64'][(row + col) % 4],
  }))
 );
 
 // AH1 အရှေ့ဘက် အိမ်ခြေ ၂ တန်း (u = 24, 42) ၏ နောက်ရှိ လယ်ကွင်း/စိုက်ခင်းများ
-const fields: FieldPlot[] = [688, 730, 772, 814, 856, 898].flatMap((v, row) =>
+const fields: FieldPlot[] = [732, 770, 808, 846, 884, 922].flatMap((v, row) =>
  [86, 134, 182].map((u, col) => ({
   id: `tharsi-east-field-${row}-${col}`,
   u,
   v,
   ...toWorld(u, v),
   width: 42,
-  depth: 34,
+  depth: 32,
   rotation: angle,
   color: (row + col) % 2 ? '#8ca65c' : '#a6af68',
  }))
@@ -216,7 +217,7 @@ const fields: FieldPlot[] = [688, 730, 772, 814, 856, 898].flatMap((v, row) =>
 
 // AH1 လမ်းမဘေး သာစည်ရွာရှေ့ အနောက်ဘက်နှင့် အရှေ့ဘက် အရိပ်ရ သစ်ပင်တန်း
 const trees: TreePlot[] = [-13, 13].flatMap((u, sideIdx) =>
- [682, 693, 713, 724, 744, 755, 775, 786, 807, 817, 837, 848, 868, 879, 899, 910].map((v, i) => ({
+ [720, 731, 748, 759, 776, 787, 804, 815, 833, 844, 861, 872, 889, 900, 917, 928].map((v, i) => ({
   id: `tharsi-canopy-${sideIdx}-${i}`,
   ...toWorld(u, v),
   radius: 0.55,
@@ -301,7 +302,7 @@ export const preCanalGroveFarmTrees: TreePlot[] = [
 const largeTrees: TreePlot[] = [
  ...sparseFieldRoadLargeTrees,
  ...preCanalGroveLargeTrees,
- ...[677, 739, 802, 863, 925].flatMap((v, i) =>
+ ...[717, 773, 829, 885, 938].flatMap((v, i) =>
   [-11, -118, -222, -328, 11, 60].map((u, j) => ({
    id: `tharsi-shade-${i}-${j}`,
    ...toWorld(u, v),
@@ -314,7 +315,7 @@ const largeTrees: TreePlot[] = [
 const farmTrees: TreePlot[] = [
  ...sparseFieldRoadFarmTrees,
  ...preCanalGroveFarmTrees,
- ...[685, 715, 745, 775, 805, 835, 865, 895, 918].map((v, i) => ({
+ ...[720, 747, 774, 801, 828, 855, 882, 909, 932].map((v, i) => ({
   id: `tharsi-farm-tree-${i}`,
   ...toWorld(-332, v),
   radius: 0.5,

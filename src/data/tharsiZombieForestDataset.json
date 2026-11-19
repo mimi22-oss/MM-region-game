@@ -1,0 +1,142 @@
+{
+  "dataset": "tharsi-zombie-forest",
+  "regionId": "tharsi-zombie-forest",
+  "manifest": "/map/tharsi-zombie-forest/47aee29e2d209dca6e57/manifest.json",
+  "projection": {
+    "origin": [
+      94.0452765,
+      23.1564594
+    ],
+    "anchor": [
+      449.7199128346442,
+      675.9940828143394
+    ],
+    "metersPerDegree": [
+      102351.44195621753,
+      111320
+    ],
+    "rotation": 0.7853981633974483
+  },
+  "treeCount": 280,
+  "quadrants": 4,
+  "rows": 10,
+  "cols": 10,
+  "label": {
+    "id": "tharsi-zombie-forest-label",
+    "text": "မြို့သာ နယ်မြေ (၅) သစ်တောအုပ်",
+    "subtitle": "Myothar Area 5 Forest (North of Canal)",
+    "x": 411.536,
+    "z": 411.536
+  },
+  "labels": [
+    {
+      "id": "myothar-area-5-forest-label",
+      "area": "myothar-area-5",
+      "text": "မြို့သာ နယ်မြေ (၅) သစ်တောအုပ်",
+      "x": 411.536,
+      "z": 411.536
+    },
+    {
+      "id": "tharsi-forest-label",
+      "area": "tharsi",
+      "text": "သာစည်ရွာ သစ်တောအုပ်",
+      "x": 483.661,
+      "z": 483.661
+    }
+  ],
+  "zoneRects": [
+    {
+      "id": "nw",
+      "area": "myothar-area-5",
+      "label": "မြို့သာ နယ်မြေ (၅) အနောက်မြောက် သစ်တောအုပ်",
+      "uMin": -142.5,
+      "uMax": -18,
+      "vMin": 517,
+      "vMax": 639.5,
+      "centerU": -80.25,
+      "centerV": 578.25,
+      "centerX": 352.139,
+      "centerZ": 465.63,
+      "width": 124.5,
+      "depth": 122.5,
+      "rotation": 0.7853981633974483,
+      "rows": 10,
+      "cols": 10,
+      "count": 100
+    },
+    {
+      "id": "ne",
+      "area": "myothar-area-5",
+      "label": "မြို့သာ နယ်မြေ (၅) အရှေ့မြောက် သစ်တောအုပ်",
+      "uMin": 18,
+      "uMax": 142.5,
+      "vMin": 529,
+      "vMax": 651.5,
+      "centerU": 80.25,
+      "centerV": 590.25,
+      "centerX": 474.115,
+      "centerZ": 360.624,
+      "width": 124.5,
+      "depth": 122.5,
+      "rotation": 0.7853981633974483,
+      "rows": 10,
+      "cols": 10,
+      "count": 100
+    },
+    {
+      "id": "sw",
+      "area": "tharsi",
+      "label": "သာစည်ရွာ အနောက်တောင် သစ်တောအုပ်",
+      "uMin": -142.5,
+      "uMax": -18,
+      "vMin": 662,
+      "vMax": 706.5,
+      "centerU": -80.25,
+      "centerV": 684.25,
+      "centerX": 427.092,
+      "centerZ": 540.583,
+      "width": 124.5,
+      "depth": 44.5,
+      "rotation": 0.7853981633974483,
+      "rows": 4,
+      "cols": 10,
+      "count": 40
+    },
+    {
+      "id": "se",
+      "area": "tharsi",
+      "label": "သာစည်ရွာ အရှေ့တောင် သစ်တောအုပ်",
+      "uMin": 18,
+      "uMax": 142.5,
+      "vMin": 662,
+      "vMax": 706.5,
+      "centerU": 80.25,
+      "centerV": 684.25,
+      "centerX": 540.583,
+      "centerZ": 427.092,
+      "width": 124.5,
+      "depth": 44.5,
+      "rotation": 0.7853981633974483,
+      "rows": 4,
+      "cols": 10,
+      "count": 40
+    }
+  ],
+  "zoneBounds": {
+    "uMin": -142.5,
+    "uMax": 142.5,
+    "vMin": 517,
+    "vMax": 706.5,
+    "centerU": 0,
+    "centerV": 611.75,
+    "centerX": 439.82,
+    "centerZ": 439.82,
+    "width": 285,
+    "depth": 189.5,
+    "rotation": 0.7853981633974483,
+    "minX": 263.905,
+    "maxX": 600.874,
+    "minZ": 273.279,
+    "maxZ": 600.3
+  }
+}

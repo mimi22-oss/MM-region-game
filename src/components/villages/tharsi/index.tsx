@@ -1,4 +1,5 @@
 import { tharSiVillage, connectingCanal, tharSiCanal } from '../../../data/villages/tharsi';
+import zombieForestMeta from '../../../data/tharsiZombieForestDataset.json';
 import { MainRoad } from '../../MainRoad';
 import { Lanes } from '../../Lane';
 import { Field } from '../../Field';
@@ -62,6 +63,25 @@ export function TharSiVillagePlan({ labels, onSelectLocation }: { labels: boolea
 		{tharSiVillage.farmTrees.map(t => <circle key={t.id} cx={t.x} cy={t.z} r="2.4" fill="#547b48" />)}
 		{tharSiVillage.trees.map(t => <circle key={t.id} cx={t.x} cy={t.z} r="5.8" fill="#365a42" />)}
 		{tharSiVillage.largeTrees.map(t => <circle key={t.id} cx={t.x} cy={t.z} r="6.5" fill="#486e40" stroke="#739451" strokeWidth="0.6" />)}
+		{zombieForestMeta.zoneRects.map(zone => (
+			<rect
+				key={zone.id}
+				x={zone.centerX - zone.width / 2}
+				y={zone.centerZ - zone.depth / 2}
+				width={zone.width}
+				height={zone.depth}
+				fill="#2d5a34"
+				fillOpacity="0.45"
+				stroke="#486e40"
+				strokeWidth="1.4"
+				strokeDasharray="4 3"
+				rx="6"
+				transform={`rotate(${-zone.rotation * 180 / Math.PI} ${zone.centerX} ${zone.centerZ})`}
+			/>
+		))}
+		{labels && zombieForestMeta.labels.map(lbl => (
+			<text key={lbl.id} x={lbl.x} y={lbl.z} textAnchor="middle" fontSize="9.5" fill="#dcfce7" stroke="#143320" strokeWidth="0.4">{lbl.text}</text>
+		))}
 		{labels && <text x={tharSiVillage.labelPos.x} y={tharSiVillage.labelPos.z} textAnchor="middle" fontSize="14" fill="#fff9dc" stroke="#173d35" strokeWidth="0.45">{tharSiVillage.name} ↗</text>}
 	</g>;
 }

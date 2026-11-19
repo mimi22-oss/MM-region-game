@@ -54,6 +54,7 @@ export class AnimationController {
 
   // Bounded scratch tracking of previous crossfade source clips so finished sources are uncached cleanly
   private readonly retiredClips = new Set<AnimationClip>();
+  private crossFadeRemainingSec = 0;
 
   // Pre-allocated scratch vectors (zero per-frame heap allocations)
   private readonly hipsActionPos = new Vector3();
@@ -185,7 +186,9 @@ export class AnimationController {
         }
         nextAction.play();
         prevAction.crossFadeTo(nextAction, crossFadeSec, false);
+        this.crossFadeRemainingSec = Math.max(0, crossFadeSec);
       } else {
+        this.crossFadeRemainingSec = 0;
         this.mixer.stopAllAction();
         this.flushRetiredClips(clip);
         if (prevClip && prevClip !== clip) {
@@ -286,7 +289,11 @@ export class AnimationController {
       this.blendWeight = targetBlend;
     }
 
-    if (this.blendWeight >= 0.999 && this.retiredClips.size > 0) {
+    if (this.crossFadeRemainingSec > 0 && dtSec > 0) {
+      this.crossFadeRemainingSec = Math.max(0, this.crossFadeRemainingSec - dtSec);
+    }
+
+    if (this.blendWeight >= 0.999 && this.crossFadeRemainingSec <= 0 && this.retiredClips.size > 0) {
       this.flushRetiredClips(this.activeAction?.getClip());
     }
 
