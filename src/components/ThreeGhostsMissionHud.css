@@ -1,5 +1,5 @@
 /* ==========================================================================
-   GHOST MISSION V2 — IMMERSIVE GAMING HUD & COMPACT DRAGGABLE CONTROLS
+   MISSION HUB V3 — REDESIGNED GAMING HUD, MISSION CARDS & GUIDE DIALOG MODAL
    ========================================================================== */
 
 /* Root HUD Positioning Container */
@@ -15,20 +15,20 @@
 }
 
 /* ==========================================================================
-   1. COLLAPSED VIEW: Minimal Floating Gaming Pill
+   1. COLLAPSED VIEW: Minimal Floating Gaming Pill (Mobile)
    ========================================================================== */
 .ghost-hud-pill {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 6px 12px 6px 10px;
-  background: linear-gradient(135deg, rgba(18, 12, 34, 0.92) 0%, rgba(32, 20, 56, 0.88) 100%);
-  border: 1px solid rgba(168, 85, 247, 0.5);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 27, 75, 0.9) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: 999px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 14px rgba(168, 85, 247, 0.3);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: #f1f5f9;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #f8fafc;
   font-size: 13px;
   font-weight: 600;
   cursor: grab;
@@ -36,8 +36,8 @@
 }
 
 .ghost-hud-pill:hover {
-  border-color: rgba(192, 132, 252, 0.85);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65), 0 0 20px rgba(192, 132, 252, 0.45);
+  border-color: rgba(167, 139, 250, 0.7);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.62), 0 0 18px rgba(139, 92, 246, 0.3);
   transform: translateY(-1px);
 }
 
@@ -53,16 +53,15 @@
 }
 
 .ghost-hud-ghost-emoji {
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1;
-  filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.6));
-  animation: ghostFloatingGlow 3s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.55));
 }
 
 .ghost-hud-chevron-btn {
   background: transparent;
   border: none;
-  color: #c084fc;
+  color: #c4b5fd;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -72,64 +71,68 @@
 }
 
 .ghost-hud-chevron-btn:hover {
-  color: #f3e8ff;
-  transform: scale(1.15);
+  color: #ffffff;
+  transform: scale(1.12);
 }
 
 .ghost-hud-pill-label {
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   color: #f8fafc;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.25px;
 }
 
 .ghost-hud-pill-badge {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 999px;
-  background: rgba(168, 85, 247, 0.25);
-  border: 1px solid rgba(168, 85, 247, 0.4);
-  color: #e9d5ff;
+  background: rgba(139, 92, 246, 0.24);
+  border: 1px solid rgba(167, 139, 250, 0.42);
+  color: #ede9fe;
 }
 
 .ghost-hud-pill-badge.completed {
-  background: rgba(16, 185, 129, 0.25);
-  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.22);
+  border-color: rgba(52, 211, 153, 0.45);
   color: #6ee7b7;
 }
 
 .ghost-hud-pill-badge.combat {
   background: rgba(239, 68, 68, 0.25);
-  border-color: rgba(239, 68, 68, 0.45);
+  border-color: rgba(248, 113, 113, 0.5);
   color: #fca5a5;
   animation: pulseCombatBadge 1.8s infinite;
 }
 
 /* ==========================================================================
-   2. EXPANDED VIEW: Full Gaming Mission Card
+   2. EXPANDED VIEW: Redesigned Mission Hub Card
    ========================================================================== */
 .ghost-hud-card {
-  width: 310px;
+  width: 316px;
   max-width: calc(100vw - 24px);
-  max-height: calc(100vh - 120px);
-  background: linear-gradient(155deg, rgba(16, 11, 30, 0.95) 0%, rgba(24, 16, 46, 0.92) 100%);
-  border: 1px solid rgba(168, 85, 247, 0.45);
-  border-radius: 16px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 24px rgba(139, 92, 246, 0.22);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  max-height: calc(100vh - 110px);
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.94) 0%, rgba(17, 24, 39, 0.92) 55%, rgba(28, 22, 54, 0.94) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 18px;
+  box-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.62),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   color: #f8fafc;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: ghostCardAppear 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: ghostCardAppear 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ghost-hud-card.ghost-hud-card-collapsed {
+  width: 248px;
   max-height: none;
   cursor: pointer;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 16px rgba(139, 92, 246, 0.2);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
 }
 
 .ghost-hud-card.ghost-hud-card-collapsed .ghost-hud-header {
@@ -137,8 +140,8 @@
 }
 
 .ghost-hud-card.ghost-hud-card-collapsed:hover {
-  border-color: rgba(192, 132, 252, 0.7);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 0 20px rgba(192, 132, 252, 0.35);
+  border-color: rgba(167, 139, 250, 0.55);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 92, 246, 0.22);
 }
 
 /* Header & Drag Area */
@@ -146,9 +149,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
-  background: linear-gradient(90deg, rgba(88, 28, 135, 0.35) 0%, rgba(139, 92, 246, 0.15) 100%);
-  border-bottom: 1px solid rgba(168, 85, 247, 0.25);
+  padding: 11px 14px;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.18) 0%, rgba(168, 85, 247, 0.12) 100%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
   cursor: grab;
   position: relative;
 }
@@ -160,13 +163,13 @@
 .ghost-hud-header-left {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .ghost-hud-drag-grip {
   color: #94a3b8;
-  opacity: 0.5;
-  font-size: 14px;
+  opacity: 0.55;
+  font-size: 13px;
   line-height: 1;
   cursor: grab;
 }
@@ -174,21 +177,42 @@
 .ghost-hud-title-wrap {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
 }
 
 .ghost-hud-title {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #f3e8ff;
-  letter-spacing: 0.3px;
-  text-shadow: 0 0 10px rgba(192, 132, 252, 0.4);
+  font-size: 14px;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 0.35px;
 }
 
 .ghost-hud-header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
+}
+
+.ghost-hud-badge-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.22);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  color: #ede9fe;
+}
+
+.ghost-hud-badge-tag.mission-badge-done {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: rgba(52, 211, 153, 0.45);
+  color: #6ee7b7;
+}
+
+.ghost-hud-badge-tag.mission-badge-combat {
+  background: rgba(239, 68, 68, 0.24);
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fca5a5;
 }
 
 .ghost-hud-collapse-btn {
@@ -197,18 +221,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(168, 85, 247, 0.2);
-  border: 1px solid rgba(168, 85, 247, 0.35);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 8px;
-  color: #e9d5ff;
+  color: #e2e8f0;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .ghost-hud-collapse-btn:hover {
-  background: rgba(168, 85, 247, 0.4);
-  border-color: rgba(192, 132, 252, 0.65);
-  color: #fff;
+  background: rgba(139, 92, 246, 0.28);
+  border-color: rgba(167, 139, 250, 0.6);
+  color: #ffffff;
   transform: translateY(-1px);
 }
 
@@ -218,13 +242,13 @@
 
 /* Scrollable Content Body */
 .ghost-hud-body {
-  padding: 12px 14px;
+  padding: 12px;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: calc(100vh - 180px);
+  max-height: calc(100vh - 170px);
 }
 
 .ghost-hud-body::-webkit-scrollbar {
@@ -236,54 +260,418 @@
 }
 
 .ghost-hud-body::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.4);
+  background: rgba(148, 163, 184, 0.35);
   border-radius: 4px;
 }
 
-/* Sections & Cards */
-.ghost-hud-section {
-  background: rgba(20, 14, 38, 0.55);
-  border: 1px solid rgba(168, 85, 247, 0.2);
-  border-radius: 11px;
-  padding: 8px 10px;
+/* ==========================================================================
+   3. INDIVIDUAL MISSION CARDS (Ghost Mission & Zombie Mission)
+   ========================================================================== */
+.mission-card-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 9px;
+}
+
+.mission-item-card {
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border-radius: 13px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.68) 0%, rgba(15, 23, 42, 0.8) 100%);
+  color: #f8fafc;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  transition: transform 0.16s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.mission-item-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(167, 139, 250, 0.62);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35), 0 0 16px rgba(139, 92, 246, 0.18);
+}
+
+.mission-item-card:active {
+  transform: scale(0.985);
+}
+
+.mission-item-card.mission-item-ghost {
+  background: linear-gradient(145deg, rgba(49, 27, 88, 0.56) 0%, rgba(17, 24, 39, 0.84) 100%);
+  border-color: rgba(168, 85, 247, 0.34);
+}
+
+.mission-item-card.mission-item-zombie {
+  background: linear-gradient(145deg, rgba(66, 32, 16, 0.45) 0%, rgba(17, 24, 39, 0.84) 100%);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.mission-item-card.mission-item-zombie:hover {
+  border-color: rgba(251, 191, 36, 0.65);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35), 0 0 16px rgba(245, 158, 11, 0.18);
+}
+
+.mission-item-card.is-completed {
+  border-color: rgba(52, 211, 153, 0.45);
+  background: linear-gradient(145deg, rgba(6, 78, 59, 0.42) 0%, rgba(15, 23, 42, 0.85) 100%);
+}
+
+.mission-item-card.is-locked {
+  opacity: 0.82;
+  border-color: rgba(100, 116, 139, 0.28);
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.52) 0%, rgba(15, 23, 42, 0.82) 100%);
+}
+
+.mission-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mission-item-identity {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.mission-item-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.mission-item-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mission-item-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.2;
+}
+
+.mission-item-sub {
+  font-size: 11px;
+  color: #cbd5e1;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mission-status-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  letter-spacing: 0.2px;
+}
+
+.mission-status-chip.active {
+  background: rgba(139, 92, 246, 0.25);
+  border: 1px solid rgba(167, 139, 250, 0.42);
+  color: #ede9fe;
+}
+
+.mission-status-chip.combat {
+  background: rgba(239, 68, 68, 0.26);
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  color: #fecaca;
+}
+
+.mission-status-chip.completed {
+  background: rgba(16, 185, 129, 0.24);
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  color: #6ee7b7;
+}
+
+.mission-status-chip.locked {
+  background: rgba(71, 85, 105, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #cbd5e1;
+}
+
+.mission-item-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mission-item-cta {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #a5b4fc;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mission-bar-ghost {
+  background: linear-gradient(90deg, #8b5cf6 0%, #ec4899 100%) !important;
+}
+
+.mission-bar-zombie {
+  background: linear-gradient(90deg, #f59e0b 0%, #ef4444 100%) !important;
+}
+
+/* ==========================================================================
+   4. MISSION GUIDE DIALOG MODAL
+   ========================================================================== */
+.mission-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: missionModalFade 0.16s ease-out;
+}
+
+.mission-modal-dialog {
+  width: min(460px, 100%);
+  max-height: min(86vh, 680px);
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.97) 0%, rgba(23, 18, 46, 0.97) 100%);
+  border: 1px solid rgba(167, 139, 250, 0.38);
+  border-radius: 20px;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.75),
+    0 0 36px rgba(139, 92, 246, 0.22);
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Myanmar", sans-serif;
+  animation: ghostCardAppear 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mission-modal-dialog.mission-modal-zombie {
+  border-color: rgba(245, 158, 11, 0.42);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.75),
+    0 0 36px rgba(245, 158, 11, 0.16);
+}
+
+.mission-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.12) 100%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.mission-modal-zombie .mission-modal-header {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.2) 0%, rgba(239, 68, 68, 0.12) 100%);
+}
+
+.mission-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mission-modal-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.mission-modal-title {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1.2;
+}
+
+.mission-modal-subtitle {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: #cbd5e1;
+}
+
+.mission-modal-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.mission-modal-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.mission-modal-close:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(248, 113, 113, 0.55);
+  color: #ffffff;
+}
+
+.mission-modal-body {
+  padding: 14px 16px 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.mission-guide-banner {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.14);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  font-size: 12px;
+  line-height: 1.45;
+  color: #e2e8f0;
+}
+
+.mission-guide-banner strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #e9d5ff;
+  font-size: 12px;
+}
+
+.mission-guide-banner p {
+  margin: 0;
+}
+
+.mission-guide-banner-zombie {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(251, 191, 36, 0.32);
+}
+
+.mission-guide-banner-zombie strong {
+  color: #fde68a;
+}
+
+.mission-step-desc {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #cbd5e1;
+}
+
+.mission-locked-callout {
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mission-locked-callout-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #fecaca;
+  font-size: 12.5px;
+}
+
+.mission-locked-callout p {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #e2e8f0;
+}
+
+.mission-switch-btn {
+  align-self: flex-start;
+  padding: 6px 11px;
+  border-radius: 8px;
+  border: 1px solid rgba(167, 139, 250, 0.45);
+  background: rgba(139, 92, 246, 0.28);
+  color: #f5f3ff;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mission-switch-btn:hover {
+  background: rgba(139, 92, 246, 0.48);
+  border-color: rgba(196, 181, 253, 0.75);
+}
+
+/* ==========================================================================
+   5. SECTIONS, PROGRESS NODES, BOSS HP BARS & ALERTS
+   ========================================================================== */
+.ghost-hud-section {
+  background: rgba(15, 23, 42, 0.62);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
 }
 
 .ghost-hud-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  gap: 8px;
+  font-size: 11.5px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #c084fc;
-}
-
-.ghost-hud-badge-tag {
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: rgba(168, 85, 247, 0.25);
-  color: #e9d5ff;
+  color: #c4b5fd;
 }
 
 /* Encounter Nodes (Stage 1) */
 .ghost-hud-encounter-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 7px;
   margin-top: 2px;
 }
 
 .ghost-hud-encounter-node {
-  background: rgba(15, 10, 30, 0.6);
+  background: rgba(15, 10, 30, 0.65);
   border: 1px solid rgba(168, 85, 247, 0.25);
-  border-radius: 8px;
-  padding: 5px 6px;
+  border-radius: 9px;
+  padding: 7px 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -300,7 +688,7 @@
 
 .ghost-hud-encounter-node .node-id {
   font-weight: 600;
-  color: #cbd5e1;
+  color: #e2e8f0;
 }
 
 .ghost-hud-encounter-node .node-scale {
@@ -311,7 +699,7 @@
 .ghost-hud-encounter-node .node-status {
   font-size: 10px;
   font-weight: 700;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .ghost-hud-encounter-node.encountered .node-status {
@@ -326,23 +714,23 @@
 .ghost-hud-sword-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   font-size: 12px;
 }
 
 .ghost-hud-sword-icon {
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .ghost-hud-sword-info {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   flex: 1;
 }
 
 .ghost-hud-sword-state {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .ghost-hud-sword-state.collected {
@@ -359,29 +747,29 @@
 }
 
 .ghost-hud-sword-hint {
-  font-size: 10.5px;
+  font-size: 11px;
   color: #cbd5e1;
-  opacity: 0.85;
+  line-height: 1.38;
 }
 
 /* Boss Health Bars (Stage 3) */
 .ghost-hud-boss-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 .ghost-hud-boss-item {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .ghost-hud-boss-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 11.5px;
 }
 
 .ghost-hud-boss-name {
@@ -391,19 +779,19 @@
 
 .ghost-hud-boss-hp-text {
   font-variant-numeric: tabular-nums;
-  font-size: 10.5px;
+  font-size: 11px;
   color: #cbd5e1;
 }
 
 .ghost-hud-boss-hp-text.dead {
-  color: #ef4444;
+  color: #f87171;
   font-weight: 700;
 }
 
 .ghost-hud-hp-bar-track {
   width: 100%;
   height: 6px;
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(15, 23, 42, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
   overflow: hidden;
@@ -415,7 +803,7 @@
   border-radius: 999px;
   background: linear-gradient(90deg, #ef4444 0%, #a855f7 100%);
   transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.35);
 }
 
 .ghost-hud-hp-bar-fill.boss3 {
@@ -429,25 +817,25 @@
 
 /* Notification & Message Toast */
 .ghost-hud-message {
-  padding: 7px 10px;
-  border-radius: 8px;
-  background: rgba(245, 158, 11, 0.16);
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.34);
   color: #fef08a;
   font-size: 11.5px;
-  line-height: 1.35;
+  line-height: 1.38;
 }
 
 /* Interactive Sword Pickup Button & Progress */
 .ghost-hud-pickup-box {
-  background: linear-gradient(135deg, rgba(88, 28, 135, 0.45) 0%, rgba(20, 14, 38, 0.6) 100%);
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.45) 0%, rgba(20, 14, 38, 0.65) 100%);
   border: 1px solid rgba(250, 204, 21, 0.5);
-  border-radius: 10px;
-  padding: 8px 10px;
+  border-radius: 11px;
+  padding: 9px 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  box-shadow: 0 0 16px rgba(250, 204, 21, 0.2);
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.18);
 }
 
 .ghost-hud-pickup-btn {
@@ -457,7 +845,7 @@
   border: none;
   border-radius: 8px;
   color: #1a1002;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -469,7 +857,7 @@
 }
 
 .ghost-hud-pickup-btn:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
   transform: translateY(-1px);
 }
 
@@ -494,36 +882,37 @@
 
 /* Reward Callout */
 .ghost-hud-reward-box {
-  padding: 7px 10px;
-  border-radius: 9px;
+  padding: 9px 11px;
+  border-radius: 10px;
   font-size: 11.5px;
+  line-height: 1.4;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .ghost-hud-reward-box.completed {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.1) 100%);
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  border: 1px solid rgba(16, 185, 129, 0.42);
   color: #a7f3d0;
   font-weight: 600;
 }
 
 .ghost-hud-reward-box.locked {
-  background: rgba(15, 23, 42, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  color: #cbd5e1;
 }
 
 /* ==========================================================================
-   3. COMBAT CONTROLS STYLED GAMING ACTION BUTTONS
+   6. COMBAT CONTROLS STYLED GAMING ACTION BUTTONS
    ========================================================================== */
 .ghost-hud-combat-wrap {
   margin-top: 2px;
-  padding: 8px 10px;
+  padding: 9px 10px;
   background: rgba(220, 38, 38, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 10px;
+  border-radius: 11px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -539,28 +928,28 @@
 .ghost-hud-combat-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 6px;
 }
 
 .ghost-hud-combat-btn {
-  padding: 6px 9px;
-  border-radius: 7px;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  background: linear-gradient(135deg, rgba(185, 28, 28, 0.5) 0%, rgba(127, 29, 29, 0.6) 100%);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.42);
+  background: linear-gradient(135deg, rgba(185, 28, 28, 0.52) 0%, rgba(127, 29, 29, 0.64) 100%);
   color: #fee2e2;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.14s ease;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 
 .ghost-hud-combat-btn:hover {
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.7) 0%, rgba(153, 27, 27, 0.8) 100%);
-  border-color: rgba(248, 113, 113, 0.7);
-  color: #fff;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.72) 0%, rgba(153, 27, 27, 0.82) 100%);
+  border-color: rgba(248, 113, 113, 0.75);
+  color: #ffffff;
   transform: translateY(-1px);
 }
 
@@ -570,20 +959,20 @@
 
 .ghost-hud-combat-btn.defend {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.35) 0%, rgba(29, 78, 216, 0.45) 100%);
-  border-color: rgba(96, 165, 250, 0.4);
+  border-color: rgba(96, 165, 250, 0.42);
   color: #dbeafe;
 }
 
 .ghost-hud-combat-btn.defend:hover {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.6) 0%, rgba(29, 78, 216, 0.7) 100%);
-  border-color: rgba(147, 197, 253, 0.7);
-  color: #fff;
+  border-color: rgba(147, 197, 253, 0.75);
+  color: #ffffff;
 }
 
 .ghost-hud-combat-select {
   width: 100%;
-  padding: 5px 8px;
-  border-radius: 6px;
+  padding: 6px 8px;
+  border-radius: 7px;
   background: #0f172a;
   border: 1px solid #334155;
   color: #f1f5f9;
@@ -597,27 +986,25 @@
 }
 
 /* ==========================================================================
-   4. ANIMATIONS & KEYFRAMES
+   7. ANIMATIONS & KEYFRAMES
    ========================================================================== */
-@keyframes ghostFloatingGlow {
-  0% {
-    transform: translateY(0px) scale(1);
-    filter: drop-shadow(0 0 4px rgba(192, 132, 252, 0.5));
-  }
-  100% {
-    transform: translateY(-2px) scale(1.06);
-    filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.85));
-  }
-}
-
 @keyframes ghostCardAppear {
   0% {
     opacity: 0;
-    transform: scale(0.95) translateY(-6px);
+    transform: scale(0.96) translateY(-6px);
   }
   100% {
     opacity: 1;
     transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes missionModalFade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
   }
 }
 
@@ -640,10 +1027,9 @@
 }
 
 /* ==========================================================================
-   5. MOBILE RESPONSIVE TUNING
+   8. MOBILE RESPONSIVE TUNING
    ========================================================================== */
 @media (max-width: 768px) {
-  /* On mobile, collapsed pill is especially compact */
   .ghost-hud-pill {
     padding: 5px 10px 5px 8px;
     font-size: 12px;
@@ -655,14 +1041,27 @@
   }
 
   .ghost-hud-card {
-    width: 290px;
+    width: 292px;
     max-width: calc(100vw - 20px);
     max-height: calc(100vh - 100px);
   }
 
   .ghost-hud-body {
     max-height: calc(100vh - 150px);
-    padding: 10px 12px;
+    padding: 10px;
     gap: 8px;
+  }
+
+  .mission-modal-dialog {
+    max-height: 88vh;
+    border-radius: 16px;
+  }
+
+  .mission-modal-header {
+    padding: 12px 14px;
+  }
+
+  .mission-modal-body {
+    padding: 12px 14px 14px;
   }
 }

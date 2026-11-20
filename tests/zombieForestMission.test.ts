@@ -41,11 +41,18 @@ import {
 } from '../src/game/playerDeath.ts';
 import { rideLife } from '../src/game/rideLife.ts';
 import {
+  GHOST_IDS,
   GHOST_STATS,
+  collectGhostSword,
+  damageMissionGhost,
   getActiveMissionWeapon,
   getThreeGhostsProgress,
+  hasCompletedThreeGhostsMission,
+  markGhostEncounter,
+  resetThreeGhostsMission,
   selectMissionWeapon,
   setZombieForestSwordActive,
+  setZombieGunUnlockedState,
 } from '../src/game/missions/threeGhostsMission.ts';
 import {
   createProceduralGunModel,
@@ -312,7 +319,56 @@ test('AI waits 3 to 6 random seconds after crawling up and rising before playing
   assert.equal(ambientSeen.has('scream'), true);
 });
 
+function completeGhostMissionForTest() {
+  resetThreeGhostsMission();
+  for (const id of GHOST_IDS) {
+    markGhostEncounter(id);
+  }
+  collectGhostSword();
+  for (const id of GHOST_IDS) {
+    damageMissionGhost(id, GHOST_STATS[id].maxHp);
+  }
+  assert.equal(hasCompletedThreeGhostsMission(), true);
+}
+
+test('knife and zombie mission are locked until Ghost Mission is completed, and Gun is locked until Zombie Mission is completed', () => {
+  resetThreeGhostsMission();
+  const rng = makeSeededRng(1234);
+  rerollZombieForestWave(rng, false);
+
+  // 1. Before Ghost Mission is completed: no knife access, no zombie damage, no gun access
+  assert.equal(hasCompletedThreeGhostsMission(), false);
+  assert.equal(getActiveMissionWeapon(), null);
+  assert.equal(selectMissionWeapon('ghost-sword'), false);
+  assert.equal(selectMissionWeapon('zombie-gun'), false);
+  setZombieForestSwordActive(true);
+  assert.equal(getActiveMissionWeapon(), null, 'knife cannot be activated before Ghost Mission completion');
+  setZombieGunUnlockedState(true, true);
+  assert.equal(getActiveMissionWeapon(), null, 'gun cannot be unlocked before Ghost Mission completion');
+  assert.equal(
+    damageZombie('zombie-1', 1, 'sword'),
+    null,
+    'Zombie Mission cannot be played before Ghost Mission completion',
+  );
+
+  // 2. Complete Ghost Mission -> knife becomes accessible, Zombie Mission can start, but Gun is still locked
+  completeGhostMissionForTest();
+  assert.equal(selectMissionWeapon('ghost-sword'), true);
+  assert.equal(getActiveMissionWeapon(), 'ghost-sword');
+  assert.equal(
+    selectMissionWeapon('zombie-gun'),
+    false,
+    'Gun must remain locked until Zombie Mission (13/13) is completed',
+  );
+  assert.notEqual(
+    damageZombie('zombie-1', 1, 'sword'),
+    null,
+    'Zombie Mission is unlocked after Ghost Mission completion',
+  );
+});
+
 test('sword hits kill 2-hit zombies in 2 slashes and 3-hit zombies in 3 slashes, unlocking procedural Gun reward on 13/13', () => {
+  completeGhostMissionForTest();
   const rng = makeSeededRng(9001);
   rerollZombieForestWave(rng, false);
   setZombieForestSwordActive(true);

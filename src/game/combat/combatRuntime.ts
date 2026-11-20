@@ -2,7 +2,7 @@ import {Vector3,type Object3D} from 'three';
 import {CombatController} from './CombatController.ts';
 import {ATTACKS} from './AttackDefinitions.ts';
 import {SwordHitDetection} from './SwordHitDetection.ts';
-import {GHOST_IDS,GROUP_SHIELD_RADIUS_M,SWORD_DAMAGE,damageMissionGhost,getActiveMissionWeapon,getThreeGhostsProgress,isGhostDefeated} from '../missions/threeGhostsMission.ts';
+import {GHOST_IDS,GROUP_SHIELD_RADIUS_M,SWORD_DAMAGE,damageMissionGhost,getActiveMissionWeapon,getThreeGhostsProgress,hasCompletedThreeGhostsMission,isGhostDefeated} from '../missions/threeGhostsMission.ts';
 import {damageZombie,isZombieAlive,isZombieTargetId} from '../missions/zombieForestMission.ts';
 import {getGhostRuntime} from '../missions/ghostRuntimeRegistry.ts';
 import {requestGhostReaction} from './GhostCombatReactions.ts';
@@ -49,6 +49,7 @@ export function sampleCombatBlade(active:boolean){
   for(const [id,target] of targets){
    if(playerCombat.hits.has(id))continue;
    if(isZombieTargetId(id)){
+    if(!hasCompletedThreeGhostsMission()){playerCombat.message='Ghost Mission ပြီးဆုံးမှ Zombie Mission စတင်နိုင်ပါမည်။';continue;}
     if(!isZombieAlive(id))continue;
     target.root.getWorldPosition(targetPos);
     const dx=targetPos.x-player.x,dz=targetPos.z-player.z,distance=Math.hypot(dx,dz);

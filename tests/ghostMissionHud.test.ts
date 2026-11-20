@@ -37,4 +37,12 @@ test('ThreeGhostsMissionHud imports CSS, defines drag & collapse classes, and su
   assert.ok(css.includes('.ghost-hud-pill'), 'CSS must define pill');
   assert.ok(css.includes('.ghost-hud-card'), 'CSS must define card');
   assert.ok(css.includes('@media (max-width: 768px)'), 'CSS must include mobile media queries');
+
+  // Verify Mission Hub cards and detail dialog modal
+  assert.ok(tsx.includes('>Mission<'), 'Main card title should be Mission');
+  assert.ok(tsx.includes('mission-item-ghost'), 'Should render Ghost Mission card');
+  assert.ok(tsx.includes('mission-item-zombie'), 'Should render Zombie Mission card');
+  assert.ok(tsx.includes('mission-modal-dialog'), 'Should render mission guide dialog modal');
+  assert.ok(tsx.includes('role="dialog"'), 'Mission modal should have dialog role');
+  assert.ok(css.includes('.mission-modal-dialog'), 'CSS must style mission dialog modal');
 });

@@ -343,7 +343,7 @@ export function MobileControls({
 				onPointerCancel={release}
 				onLostPointerCapture={release}
 			/>
-      {canJump&&(mission.equippedWeapon==='ghost-sword'||getActiveMissionWeapon()==='ghost-sword')&&<div className="mobile-fight-buttons" aria-label="တိုက်ခိုက်ရေး">
+      {canJump&&getActiveMissionWeapon()==='ghost-sword'&&<div className="mobile-fight-buttons" aria-label="တိုက်ခိုက်ရေး">
         {([['combo','⚔','ခုတ်'],['Heavy_Slash','✦','အားပြင်း'],['Sword_Block','🛡','ကာ']] as const).map(([command,icon,label])=>
           <button key={command} type="button" aria-label={label} onPointerDown={e=>{
             e.preventDefault();e.stopPropagation();fight(command);

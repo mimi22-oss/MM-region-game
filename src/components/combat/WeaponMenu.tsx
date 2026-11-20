@@ -156,7 +156,10 @@ export function WeaponMenu() {
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  const gunUnlocked = zombieMission.gunUnlocked || isZombieGunUnlockedState();
+  const swordUnlocked = mission.completed && mission.swordCollected;
+  const gunUnlocked =
+    swordUnlocked &&
+    (zombieMission.gunUnlocked || isZombieGunUnlockedState());
   const activeWeapon = getActiveMissionWeapon();
   const equippedValue: WeaponValue =
     activeWeapon === 'zombie-gun'
@@ -225,10 +228,12 @@ export function WeaponMenu() {
     };
   }, [open, updatePopoverPosition]);
 
-  if (!mission.completed && !gunUnlocked && !zombieMission.inForest) return null;
+  if (!swordUnlocked) return null;
 
   const visibleOptions = WEAPON_OPTIONS.filter(
-    opt => opt.value !== 'zombie-gun' || gunUnlocked,
+    opt =>
+      (opt.value !== 'ghost-sword' || swordUnlocked) &&
+      (opt.value !== 'zombie-gun' || gunUnlocked),
   );
   const activeOption = visibleOptions.find(opt => opt.value === equippedValue) ?? WEAPON_OPTIONS[0];
 

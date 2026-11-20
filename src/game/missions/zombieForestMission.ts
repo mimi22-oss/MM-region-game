@@ -14,6 +14,7 @@ import { rideLife } from '../rideLife.ts';
 import { playSpecialAction } from '../specialActions.ts';
 import {
   getActiveMissionWeapon,
+  hasCompletedThreeGhostsMission,
   setZombieForestSwordActive,
   setZombieGunUnlockedState,
 } from './threeGhostsMission.ts';
@@ -284,13 +285,15 @@ export interface ZombieForestProgress {
 }
 
 function loadSavedGunUnlock(): boolean {
+  if (!hasCompletedThreeGhostsMission()) return false;
   if (typeof localStorage === 'undefined') return false;
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') as {
       version?: number;
+      completed?: boolean;
       gunUnlocked?: boolean;
     } | null;
-    return Boolean(raw && raw.version === 1 && raw.gunUnlocked);
+    return Boolean(raw && raw.version === 1 && raw.completed && raw.gunUnlocked);
   } catch {
     return false;
   }
@@ -301,7 +304,7 @@ function persistGunUnlock(gunUnlocked: boolean) {
   try {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ version: 1, gunUnlocked }),
+      JSON.stringify({ version: 1, completed: gunUnlocked, gunUnlocked }),
     );
   } catch {
     // storage disabled
@@ -485,9 +488,10 @@ export function createRandomZombieWave(rng: () => number = Math.random): {
 
 function buildInitialState(rng: () => number = Math.random): ZombieForestProgress {
   const gunUnlocked = loadSavedGunUnlock();
-  if (gunUnlocked) {
-    setZombieGunUnlockedState(true, false);
+  if (!gunUnlocked) {
+    persistGunUnlock(false);
   }
+  setZombieGunUnlockedState(gunUnlocked, false);
   const wave = createRandomZombieWave(rng);
   return {
     version: 1,
@@ -495,7 +499,7 @@ function buildInitialState(rng: () => number = Math.random): ZombieForestProgres
     twoHitCount: wave.twoHitCount,
     totalCount: ZOMBIE_COUNT,
     defeatedCount: 0,
-    completed: false,
+    completed: gunUnlocked,
     gunUnlocked,
     inForest: false,
     lastMessage: '',
@@ -544,7 +548,7 @@ export function isZombieAlive(id: string): boolean {
 }
 
 export function isZombieGunUnlocked(): boolean {
-  return state.gunUnlocked;
+  return Boolean(state.gunUnlocked && hasCompletedThreeGhostsMission());
 }
 
 export function rerollZombieForestWave(
@@ -552,8 +556,9 @@ export function rerollZombieForestWave(
   keepGunUnlocked = true,
 ): ZombieForestProgress {
   const wave = createRandomZombieWave(rng);
-  const gunUnlocked = keepGunUnlocked ? state.gunUnlocked : false;
-  if (!keepGunUnlocked) {
+  const gunUnlocked =
+    keepGunUnlocked && hasCompletedThreeGhostsMission() ? state.gunUnlocked : false;
+  if (!gunUnlocked) {
     persistGunUnlock(false);
     setZombieGunUnlockedState(false, false);
   }
@@ -563,7 +568,7 @@ export function rerollZombieForestWave(
     twoHitCount: wave.twoHitCount,
     totalCount: ZOMBIE_COUNT,
     defeatedCount: 0,
-    completed: false,
+    completed: gunUnlocked,
     gunUnlocked,
     inForest: state.inForest,
     lastMessage: 'သစ်တောအုပ်ထဲတွင် Zombie ၁၃ ကောင် နေရာအသစ်များဖြင့် ပေါ်လာပါပြီ!',
@@ -589,6 +594,7 @@ export function damageZombie(
   hits = 1,
   source: 'sword' | 'gun' = 'sword',
 ): ZombieDamageResult | null {
+  if (!hasCompletedThreeGhostsMission()) return null;
   if (!isZombieTargetId(id) || !Number.isFinite(hits) || hits <= 0) return null;
   const target = state.zombies.find(z => z.id === id);
   if (!target || !target.alive || target.hitsRemaining <= 0) return null;
@@ -688,9 +694,7 @@ export function stepZombieForestAi(
   const inForest = isPointInZombieForest(playerX, playerZ, 18);
 
   if (inForest !== state.inForest) {
-    if (inForest && playerOnFoot && !state.gunUnlocked) {
-      setZombieForestSwordActive(true);
-    } else if (!inForest) {
+    if (!inForest || !hasCompletedThreeGhostsMission()) {
       setZombieForestSwordActive(false);
     }
     publish({ ...state, inForest });
