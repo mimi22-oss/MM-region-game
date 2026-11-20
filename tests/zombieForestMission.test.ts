@@ -452,13 +452,35 @@ test('procedural 3D Gun model attaches to character hand and shoots enemies to d
   assert.equal(getMotion(GUN_SHOOTING_MOTION_ID)?.allowWhileMoving, true);
   assert.equal(getSpecialActionState().activeActionId, GUN_SHOOTING_MOTION_ID);
 
-  // Shot 2 -> kills 2-hit targetZombie!
+  // Shot 2 -> kills 2-hit targetZombie and records impact fire burst at targetZombie!
+  const prevImpacts = gunEffects.impactHead;
   const shot2 = requestGunShot({ nowSec: 11, ignoreCooldown: true });
   assert.equal(shot2.fired, true);
   assert.equal(shot2.hitId, targetZombie.id);
   assert.equal(shot2.defeated, true);
   assert.equal(targetZombie.alive, false);
   assert.equal(gunEffects.shotsFired, prevShots + 2);
+  assert.equal(gunEffects.impactHead, prevImpacts + 1);
+  const zombieImpact =
+    gunEffects.impacts[(gunEffects.impactHead - 1) % gunEffects.impacts.length];
+  assert.equal(zombieImpact.kind, 'zombie');
+  assert.ok(Math.hypot(zombieImpact.position.x - targetZombie.x, zombieImpact.position.z - targetZombie.z) < 0.01);
+
+  // Shot 3 -> aiming at a solid building/tree spawns an impact fire burst at the obstacle hit point
+  const shot3 = requestGunShot({
+    playerX: 143.769,
+    playerZ: 246.5,
+    forwardX: 0,
+    forwardZ: -1,
+    nowSec: 12,
+    ignoreCooldown: true,
+  });
+  assert.equal(shot3.fired, true);
+  assert.ok(
+    shot3.hitKind === 'building' || shot3.hitKind === 'tree',
+    `expected building or tree impact fire burst, got ${shot3.hitKind}`,
+  );
+  assert.equal(gunEffects.impactHead, prevImpacts + 2);
 
   stopSpecialAction(true);
   releaseGun();

@@ -309,6 +309,7 @@ function GunCombatVFX() {
     () => new LineSegments(lineGeometry, lineMaterial),
     [lineGeometry, lineMaterial],
   );
+  const impactRefs = useRef<Array<Group | null>>([]);
 
   useEffect(() => {
     return () => {
@@ -348,7 +349,104 @@ function GunCombatVFX() {
     if (activeCount > 0) {
       pos.needsUpdate = true;
     }
+
+    // Animate 3D Impact Fire Bursts on hit Zombies, Ghosts, Trees, and Buildings
+    for (let i = 0; i < gunEffects.impacts.length; i++) {
+      const imp = gunEffects.impacts[i];
+      const grp = impactRefs.current[i];
+      if (!grp) continue;
+      const age = clock.elapsedTime - imp.at;
+      const duration = 0.34;
+      if (age >= 0 && age <= duration) {
+        grp.visible = true;
+        grp.position.copy(imp.position);
+        const progress = age / duration;
+        const scale = 0.55 + Math.sin(progress * Math.PI) * 1.35;
+        grp.scale.setScalar(scale);
+        grp.rotation.set(
+          imp.seq * 0.9 + progress * 3.5,
+          imp.seq * 1.7 - progress * 4.2,
+          imp.seq * 1.3 + progress * 2.8,
+        );
+      } else {
+        grp.visible = false;
+      }
+    }
   });
 
-  return <primitive object={lineObj} />;
+  return (
+    <group name="gun-combat-vfx-root">
+      <primitive object={lineObj} />
+      {gunEffects.impacts.map((_, i) => (
+        <group
+          key={i}
+          ref={el => {
+            impactRefs.current[i] = el;
+          }}
+          name={`gun-impact-fire-${i}`}
+          visible={false}
+        >
+          {/* White-hot impact flash core */}
+          <mesh>
+            <sphereGeometry args={[0.14, 10, 10]} />
+            <meshBasicMaterial
+              color="#ffffff"
+              transparent
+              opacity={0.96}
+              blending={AdditiveBlending}
+            />
+          </mesh>
+          {/* Golden-orange inner fireball */}
+          <mesh>
+            <sphereGeometry args={[0.26, 10, 10]} />
+            <meshBasicMaterial
+              color="#fb923c"
+              transparent
+              opacity={0.88}
+              blending={AdditiveBlending}
+            />
+          </mesh>
+          {/* Crimson-red outer fire explosion */}
+          <mesh>
+            <sphereGeometry args={[0.38, 10, 10]} />
+            <meshBasicMaterial
+              color="#ef4444"
+              transparent
+              opacity={0.68}
+              blending={AdditiveBlending}
+            />
+          </mesh>
+          {/* 3D 6-way crossed starburst flame petals */}
+          <mesh rotation={[0, 0, Math.PI / 4]}>
+            <boxGeometry args={[0.78, 0.085, 0.085]} />
+            <meshBasicMaterial
+              color="#fde047"
+              transparent
+              opacity={0.92}
+              blending={AdditiveBlending}
+            />
+          </mesh>
+          <mesh rotation={[0, 0, -Math.PI / 4]}>
+            <boxGeometry args={[0.78, 0.085, 0.085]} />
+            <meshBasicMaterial
+              color="#f97316"
+              transparent
+              opacity={0.92}
+              blending={AdditiveBlending}
+            />
+          </mesh>
+          <mesh rotation={[0, Math.PI / 4, Math.PI / 4]}>
+            <boxGeometry args={[0.085, 0.085, 0.78]} />
+            <meshBasicMaterial
+              color="#fb7185"
+              transparent
+              opacity={0.85}
+              blending={AdditiveBlending}
+            />
+          </mesh>
+          <pointLight color="#ff6b00" intensity={6} distance={7.5} />
+        </group>
+      ))}
+    </group>
+  );
 }

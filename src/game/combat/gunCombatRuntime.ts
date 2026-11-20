@@ -15,6 +15,7 @@ import {
 } from '../missions/zombieForestMission.ts';
 import { requestGhostReaction } from './GhostCombatReactions.ts';
 import { clearGhostEncounterInteraction } from '../ghostConfig.ts';
+import { canStand, treeBlocks } from '../collision.ts';
 import { combatEffects, combatLineClear, playerCombat } from './combatRuntime.ts';
 import { playSpecialAction } from '../specialActions.ts';
 
@@ -41,6 +42,8 @@ export function registerCombatGun(root: Object3D, avatar: Object3D): () => void 
   };
 }
 
+export type GunHitKind = 'zombie' | 'ghost' | 'tree' | 'building';
+
 export interface GunTracerEffect {
   readonly from: Vector3;
   readonly to: Vector3;
@@ -49,11 +52,19 @@ export interface GunTracerEffect {
   seq: number;
 }
 
+export interface GunImpactFireEffect {
+  readonly position: Vector3;
+  at: number;
+  kind: GunHitKind;
+  seq: number;
+}
+
 export const gunEffects = {
   time: 0,
   lastShotAt: -100,
   shotsFired: 0,
   tracerHead: 0,
+  impactHead: 0,
   tracers: Array.from({ length: 12 }, (): GunTracerEffect => ({
     from: new Vector3(),
     to: new Vector3(),
@@ -61,7 +72,40 @@ export const gunEffects = {
     hit: false,
     seq: 0,
   })),
+  impacts: Array.from({ length: 12 }, (): GunImpactFireEffect => ({
+    position: new Vector3(),
+    at: -100,
+    kind: 'zombie',
+    seq: 0,
+  })),
 };
+
+/**
+ * Ray-marches along the forward shot vector `(fx, fz)` from `(startX, startZ)` to detect
+ * the first solid Tree or Building impact point within `maxDistM`.
+ */
+export function traceGunObstacleImpact(
+  startX: number,
+  startZ: number,
+  fx: number,
+  fz: number,
+  maxDistM = GUN_RANGE_M,
+): { x: number; z: number; distance: number; kind: 'tree' | 'building' } | null {
+  const stepM = 0.22;
+  const steps = Math.max(1, Math.ceil(maxDistM / stepM));
+  for (let i = 2; i <= steps; i++) {
+    const dist = Math.min(maxDistM, i * stepM);
+    const x = startX + fx * dist;
+    const z = startZ + fz * dist;
+    if (treeBlocks(x, z)) {
+      return { x, z, distance: dist, kind: 'tree' };
+    }
+    if (!canStand(x, z, 0, true)) {
+      return { x, z, distance: dist, kind: 'building' };
+    }
+  }
+  return null;
+}
 
 function playSynthesizedGunshot() {
   if (typeof window === 'undefined') return;
@@ -118,7 +162,7 @@ export interface GunShotOptions {
 export interface GunShotResult {
   readonly fired: boolean;
   readonly hitId: string | null;
-  readonly hitKind: 'zombie' | 'ghost' | null;
+  readonly hitKind: GunHitKind | null;
   readonly defeated: boolean;
   readonly message: string;
 }
@@ -267,6 +311,40 @@ export function requestGunShot(options: GunShotOptions = {}): GunShotResult {
   tracer.seq = gunEffects.shotsFired;
 
   if (!bestTarget) {
+    // Check if the straight forward shot hits a Tree or Building
+    const obstacleHit = traceGunObstacleImpact(
+      px,
+      pz,
+      fx,
+      fz,
+      GUN_RANGE_M,
+    );
+    if (obstacleHit) {
+      tracer.to.set(obstacleHit.x, tracer.from.y, obstacleHit.z);
+      tracer.hit = true;
+
+      const gunImpact =
+        gunEffects.impacts[gunEffects.impactHead++ % gunEffects.impacts.length];
+      gunImpact.position.copy(tracer.to);
+      gunImpact.at = gunEffects.time;
+      gunImpact.kind = obstacleHit.kind;
+      gunImpact.seq = gunEffects.shotsFired;
+
+      const impact =
+        combatEffects.impacts[combatEffects.impactHead++ % combatEffects.impacts.length];
+      impact.position.copy(tracer.to);
+      impact.at = combatEffects.time;
+      impact.seed = gunEffects.shotsFired * 31 + combatEffects.impactHead;
+
+      return {
+        fired: true,
+        hitId: null,
+        hitKind: obstacleHit.kind,
+        defeated: false,
+        message: '',
+      };
+    }
+
     tracer.to.set(
       tracer.from.x + fx * 22,
       tracer.from.y,
@@ -294,9 +372,16 @@ export function requestGunShot(options: GunShotOptions = {}): GunShotResult {
   );
   tracer.hit = true;
 
+  const gunImpact =
+    gunEffects.impacts[gunEffects.impactHead++ % gunEffects.impacts.length];
+  gunImpact.position.set(bestTarget.x, bestTarget.y, bestTarget.z);
+  gunImpact.at = gunEffects.time;
+  gunImpact.kind = bestTarget.kind;
+  gunImpact.seq = gunEffects.shotsFired;
+
   const impact =
     combatEffects.impacts[combatEffects.impactHead++ % combatEffects.impacts.length];
-  impact.position.copy(tracer.to);
+  impact.position.set(bestTarget.x, bestTarget.y, bestTarget.z);
   impact.at = combatEffects.time;
   impact.seed = gunEffects.shotsFired * 31 + combatEffects.impactHead;
 
