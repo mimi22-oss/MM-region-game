@@ -252,5 +252,5 @@ test('UShweCoupleBots and HouseResidentBots share singleton flyweight cache, Eld
     'All bot rigs must share singleton flyweight geometry/material cache',
   );
   assert.ok(kidTsx.includes('coveredStride'), 'Kid girl dress must use coveredStride so legs never poke out');
-  assert.ok(worldTsx.includes('<HouseResidentBots activeRegions={active} />'), 'StreamedWorld must mount HouseResidentBots');
+  assert.ok(worldTsx.includes('<HouseResidentBots activeRegions={active}'), 'StreamedWorld must mount HouseResidentBots');
 });

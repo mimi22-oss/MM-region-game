@@ -67,6 +67,7 @@ import { mobileQuality } from "./game/sceneBudget";
 import { startupDiagnostics } from "./game/startupDiagnostics";
 import { diagnosticConfig } from "./game/diagnosticMode";
 import { MobileControls } from "./components/MobileControls";
+import { BotFightControls } from "./components/BotFightControls";
 import { createMobileInput, resetMobileInput } from "./game/mobileInput";
 import { isNativeApp } from "./services/platform";
 import { useFullscreen } from "./game/useFullscreen";
@@ -943,7 +944,7 @@ function App() {
       {!intro.active && !loading && !rideStatus.riding && !carStatus.driving && !balloonStatus.riding && (
         <>
           <div className="player-life"><LifeMeter lives={rideStatus.lives}/></div>
-          <GhostRadar />
+          {night && <GhostRadar />}
         </>
       )}
       {rideStatus.crashed && (rideStatus.damage??1)>0 && (
@@ -971,6 +972,21 @@ function App() {
         disabled={mapOpen || settingsOpen || loading || carStatus.driving || subscriptionShop.isOpen || !visible}
         onInteract={activateMobile}
       />}
+      {!intro.active && (
+        <BotFightControls
+          disabled={
+            mapOpen ||
+            settingsOpen ||
+            loading ||
+            carStatus.driving ||
+            rideStatus.riding ||
+            balloonStatus.riding ||
+            subscriptionShop.isOpen ||
+            !visible
+          }
+          onInteract={activateMobile}
+        />
+      )}
       {webglLost && (
         <div className="webgl-recovery-banner" role="alert" aria-live="assertive">
           <span>Restoring 3D graphics context… Your position is saved.</span>

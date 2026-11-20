@@ -1,14 +1,17 @@
 /**
- * Shared, allocation-free resident bot engine (အိမ်နေလူကြီး Bot များ).
+ * Shared, allocation-free resident bot engine (အိမ်နေလူကြီး & ကလေး Bot များ).
  *
- * One pure state machine drives every resident: the U Shwe couple and every generic house
- * household reuse the same code path. Layouts are plain data objects in house-local space
- * (+Z points out of the front door) and are shared by reference between households with the
- * same porch shape, so thousands of houses cost only a few small layout objects.
+ * One pure state machine drives every resident: U Shwe couple and every pooled house
+ * household reuse the exact same code path.
  *
- * Cycle: SITTING → STANDING_UP → WALKING_TO_HOUSE → OPENING_DOOR_ENTER (waits until the door
- * is genuinely open) → ENTERING_HOUSE → INSIDE_HOUSE → OPENING_DOOR_EXIT (waits for door) →
- * WALKING_TO_CHAIR → SITTING_DOWN → SITTING.
+ * Cycles:
+ * 1) Indoor/Porch cycle: SITTING → STANDING_UP → WALKING_TO_HOUSE → OPENING_DOOR_ENTER
+ *    (waits until house door is open) → ENTERING_HOUSE → INSIDE_HOUSE → OPENING_DOOR_EXIT
+ *    → WALKING_TO_CHAIR → SITTING_DOWN → SITTING.
+ * 2) Daytime Outing & Neighbor Visit cycle (when `daytimeOutings` is true & compound gate exists):
+ *    SITTING/porch → WALKING_TO_GATE → OPENING_GATE_OUT (waits until compound gate is open)
+ *    → OUT_VISITING (strolls outside onto lane/neighbor & pauses to chat) → OPENING_GATE_IN
+ *    (waits until compound gate opens) → WALKING_FROM_GATE → SITTING_DOWN / WALKING_TO_HOUSE.
  */
 
 export type ResidentRole = 'uncle' | 'auntie' | 'boy' | 'girl';
@@ -22,7 +25,12 @@ export type ResidentPhase =
   | 'INSIDE_HOUSE'
   | 'OPENING_DOOR_EXIT'
   | 'WALKING_TO_CHAIR'
-  | 'SITTING_DOWN';
+  | 'SITTING_DOWN'
+  | 'WALKING_TO_GATE'
+  | 'OPENING_GATE_OUT'
+  | 'OUT_VISITING'
+  | 'OPENING_GATE_IN'
+  | 'WALKING_FROM_GATE';
 
 export interface LocalPoint2D {
   readonly x: number;
@@ -45,21 +53,31 @@ export interface ResidentSeat {
 
 export interface ResidentLayout {
   readonly seats: readonly ResidentSeat[];
-  /** Spot outside the door where a resident waits for the door to open (outside the leaf sweep). */
+  /** Spot outside the house front door where a resident waits for the door to open. */
   readonly doorOutside: LocalPoint2D;
-  /** Spot inside/at the doorway where the resident disappears into the house. */
+  /** Spot inside/at the house doorway where the resident disappears into the house. */
   readonly doorInside: LocalPoint2D;
   /** Per seat: [standSpot, ...waypoints, doorOutside]. */
   readonly pathToDoor: readonly (readonly LocalPoint2D[])[];
   /** Per seat: [doorInside, doorOutside, ...waypoints, standSpot]. */
   readonly pathToSeat: readonly (readonly LocalPoint2D[])[];
   readonly floorY: (z: number) => number;
-  /** Minimum door openness (0..1) before crossing the doorway. */
+  /** Minimum door/gate openness (0..1) before crossing the threshold. */
   readonly passThreshold: number;
-  /** True when a lit vestibule exists behind the door (resident visible while the door opens). */
+  /** True when a lit vestibule exists behind the house door. */
   readonly revealInsideWhileOpening: boolean;
-  /** Door stays open while a returning resident is at local z below this value. */
+  /** House door stays open while a returning resident is at local z below this value. */
   readonly doorClearZ: number;
+  /** Optional compound front gate geometry for daytime outdoor strolls/visits. */
+  readonly gateZ?: number;
+  readonly gateInside?: LocalPoint2D;
+  readonly gateOutside?: LocalPoint2D;
+  /** Per-seat route from standSpot to gateInside (and reversed for returning to seat). */
+  readonly pathSeatToGate?: readonly (readonly LocalPoint2D[])[];
+  /** Route from doorOutside straight down steps to gateInside (when leaving house to go out). */
+  readonly pathDoorToGate?: readonly LocalPoint2D[];
+  /** Outdoor stroll/visit waypoints outside the compound gate (returns to gateOutside). */
+  readonly visitRoutes?: readonly (readonly LocalPoint2D[])[];
 }
 
 export interface ResidentState {
@@ -73,11 +91,19 @@ export interface ResidentState {
   yaw: number;
   /** 1 = fully seated, 0 = standing/walking. */
   sitBlend: number;
-  /** 0..1 right-hand reach while opening the door. */
+  /** 0..1 right-hand reach while opening the door or gate. */
   doorReachBlend: number;
   phaseTimer: number;
   phaseDuration: number;
   waypointIndex: number;
+  /** Active outdoor visit route index (when in OUT_VISITING). */
+  visitRouteIndex: number;
+  /** Brief pause timer at the midpoint of an outdoor visit (chatting with neighbors). */
+  visitPauseTimer: number;
+  /** Whether resident already paused at the neighbor visit midpoint on this outing. */
+  visitPaused: boolean;
+  /** True if leaving the porch to go outside through the gate; false if heading inside the house. */
+  outingPlanned: boolean;
   walkDistance: number;
   speed: number;
   visible: boolean;
@@ -106,7 +132,6 @@ const STAND_TRANSITION_SEC = 0.85;
 const SIT_TRANSITION_SEC = 0.85;
 const DOOR_WAIT_MIN_SEC = 0.55;
 
-/** Phases during which a resident occupies the shared door/porch route. */
 const ROUTE_PHASES: ReadonlySet<ResidentPhase> = new Set<ResidentPhase>([
   'STANDING_UP',
   'WALKING_TO_HOUSE',
@@ -127,7 +152,6 @@ export function smoothstep01(t: number): number {
   return x * x * (3 - 2 * x);
 }
 
-/** Shortest signed angle delta from currentYaw to targetYaw in [-PI, PI]. */
 export function shortestAngleDelta(currentYaw: number, targetYaw: number): number {
   let delta = (targetYaw - currentYaw) % (Math.PI * 2);
   if (delta > Math.PI) delta -= Math.PI * 2;
@@ -140,7 +164,6 @@ function nextRand(state: ResidentState): number {
   return state.seed / 4294967296;
 }
 
-/** Builds the seat-return paths from door paths (reverse + doorInside prefix). */
 export function buildPathsToSeat(
   pathToDoor: readonly (readonly LocalPoint2D[])[],
   doorInside: LocalPoint2D,
@@ -168,6 +191,10 @@ export function createResidentState(
     phaseTimer: options.initialSitSec,
     phaseDuration: options.initialSitSec,
     waypointIndex: 0,
+    visitRouteIndex: 0,
+    visitPauseTimer: 0,
+    visitPaused: false,
+    outingPlanned: false,
     walkDistance: 0,
     speed: 0,
     visible: true,
@@ -184,7 +211,7 @@ export function createResidentState(
   };
 }
 
-/** Smooth door openness: opens swiftly (~0.4s), closes gently (~0.6s). */
+/** Smooth door/gate openness: opens swiftly (~0.4s), closes gently (~0.6s). */
 export function stepDoorOpen(currentOpen: number, targetOpen: number, rawDt: number): number {
   const dt = Math.max(0, Math.min(rawDt, 0.1));
   if (dt <= 0) return currentOpen;
@@ -192,7 +219,7 @@ export function stepDoorOpen(currentOpen: number, targetOpen: number, rawDt: num
   return Math.max(targetOpen, currentOpen - 1.7 * dt);
 }
 
-/** Door opens while anyone waits at/passes through the doorway or is still returning past it. */
+/** House front door opens while anyone waits at/passes through the house doorway. */
 export function computeResidentDoorTarget(
   states: readonly ResidentState[],
   layout: ResidentLayout,
@@ -210,6 +237,28 @@ export function computeResidentDoorTarget(
   return 0;
 }
 
+/** Compound front gate opens when any resident waits at or passes through the compound gate. */
+export function computeResidentGateTarget(
+  states: readonly ResidentState[],
+  layout: ResidentLayout,
+): number {
+  if (layout.gateZ === undefined || !layout.gateInside || !layout.gateOutside) return 0;
+  const minZ = layout.gateInside.z - 0.15;
+  const maxZ = layout.gateOutside.z + 0.15;
+  for (const s of states) {
+    if (s.phase === 'OPENING_GATE_OUT' || s.phase === 'OPENING_GATE_IN') return 1;
+    if (
+      (s.phase === 'OUT_VISITING' || s.phase === 'WALKING_FROM_GATE') &&
+      Math.abs(s.x) < 1.35 &&
+      s.z >= minZ &&
+      s.z <= maxZ
+    ) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
 function partnerOnRoute(partners: readonly ResidentState[]): boolean {
   for (const p of partners) if (ROUTE_PHASES.has(p.phase)) return true;
   return false;
@@ -220,7 +269,6 @@ function partnerEntering(partners: readonly ResidentState[]): boolean {
   return false;
 }
 
-/** Walks toward target; returns true once the target is reached this step. */
 function walkToward(
   state: ResidentState,
   target: LocalPoint2D,
@@ -254,26 +302,64 @@ export function isResidentOccupyingSeat(phase: ResidentPhase): boolean {
   return phase === 'SITTING' || phase === 'STANDING_UP' || phase === 'SITTING_DOWN';
 }
 
+export interface StepResidentOptions {
+  readonly doorOpen?: number;
+  readonly gateOpen?: number;
+  readonly partners?: readonly ResidentState[];
+  readonly seatBlockedByPlayer?: boolean;
+  /** True during morning/day/evening when residents open gates & stroll outside; false at night. */
+  readonly daytimeOutings?: boolean;
+}
+
 /**
- * Advances one resident by `rawDt` seconds. `doorOpen` is the current door openness (0..1);
- * residents never cross the doorway until it reaches `layout.passThreshold`.
- * `partners` are the other residents of the same household (used to avoid doorway clashes).
- * `seatBlockedByPlayer` pauses the resident politely at `standSpot` if the player is seated there.
+ * Advances one resident by `rawDt` seconds.
+ * Supports both positional legacy args `(state, layout, dt, doorOpen, partners, seatBlockedByPlayer)`
+ * and an options object with `gateOpen` and `daytimeOutings`.
  */
 export function stepResident(
   state: ResidentState,
   layout: ResidentLayout,
   rawDt: number,
-  doorOpen = 1,
-  partners: readonly ResidentState[] = [],
-  seatBlockedByPlayer = false,
+  doorOpenOrOptions: number | StepResidentOptions = 1,
+  partnersArg: readonly ResidentState[] = [],
+  seatBlockedArg = false,
 ): void {
   const dt = Math.max(0, Math.min(rawDt, 0.1));
   if (dt <= 0) return;
 
+  let doorOpen = 1;
+  let gateOpen = 1;
+  let partners: readonly ResidentState[] = partnersArg;
+  let seatBlockedByPlayer = seatBlockedArg;
+  let daytimeOutings = false;
+
+  if (typeof doorOpenOrOptions === 'object') {
+    doorOpen = doorOpenOrOptions.doorOpen ?? 1;
+    gateOpen = doorOpenOrOptions.gateOpen ?? 1;
+    partners = doorOpenOrOptions.partners ?? [];
+    seatBlockedByPlayer = doorOpenOrOptions.seatBlockedByPlayer ?? false;
+    daytimeOutings = doorOpenOrOptions.daytimeOutings ?? false;
+  } else {
+    doorOpen = doorOpenOrOptions;
+  }
+
+  const hasGate = Boolean(
+    layout.gateZ !== undefined &&
+      layout.gateInside &&
+      layout.gateOutside &&
+      layout.pathSeatToGate &&
+      layout.visitRoutes &&
+      layout.visitRoutes.length > 0,
+  );
+
   state.elapsed += dt;
   const seat = layout.seats[state.seatIndex];
-  const targetReach = state.phase === 'OPENING_DOOR_ENTER' ? 1 : 0;
+  const targetReach =
+    state.phase === 'OPENING_DOOR_ENTER' ||
+    state.phase === 'OPENING_GATE_OUT' ||
+    state.phase === 'OPENING_GATE_IN'
+      ? 1
+      : 0;
   state.doorReachBlend += (targetReach - state.doorReachBlend) * (1 - Math.exp(-dt * 9));
 
   switch (state.phase) {
@@ -288,10 +374,11 @@ export function stepResident(
       state.phaseTimer -= dt;
       if (state.phaseTimer <= 0) {
         if (partnerOnRoute(partners)) {
-          // Let the partner finish using the doorway first.
           state.phaseTimer = 2.5 + nextRand(state) * 2;
           state.phaseDuration = state.phaseTimer;
         } else {
+          // During daytime, ~55% of porch departures head out through the compound gate to visit/stroll!
+          state.outingPlanned = Boolean(daytimeOutings && hasGate && nextRand(state) < 0.55);
           state.phase = 'STANDING_UP';
           state.phaseDuration = STAND_TRANSITION_SEC;
           state.phaseTimer = STAND_TRANSITION_SEC;
@@ -311,9 +398,14 @@ export function stepResident(
       state.speed = 0.25 * Math.sin(t * Math.PI);
       state.visible = true;
       if (state.phaseTimer <= 0) {
-        state.phase = 'WALKING_TO_HOUSE';
-        state.waypointIndex = 1;
         state.sitBlend = 0;
+        if (state.outingPlanned && hasGate) {
+          state.phase = 'WALKING_TO_GATE';
+          state.waypointIndex = 1;
+        } else {
+          state.phase = 'WALKING_TO_HOUSE';
+          state.waypointIndex = 1;
+        }
       }
       return;
     }
@@ -328,7 +420,6 @@ export function stepResident(
       if (arrived) {
         state.waypointIndex += 1;
         if (state.waypointIndex >= route.length) {
-          // Stand at the door and wait for it to swing open before stepping inside.
           state.phase = 'OPENING_DOOR_ENTER';
           state.phaseDuration = DOOR_WAIT_MIN_SEC;
           state.phaseTimer = DOOR_WAIT_MIN_SEC;
@@ -426,7 +517,6 @@ export function stepResident(
       if (arrived) {
         if (atFinalStandSpot) {
           if (seatBlockedByPlayer) {
-            // Politely wait standing beside the chair while the player is sitting on it
             state.speed = 0;
             state.yaw += shortestAngleDelta(state.yaw, seat.yaw) * (1 - Math.exp(-dt * 8));
             return;
@@ -463,6 +553,134 @@ export function stepResident(
         state.yaw = seat.yaw;
         state.sitBlend = 1;
         state.speed = 0;
+      }
+      return;
+    }
+
+    /* ============================================================ */
+    /* Daytime Compound Gate & Outdoor Neighbor-Visiting Phases     */
+    /* ============================================================ */
+    case 'WALKING_TO_GATE': {
+      const route = layout.pathSeatToGate![state.seatIndex];
+      const target = route[Math.min(state.waypointIndex, route.length - 1)];
+      const arrived = walkToward(state, target, dt, 8.5);
+      state.y = layout.floorY(state.z);
+      state.sitBlend = 0;
+      state.visible = true;
+      if (arrived) {
+        state.waypointIndex += 1;
+        if (state.waypointIndex >= route.length) {
+          state.phase = 'OPENING_GATE_OUT';
+          state.phaseDuration = DOOR_WAIT_MIN_SEC;
+          state.phaseTimer = DOOR_WAIT_MIN_SEC;
+          state.speed = 0;
+        }
+      }
+      return;
+    }
+
+    case 'OPENING_GATE_OUT': {
+      const inside = layout.gateInside!;
+      const outside = layout.gateOutside!;
+      state.x = inside.x;
+      state.z = inside.z;
+      state.y = layout.floorY(state.z);
+      state.speed = 0;
+      state.sitBlend = 0;
+      state.visible = true;
+      const outYaw = Math.atan2(outside.x - inside.x, outside.z - inside.z);
+      state.yaw += shortestAngleDelta(state.yaw, outYaw) * (1 - Math.exp(-dt * 10));
+      state.phaseTimer = Math.max(0, state.phaseTimer - dt);
+      if (state.phaseTimer <= 0 && gateOpen >= layout.passThreshold) {
+        const routes = layout.visitRoutes!;
+        state.visitRouteIndex = Math.floor(nextRand(state) * routes.length) % routes.length;
+        state.visitPaused = false;
+        state.visitPauseTimer = 0;
+        state.waypointIndex = 0;
+        state.phase = 'OUT_VISITING';
+      }
+      return;
+    }
+
+    case 'OUT_VISITING': {
+      const visitRoute = layout.visitRoutes![state.visitRouteIndex];
+      state.sitBlend = 0;
+      state.visible = true;
+
+      // Brief friendly visit/chat pause at the furthest neighbor waypoint
+      if (state.visitPauseTimer > 0) {
+        state.visitPauseTimer = Math.max(0, state.visitPauseTimer - dt);
+        state.speed = 0;
+        state.y = layout.floorY(state.z);
+        return;
+      }
+
+      const target = visitRoute[Math.min(state.waypointIndex, visitRoute.length - 1)];
+      const arrived = walkToward(state, target, dt, 7.5);
+      state.y = layout.floorY(state.z);
+
+      if (arrived) {
+        const midpoint = Math.floor(visitRoute.length / 2);
+        if (!state.visitPaused && state.waypointIndex === midpoint) {
+          state.visitPaused = true;
+          state.visitPauseTimer = 3.5 + nextRand(state) * 4.5;
+          state.speed = 0;
+          return;
+        }
+        state.waypointIndex += 1;
+        if (state.waypointIndex >= visitRoute.length) {
+          // Arrived back outside own compound gate -> wait for gate to swing open!
+          state.phase = 'OPENING_GATE_IN';
+          state.phaseDuration = DOOR_WAIT_MIN_SEC;
+          state.phaseTimer = DOOR_WAIT_MIN_SEC;
+          state.speed = 0;
+        }
+      }
+      return;
+    }
+
+    case 'OPENING_GATE_IN': {
+      const inside = layout.gateInside!;
+      const outside = layout.gateOutside!;
+      state.x = outside.x;
+      state.z = outside.z;
+      state.y = layout.floorY(state.z);
+      state.speed = 0;
+      state.sitBlend = 0;
+      state.visible = true;
+      const inYaw = Math.atan2(inside.x - outside.x, inside.z - outside.z);
+      state.yaw += shortestAngleDelta(state.yaw, inYaw) * (1 - Math.exp(-dt * 10));
+      state.phaseTimer = Math.max(0, state.phaseTimer - dt);
+      if (state.phaseTimer <= 0 && gateOpen >= layout.passThreshold) {
+        state.phase = 'WALKING_FROM_GATE';
+        const routeBack = layout.pathSeatToGate![state.seatIndex];
+        state.waypointIndex = routeBack.length - 1;
+      }
+      return;
+    }
+
+    case 'WALKING_FROM_GATE': {
+      const route = layout.pathSeatToGate![state.seatIndex];
+      const target = route[Math.max(0, state.waypointIndex)];
+      const arrived = walkToward(state, target, dt, 8.5);
+      state.y = layout.floorY(state.z);
+      state.sitBlend = 0;
+      state.visible = true;
+      if (arrived) {
+        if (state.waypointIndex <= 0) {
+          // Returning from outing: either go sit back down on porch chair or head inside house
+          if (!daytimeOutings || seatBlockedByPlayer || nextRand(state) < 0.35) {
+            state.phase = 'WALKING_TO_HOUSE';
+            state.waypointIndex = 1;
+          } else {
+            state.phase = 'SITTING_DOWN';
+            state.phaseDuration = SIT_TRANSITION_SEC;
+            state.phaseTimer = SIT_TRANSITION_SEC;
+            state.speed = 0;
+          }
+        } else {
+          state.waypointIndex -= 1;
+        }
       }
     }
   }

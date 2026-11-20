@@ -216,6 +216,8 @@ export interface ElderBotResourceCache {
   readonly doorPanel: MeshStandardMaterial;
   readonly doorKnob: MeshStandardMaterial;
   readonly doorBackdrop: MeshStandardMaterial;
+  readonly gateBlue: MeshStandardMaterial;
+  readonly gateTrim: MeshStandardMaterial;
   readonly trousersDark: MeshStandardMaterial;
   readonly sneakerWhite: MeshStandardMaterial;
 }
@@ -451,6 +453,8 @@ export function getElderBotResourceCache(): ElderBotResourceCache {
     doorPanel: mat('#7d563c', 0.55),
     doorKnob: mat('#f5cb55', 0.3, 0.55),
     doorBackdrop: mat('#a98c68', 0.85),
+    gateBlue: mat('#2b6cb0', 0.45, 0.35),
+    gateTrim: mat('#1d4e89', 0.5, 0.3),
     trousersDark: mat('#273342', 0.8),
     sneakerWhite: mat('#eef2f6', 0.62),
   };

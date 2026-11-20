@@ -13,6 +13,11 @@ export function killPlayerFromGhost(ghostId:string,seq:number,x:number,z:number)
  if(playerUnavailableForGhost()||isPlayerHomeProtected(x,z)||lastToken===token)return false;
  lastToken=token;state={phase:'dead',ghostId,generation:state.generation+1};emit();return true;
 }
+export function killPlayerFromBotFight(botId:string,seq:number){
+ const token=`bot-fight:${botId}:${seq}`;
+ if(state.phase!=='alive'||lastToken===token)return false;
+ lastToken=token;state={phase:'dead',ghostId:`bot-fight:${botId}`,generation:state.generation+1};emit();return true;
+}
 export function requestPlayerRespawn(){
  if(state.phase==='dead'){
   rideLife.lives=3;rideLife.crashTime=0;rideLife.invulnerable=0;rideLife.contact=false;rideLife.damage=0;

@@ -59,21 +59,14 @@ function BlueSheetSection({startX,endX}:{startX:number;endX:number}){
 export function BlueSheetFrontFence({z=0,width=6.0,gateWidth=2.6,owned=false}:{z?:number;width?:number;gateWidth?:number;owned?:boolean}){
  const halfWidth=width/2;
  const halfGate=gateWidth/2;
- const leafLen=halfGate;
+ const postOuterEdge=halfGate+0.08;
  return <group position={[0,0,z]}>
-  <BlueSheetSection startX={-halfWidth} endX={-halfGate}/>
-  <BlueSheetSection startX={halfGate} endX={halfWidth}/>
+  <BlueSheetSection startX={-halfWidth} endX={-postOuterEdge}/>
+  <BlueSheetSection startX={postOuterEdge} endX={halfWidth}/>
   {owned&&<HomeGate id="street" width={gateWidth}/>}
   {[-1,1].map(s=><group key={s} position={[s*halfGate,0,0]}>
    <Box position={[0,0.98,0]} size={[0.16,1.96,0.16]} color="#485457"/>
    <Box position={[0,1.98,0]} size={[0.22,0.06,0.22]} color="#1d4e89"/>
-   {!owned&&<group rotation={[0,0,0]}>
-    <mesh position={[-s*leafLen/2,0.88,0]} castShadow receiveShadow>
-     <boxGeometry args={[leafLen,1.72,0.05]}/>
-     <meshStandardMaterial color="#2b6cb0" metalness={0.35} roughness={0.45}/>
-    </mesh>
-    <Box position={[-s*leafLen/2,1.75,0]} size={[leafLen,0.05,0.08]} color="#1d4e89"/>
-   </group>}
   </group>)}
  </group>;
 }
@@ -137,4 +130,11 @@ export function House({h, ignoreEdits = false}:{h:HouseData; ignoreEdits?: boole
   </group>
   <HouseFence h={h}/>
  </>;
+}
+
+if (import.meta.hot) {
+ // House meshes are baked once into StaticBatch InstancedMeshes; full reload on HMR prevents stale overlapping sheets.
+ import.meta.hot.dispose(() => {
+  window.location.reload();
+ });
 }

@@ -39,6 +39,7 @@ export type MotionId =
   | 'fall'
   | 'dive'
   | 'turn'
+  | 'victory'
   | 'vehicle-wait'
   | 'sitting-idle'
   | 'sit-to-stand'
@@ -474,6 +475,24 @@ const DEFAULT_MOTIONS: MotionDefinition[] = [
     fadeOutSec: 0.65,
     endHoldSec: 0.25,
     endPose: 'turned',
+  }),
+  makeActionDef({
+    id: 'victory',
+    category: 'movement',
+    subgroup: 'movement-moves',
+    label: 'Victory',
+    myanmarLabel: 'အောင်ပွဲခံ',
+    assetUrl: '/motions/movement/victory.glb',
+    clipName: 'mixamo.com',
+    durationSec: 8.567,
+    defaultLoop: true,
+    allowLoopToggle: false,
+    allowRetrigger: false,
+    crossFadeSec: 0.25,
+    fadeOutSec: 0.45,
+    endHoldSec: 0,
+    endPose: 'standing',
+    autoTriggeredOnly: true,
   }),
 
   // Interactions: Vehicle Waiting (auto-controlled)

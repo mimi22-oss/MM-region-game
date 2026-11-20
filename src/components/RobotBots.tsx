@@ -10,6 +10,8 @@ import { kalayVillages } from '../data/villages';
 import { canStand } from '../game/collision';
 import { botAppearance } from '../game/robotAppearance';
 import { buildRoadGraph, nextRoadNode, type RouteNode } from '../game/robotRoutes';
+import { getBotCombatReaction, getBotFightingState } from '../game/botFighting';
+import { getSampledBotGlbPose } from '../game/botGlbMotionPlayer';
 import { RobotCharacter } from './RobotCharacter';
 import {
   getStreamedChunkVersion,
@@ -40,11 +42,38 @@ function Bot({graph,start,index}:{graph:RouteNode[];start:number;index:number}){
   }
   const dt=Math.min(delta,0.05),target=graph[s.to];
   if(!target)return;
-  const dx=target.x-s.x,dz=target.z-s.z,distSq=dx*dx+dz*dz,travelMax=(1.1+(index%7)*0.13)*dt;
-  const distance=distSq>0.0001*0.0001?Math.sqrt(distSq):0;
-  const travel=Math.min(distance,travelMax);
-  if(distance>0.0001){s.x+=dx/distance*travel;s.z+=dz/distance*travel;if(root.current)root.current.rotation.y=Math.atan2(-dx,-dz);s.travel+=travel}
-  if(distance<0.12){s.x=target.x;s.z=target.z;const previous=s.from;s.from=s.to;s.seed=(s.seed*1664525+1013904223)>>>0;s.to=nextRoadNode(graph,s.from,previous,s.seed/4294967296)}
+  const botName=`village-robot-${index}`;
+  const reaction=getBotCombatReaction(botName);
+  const inCombat=Boolean(reaction&&(reaction.engaged||reaction.hitTime>0||reaction.knockoutTime>0||reaction.attackMove!==null||reaction.celebrateTime>0));
+  if(!inCombat){
+   const dx=target.x-s.x,dz=target.z-s.z,distSq=dx*dx+dz*dz,travelMax=(1.1+(index%7)*0.13)*dt;
+   const distance=distSq>0.0001*0.0001?Math.sqrt(distSq):0;
+   const travel=Math.min(distance,travelMax);
+   if(distance>0.0001){s.x+=dx/distance*travel;s.z+=dz/distance*travel;if(root.current)root.current.rotation.y=Math.atan2(-dx,-dz);s.travel+=travel}
+   if(distance<0.12){s.x=target.x;s.z=target.z;const previous=s.from;s.from=s.to;s.seed=(s.seed*1664525+1013904223)>>>0;s.to=nextRoadNode(graph,s.from,previous,s.seed/4294967296)}
+  }else if(root.current&&reaction){
+   if(reaction.hasWorldPos){
+    s.x=reaction.worldX;
+    s.z=reaction.worldZ;
+    if(reaction.chasing)s.travel+=reaction.chaseSpeed*dt;
+   }
+   // RobotCharacter faces -Z, so add Math.PI to yaw (+Z facing)
+   const fight=getBotFightingState();
+   const useGlb=fight.active&&(fight.targetBotId===botName||reaction.celebrateTime>0);
+   const glb=useGlb?getSampledBotGlbPose():null;
+   if(reaction.chasing){
+    root.current.rotation.y=reaction.chaseYaw+Math.PI;
+    root.current.rotation.x=-0.12;
+    root.current.rotation.z=0;
+   }else{
+    root.current.rotation.y=reaction.facePlayerYaw+Math.PI+(glb&&glb.valid?-glb.torsoYaw*0.6:0);
+    const hitT=reaction.hitTime>0?Math.sin((reaction.hitTime/Math.max(0.05,reaction.hitDuration))*Math.PI):0;
+    const atkPulse=reaction.attackMove&&!glb?Math.sin((reaction.attackElapsed/Math.max(0.08,reaction.attackDuration))*Math.PI):0;
+    root.current.rotation.x=reaction.knockoutTime>0?0.72:glb&&glb.valid?-glb.torsoPitch*0.65:hitT*0.38*reaction.hitStrength-atkPulse*0.32;
+    root.current.rotation.z=glb&&glb.valid?glb.torsoRoll*0.55:0;
+   }
+  }
+  if(!inCombat&&root.current){root.current.rotation.x=0;root.current.rotation.z=0;}
   const cx=camera.position.x-s.x,cy=camera.position.y,cz=camera.position.z-s.z;
   const camDistSq=cx*cx+cy*cy+cz*cz;
   s.groundTimer+=dt;

@@ -78,4 +78,25 @@ test('CSS rules in src/style.css prevent horizontal overflow in settings-menu an
   assert.ok(css.includes('@media (max-width: 420px)'), 'media query 420px exists');
   assert.ok(css.includes('@media (max-width: 380px)'), 'media query 380px exists');
   assert.ok(css.includes('@media (max-width: 350px)'), 'media query 350px exists');
+
+  // Sub-dialog modal containment
+  assert.ok(css.includes('.settings-subdialog-backdrop'), 'settings subdialog backdrop rule exists');
+  assert.ok(css.includes('.settings-menu.settings-subdialog'), 'settings subdialog modal rule exists');
+});
+
+test('SettingsMenu opens detail sections (including AppearanceSettings) in a sub-dialog on tile click', () => {
+  const settingsMenuPath = path.resolve(__dirname, '../src/components/SettingsMenu.tsx');
+  const source = fs.readFileSync(settingsMenuPath, 'utf8');
+
+  assert.ok(source.includes('activeDialog'), 'SettingsMenu tracks activeDialog state');
+  assert.ok(source.includes('settings-subdialog-backdrop'), 'SettingsMenu renders sub-dialog backdrop');
+  assert.ok(source.includes('settings-menu settings-subdialog'), 'SettingsMenu renders sub-dialog modal');
+  assert.ok(source.includes('<AppearanceSettings'), 'AppearanceSettings renders inside the appearance sub-dialog');
+  assert.ok(source.includes("openDialog('appearance')"), 'Appearance tile opens appearance dialog');
+  assert.ok(source.includes("openDialog('location')"), 'GPS location tile opens location dialog');
+  assert.ok(source.includes("openDialog('environment')"), 'Environment tile opens environment dialog');
+  assert.ok(source.includes("openDialog('festival')"), 'Festival tile opens festival dialog');
+  assert.ok(source.includes("openDialog('intro')"), 'Intro settings tile opens intro dialog');
+  assert.ok(source.includes("openDialog('controls')"), 'Controls tile opens controls dialog');
+  assert.ok(!source.includes('settings-details-grid'), 'Inline details grid is replaced by tile sub-dialogs');
 });

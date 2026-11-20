@@ -11,6 +11,7 @@ import {
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { driverGrip, DRIVER_POSITION, DRIVER_SCALE, STEERING_TILT } from '../game/carCabin';
+import { getBotFightingState } from '../game/botFighting';
 
 type Point = [number, number, number];
 export type CharacterMotion = { airborne?:boolean; jumpBend?:number; speed: number; distance: number; stepLift?:number;leftFoot?:number;rightFoot?:number };
@@ -319,6 +320,33 @@ function CharacterBody({ motion, riding=false, driving }: { motion: RefObject<Ch
 		if (body.current) {
 			body.current.position.y = jumping?-drop:driving?0:Math.abs(Math.sin(phase)) * .018 * a.stride + Math.sin(a.time * 1.8) * .0025 * (1 - a.stride);
 			body.current.rotation.z = jumping?0:Math.sin(phase) * .013 * a.stride;
+			body.current.rotation.y = 0;
+		}
+		// Procedural boxing/kicking fallback pose when fighting bots without GLB rig
+		if (!riding && !driving && !jumping) {
+			const fight = getBotFightingState();
+			if (fight.active && fight.activeMove) {
+				const p = Math.sin(fight.moveProgress * Math.PI);
+				if (fight.activeMove === 'box_01') {
+					if (rightArm.current) rightArm.current.rotation.x = 1.42 * p;
+					if (leftArm.current) leftArm.current.rotation.x = 0.65 * p;
+					if (body.current) body.current.rotation.y = 0.25 * p;
+				} else if (fight.activeMove === 'box_02') {
+					const twoBeat = Math.sin(fight.moveProgress * Math.PI * 2);
+					if (leftArm.current) leftArm.current.rotation.x = Math.max(0, twoBeat) * 1.55 + 0.45 * p;
+					if (rightArm.current) rightArm.current.rotation.x = Math.max(0, -twoBeat) * 1.65 + 0.45 * p;
+					if (body.current) body.current.rotation.y = -twoBeat * 0.35;
+				} else if (fight.activeMove === 'front_kick_01') {
+					if (rightLeg.current) rightLeg.current.rotation.x = 1.25 * p;
+					if (leftArm.current) leftArm.current.rotation.x = 0.6 * p;
+					if (rightArm.current) rightArm.current.rotation.x = -0.45 * p;
+				} else if (fight.activeMove === 'front_kick_02') {
+					if (leftLeg.current) leftLeg.current.rotation.x = 1.48 * p;
+					if (rightArm.current) rightArm.current.rotation.x = 0.72 * p;
+					if (leftArm.current) leftArm.current.rotation.x = -0.55 * p;
+					if (body.current) body.current.rotation.y = -0.3 * p;
+				}
+			}
 		}
 		if (headGroup.current) headGroup.current.rotation.y = Math.sin(a.time * .65) * .022 * (1 - a.stride);
 		if (headGroup.current&&driving) headGroup.current.visible=!driving.current.interior;

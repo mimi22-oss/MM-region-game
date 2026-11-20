@@ -35,12 +35,16 @@ import {
 } from '../game/streamedChunkRegistry';
 import {
   computeResidentDoorTarget,
+  computeResidentGateTarget,
   isResidentOccupyingSeat,
   stepDoorOpen,
   stepResident,
   type ResidentSeat,
   type ResidentState,
 } from '../game/residentBots';
+import type { TimeMode } from '../game/environmentTime';
+import { isDaytimeLivingHours } from '../game/villageCrowd';
+import { isBotInCombat } from '../game/botFighting';
 import {
   isChairOccupiedByPlayer,
   localDirToBodyYaw,
@@ -221,6 +225,8 @@ function getRegionHouses(regionId: string, chunkVersion: number) {
 interface SlotDomRefs {
   leftDoor: RefObject<Group | null>;
   rightDoor: RefObject<Group | null>;
+  leftGate: RefObject<Group | null>;
+  rightGate: RefObject<Group | null>;
   bot0: RefObject<ElderBotRigHandles>;
   bot1: RefObject<ElderBotRigHandles>;
   kid0: RefObject<KidBotRigHandles>;
@@ -388,6 +394,46 @@ function PooledHouseholdSlotView({
         ))}
       </group>
 
+      {/* Dynamic Blue Double Compound Gate (ခြံတံခါး — swings smoothly open when residents go out / return) */}
+      <group
+        position={[0, 0, front + 2.6]}
+        visible={isActive && layout?.gateZ !== undefined}
+        userData={{ dynamic: true }}
+        name="pooled-house-front-gate"
+      >
+        {([-1, 1] as const).map((side) => (
+          <group
+            key={`gate-${side}`}
+            ref={side < 0 ? refs.leftGate : refs.rightGate}
+            position={[side * 1.22, 0, 0]}
+          >
+            <mesh
+              geometry={res.geo.unitBox}
+              material={res.gateBlue}
+              position={[-side * 0.6, 0.88, 0]}
+              scale={[1.19, 1.72, 0.05]}
+              castShadow
+              receiveShadow
+              dispose={null}
+            />
+            <mesh
+              geometry={res.geo.unitBox}
+              material={res.gateTrim}
+              position={[-side * 0.6, 1.75, 0]}
+              scale={[1.2, 0.05, 0.08]}
+              dispose={null}
+            />
+            <mesh
+              geometry={res.geo.unitSphere}
+              material={res.doorKnob}
+              position={[-side * 1.08, 0.96, 0.055]}
+              scale={0.045}
+              dispose={null}
+            />
+          </group>
+        ))}
+      </group>
+
       {/* Reusable Porch Armchairs (1 or 2 adult seats) */}
       <VerandaChair seat={seat0} visible={showSeat0} dynamic />
       <VerandaChair seat={seat1} visible={showSeat1} dynamic />
@@ -445,9 +491,18 @@ function PooledHouseholdSlotView({
  * Global pooled resident bot controller mounted once in StreamedWorld alongside RobotBots.
  * Bounds active residential households (adults + kids) to a small fixed memory pool.
  */
-export function HouseResidentBots({ activeRegions = [] }: { activeRegions?: string[] }) {
+export function HouseResidentBots({
+  activeRegions = [],
+  minute = 780,
+  timeMode = 'auto',
+}: {
+  activeRegions?: string[];
+  minute?: number;
+  timeMode?: TimeMode;
+}) {
   const preset = useQualityPreset();
   const chunkVersion = useSyncExternalStore(subscribeStreamedChunks, getStreamedChunkVersion);
+  const daytimeOutings = isDaytimeLivingHours(minute, timeMode);
 
   const slotCount =
     mobileQuality || preset.id === 'mobile' || preset.id === 'low'
@@ -467,6 +522,8 @@ export function HouseResidentBots({ activeRegions = [] }: { activeRegions?: stri
       Array.from({ length: MAX_SLOTS_DESKTOP }, () => ({
         leftDoor: { current: null },
         rightDoor: { current: null },
+        leftGate: { current: null },
+        rightGate: { current: null },
         bot0: { current: emptyElderHandles() },
         bot1: { current: emptyElderHandles() },
         kid0: { current: createEmptyKidHandles() },
@@ -519,6 +576,7 @@ export function HouseResidentBots({ activeRegions = [] }: { activeRegions?: stri
           pool[i].residents = [];
           pool[i].kids = [];
           pool[i].doorOpen = 0;
+          pool[i].gateOpen = 0;
           changed = true;
         }
       }
@@ -550,6 +608,10 @@ export function HouseResidentBots({ activeRegions = [] }: { activeRegions?: stri
         applyElderBotPose(refs.bot1.current, null);
         applyKidBotPose(refs.kid0.current, null);
         applyKidBotPose(refs.kid1.current, null);
+        if (refs.leftDoor.current) refs.leftDoor.current.rotation.y = 0;
+        if (refs.rightDoor.current) refs.rightDoor.current.rotation.y = 0;
+        if (refs.leftGate.current) refs.leftGate.current.rotation.y = 0;
+        if (refs.rightGate.current) refs.rightGate.current.rotation.y = 0;
         continue;
       }
 
@@ -560,6 +622,9 @@ export function HouseResidentBots({ activeRegions = [] }: { activeRegions?: stri
       const targetOpen = computeResidentDoorTarget(allMembers, slot.layout);
       slot.doorOpen = stepDoorOpen(slot.doorOpen, targetOpen, dt);
 
+      const targetGate = computeResidentGateTarget(allMembers, slot.layout);
+      slot.gateOpen = stepDoorOpen(slot.gateOpen, targetGate, dt);
+
       for (let m = 0; m < allMembers.length; m++) {
         partners.length = 0;
         for (let p = 0; p < allMembers.length; p++) {
@@ -567,9 +632,24 @@ export function HouseResidentBots({ activeRegions = [] }: { activeRegions?: stri
         }
         const memberState = allMembers[m];
         const isAdult = m < slot.residents.length;
+        const botName = isAdult
+          ? `pooled-resident-${slot.slotIndex}-${m}`
+          : `pooled-kid-${slot.slotIndex}-${m - slot.residents.length}`;
         const chairId = isAdult ? `pooled-chair-${slot.house.id}-${memberState.seatIndex}` : null;
         const blockedByPlayer = chairId ? isChairOccupiedByPlayer(chairId) : false;
-        stepResident(memberState, slot.layout, dt, slot.doorOpen, partners, blockedByPlayer);
+        if (isBotInCombat(botName)) {
+          memberState.sitBlend = 0;
+          memberState.speed = 0;
+          memberState.elapsed += dt;
+        } else {
+          stepResident(memberState, slot.layout, dt, {
+            doorOpen: slot.doorOpen,
+            gateOpen: slot.gateOpen,
+            partners,
+            seatBlockedByPlayer: blockedByPlayer,
+            daytimeOutings,
+          });
+        }
         if (chairId) {
           setChairOccupiedByNpc(
             chairId,
@@ -587,6 +667,10 @@ export function HouseResidentBots({ activeRegions = [] }: { activeRegions?: stri
       const swing = slot.doorOpen * 1.42;
       if (refs.leftDoor.current) refs.leftDoor.current.rotation.y = -swing;
       if (refs.rightDoor.current) refs.rightDoor.current.rotation.y = swing;
+
+      const gateSwing = slot.gateOpen * 1.48;
+      if (refs.leftGate.current) refs.leftGate.current.rotation.y = -gateSwing;
+      if (refs.rightGate.current) refs.rightGate.current.rotation.y = gateSwing;
     }
   });
 

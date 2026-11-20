@@ -8,12 +8,20 @@
  */
 
 import { useEffect, useRef, type RefObject } from 'react';
-import type { Group } from 'three';
+import { Vector3, type Group } from 'three';
 import { getElderBotResourceCache } from '../game/elderBotResources';
 import { coveredStride } from '../game/characterClothing';
 import type { ResidentRole, ResidentSeat, ResidentState } from '../game/residentBots';
+import {
+  BOT_COUNTER_ATTACK_META,
+  getBotCombatReaction,
+  getBotFightingState,
+} from '../game/botFighting';
+import { getSampledBotGlbPose } from '../game/botGlbMotionPlayer';
 import { trafficColliders } from '../game/trafficColliders';
 import { mobileQuality } from '../game/sceneBudget';
+
+const combatWorldScratch = new Vector3();
 
 export interface ElderBotRigHandles {
   root: Group | null;
@@ -152,6 +160,226 @@ export function applyElderBotPose(handles: ElderBotRigHandles, state: ResidentSt
   if (handles.rightForearm) {
     const baseForearmX = -0.18 * (1 - sit) + (-0.98 - gesture * 0.8) * sit;
     handles.rightForearm.rotation.x = baseForearmX * (1 - reach) + -0.32 * reach;
+  }
+
+  // Reset torso Y/Z and arm Y rotations from any prior combat frame
+  if (handles.torso) {
+    handles.torso.rotation.y = 0;
+    handles.torso.rotation.z = 0;
+  }
+  if (handles.leftArm) handles.leftArm.rotation.y = 0;
+  if (handles.rightArm) handles.rightArm.rotation.y = 0;
+  if (handles.leftThigh) handles.leftThigh.rotation.z = 0;
+  if (handles.rightThigh) handles.rightThigh.rotation.z = 0;
+
+  // Zero-allocation GLB-driven combat pose & chase locomotion when fighting with the player
+  const reaction = getBotCombatReaction(root.name);
+  if (
+    reaction &&
+    (reaction.engaged ||
+      reaction.hitTime > 0 ||
+      reaction.knockoutTime > 0 ||
+      reaction.attackMove !== null ||
+      reaction.celebrateTime > 0)
+  ) {
+    // Sync live world chase/close-in XZ into parent's local coordinate frame
+    if (reaction.hasWorldPos) {
+      if (root.parent) {
+        combatWorldScratch.set(reaction.worldX, state.y, reaction.worldZ);
+        root.parent.worldToLocal(combatWorldScratch);
+        root.position.x = combatWorldScratch.x;
+        root.position.z = combatWorldScratch.z;
+        // Drop smoothly to ground level when resident leaves elevated house porch
+        if (Math.hypot(combatWorldScratch.x, combatWorldScratch.z) > 4.2) {
+          root.position.y = 0;
+        }
+      } else {
+        root.position.x = reaction.worldX;
+        root.position.z = reaction.worldZ;
+      }
+    }
+
+    const parentYaw = root.parent ? root.parent.rotation.y : 0;
+    const targetLocalYaw = (reaction.chasing ? reaction.chaseYaw : reaction.facePlayerYaw) - parentYaw;
+    root.rotation.y = targetLocalYaw;
+    if (handles.standLongyi) handles.standLongyi.visible = true;
+    if (handles.sitLongyi) handles.sitLongyi.visible = false;
+
+    const fight = getBotFightingState();
+    const sharePrimaryGlb =
+      fight.active &&
+      (fight.targetBotId === root.name ||
+        (reaction.celebrateTime > 0 && fight.botActiveGlbMotion === 'victory'));
+    const glbPose = sharePrimaryGlb ? getSampledBotGlbPose() : null;
+
+    if (reaction.chasing) {
+      // Brisk sprint chase animation while pursuing a fleeing player
+      const phase = reaction.walkDistance * 5.2;
+      const swing = Math.sin(phase);
+      const lift = Math.abs(swing);
+      if (handles.pelvis) {
+        handles.pelvis.position.y = 0.84 + lift * 0.045;
+        handles.pelvis.position.z = 0;
+        handles.pelvis.rotation.z = swing * 0.04;
+      }
+      if (handles.torso) handles.torso.rotation.set(0.22, -swing * 0.14, 0);
+      if (handles.head) handles.head.rotation.set(-0.1, 0, 0);
+      if (handles.leftArm) handles.leftArm.rotation.set(-0.65 - swing * 0.95, 0, 0.16);
+      if (handles.rightArm) handles.rightArm.rotation.set(-0.65 + swing * 0.95, 0, -0.16);
+      if (handles.leftForearm) handles.leftForearm.rotation.x = -1.25;
+      if (handles.rightForearm) handles.rightForearm.rotation.x = -1.25;
+      if (handles.leftThigh && handles.rightThigh && handles.leftShin && handles.rightShin) {
+        handles.leftThigh.rotation.set(swing * 0.88, 0, 0);
+        handles.rightThigh.rotation.set(-swing * 0.88, 0, 0);
+        handles.leftShin.rotation.x = Math.max(0.15, -swing * 1.15 + 0.35);
+        handles.rightShin.rotation.x = Math.max(0.15, swing * 1.15 + 0.35);
+      }
+      if (handles.leftFoot) {
+        handles.leftFoot.position.set(-0.088, Math.max(0, -swing) * 0.14, swing * 0.24);
+        handles.leftFoot.rotation.x = -swing * 0.32;
+      }
+      if (handles.rightFoot) {
+        handles.rightFoot.position.set(0.088, Math.max(0, swing) * 0.14, -swing * 0.24);
+        handles.rightFoot.rotation.x = swing * 0.32;
+      }
+      if (handles.standLongyi) {
+        handles.standLongyi.scale.set(isUncle ? 0.84 : 0.78, 1.12, isUncle ? 1.02 : 0.98);
+        handles.standLongyi.position.y = 0;
+        handles.standLongyi.rotation.x = 0.08;
+      }
+    } else if (glbPose && glbPose.valid) {
+      // Apply REAL sampled GLB bone transforms (box_01/02/03, front_kick_01/02, warm_up, victory, hit/defeat)
+      if (handles.pelvis) {
+        handles.pelvis.position.y = glbPose.pelvisY;
+        handles.pelvis.position.z = glbPose.pelvisZ;
+        handles.pelvis.rotation.z = glbPose.pelvisRoll;
+      }
+      if (handles.torso) {
+        handles.torso.rotation.set(glbPose.torsoPitch, glbPose.torsoYaw, glbPose.torsoRoll);
+      }
+      if (handles.head) {
+        handles.head.rotation.x = glbPose.headPitch;
+        handles.head.rotation.y = glbPose.headYaw;
+      }
+      if (handles.leftArm) {
+        handles.leftArm.rotation.set(glbPose.leftArmX, glbPose.leftArmY, glbPose.leftArmZ);
+      }
+      if (handles.rightArm) {
+        handles.rightArm.rotation.set(glbPose.rightArmX, glbPose.rightArmY, glbPose.rightArmZ);
+      }
+      if (handles.leftForearm) handles.leftForearm.rotation.x = glbPose.leftForearmX;
+      if (handles.rightForearm) handles.rightForearm.rotation.x = glbPose.rightForearmX;
+
+      if (handles.leftThigh && handles.rightThigh && handles.leftShin && handles.rightShin) {
+        handles.leftThigh.rotation.set(glbPose.leftThighX, 0, glbPose.leftThighZ);
+        handles.rightThigh.rotation.set(glbPose.rightThighX, 0, glbPose.rightThighZ);
+        handles.leftShin.rotation.x = glbPose.leftShinX;
+        handles.rightShin.rotation.x = glbPose.rightShinX;
+      }
+      if (handles.leftFoot) {
+        handles.leftFoot.position.set(-0.088, glbPose.leftFootY, glbPose.leftFootZ);
+        handles.leftFoot.rotation.x = -glbPose.leftFootZ * 0.85;
+      }
+      if (handles.rightFoot) {
+        handles.rightFoot.position.set(0.088, glbPose.rightFootY, glbPose.rightFootZ);
+        handles.rightFoot.rotation.x = -glbPose.rightFootZ * 0.85;
+      }
+      if (handles.standLongyi) {
+        const kickLift = Math.max(glbPose.leftFootY, glbPose.rightFootY);
+        const crouchRatio = Math.max(0.45, Math.min(1.08, glbPose.pelvisY / 0.84));
+        handles.standLongyi.scale.set(
+          isUncle ? 0.84 : 0.78,
+          1.12 * crouchRatio,
+          isUncle ? 0.9 + kickLift * 0.22 : 0.88 + kickLift * 0.22,
+        );
+        handles.standLongyi.position.y = Math.max(0, glbPose.pelvisY - 0.84) * 0.5;
+        handles.standLongyi.rotation.x =
+          glbPose.proneFactor * 1.15 - Math.max(glbPose.leftFootZ, glbPose.rightFootZ) * 0.35;
+      }
+    } else if (reaction.knockoutTime > 0) {
+      if (handles.pelvis) {
+        handles.pelvis.position.y = 0.28;
+        handles.pelvis.position.z = -0.18;
+        handles.pelvis.rotation.z = 0.22;
+      }
+      if (handles.torso) handles.torso.rotation.x = -0.95;
+      if (handles.head) handles.head.rotation.x = -0.35;
+      if (handles.leftArm) {
+        handles.leftArm.rotation.x = -0.35;
+        handles.leftArm.rotation.z = 0.65;
+      }
+      if (handles.rightArm) {
+        handles.rightArm.rotation.x = -0.35;
+        handles.rightArm.rotation.z = -0.65;
+      }
+    } else if (reaction.hitTime > 0) {
+      const t = reaction.hitTime / Math.max(0.05, reaction.hitDuration);
+      const snap = Math.sin(t * Math.PI) * reaction.hitStrength;
+      if (handles.pelvis) {
+        handles.pelvis.position.z -= 0.14 * snap;
+        handles.pelvis.rotation.z = (reaction.hitKind === 'kick' ? 0.14 : -0.12) * snap;
+      }
+      if (handles.torso) {
+        handles.torso.rotation.x = (reaction.hitKind === 'kick' ? 0.42 : -0.38) * snap;
+      }
+      if (handles.head) {
+        handles.head.rotation.x = -0.35 * snap;
+        handles.head.rotation.y = 0.32 * snap;
+      }
+      if (handles.leftArm) {
+        handles.leftArm.rotation.x = -0.5 - 0.35 * snap;
+        handles.leftArm.rotation.z = 0.45 * snap + 0.15;
+      }
+      if (handles.rightArm) {
+        handles.rightArm.rotation.x = -0.5 - 0.35 * snap;
+        handles.rightArm.rotation.z = -0.45 * snap - 0.15;
+      }
+    } else if (reaction.attackMove) {
+      // Independent defender close-quarters box / kick strike animation
+      const atkMeta = BOT_COUNTER_ATTACK_META[reaction.attackMove];
+      const p = Math.min(1, reaction.attackElapsed / Math.max(0.08, reaction.attackDuration));
+      const snap = Math.sin(p * Math.PI);
+      if (atkMeta.kind === 'kick') {
+        if (handles.torso) handles.torso.rotation.set(-0.22 * snap, 0.25 * snap, 0);
+        if (handles.leftArm) handles.leftArm.rotation.set(-0.95, 0, 0.35);
+        if (handles.rightArm) handles.rightArm.rotation.set(-0.95, 0, -0.35);
+        if (handles.leftForearm) handles.leftForearm.rotation.x = -1.2;
+        if (handles.rightForearm) handles.rightForearm.rotation.x = -1.2;
+        if (handles.rightThigh && handles.rightShin) {
+          handles.rightThigh.rotation.set(-1.35 * snap, 0, 0);
+          handles.rightShin.rotation.x = 0.25 * (1 - snap);
+        }
+        if (handles.rightFoot) {
+          handles.rightFoot.position.set(0.088, 0.46 * snap, 0.56 * snap);
+          handles.rightFoot.rotation.x = -0.55 * snap;
+        }
+      } else {
+        const rightLead = reaction.attackMove !== 'box_03';
+        if (handles.torso) handles.torso.rotation.set(0.18 * snap, (rightLead ? -0.55 : 0.55) * snap, 0);
+        if (handles.leftArm) {
+          handles.leftArm.rotation.set(rightLead ? -0.85 : -1.62 * snap - 0.4, 0, 0.18);
+        }
+        if (handles.rightArm) {
+          handles.rightArm.rotation.set(rightLead ? -1.62 * snap - 0.4 : -0.85, 0, -0.18);
+        }
+        if (handles.leftForearm) handles.leftForearm.rotation.x = rightLead ? -1.2 : -0.18;
+        if (handles.rightForearm) handles.rightForearm.rotation.x = rightLead ? -0.18 : -1.2;
+      }
+    } else if (reaction.engaged) {
+      const bob = Math.sin(reaction.elapsed * 7.2) * 0.025;
+      if (handles.pelvis) handles.pelvis.position.y += bob;
+      if (handles.torso) handles.torso.rotation.x = 0.08;
+      if (handles.leftArm) {
+        handles.leftArm.rotation.x = -0.92 + bob * 3;
+        handles.leftArm.rotation.z = 0.18;
+      }
+      if (handles.rightArm) {
+        handles.rightArm.rotation.x = -0.98 - bob * 3;
+        handles.rightArm.rotation.z = -0.18;
+      }
+      if (handles.leftForearm) handles.leftForearm.rotation.x = -1.18;
+      if (handles.rightForearm) handles.rightForearm.rotation.x = -1.22;
+    }
   }
 }
 

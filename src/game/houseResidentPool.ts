@@ -74,6 +74,7 @@ export interface PooledHouseholdSlotState {
   residents: ResidentState[];
   kids: ResidentState[];
   doorOpen: number;
+  gateOpen: number;
 }
 
 /** Deterministic FNV-1a 32-bit string hash. */
@@ -323,7 +324,7 @@ export function getHousePorchLayout(
         [seats[3].standSpot, doorOutside],
       ];
 
-  // Smooth ground/step/porch elevation so kids climb the front step cleanly without popping
+  // Smooth ground/step/porch elevation so kids & outing residents climb front steps cleanly
   const floorY = hasWideYard
     ? (z: number) => {
         if (z <= front + 1.55) return py;
@@ -331,6 +332,49 @@ export function getHousePorchLayout(
         return py * (1 - smoothstep01((z - (front + 1.55)) / 0.63));
       }
     : () => py;
+
+  // Compound blue front gate (z = front + 2.6) & roadside neighbor-visiting routes for wide-yard houses
+  const gateZ = hasWideYard ? front + 2.6 : undefined;
+  const gateInside: LocalPoint2D | undefined = hasWideYard
+    ? { x: 0, z: front + 2.22 }
+    : undefined;
+  const gateOutside: LocalPoint2D | undefined = hasWideYard
+    ? { x: 0, z: front + 3.45 }
+    : undefined;
+
+  const pathSeatToGate: readonly (readonly LocalPoint2D[])[] | undefined =
+    hasWideYard && gateInside
+      ? [
+          [seats[0].standSpot, doorOutside, gateInside],
+          [seats[1].standSpot, doorOutside, gateInside],
+          [seats[2].standSpot, gateInside],
+          [seats[3].standSpot, gateInside],
+        ]
+      : undefined;
+
+  // Left & right roadside stroll/neighbor-visiting loops outside the compound gate
+  const streetZ = front + 4.1;
+  const visitRoutes: readonly (readonly LocalPoint2D[])[] | undefined =
+    hasWideYard && gateOutside
+      ? [
+          // Stroll left along the lane to visit the next-door neighbor, then return to gate
+          [
+            gateOutside,
+            { x: -3.5, z: streetZ },
+            { x: -7.5, z: streetZ - 0.35 },
+            { x: -3.5, z: streetZ },
+            gateOutside,
+          ],
+          // Stroll right along the lane to visit the neighbor on the other side, then return
+          [
+            gateOutside,
+            { x: 3.5, z: streetZ },
+            { x: 7.5, z: streetZ - 0.35 },
+            { x: 3.5, z: streetZ },
+            gateOutside,
+          ],
+        ]
+      : undefined;
 
   const layout: ResidentLayout = {
     seats,
@@ -342,6 +386,11 @@ export function getHousePorchLayout(
     passThreshold: 0.9,
     revealInsideWhileOpening: false,
     doorClearZ: front + 1.05,
+    gateZ,
+    gateInside,
+    gateOutside,
+    pathSeatToGate,
+    visitRoutes,
   };
 
   porchLayoutCache.set(key, layout);
@@ -362,6 +411,7 @@ export function createHouseholdPool(slotCount: number): PooledHouseholdSlotState
     residents: [],
     kids: [],
     doorOpen: 0,
+    gateOpen: 0,
   }));
 }
 
@@ -404,6 +454,7 @@ export function assignResidentPoolSlots(
       slot.residents = [];
       slot.kids = [];
       slot.doorOpen = 0;
+      slot.gateOpen = 0;
       changed = true;
     } else {
       assignedIds.add(slot.house.id);
@@ -447,6 +498,7 @@ export function assignResidentPoolSlots(
     slot.profile = profile;
     slot.layout = layout;
     slot.doorOpen = 0;
+    slot.gateOpen = 0;
     slot.residents = profile.members.map((m) =>
       createResidentState(layout, m.seatIndex, m.role, {
         initialSitSec: m.initialSitSec,

@@ -3,7 +3,7 @@ import {getActiveMissionWeapon,getThreeGhostsProgress} from '../game/missions/th
 import {HeldGhostSword} from './HeldGhostSword';
 import {HeldGun,isGunMotionId} from './HeldGun';
 import { hasCompletedThreeGhostsMission } from '../game/missions/threeGhostsMission';
-import {getPlayerDeathState,findProtectedRespawn,completePlayerRespawn,stepPlayerRespawnGrace} from '../game/playerDeath';
+import {getPlayerDeathState,findProtectedRespawn,completePlayerRespawn,stepPlayerRespawnGrace,killPlayerFromBotFight} from '../game/playerDeath';
 import {PLAYER_ON_FOOT_SPEED} from '../game/ghostPersonalities';
 import {PassengerBalloon} from './PassengerBalloon';
 import {balloonRide,balloonInput,BALLOON_DECK,BALLOON_LAUNCH,clearBalloonInput,resetBalloon,balloonFlightFloor,balloonLanding,stepBalloon,balloonExitSpot,type BalloonStatus} from '../game/balloonRide';
@@ -47,7 +47,23 @@ import {
  stepVehicleWaiting,
 } from '../game/vehicleWaiting';
 import {rideLife,hitRide,hitActor,hitWalkingContact,isWalkingRecoil,actorFallProgress,tickRideLife} from '../game/rideLife';
-import {hitsTraffic,trafficContact} from '../game/trafficColliders';
+import {hitsTraffic,trafficContact,findTrafficContactActor,getTrafficColliderPosition,listNearbyBotColliders} from '../game/trafficColliders';
+import {
+  BOT_MELEE_DESIRED_DIST,
+  CHILD_DEFENDER_MAX,
+  CHILD_DEFENDER_MIN,
+  disengageBotFight,
+  engageBotFight,
+  formatBotTargetLabel,
+  getBotFightingState,
+  isBotFightMotionId,
+  isChildBotTarget,
+  isPlayerHitReactionMotionId,
+  recruitChildDefenders,
+  resetBotFighting,
+  stepBotFighting,
+} from '../game/botFighting';
+import { stepBotGlbMotionPlayer } from '../game/botGlbMotionPlayer';
 import {motorcycleData} from '../data/motorcycle';
 import {resetMobileInput} from '../game/mobileInput';
 import { sceneGround,motorcycleGroundPose,carGroundPose } from '../game/groundSurface';
@@ -144,6 +160,8 @@ export const Player = memo(function Player({
  const rideNotice=useRef(''),fallYaw=useRef(0);
  const pickupAnchor=useRef<{requestId:number;x:number;z:number}|null>(null);
  const ghostGrabFallSeq=useRef(0),ghostFallOwned=useRef<number|null>(null);
+ const lastBotFightAttackSeq=useRef(0);
+ const lastBotPlayerHitSeq=useRef(0);
  const walkingRecoil=useRef(createWalkingRecoil(0));
  const jump=useRef(createHumanJump());
  const jumpPose=useRef(createJumpPose());
@@ -469,6 +487,7 @@ export const Player = memo(function Player({
     Object.assign(s,{x:spot.x,z:spot.z,camX:spot.x,camZ:spot.z,bodyYaw:ward.spawnYaw,yaw:ward.spawnYaw,panning:false,first:false,topDown:false,pitch:-.12,distance:6,targetDistance:6});
     jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;s.keys.clear();
     clearGhostEncounterInteraction();clearGhostThreat();stopSpecialAction(true);resetChairSitting();ghostFallOwned.current=null;
+    resetBotFighting();stepBotGlbMotionPlayer(null,0,0,1,false);lastBotFightAttackSeq.current=0;lastBotPlayerHitSeq.current=0;
     if(mobileInput?.current)resetMobileInput(mobileInput.current);onMode(false);onTopDown(false);onZoom(6);completePlayerRespawn();
    }
   }
@@ -569,7 +588,8 @@ export const Player = memo(function Player({
    oldX=s.x;
    oldZ=s.z;
   }
-  if(playerCombat.movementLocked||controlsBlocked||introOwnsCamera||mapOpen||rideLife.crashTime>0||enteringVehicle||ghostGrabbedOnFoot){forward=0;right=0;}
+  const botFightKoLocked=getBotFightingState().active&&getBotFightingState().playerKnockedOut;
+  if(playerCombat.movementLocked||controlsBlocked||introOwnsCamera||mapOpen||rideLife.crashTime>0||enteringVehicle||ghostGrabbedOnFoot||botFightKoLocked){forward=0;right=0;if(botFightKoLocked)wantsJump=false;}
   const aerial=!balloonRide.riding&&!currentCar()&&!touch?.active&&!s.first&&(s.distance>20||s.topDown||s.panning);
   if(pickupLocked&&!aerial){forward=0;right=0;}
   if(ghostGrabbedOnFoot){
@@ -796,7 +816,24 @@ export const Player = memo(function Player({
      const fix=reconcilePlayer(s.x,s.z);
      if(fix&&clear(fix.x,fix.z)){s.x=fix.x;s.z=fix.z;s.camX=fix.x;s.camZ=fix.z;}
     }
-    if(hitWalkingContact(contact)){
+    let engagedNewBot=false;
+    if(contact==='robot'){
+     const bumped=
+      findTrafficContactActor(s.x+mx,s.z+mz,s.bodyYaw,height(s.x,s.z),true,undefined,0.38)??
+      findTrafficContactActor(s.x,s.z,s.bodyYaw,height(s.x,s.z),true,undefined,0.58);
+     if(bumped&&bumped.kind==='robot'){
+      const botId=bumped.root.name||bumped.root.uuid;
+      const npcRole=bumped.root.userData?.npcRole as string|undefined;
+      const label=formatBotTargetLabel(bumped.root.name,npcRole);
+      const isChild=isChildBotTarget(botId,npcRole);
+      const nearbyDefenders=isChild
+       ? listNearbyBotColliders(bumped.x,bumped.z,75,new Set([botId]),CHILD_DEFENDER_MAX)
+       : undefined;
+      engagedNewBot=engageBotFight({id:botId,label,x:bumped.x,z:bumped.z,npcRole,isChild,playerX:s.x,playerZ:s.z,nearbyDefenders});
+     }
+    }
+    const skipFightRecoil=contact==='robot'&&(engagedNewBot||getBotFightingState().active);
+    if(!skipFightRecoil&&hitWalkingContact(contact)){
      if(j.airborne){s.x=j.safeX;s.z=j.safeZ;}jump.current=createHumanJump();jumpPose.current=createJumpPose();
      fallYaw.current=Math.hypot(mx,mz)>.0001?Math.atan2(-mx,-mz):s.bodyYaw;
      if(contact!=='car'){walkingRecoil.current=createWalkingRecoil(fallYaw.current);s.bodyYaw=fallYaw.current;}
@@ -805,6 +842,61 @@ export const Player = memo(function Player({
    }
    s.camX=s.x;s.camZ=s.z;
   }
+  const onFootFightingAllowed=!balloon.riding&&!currentCar()&&!ride.riding&&!chairControlled&&!mapOpen&&!controlsBlocked&&!loading;
+  if(onFootFightingAllowed){
+   stepBotFighting(dt,s.x,s.z,getTrafficColliderPosition,(bx,bz)=>canStand(bx,bz));
+   const bf=getBotFightingState();
+   if(bf.active){
+    stepBotGlbMotionPlayer(bf.botActiveGlbMotion,bf.botActiveGlbSeq,dt,bf.botActiveGlbSpeed,bf.botActiveGlbLoop);
+   }else{
+    stepBotGlbMotionPlayer(null,0,dt,1,false);
+   }
+   if(bf.active&&bf.attackSeq!==lastBotFightAttackSeq.current){
+    lastBotFightAttackSeq.current=bf.attackSeq;
+    if(isWalkingRecoil()){rideLife.crashTime=0;rideLife.contact=false;}
+    if(bf.targetIsChild&&bf.defenderCount<CHILD_DEFENDER_MIN){
+     const exclude=new Set<string>(bf.defenderBotIds);
+     if(bf.targetBotId)exclude.add(bf.targetBotId);
+     const moreDefenders=listNearbyBotColliders(s.x,s.z,75,exclude,CHILD_DEFENDER_MAX);
+     if(moreDefenders.length>0)recruitChildDefenders(moreDefenders,s.x,s.z);
+    }
+    const fdx=bf.targetX-s.x,fdz=bf.targetZ-s.z;
+    const fDist=Math.hypot(fdx,fdz);
+    if(fDist>0.05){
+     s.bodyYaw=Math.atan2(-fdx,-fdz);
+     // Close-quarters lunge step so punches & kicks connect cleanly instead of swinging in air
+     if(fDist>BOT_MELEE_DESIRED_DIST+0.12&&fDist<2.6){
+      const stepIn=Math.min(0.42,fDist-BOT_MELEE_DESIRED_DIST);
+      const nx=s.x+(fdx/fDist)*stepIn,nz=s.z+(fdz/fDist)*stepIn;
+      if(clear(nx,nz)){s.x=nx;s.z=nz;s.camX=nx;s.camZ=nz;}
+     }
+    }
+   }else if(bf.active&&bf.activeMove){
+    const fdx=bf.targetX-s.x,fdz=bf.targetZ-s.z;
+    if(Math.hypot(fdx,fdz)>0.05){
+     const targetFace=Math.atan2(-fdx,-fdz);
+     const yawErr=Math.atan2(Math.sin(targetFace-s.bodyYaw),Math.cos(targetFace-s.bodyYaw));
+     s.bodyYaw+=yawErr*Math.min(1,dt*14);
+    }
+   }
+   if(bf.active&&bf.playerHitSeq!==lastBotPlayerHitSeq.current){
+    lastBotPlayerHitSeq.current=bf.playerHitSeq;
+    if(bf.playerKnockedOut){
+     fallYaw.current=s.bodyYaw;
+     if(glbCapable&&character==='cartoon'){
+      playSpecialAction('fall',{loop:false,force:true,restart:true});
+     }
+    }else if(glbCapable&&character==='cartoon'&&bf.lastPlayerReactionClip&&!bf.activeMove){
+     playSpecialAction(bf.lastPlayerReactionClip,{loop:false,force:true,restart:true,speed:1.8});
+    }
+   }
+   if(bf.active&&bf.playerGameOverReady){
+    killPlayerFromBotFight(bf.targetBotId??'bot',bf.playerHitSeq);
+   }
+  }else if(getBotFightingState().active){
+   stepBotGlbMotionPlayer(null,0,dt,1,false);
+   disengageBotFight();
+  }
   const dx=s.x-oldX,dz=s.z-oldZ;
   const travelled=Math.hypot(dx,dz);
   const activeSpecialId=getSpecialActionState().activeActionId;
@@ -812,14 +904,15 @@ export const Player = memo(function Player({
    const isWaitingClip=isWaitingMotionId(activeSpecialId);
    const isSittingClip=isChairSittingMotionId(activeSpecialId);
    const isGunClip=isGunMotionId(activeSpecialId);
+   const isFightClip=(isBotFightMotionId(activeSpecialId)||isPlayerHitReactionMotionId(activeSpecialId))&&getBotFightingState().active;
    const isGhostFall=activeSpecialId==='fall'&&ghostGrabbedOnFoot&&ghostInteraction.phase==='player-fall';
    const baseConflict=
     !glbCapable||
     balloon.riding||
     !!currentCar()||
     ride.riding||
-    isWalkingRecoil()||
-    rideLife.crashTime>0||
+    (!isFightClip&&isWalkingRecoil())||
+    (!isFightClip&&rideLife.crashTime>0)||
     jump.current.airborne||
     jumpPose.current.prepare>0;
    const cantDance=isWaitingClip
@@ -828,6 +921,8 @@ export const Player = memo(function Player({
     ? baseConflict||chairSittingSnapshot.status==='IDLE'
     : isGunClip
     ? baseConflict||pickupLocked||enteringVehicle||wantsJump||chairSittingSnapshot.status!=='IDLE'
+    : isFightClip
+    ? baseConflict||pickupLocked||enteringVehicle||wantsJump||(!aerial&&len>0.18&&travelled>0.03)
     : isGhostFall
     ? baseConflict
     : baseConflict||pickupLocked||enteringVehicle||(!aerial&&(len>0.01||wantsJump))||travelled>0.015;

@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { AppearanceSettings } from './AppearanceSettings';
 import { CharacterPicker, type CharacterKind } from './CharacterPicker';
 import { EnvironmentSettings } from './EnvironmentSettings';
@@ -8,6 +8,7 @@ import {
   isFestivalActive,
   useFestivalConfiguration,
 } from '../festivals/FestivalConfiguration';
+import { FestivalSettings } from '../festivals/FestivalSettings';
 import {
   setCharacterRendererMode,
   useCharacterRendererMode,
@@ -274,8 +275,45 @@ function SettingsTileIcon({ icon }: { icon: TileIconId }) {
   );
 }
 
+const DIALOG_META: Record<
+  DetailSectionId,
+  { title: string; subtitle: string; icon: TileIconId; wide?: boolean }
+> = {
+  appearance: {
+    title: 'အဝတ်နှင့် ပုံစံ',
+    subtitle: 'ဇာတ်ကောင်၊ အဝတ်အစား၊ Robot နှင့် ကားပုံစံ ပြင်ဆင်ရန်',
+    icon: 'outfit',
+  },
+  environment: {
+    title: 'နေ့ရော ညရော & အသံ',
+    subtitle: 'အချိန်ပိုင်းနှင့် ပတ်ဝန်းကျင်အသံ ဆက်တင်များ',
+    icon: 'dayNight',
+  },
+  festival: {
+    title: 'တန်ဆောင်တိုင် ပွဲတော်',
+    subtitle: 'မီးပုံးပျံပွဲတော်နှင့် မီးထွန်းအလှဆင်မှု ဆက်တင်များ',
+    icon: 'lantern',
+  },
+  intro: {
+    title: 'မိတ်ဆက် ဆက်တင်',
+    subtitle: 'Drone Intro ဖွင့်မည့် ပုံစံကို သတ်မှတ်ရန်',
+    icon: 'introConfig',
+  },
+  location: {
+    title: 'တည်နေရာ · GPS',
+    subtitle: 'လက်ရှိတည်နေရာ၊ ဦးတည်ချက်နှင့် ကင်မရာထိန်းချုပ်မှု',
+    icon: 'waypoints',
+  },
+  controls: {
+    title: 'ခလုတ် မှတ်တမ်း',
+    subtitle: 'Keyboard နှင့် Mobile ထိန်းချုပ်နည်း လမ်းညွှန်',
+    icon: 'book',
+    wide: true,
+  },
+};
+
 /**
- * Full-panel icon-grid settings modal with smooth scrollable detailed sections.
+ * Full-panel icon-grid settings modal where detail tiles open dedicated modal sub-dialogs.
  * Preserves existing child controls (appearance, environment, festival, intro, location, guide).
  */
 export function SettingsMenu({
@@ -299,18 +337,30 @@ export function SettingsMenu({
   onReplayIntro,
   onOpenApkDownload,
 }: SettingsMenuProps) {
-  const [focusedSection, setFocusedSection] = useState<DetailSectionId | null>(null);
+  const [activeDialog, setActiveDialog] = useState<DetailSectionId | null>(null);
   const festivalConfig = useFestivalConfiguration();
   const introSettings = useIntroSettings();
   const rendererMode = useCharacterRendererMode();
   const { isSupported: fullscreenSupported, isFullscreen, toggleFullscreen } = useFullscreen();
 
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const appearanceRef = useRef<HTMLDivElement>(null);
-  const environmentRef = useRef<HTMLDivElement>(null);
-  const introRef = useRef<HTMLDivElement>(null);
-  const locationRef = useRef<HTMLDivElement>(null);
-  const controlsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) {
+      setActiveDialog(null);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !activeDialog) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Escape' || e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        setActiveDialog(null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [open, activeDialog]);
 
   if (!open) return null;
 
@@ -318,19 +368,12 @@ export function SettingsMenu({
   const festivalActive = isFestivalActive(festivalConfig, environment.now);
   const isNight = environment.period === 'night' || environment.period === 'evening';
 
-  const scrollToSection = (section: DetailSectionId) => {
-    setFocusedSection(section);
-    const refMap: Record<DetailSectionId, HTMLElement | null> = {
-      appearance: appearanceRef.current,
-      environment: environmentRef.current,
-      festival:
-        (environmentRef.current?.querySelector('.environment-festival-section') as HTMLElement | null) ??
-        environmentRef.current,
-      intro: introRef.current,
-      location: locationRef.current,
-      controls: controlsRef.current,
-    };
-    refMap[section]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const openDialog = (section: DetailSectionId) => {
+    setActiveDialog(section);
+  };
+
+  const closeDialog = () => {
+    setActiveDialog(null);
   };
 
   const tiles: MenuTile[] = [
@@ -362,17 +405,17 @@ export function SettingsMenu({
       id: 'gps-location',
       label: 'တည်နေရာ · GPS',
       icon: 'waypoints',
-      active: focusedSection === 'location',
+      active: activeDialog === 'location',
       sectionTarget: 'location',
-      onClick: () => scrollToSection('location'),
+      onClick: () => openDialog('location'),
     },
     {
       id: 'appearance',
       label: 'အဝတ်နှင့် ပုံစံ',
       icon: 'outfit',
-      active: focusedSection === 'appearance',
+      active: activeDialog === 'appearance',
       sectionTarget: 'appearance',
-      onClick: () => scrollToSection('appearance'),
+      onClick: () => openDialog('appearance'),
     },
     {
       id: 'top-down',
@@ -399,9 +442,10 @@ export function SettingsMenu({
       id: 'time-mode',
       label: 'နေ့ရော ညရော',
       icon: 'dayNight',
-      active: environment.preferences.mode === 'auto' || focusedSection === 'environment',
+      active: environment.preferences.mode === 'auto' || activeDialog === 'environment',
       badge: environment.preferences.mode === 'auto' ? 'Auto' : periodMeta?.label,
-      onClick: () => scrollToSection('environment'),
+      sectionTarget: 'environment',
+      onClick: () => openDialog('environment'),
     },
     {
       id: 'night-toggle',
@@ -428,9 +472,10 @@ export function SettingsMenu({
       id: 'festival',
       label: 'တန်ဆောင်တိုင် ပွဲတော်',
       icon: 'lantern',
-      active: festivalActive || focusedSection === 'festival',
+      active: festivalActive || activeDialog === 'festival',
       badge: festivalActive ? 'Active' : undefined,
-      onClick: () => scrollToSection('festival'),
+      sectionTarget: 'festival',
+      onClick: () => openDialog('festival'),
     },
     {
       id: 'intro-replay',
@@ -442,9 +487,10 @@ export function SettingsMenu({
       id: 'intro-settings',
       label: 'မိတ်ဆက် ဆက်တင်',
       icon: 'introConfig',
-      active: focusedSection === 'intro',
+      active: activeDialog === 'intro',
       badge: INTRO_MODE_BADGES[introSettings.mode] ?? introSettings.mode,
-      onClick: () => scrollToSection('intro'),
+      sectionTarget: 'intro',
+      onClick: () => openDialog('intro'),
     },
     {
       id: 'char-engine',
@@ -458,8 +504,9 @@ export function SettingsMenu({
       id: 'controls-list',
       label: 'ခလုတ် မှတ်တမ်း',
       icon: 'book',
-      active: focusedSection === 'controls',
-      onClick: () => scrollToSection('controls'),
+      active: activeDialog === 'controls',
+      sectionTarget: 'controls',
+      onClick: () => openDialog('controls'),
     },
     {
       id: 'guide-dialog',
@@ -494,236 +541,287 @@ export function SettingsMenu({
       : []),
   ];
 
+  const dialogMeta = activeDialog ? DIALOG_META[activeDialog] : null;
+
   return (
-    <div
-      className="settings-backdrop"
-      onPointerDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <section
-        className="settings-menu"
-        role="dialog"
-        aria-modal="true"
-        aria-label="အသုံးပြုနည်း လမ်းညွှန်နှင့် မီနူး"
-        onWheel={(e) => e.stopPropagation()}
+    <>
+      <div
+        className="settings-backdrop"
+        onPointerDown={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
       >
-        <div className="settings-menu-trim" aria-hidden="true" />
-        <div className="settings-menu-header">
-          <div className="settings-menu-title-group">
-            <h2>မီနူး</h2>
-            <span className="settings-location-pill">
-              <span className="settings-location-dot" />
-              {currentLoc.label} · {wardSize} × {wardSize} မီတာ
-            </span>
-          </div>
-          <div className="settings-menu-header-actions">
-            <button
-              type="button"
-              className={`settings-header-pill${environment.preferences.sound ? ' is-selected' : ''}`}
-              onClick={() =>
-                environment.setPreferences({
-                  ...environment.preferences,
-                  sound: !environment.preferences.sound,
-                })
-              }
-            >
-              {environment.preferences.sound ? '🔊 အသံဖွင့်' : '🔇 အသံပိတ်'}
-            </button>
-            <button
-              type="button"
-              className={`settings-header-pill${topDown ? ' is-selected' : ''}`}
-              onClick={onToggleTopDown}
-            >
-              {topDown ? '✓ ကောင်းကင်မြင်ကွင်း' : `${periodMeta?.icon ?? '☀️'} ${periodMeta?.label ?? ''}`}
-            </button>
-            <button
-              type="button"
-              className="settings-menu-close"
-              aria-label="မီနူး ပိတ်မည်"
-              onClick={onClose}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        <div className="settings-menu-body" ref={bodyRef}>
-          <div className="settings-icon-grid" role="group" aria-label="အမြန် မီနူးခလုတ်များ">
-            {tiles.map((tile) => (
+        <section
+          className="settings-menu"
+          role="dialog"
+          aria-modal="true"
+          aria-label="အသုံးပြုနည်း လမ်းညွှန်နှင့် မီနူး"
+          onWheel={(e) => e.stopPropagation()}
+        >
+          <div className="settings-menu-trim" aria-hidden="true" />
+          <div className="settings-menu-header">
+            <div className="settings-menu-title-group">
+              <h2>မီနူး</h2>
+              <span className="settings-location-pill">
+                <span className="settings-location-dot" />
+                {currentLoc.label} · {wardSize} × {wardSize} မီတာ
+              </span>
+            </div>
+            <div className="settings-menu-header-actions">
               <button
-                key={tile.id}
                 type="button"
-                disabled={tile.disabled}
-                className={`settings-tile${tile.active ? ' is-active' : ''}`}
-                aria-pressed={tile.active}
-                title={tile.title ?? tile.label}
-                onClick={tile.onClick}
+                className={`settings-header-pill${environment.preferences.sound ? ' is-selected' : ''}`}
+                onClick={() =>
+                  environment.setPreferences({
+                    ...environment.preferences,
+                    sound: !environment.preferences.sound,
+                  })
+                }
               >
-                {tile.badge && <span className="settings-tile-badge">{tile.badge}</span>}
-                <span className="settings-tile-icon">
-                  <SettingsTileIcon icon={tile.icon} />
-                </span>
-                <span className="settings-tile-label">{tile.label}</span>
+                {environment.preferences.sound ? '🔊 အသံဖွင့်' : '🔇 အသံပိတ်'}
               </button>
-            ))}
+              <button
+                type="button"
+                className={`settings-header-pill${topDown ? ' is-selected' : ''}`}
+                onClick={onToggleTopDown}
+              >
+                {topDown ? '✓ ကောင်းကင်မြင်ကွင်း' : `${periodMeta?.icon ?? '☀️'} ${periodMeta?.label ?? ''}`}
+              </button>
+              <button
+                type="button"
+                className="settings-menu-close"
+                aria-label="မီနူး ပိတ်မည်"
+                onClick={onClose}
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
-          <div className="settings-details-divider">
-            <span>အသေးစိတ် ဆက်တင်များ (အောက်သို့ Scroll ဆွဲကြည့်နိုင်ပါသည်)</span>
-          </div>
-
-          <div className="settings-details-grid">
-            <div
-              ref={appearanceRef}
-              className={`settings-detail-card${focusedSection === 'appearance' ? ' is-focused' : ''}`}
-            >
-              <CharacterPicker
-                value={character}
-                onChange={onChooseCharacter}
-                disabled={characterLocked}
-              />
-              <AppearanceSettings
-                kind={character}
-                onKindChange={onChooseCharacter}
-                characterLocked={characterLocked}
-                carLocked={carLocked}
-              />
-            </div>
-
-            <div
-              ref={environmentRef}
-              className={`settings-detail-card${
-                focusedSection === 'environment' || focusedSection === 'festival' ? ' is-focused' : ''
-              }`}
-            >
-              <EnvironmentSettings
-                value={environment.preferences}
-                onChange={environment.setPreferences}
-                onChoose={environment.choose}
-                now={environment.now}
-                period={environment.period}
-              />
-            </div>
-
-            <div
-              ref={introRef}
-              className={`settings-detail-card${focusedSection === 'intro' ? ' is-focused' : ''}`}
-            >
-              <IntroSettingsPanel onReplay={onReplayIntro} />
-            </div>
-
-            <div
-              ref={locationRef}
-              className={`settings-detail-card${focusedSection === 'location' ? ' is-focused' : ''}`}
-            >
-              <RobotLocationPanel
-                x={pos.x}
-                z={pos.z}
-                yaw={robotYaw}
-                characterLabel={character === 'robot' ? 'စက်ရုပ်' : 'ကာတွန်း'}
-              />
-              <div className="cam-controls" aria-label="3D ကင်မရာ ထိန်းချုပ်မှုများ">
-                <button type="button" className="cam-btn" onClick={onOpenGuide}>
-                  📖 အသုံးပြုနည်း လမ်းညွှန် ↗
-                </button>
-                <button type="button" className="cam-btn" onClick={onOpenMap}>
-                  🗺 ရပ်ကွက်မြေပုံ ↗
-                </button>
+          <div className="settings-menu-body">
+            <div className="settings-icon-grid" role="group" aria-label="အမြန် မီနူးခလုတ်များ">
+              {tiles.map((tile) => (
                 <button
+                  key={tile.id}
                   type="button"
-                  className={topDown ? 'cam-btn cam-btn-active' : 'cam-btn'}
-                  aria-pressed={topDown}
-                  onClick={onToggleTopDown}
+                  disabled={tile.disabled}
+                  className={`settings-tile${tile.active ? ' is-active' : ''}`}
+                  aria-pressed={tile.sectionTarget ? undefined : tile.active}
+                  aria-haspopup={tile.sectionTarget ? 'dialog' : undefined}
+                  aria-expanded={tile.sectionTarget ? activeDialog === tile.sectionTarget : undefined}
+                  title={tile.title ?? tile.label}
+                  onClick={tile.onClick}
                 >
-                  {topDown ? '✓ ကောင်းကင်တည့်တည့်' : 'ကောင်းကင်တည့်တည့် (T)'}
+                  {tile.badge && <span className="settings-tile-badge">{tile.badge}</span>}
+                  <span className="settings-tile-icon">
+                    <SettingsTileIcon icon={tile.icon} />
+                  </span>
+                  <span className="settings-tile-label">{tile.label}</span>
                 </button>
-                <div className="cam-zoom-row">
-                  <button
-                    type="button"
-                    className="cam-btn"
-                    onClick={() => onStepZoom(-1)}
-                    title="Zoom ချဲ့မည်"
-                  >
-                    ＋ Zoom ချဲ့မည်
-                  </button>
-                  <button
-                    type="button"
-                    className="cam-btn"
-                    onClick={() => onStepZoom(1)}
-                    title="Zoom ချုံ့မည်"
-                  >
-                    － Zoom ချုံ့မည်
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div
-              ref={controlsRef}
-              className={`settings-detail-card settings-detail-card-wide${
-                focusedSection === 'controls' ? ' is-focused' : ''
-              }`}
-            >
-              <div className="guide-header">
-                <strong>⌨ ကစားနည်းနှင့် ခလုတ်လမ်းညွှန်</strong>
-                <div className="badge">
-                  <span /> မြေပုံ · {currentLoc.label}{' '}
-                  <b>
-                    {wardSize} × {wardSize} မီတာ
-                  </b>
-                </div>
-              </div>
-              <ul className="guide-list desktop-guide">
-                <li>
-                  <kbd>N</kbd>
-                  <span>နေ့ခင်း / ညချမ်း အလင်းရောင်</span>
-                </li>
-                <li>
-                  <kbd>W A S D / ↑ ↓ ← →</kbd>
-                  <span>လမ်းလျှောက် / မြေပုံရွှေ့ရန်</span>
-                </li>
-                <li>
-                  <kbd>Shift + Drag</kbd>
-                  <span>မြေပုံကို ဆွဲရွှေ့ရန်</span>
-                </li>
-                <li>
-                  <kbd>Shift</kbd>
-                  <span>အမြန်ပြေးရန်</span>
-                </li>
-                <li>
-                  <kbd>Space</kbd>
-                  <span>လူဇာတ်ကောင် ခုန်ရန် · ပြေးရင်းခုန်လျှင် ပိုဝေးရောက်မည်</span>
-                </li>
-                <li>
-                  <kbd>Scroll</kbd>
-                  <span>Zoom အဝင် / အထွက်</span>
-                </li>
-                <li>
-                  <kbd>T</kbd>
-                  <span>ကောင်းကင်တည့်တည့် ကြည့်ရန်</span>
-                </li>
-                <li>
-                  <kbd>V</kbd>
-                  <span>မြင်ကွင်းပြောင်းရန်</span>
-                </li>
-                <li>
-                  <kbd>R</kbd>
-                  <span>မူလနေရာ (အစသို့)</span>
-                </li>
-                <li>
-                  <kbd>Esc</kbd>
-                  <span>Mouse လွှတ်ရန် / ပိတ်ရန်</span>
-                </li>
-              </ul>
-              <p className="mobile-guide">
-                ဘယ်ဘက်ဆွဲ၍ ၃၆၀° လှည့်ပါ · ညာဘက်ဖိ၍ ပြေးပါ · ညာဘက်ဆွဲ၍ ကြည့်ပါ
-                · လက်နှစ်ချောင်းဖြင့် Zoom ချဲ့/ချုံ့ပါ · လက်နှစ်ချောင်းဆွဲ၍ ခရီးသွားပါ
-              </p>
+              ))}
             </div>
           </div>
+        </section>
+      </div>
+
+      {activeDialog && dialogMeta && (
+        <div
+          className="settings-subdialog-backdrop"
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) closeDialog();
+          }}
+        >
+          <section
+            className={`settings-menu settings-subdialog${dialogMeta.wide ? ' settings-subdialog-wide' : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label={dialogMeta.title}
+            onWheel={(e) => e.stopPropagation()}
+          >
+            <div className="settings-menu-trim" aria-hidden="true" />
+            <div className="settings-subdialog-header">
+              <div className="settings-subdialog-title-wrap">
+                <span className="settings-subdialog-icon" aria-hidden="true">
+                  <SettingsTileIcon icon={dialogMeta.icon} />
+                </span>
+                <div className="settings-subdialog-heading">
+                  <h3>{dialogMeta.title}</h3>
+                  <span>{dialogMeta.subtitle}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="settings-menu-close"
+                aria-label={`${dialogMeta.title} ပိတ်မည်`}
+                onClick={closeDialog}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="settings-subdialog-body">
+              {activeDialog === 'appearance' && (
+                <div className="settings-detail-card settings-subdialog-card">
+                  <CharacterPicker
+                    value={character}
+                    onChange={onChooseCharacter}
+                    disabled={characterLocked}
+                  />
+                  <AppearanceSettings
+                    kind={character}
+                    onKindChange={onChooseCharacter}
+                    characterLocked={characterLocked}
+                    carLocked={carLocked}
+                  />
+                </div>
+              )}
+
+              {activeDialog === 'environment' && (
+                <div className="settings-detail-card settings-subdialog-card">
+                  <EnvironmentSettings
+                    value={environment.preferences}
+                    onChange={environment.setPreferences}
+                    onChoose={environment.choose}
+                    now={environment.now}
+                    period={environment.period}
+                  />
+                </div>
+              )}
+
+              {activeDialog === 'festival' && (
+                <div className="settings-detail-card settings-subdialog-card settings-subdialog-festival">
+                  <FestivalSettings now={environment.now} />
+                </div>
+              )}
+
+              {activeDialog === 'intro' && (
+                <div className="settings-detail-card settings-subdialog-card">
+                  <IntroSettingsPanel onReplay={onReplayIntro} />
+                </div>
+              )}
+
+              {activeDialog === 'location' && (
+                <div className="settings-detail-card settings-subdialog-card">
+                  <RobotLocationPanel
+                    x={pos.x}
+                    z={pos.z}
+                    yaw={robotYaw}
+                    characterLabel={character === 'robot' ? 'စက်ရုပ်' : 'ကာတွန်း'}
+                  />
+                  <div className="cam-controls" aria-label="3D ကင်မရာ ထိန်းချုပ်မှုများ">
+                    <button
+                      type="button"
+                      className="cam-btn"
+                      onClick={() => {
+                        closeDialog();
+                        onOpenGuide();
+                      }}
+                    >
+                      📖 အသုံးပြုနည်း လမ်းညွှန် ↗
+                    </button>
+                    <button
+                      type="button"
+                      className="cam-btn"
+                      onClick={() => {
+                        closeDialog();
+                        onOpenMap();
+                      }}
+                    >
+                      🗺 ရပ်ကွက်မြေပုံ ↗
+                    </button>
+                    <button
+                      type="button"
+                      className={topDown ? 'cam-btn cam-btn-active' : 'cam-btn'}
+                      aria-pressed={topDown}
+                      onClick={onToggleTopDown}
+                    >
+                      {topDown ? '✓ ကောင်းကင်တည့်တည့်' : 'ကောင်းကင်တည့်တည့် (T)'}
+                    </button>
+                    <div className="cam-zoom-row">
+                      <button
+                        type="button"
+                        className="cam-btn"
+                        onClick={() => onStepZoom(-1)}
+                        title="Zoom ချဲ့မည်"
+                      >
+                        ＋ Zoom ချဲ့မည်
+                      </button>
+                      <button
+                        type="button"
+                        className="cam-btn"
+                        onClick={() => onStepZoom(1)}
+                        title="Zoom ချုံ့မည်"
+                      >
+                        － Zoom ချုံ့မည်
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeDialog === 'controls' && (
+                <div className="settings-detail-card settings-subdialog-card">
+                  <div className="guide-header">
+                    <strong>⌨ ကစားနည်းနှင့် ခလုတ်လမ်းညွှန်</strong>
+                    <div className="badge">
+                      <span /> မြေပုံ · {currentLoc.label}{' '}
+                      <b>
+                        {wardSize} × {wardSize} မီတာ
+                      </b>
+                    </div>
+                  </div>
+                  <ul className="guide-list desktop-guide">
+                    <li>
+                      <kbd>N</kbd>
+                      <span>နေ့ခင်း / ညချမ်း အလင်းရောင်</span>
+                    </li>
+                    <li>
+                      <kbd>W A S D / ↑ ↓ ← →</kbd>
+                      <span>လမ်းလျှောက် / မြေပုံရွှေ့ရန်</span>
+                    </li>
+                    <li>
+                      <kbd>Shift + Drag</kbd>
+                      <span>မြေပုံကို ဆွဲရွှေ့ရန်</span>
+                    </li>
+                    <li>
+                      <kbd>Shift</kbd>
+                      <span>အမြန်ပြေးရန်</span>
+                    </li>
+                    <li>
+                      <kbd>Space</kbd>
+                      <span>လူဇာတ်ကောင် ခုန်ရန် · ပြေးရင်းခုန်လျှင် ပိုဝေးရောက်မည်</span>
+                    </li>
+                    <li>
+                      <kbd>Scroll</kbd>
+                      <span>Zoom အဝင် / အထွက်</span>
+                    </li>
+                    <li>
+                      <kbd>T</kbd>
+                      <span>ကောင်းကင်တည့်တည့် ကြည့်ရန်</span>
+                    </li>
+                    <li>
+                      <kbd>V</kbd>
+                      <span>မြင်ကွင်းပြောင်းရန်</span>
+                    </li>
+                    <li>
+                      <kbd>R</kbd>
+                      <span>မူလနေရာ (အစသို့)</span>
+                    </li>
+                    <li>
+                      <kbd>Esc</kbd>
+                      <span>Mouse လွှတ်ရန် / ပိတ်ရန်</span>
+                    </li>
+                  </ul>
+                  <p className="mobile-guide">
+                    ဘယ်ဘက်ဆွဲ၍ ၃၆၀° လှည့်ပါ · ညာဘက်ဖိ၍ ပြေးပါ · ညာဘက်ဆွဲ၍ ကြည့်ပါ
+                    · လက်နှစ်ချောင်းဖြင့် Zoom ချဲ့/ချုံ့ပါ · လက်နှစ်ချောင်းဆွဲ၍ ခရီးသွားပါ
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
-      </section>
-    </div>
+      )}
+    </>
   );
 }
