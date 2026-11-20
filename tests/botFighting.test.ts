@@ -25,12 +25,16 @@ import {
   isBotFightMotionId,
   isBotInCombat,
   isChildBotTarget,
+  isFarmhouseFamilyBot,
+  isProtectedFromFighting,
   resetBotFighting,
   selectBoxMove,
   selectKickMove,
   stepBotFighting,
   triggerBotFightMove,
 } from '../src/game/botFighting.ts';
+import { farmhouse, ward } from '../src/data/ward.ts';
+import { isInsideFarmhouseCompound } from '../src/game/homeAccess.ts';
 import {
   completePlayerRespawn,
   getPlayerDeathState,
@@ -264,6 +268,82 @@ test('Fighting a child bot (girl/boy) summons 4–10 nearby defenders who rush i
   for (const defId of st.defenderBotIds) {
     assert.equal(isBotInCombat(defId), false, `Cancel must release defender ${defId}`);
   }
+});
+
+test('Farmhouse family bots and any bot inside the Farmhouse compound never fight or trespass', () => {
+  resetBotFighting();
+  assert.equal(isFarmhouseFamilyBot('farmhouse-family-mom'), true);
+  assert.equal(isFarmhouseFamilyBot('farmhouse-family-dad'), true);
+  assert.equal(isFarmhouseFamilyBot('farmhouse-family-older-brother'), true);
+  assert.equal(isFarmhouseFamilyBot('farmhouse-family-younger-sister'), true);
+  assert.equal(isFarmhouseFamilyBot('street-villager-1'), false);
+
+  // 1. Bumping a Farmhouse family member anywhere must NOT start fighting
+  assert.equal(
+    engageBotFight({
+      id: 'farmhouse-family-dad',
+      label: 'အဖေ (Farmhouse)',
+      x: farmhouse.x,
+      z: farmhouse.z,
+      npcRole: 'uncle',
+      playerX: farmhouse.x + 1,
+      playerZ: farmhouse.z,
+    }),
+    false,
+  );
+  assert.equal(getBotFightingState().active, false, 'Family bump must not engage fighting');
+
+  // 2. Bumping even an outside visiting bot inside the Farmhouse front lot / yard must NOT engage fighting
+  const frontLotX = ward.frontLot.x;
+  const frontLotZ = ward.frontLot.z;
+  assert.equal(isInsideFarmhouseCompound(frontLotX, frontLotZ), true);
+  assert.equal(isProtectedFromFighting('street-villager-5', frontLotX, frontLotZ), true);
+  assert.equal(
+    engageBotFight({
+      id: 'street-villager-5',
+      label: 'ရွာသား ဦးလေး',
+      x: frontLotX,
+      z: frontLotZ,
+      playerX: frontLotX + 0.8,
+      playerZ: frontLotZ,
+    }),
+    false,
+  );
+  assert.equal(getBotFightingState().active, false, 'Visiting bot inside Farmhouse compound must not fight');
+
+  // 3. Fighting a bot outside on the road, then retreating into Farmhouse: bot cannot trespass or attack!
+  const outsideX = ward.frontLot.x + 40;
+  const outsideZ = ward.frontLot.z + 40;
+  assert.equal(isInsideFarmhouseCompound(outsideX, outsideZ), false);
+  assert.equal(
+    engageBotFight({
+      id: 'street-villager-99',
+      label: 'ရွာသား ဦးလေး',
+      x: outsideX,
+      z: outsideZ,
+      playerX: outsideX,
+      playerZ: outsideZ + 0.9,
+    }),
+    true,
+  );
+
+  // Player enters Farmhouse compound -> bot must stop attacking & never cross into compound
+  const hpBefore = getBotFightingState().playerHp;
+  for (let i = 0; i < 60; i++) {
+    stepBotFighting(0.05, farmhouse.x, farmhouse.z);
+  }
+  const r = getBotCombatReaction('street-villager-99')!;
+  assert.equal(
+    isInsideFarmhouseCompound(r.worldX, r.worldZ),
+    false,
+    'Chasing bot must never trespass inside the Farmhouse compound',
+  );
+  assert.equal(
+    getBotFightingState().playerHp,
+    hpBefore,
+    'Bot must not deal damage while player is safely inside the Farmhouse compound',
+  );
+  disengageBotFight();
 });
 
 test('UI & Player wire bump-to-fight icons, long-press 01/02 picker, and motion playback', () => {

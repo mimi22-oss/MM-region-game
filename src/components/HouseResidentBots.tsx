@@ -592,6 +592,25 @@ export function HouseResidentBots({
         ) ||
         changed
       ) {
+        // When houses load during nighttime, start residents directly inside their houses (not on porch/street)
+        if (!daytimeOutings) {
+          for (let i = 0; i < slotCount; i++) {
+            const slot = pool[i];
+            if (!slot.layout) continue;
+            for (const member of [...slot.residents, ...slot.kids]) {
+              if (member.phase === 'SITTING') {
+                member.phase = 'INSIDE_HOUSE';
+                member.x = slot.layout.doorInside.x;
+                member.z = slot.layout.doorInside.z;
+                member.y = slot.layout.floorY(member.z);
+                member.sitBlend = 0;
+                member.visible = false;
+                member.speed = 0;
+                member.phaseTimer = 4;
+              }
+            }
+          }
+        }
         setRevision((r) => r + 1);
       }
     }
@@ -648,6 +667,7 @@ export function HouseResidentBots({
             partners,
             seatBlockedByPlayer: blockedByPlayer,
             daytimeOutings,
+            nighttime: !daytimeOutings,
           });
         }
         if (chairId) {

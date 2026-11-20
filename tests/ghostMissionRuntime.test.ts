@@ -136,3 +136,41 @@ test('saved mission progress survives load; unique encounters and live sword dis
   leases.forEach(lease=>lease.release());
   delete (globalThis as {localStorage?:unknown}).localStorage;
 });
+
+test('ThreeGhostsMissionScene temporarily disables 20m ghost clearance gate and enables easy walk-up + floating pickup', async () => {
+  const { readFileSync } = await import('node:fs');
+  const sceneSrc = readFileSync('src/components/ThreeGhostsMissionScene.tsx', 'utf8');
+  const hudSrc = readFileSync('src/components/ThreeGhostsMissionHud.tsx', 'utf8');
+  assert.ok(sceneSrc.includes('export const REQUIRE_SWORD_GUARD_CLEAR = false;'), '20m guard gate must be toggled off via feature flag');
+  assert.ok(sceneSrc.includes('tryAutoCollectGhostSword('), 'Scene must auto-collect sword when walking up to it');
+  assert.ok(hudSrc.includes('ghost-sword-floating-pickup'), 'HUD must render floating sword pickup button on screen');
+  const ghostNpcSrc = readFileSync('src/components/GhostNpc.tsx', 'utf8');
+  assert.ok(ghostNpcSrc.includes('ghost-hp-bar-'), 'GhostNpc must render overhead 3D life bar above each ghost head');
+  assert.ok(ghostNpcSrc.includes('Math.round(ghostMaxHp / SWORD_DAMAGE)'), 'GhostNpc must render 1 green life block per sword hit (10/15/20 blocks)');
+  assert.ok(ghostNpcSrc.includes('color="#22c55e"'), 'GhostNpc overhead life blocks must be bright green');
+  assert.ok(ghostNpcSrc.includes('updateOverheadHpBar('), 'GhostNpc must update overhead life bar in guard and haunt modes');
+
+  // Verify MissionVictoryDialog triggers on both Ghost (3/3) and Zombie (13/13) completion transitions
+  const { detectMissionVictoryTransition, resetGhostMissionForReplay } = await import('../src/game/missions/missionVictory.ts');
+  assert.equal(detectMissionVictoryTransition(false, false, false, false), null);
+  assert.equal(detectMissionVictoryTransition(true, true, false, false), null, 'Must not re-trigger on already-completed reload');
+  assert.equal(detectMissionVictoryTransition(false, true, false, false), 'ghost', 'Must show Ghost Victory dialog when all 3 ghosts die');
+  assert.equal(detectMissionVictoryTransition(true, true, false, true), 'zombie', 'Must show Zombie Victory dialog when all zombies die');
+
+  // Verify completed Mission 1 can be cleanly reset for replay
+  const mission = await import('../src/game/missions/threeGhostsMission.ts');
+  for (const id of mission.GHOST_IDS) mission.markGhostEncounter(id);
+  mission.collectGhostSword();
+  for (const id of mission.GHOST_IDS) mission.damageMissionGhost(id, mission.GHOST_STATS[id].maxHp);
+  assert.equal(mission.getThreeGhostsProgress().completed, true);
+  resetGhostMissionForReplay();
+  const afterReset = mission.getThreeGhostsProgress();
+  assert.equal(afterReset.completed, false, 'Reset must clear completed state');
+  assert.equal(afterReset.encountered.length, 0, 'Reset must clear encountered ghosts');
+  assert.equal(afterReset.swordCollected, false, 'Reset must uncollect sword');
+  assert.deepEqual(afterReset.hp, { 'ghost-1': 100, 'ghost-2': 150, 'ghost-3': 200 }, 'Reset must restore all 3 ghost HPs');
+
+  const mainSrc = readFileSync('src/main.tsx', 'utf8');
+  assert.ok(mainSrc.includes('<MissionVictoryDialog />'), 'main.tsx must mount MissionVictoryDialog');
+  assert.ok(hudSrc.includes('resetGhostMissionForReplay'), 'ThreeGhostsMissionHud must expose Mission 1 Reset button');
+});

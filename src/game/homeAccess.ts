@@ -32,6 +32,39 @@ function worldPoint(
   };
 }
 const lot = ward.frontLot;
+const farmYard = ward.farm;
+
+/**
+ * True when `(x, z)` lies inside the player's own Farmhouse sanctuary compound
+ * (main Farmhouse + kitchen + inner yard, fenced front lot up to the street gate,
+ * or fenced backyard orchard/farm). Bots may not fight or trespass inside this boundary.
+ */
+export function isInsideFarmhouseCompound(x: number, z: number, margin = 0): boolean {
+  const p = localPoint(x, z, farmhouse.x, farmhouse.z, farmhouse.rotation);
+  if (
+    p.x >= -9.5 - margin &&
+    p.x <= 18.5 + margin &&
+    p.z >= -8.5 - margin &&
+    p.z <= 8.0 + margin
+  ) {
+    return true;
+  }
+  const lp = localPoint(x, z, lot.x, lot.z, lot.rotation);
+  if (
+    Math.abs(lp.x) <= lot.width / 2 + margin &&
+    Math.abs(lp.z) <= lot.depth / 2 + margin
+  ) {
+    return true;
+  }
+  const fp = localPoint(x, z, farmYard.x, farmYard.z, farmYard.rotation);
+  if (
+    Math.abs(fp.x) <= farmYard.width / 2 + margin &&
+    Math.abs(fp.z) <= farmYard.depth / 2 + margin
+  ) {
+    return true;
+  }
+  return false;
+}
 export const homeGates = {
   street: {
     ...worldPoint(0, lot.width / 2, lot.x, lot.z, lot.rotation + Math.PI / 2),

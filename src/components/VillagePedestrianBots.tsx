@@ -34,7 +34,12 @@ import {
   stepStreetPedestrian,
   type StreetPedestrianState,
 } from '../game/villageCrowd';
-import { getBotCombatReaction, isBotInCombat } from '../game/botFighting';
+import {
+  disengageBotFight,
+  getBotCombatReaction,
+  getBotFightingState,
+  isBotInCombat,
+} from '../game/botFighting';
 import type { ResidentState } from '../game/residentBots';
 import {
   ElderBotRig,
@@ -182,6 +187,34 @@ export function VillagePedestrianBots({
       x: camera.position.x,
       z: camera.position.z,
     };
+
+    // 0. Nighttime fast-clear: ZERO human street bots remain on roads at night!
+    if (targetActiveCount === 0) {
+      let clearedAny = false;
+      for (let i = 0; i < MAX_STREET_POOL_DESKTOP; i++) {
+        const st = states[i];
+        const prof = profiles[i];
+        const isKid = prof.role === 'boy' || prof.role === 'girl';
+        if (st.active) {
+          st.active = false;
+          st.regionId = null;
+          st.speed = 0;
+          clearedAny = true;
+        }
+        if (isKid) applyKidBotPose(kidHandles[i].current, null);
+        else applyElderBotPose(elderHandles[i].current, null);
+      }
+      const bf = getBotFightingState();
+      if (
+        bf.active &&
+        bf.targetBotId &&
+        (bf.targetBotId.startsWith('street-villager-') || bf.targetBotId.startsWith('street-kid-'))
+      ) {
+        disengageBotFight();
+      }
+      if (clearedAny) setActiveMaskRev((r) => r + 1);
+      return;
+    }
 
     // 1. Periodically assign/recycle slots around the player's current region & crowd target
     rebalanceTimerRef.current += dt;

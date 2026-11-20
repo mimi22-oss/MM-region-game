@@ -65,7 +65,13 @@ export function updateGhostGuard(now:number, px:number,pz:number) {
         g.phase+=dt*0.2;move(g,gx+Math.cos(g.phase)*2,gz+Math.sin(g.phase)*2,dt*1.4);break;
       }
       case 'chase':{
-        move(g,px,pz,dt*(id==='ghost-1'?5.2:id==='ghost-2'?4.7:4.1));
+        // Maintain realistic melee duel spacing when the player holds the sword so ghosts don't clip into 0m and insta-grab
+        const stopDist=p.swordCollected?1.32:0.65;
+        const dToPlayer=distance(g.x,g.z,px,pz);
+        if(dToPlayer>stopDist){
+          const speed=p.swordCollected?(id==='ghost-1'?4.4:id==='ghost-2'?4.0:3.6):(id==='ghost-1'?5.2:id==='ghost-2'?4.7:4.1);
+          move(g,px,pz,Math.min(dToPlayer-stopDist,dt*speed));
+        }
         // Random separation after a meaningful distance from the field.
         const away=distance(g.x,g.z,area5.pitch.x,area5.pitch.z);
         if(g.timer<=0 || (away>26 && Math.random()<dt*0.13)){

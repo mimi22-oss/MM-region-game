@@ -104,7 +104,39 @@ test('Android splash screens use branded PNG artwork and splash theme resources 
 
   const indexHtml = readFileSync(join(ROOT, 'index.html'), 'utf8');
   assert.ok(indexHtml.includes('src="/app-icon.webp"'), 'Web boot splash should render /app-icon.webp');
+  assert.ok(indexHtml.includes('rel="preload"') && indexHtml.includes('fetchpriority="high"'), 'index.html must preload loading logo first with fetchpriority=high');
+  assert.ok(indexHtml.includes('imagesrcset="/app-icon-128.webp 128w'), 'index.html must preload screen-optimized responsive logo srcset');
+  assert.ok(indexHtml.includes('href="/favicon.ico"'), 'index.html must wire /favicon.ico');
   assert.ok(!indexHtml.includes('className="boot-dots"'), 'index.html boot splash must use HTML class attribute');
+
+  // Verify responsive logo WebP variants exist and are size-optimized
+  const sizeBudgets: Array<[string, number]> = [
+    ['public/app-icon-128.webp', 20_000],
+    ['public/app-icon-192.webp', 30_000],
+    ['public/app-icon-256.webp', 45_000],
+    ['public/app-icon-384.webp', 60_000],
+    ['public/app-icon.webp', 90_000],
+    ['public/favicon-32.png', 10_000],
+  ];
+  for (const [rel, maxBytes] of sizeBudgets) {
+    const abs = join(ROOT, rel);
+    assert.ok(existsSync(abs), `Missing optimized logo asset: ${rel}`);
+    const sz = statSync(abs).size;
+    assert.ok(sz > 100 && sz <= maxBytes, `Expected ${rel} <= ${maxBytes} bytes, got ${sz}`);
+  }
+
+  // Verify public/favicon.ico is a valid multi-size ICO (>= 4 resolutions: 16/32/48/64)
+  const icoBuf = readFileSync(join(ROOT, 'public/favicon.ico'));
+  assert.equal(icoBuf.readUInt16LE(0), 0, 'favicon.ico reserved header must be 0');
+  assert.equal(icoBuf.readUInt16LE(2), 1, 'favicon.ico type must be 1 (ICO)');
+  const icoCount = icoBuf.readUInt16LE(4);
+  assert.ok(icoCount >= 4, `favicon.ico should contain >= 4 icon sizes (16/32/48/64), got ${icoCount}`);
+
+  // Verify WorldLoading uses responsive srcset, high fetchPriority, and inline fallback
+  const worldLoading = readFileSync(join(ROOT, 'src/components/WorldLoading.tsx'), 'utf8');
+  assert.ok(worldLoading.includes('APP_LOGO_SRCSET'), 'WorldLoading must use responsive logo srcset');
+  assert.ok(worldLoading.includes('fetchPriority="high"'), 'WorldLoading must prioritize logo fetch');
+  assert.ok(worldLoading.includes('APP_LOGO_FALLBACK_DATA_URI'), 'WorldLoading must include offline/poor-signal inline fallback');
 });
 
 test('Android launcher icons use WebP across all mipmap densities without legacy PNG duplicates', () => {

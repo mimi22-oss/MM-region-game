@@ -309,12 +309,14 @@ export interface StepResidentOptions {
   readonly seatBlockedByPlayer?: boolean;
   /** True during morning/day/evening when residents open gates & stroll outside; false at night. */
   readonly daytimeOutings?: boolean;
+  /** True during nighttime when all human residents must return indoors and remain inside their houses. */
+  readonly nighttime?: boolean;
 }
 
 /**
  * Advances one resident by `rawDt` seconds.
  * Supports both positional legacy args `(state, layout, dt, doorOpen, partners, seatBlockedByPlayer)`
- * and an options object with `gateOpen` and `daytimeOutings`.
+ * and an options object with `gateOpen`, `daytimeOutings`, and `nighttime`.
  */
 export function stepResident(
   state: ResidentState,
@@ -332,6 +334,7 @@ export function stepResident(
   let partners: readonly ResidentState[] = partnersArg;
   let seatBlockedByPlayer = seatBlockedArg;
   let daytimeOutings = false;
+  let nighttime = false;
 
   if (typeof doorOpenOrOptions === 'object') {
     doorOpen = doorOpenOrOptions.doorOpen ?? 1;
@@ -339,6 +342,7 @@ export function stepResident(
     partners = doorOpenOrOptions.partners ?? [];
     seatBlockedByPlayer = doorOpenOrOptions.seatBlockedByPlayer ?? false;
     daytimeOutings = doorOpenOrOptions.daytimeOutings ?? false;
+    nighttime = doorOpenOrOptions.nighttime ?? false;
   } else {
     doorOpen = doorOpenOrOptions;
   }
@@ -371,6 +375,13 @@ export function stepResident(
       state.sitBlend = 1;
       state.speed = 0;
       state.visible = true;
+      if (nighttime) {
+        state.outingPlanned = false;
+        state.phase = 'STANDING_UP';
+        state.phaseDuration = STAND_TRANSITION_SEC;
+        state.phaseTimer = STAND_TRANSITION_SEC;
+        return;
+      }
       state.phaseTimer -= dt;
       if (state.phaseTimer <= 0) {
         if (partnerOnRoute(partners)) {
@@ -468,6 +479,10 @@ export function stepResident(
       state.visible = false;
       state.speed = 0;
       state.sitBlend = 0;
+      if (nighttime) {
+        state.phaseTimer = Math.max(state.phaseTimer, 2);
+        return;
+      }
       state.phaseTimer -= dt;
       if (state.phaseTimer <= 0) {
         if (partnerEntering(partners)) {
@@ -490,6 +505,13 @@ export function stepResident(
     }
 
     case 'OPENING_DOOR_EXIT': {
+      if (nighttime) {
+        state.phase = 'INSIDE_HOUSE';
+        state.phaseTimer = 4;
+        state.visible = false;
+        state.speed = 0;
+        return;
+      }
       state.x = layout.doorInside.x;
       state.z = layout.doorInside.z;
       state.y = layout.floorY(state.z);
@@ -507,6 +529,11 @@ export function stepResident(
     }
 
     case 'WALKING_TO_CHAIR': {
+      if (nighttime) {
+        state.phase = 'WALKING_TO_HOUSE';
+        state.waypointIndex = 1;
+        return;
+      }
       const route = layout.pathToSeat[state.seatIndex];
       const atFinalStandSpot = state.waypointIndex >= route.length - 1;
       const target = route[Math.min(state.waypointIndex, route.length - 1)];
@@ -533,6 +560,12 @@ export function stepResident(
     }
 
     case 'SITTING_DOWN': {
+      if (nighttime) {
+        state.sitBlend = 0;
+        state.phase = 'WALKING_TO_HOUSE';
+        state.waypointIndex = 1;
+        return;
+      }
       state.phaseTimer = Math.max(0, state.phaseTimer - dt);
       const t = smoothstep01(1 - state.phaseTimer / state.phaseDuration);
       state.sitBlend = t;
@@ -561,6 +594,12 @@ export function stepResident(
     /* Daytime Compound Gate & Outdoor Neighbor-Visiting Phases     */
     /* ============================================================ */
     case 'WALKING_TO_GATE': {
+      if (nighttime) {
+        state.outingPlanned = false;
+        state.phase = 'WALKING_TO_HOUSE';
+        state.waypointIndex = 1;
+        return;
+      }
       const route = layout.pathSeatToGate![state.seatIndex];
       const target = route[Math.min(state.waypointIndex, route.length - 1)];
       const arrived = walkToward(state, target, dt, 8.5);
@@ -580,6 +619,12 @@ export function stepResident(
     }
 
     case 'OPENING_GATE_OUT': {
+      if (nighttime) {
+        state.outingPlanned = false;
+        state.phase = 'WALKING_TO_HOUSE';
+        state.waypointIndex = 1;
+        return;
+      }
       const inside = layout.gateInside!;
       const outside = layout.gateOutside!;
       state.x = inside.x;
@@ -606,6 +651,22 @@ export function stepResident(
       const visitRoute = layout.visitRoutes![state.visitRouteIndex];
       state.sitBlend = 0;
       state.visible = true;
+
+      if (nighttime) {
+        // Night fell: skip neighbor chat & walk directly back to compound gate!
+        state.visitPauseTimer = 0;
+        state.visitPaused = true;
+        const gateReturn = layout.gateOutside!;
+        const arrived = walkToward(state, gateReturn, dt * 1.45, 9);
+        state.y = layout.floorY(state.z);
+        if (arrived) {
+          state.phase = 'OPENING_GATE_IN';
+          state.phaseDuration = DOOR_WAIT_MIN_SEC;
+          state.phaseTimer = DOOR_WAIT_MIN_SEC;
+          state.speed = 0;
+        }
+        return;
+      }
 
       // Brief friendly visit/chat pause at the furthest neighbor waypoint
       if (state.visitPauseTimer > 0) {

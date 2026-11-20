@@ -1,6 +1,7 @@
 import {WeaponMenu} from './components/combat/WeaponMenu';
 import { ThreeGhostsMissionHud } from './components/ThreeGhostsMissionHud';
 import {GhostGameOver} from './components/GhostGameOver';
+import { MissionVictoryDialog } from './components/MissionVictoryDialog';
 import '@fontsource/noto-sans-myanmar/400.css';
 import '@fontsource/noto-sans-myanmar/600.css';
 import '@fontsource/noto-sans-myanmar/700.css';
@@ -842,6 +843,7 @@ function App() {
   return (
     <main className={night ? "night-mode" : ""} data-time-period={environment.period}>
       <GhostGameOver/>
+      <MissionVictoryDialog />
       {!loading && <ThreeGhostsMissionHud />}
       <EnvironmentAudio period={environment.period} volume={environment.preferences.volume} enabled={environment.preferences.sound} active={visible&&!loading}/>
       <AudioDiagnosticsPanel />

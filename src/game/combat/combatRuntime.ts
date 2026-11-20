@@ -11,6 +11,12 @@ import {canStand} from '../collision.ts';
 
 export const playerCombat=new CombatController();
 playerCombat.weaponReady=false;
+/**
+ * Temporarily disabled so players can slash and defeat ghosts even when 2+ ghosts
+ * are near each other (e.g. right after picking up the sword at the football pitch).
+ * Set back to `true` in a future version to re-enable the 12m group-shield rule.
+ */
+export const REQUIRE_GHOST_GROUP_SHIELD=false;
 type Target={root:Object3D;height:number;radius:number};
 const targets=new Map<string,Target>();
 let weapon:{root:Object3D;avatar:Object3D;base:Object3D;tip:Object3D}|null=null;
@@ -21,9 +27,14 @@ export function registerCombatWeapon(root:Object3D,avatar:Object3D){
  const entry={root,avatar,base,tip};weapon=entry;playerCombat.weaponReady=true;
  return()=>{if(weapon===entry){weapon=null;previousValid=false;playerCombat.weaponReady=false;playerCombat.cancel();}};
 }
-export const combatEffects={time:0,trailHead:0,impactHead:0,
+export const combatEffects={time:0,trailHead:0,impactHead:0,damagePopupHead:0,
  trail:Array.from({length:48},()=>({base:new Vector3(),tip:new Vector3(),at:-100,sequence:0})),
- impacts:Array.from({length:8},()=>({position:new Vector3(),at:-100,seed:0}))};
+ impacts:Array.from({length:8},()=>({position:new Vector3(),at:-100,seed:0})),
+ damagePopups:Array.from({length:8},()=>({position:new Vector3(),at:-100,text:'-10 HP',critical:false,seed:0}))};
+function emitDamagePopup(x:number,y:number,z:number,text:string,critical:boolean,seed:number){
+ const p=combatEffects.damagePopups[combatEffects.damagePopupHead++%combatEffects.damagePopups.length];
+ p.position.set(x,y,z);p.at=combatEffects.time;p.text=text;p.critical=critical;p.seed=seed;
+}
 const previousBase=new Vector3(),previousTip=new Vector3(),base=new Vector3(),tip=new Vector3(),player=new Vector3(),targetPos=new Vector3(),a=new Vector3(),b=new Vector3(),forward=new Vector3();
 const detector=new SwordHitDetection();let previousValid=false,previousActive=false,lastSequence=-1;
 export function combatLineClear(ax:number,az:number,bx:number,bz:number){
@@ -64,6 +75,7 @@ export function sampleCombatBlade(active:boolean){
     playerCombat.hits.add(id);
     const impact=combatEffects.impacts[combatEffects.impactHead++%combatEffects.impacts.length];
     impact.position.copy(base).lerp(tip,.5);impact.at=combatEffects.time;impact.seed=playerCombat.sequence*17+combatEffects.impactHead;
+    emitDamagePopup(targetPos.x,targetPos.y+target.height*.85,targetPos.z,res.defeated?'-1 · KO!':'-1 HP',res.defeated,impact.seed);
     playerCombat.message=res.message;
     continue;
    }
@@ -71,10 +83,12 @@ export function sampleCombatBlade(active:boolean){
    target.root.getWorldPosition(targetPos);
    const dx=targetPos.x-player.x,dz=targetPos.z-player.z,distance=Math.hypot(dx,dz);
    const facing=distance<.01?1:(dx*forward.x+dz*forward.z)/distance;
-   if(distance>3||facing<(playerCombat.clip==='Spin_Slash'?-.95:-.15))continue;
-   a.set(targetPos.x,targetPos.y+target.height*.15,targetPos.z);b.set(targetPos.x,targetPos.y+target.height*.82,targetPos.z);
-   if(!detector.sweptBlade(previousBase,previousTip,base,tip,a,b,target.radius+.09))continue;
-   if(nearby>=2){playerCombat.message='Ghost နှစ်ကောင်နီးနေသဖြင့် damage ပိတ်ထားသည်။';continue;}
+   if(distance>3.35||facing<(playerCombat.clip==='Spin_Slash'?-.95:-.25))continue;
+   a.set(targetPos.x,targetPos.y+target.height*.08,targetPos.z);b.set(targetPos.x,targetPos.y+target.height*.9,targetPos.z);
+   const bladeMidDist=Math.hypot((base.x+tip.x)*.5-targetPos.x,(base.z+tip.z)*.5-targetPos.z);
+   const ghostHit=detector.sweptBlade(previousBase,previousTip,base,tip,a,b,target.radius+.22)||(distance<=2.75&&facing>=.15&&bladeMidDist<=2.35);
+   if(!ghostHit)continue;
+   if(REQUIRE_GHOST_GROUP_SHIELD&&nearby>=2){playerCombat.message='Ghost နှစ်ကောင်နီးနေသဖြင့် damage ပိတ်ထားသည်။';continue;}
    if(!combatLineClear(player.x,player.z,targetPos.x,targetPos.z))continue;
    if(!damageMissionGhost(id,SWORD_DAMAGE))continue;
    playerCombat.hits.add(id);
@@ -83,6 +97,8 @@ export function sampleCombatBlade(active:boolean){
    clearGhostEncounterInteraction(id);
    const impact=combatEffects.impacts[combatEffects.impactHead++%combatEffects.impacts.length];
    impact.position.copy(base).lerp(tip,.5);impact.at=combatEffects.time;impact.seed=playerCombat.sequence*17+combatEffects.impactHead;
+   const crit=dead||playerCombat.clip==='Heavy_Slash'||playerCombat.clip==='Combo_Finisher';
+   emitDamagePopup(targetPos.x,targetPos.y+target.height*.82,targetPos.z,dead?`-${SWORD_DAMAGE} HP · KO!`:`-${SWORD_DAMAGE} HP`,crit,impact.seed);
    playerCombat.message=`${id}: ${getThreeGhostsProgress().hp[id as keyof ReturnType<typeof getThreeGhostsProgress>['hp']]} HP`;
   }
  }

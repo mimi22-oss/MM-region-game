@@ -42,7 +42,7 @@ test('Daytime schedule scales street crowd to bustling full pool by morning/day 
   assert.equal(dayCount, 28);
   assert.equal(morningCount, 28);
   assert.ok(eveningCount > nightCount && eveningCount < dayCount);
-  assert.ok(nightCount <= 4 && nightCount >= 2);
+  assert.equal(nightCount, 0, 'At night, zero human street pedestrians remain on the roads');
 });
 
 test('Street pedestrian pool builds diverse Myanmar villagers walking along real connected road segments', () => {
@@ -136,6 +136,27 @@ test('During daytime, home residents open compound gate before walking out to vi
     'WALKING_FROM_GATE',
   ] as ResidentPhase[]) {
     assert.ok(visited.has(phase), `Daytime household must visit outing phase ${phase}`);
+  }
+
+  // Night falls: every resident outside or on the porch must return into INSIDE_HOUSE and stay indoors all night!
+  for (let step = 0; step < 1600; step++) {
+    const all = [...slot.residents, ...slot.kids];
+    slot.doorOpen = stepDoorOpen(slot.doorOpen, computeResidentDoorTarget(all, slot.layout), 0.05);
+    slot.gateOpen = stepDoorOpen(slot.gateOpen, computeResidentGateTarget(all, slot.layout), 0.05);
+    for (let m = 0; m < all.length; m++) {
+      const partners = all.filter((_, idx) => idx !== m);
+      stepResident(all[m], slot.layout, 0.05, {
+        doorOpen: slot.doorOpen,
+        gateOpen: slot.gateOpen,
+        partners,
+        daytimeOutings: false,
+        nighttime: true,
+      });
+    }
+  }
+  for (const r of [...slot.residents, ...slot.kids]) {
+    assert.equal(r.phase, 'INSIDE_HOUSE', `At night, ${r.role} must be inside house (got ${r.phase})`);
+    assert.equal(r.visible, false, `At night, ${r.role} must stay indoors (hidden outside)`);
   }
 });
 

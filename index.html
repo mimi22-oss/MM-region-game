@@ -4,17 +4,27 @@
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+	<!-- Prioritize loading screen logo FIRST before JS/CSS/fonts, sized to device screen & DPR -->
+	<link
+		rel="preload"
+		as="image"
+		type="image/webp"
+		href="/app-icon-256.webp"
+		imagesrcset="/app-icon-128.webp 128w, /app-icon-192.webp 192w, /app-icon-256.webp 256w, /app-icon-384.webp 384w, /app-icon.webp 512w"
+		imagesizes="(max-width: 480px) 104px, 128px"
+		fetchpriority="high"
+	/>
 	<meta name="theme-color" content="#143d36" />
 	<meta name="mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 	<link rel="manifest" href="/manifest.webmanifest" />
 
-	<!-- Favicon & Icons -->
-	<link rel="icon" type="image/webp" href="/app-icon.webp" />
-	<link rel="icon" type="image/x-icon" href="/favicon.ico" />
-	<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-	<link rel="icon" type="image/jpeg" href="/favicon.jpg" />
+	<!-- Favicon & Icons (multi-size favicon.ico generated from app logo + optimized fallbacks) -->
+	<link rel="icon" href="/favicon.ico" sizes="any" />
+	<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+	<link rel="icon" type="image/webp" sizes="192x192" href="/app-icon-192.webp" />
 	<link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
 
 	<!-- Primary Meta Tags -->
@@ -123,7 +133,16 @@
 			height: 128px;
 			border-radius: 28px;
 			object-fit: cover;
+			background: #143d36 url("data:image/webp;base64,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") center/cover no-repeat;
 			box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+		}
+
+		@media (max-width: 480px) {
+			.boot-logo {
+				width: 104px;
+				height: 104px;
+				border-radius: 24px;
+			}
 		}
 
 		.boot-status {
@@ -181,7 +200,19 @@
 <body>
 	<div id="root">
 		<div id="boot-loading" role="status" aria-live="polite">
-			<img class="boot-logo" src="/app-icon.webp" alt="MM Region Game" width="128" height="128" decoding="async" />
+			<img
+				class="boot-logo"
+				src="/app-icon.webp"
+				srcset="/app-icon-128.webp 128w, /app-icon-192.webp 192w, /app-icon-256.webp 256w, /app-icon-384.webp 384w, /app-icon.webp 512w"
+				sizes="(max-width: 480px) 104px, 128px"
+				alt="MM Region Game"
+				width="128"
+				height="128"
+				loading="eager"
+				decoding="sync"
+				fetchpriority="high"
+				onerror="this.onerror=null;this.removeAttribute('srcset');var m=getComputedStyle(this).backgroundImage.match(/data:image\/webp;base64,[A-Za-z0-9+/=]+/);if(m)this.src=m[0];"
+			/>
 			<div class="boot-status">
 				<span class="boot-dots" aria-hidden="true"><i></i><i></i><i></i></span>
 				<span>MM Region Game</span>

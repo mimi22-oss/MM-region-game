@@ -70,7 +70,7 @@ export function isDaytimeLivingHours(minute: number, timeMode?: TimeMode): boole
  * Computes active street pedestrian count based on time-of-day:
  * - Morning & Day: 100% bustling town & village crowd
  * - Evening: ~65% strolling before sunset
- * - Night: ~14% quiet late-night walkers (min 2)
+ * - Night: 0 street pedestrians (all human bots stay safely inside houses at night!)
  */
 export function desiredPedestrianCount(
   minute: number,
@@ -80,7 +80,7 @@ export function desiredPedestrianCount(
   const period = resolveTimePeriod(minute, timeMode);
   if (period === 'morning' || period === 'day') return maxPool;
   if (period === 'evening') return Math.max(4, Math.round(maxPool * 0.65));
-  return Math.min(maxPool, Math.max(2, Math.round(maxPool * 0.14)));
+  return 0;
 }
 
 function lcg(seed: number): [number, number] {

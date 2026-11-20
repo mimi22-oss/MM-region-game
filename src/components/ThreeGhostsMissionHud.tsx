@@ -13,6 +13,10 @@ import {
   rerollZombieForestWave,
   useZombieForestMission,
 } from '../game/missions/zombieForestMission';
+import {
+  resetGhostMissionForReplay,
+  resetZombieMissionForReplay,
+} from '../game/missions/missionVictory';
 import { requestGunShot } from '../game/combat/gunCombatRuntime';
 import { ghostMissionProximity, requestThreeGhostsAction } from './ThreeGhostsMissionScene';
 import { CombatControls } from './combat/CombatControls';
@@ -406,7 +410,7 @@ export function ThreeGhostsMissionHud() {
                             <>
                               <span className="ghost-hud-sword-state ready">ဘောလုံးကွင်းတွင် ဓားသွားယူပါ</span>
                               <span className="ghost-hud-sword-hint">
-                                သရဲများနှင့် 20m ကျော်ဝေးချိန် ဓားနားသွားပြီး E ခလုတ်ကို 2s ဖိထားပါ
+                                ဘောလုံးကွင်းရှိ ဓားအနားသွား၍ ကောက်ယူပါ (သို့) E နှိပ်ပါ
                               </span>
                             </>
                           ) : (
@@ -468,6 +472,24 @@ export function ThreeGhostsMissionHud() {
                           : 'ဆုလာဘ်: သရဲဓား (Knife) အသုံးပြုခွင့်၊ ကား/မိုးပျံပူပေါင်း စီးခွင့် နှင့် Zombie Mission ဖွင့်ခွင့်။'}
                       </span>
                     </div>
+
+                    {/* Mission 1 Reset / Replay Action (works even after ✓ ပြီးဆုံးပြီ!) */}
+                    {(progress.completed || totalEncountered > 0 || progress.swordCollected || ghostsDefeatedCount > 0) && (
+                      <div className="ghost-hud-combat-actions" style={{ marginTop: 6 }}>
+                        <button
+                          type="button"
+                          className="ghost-hud-combat-btn defend"
+                          style={{ width: '100%', justifyContent: 'center' }}
+                          onClick={() => {
+                            resetGhostMissionForReplay();
+                            ghostMissionProximity.lastMessage = '🔄 Mission 1 (Ghost Mission) ကို အစမှ ပြန်စလိုက်ပါပြီ!';
+                            setActiveModal(null);
+                          }}
+                        >
+                          🔄 Mission 1 ပြန်စမည် (Reset)
+                        </button>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>
@@ -575,9 +597,16 @@ export function ThreeGhostsMissionHud() {
                         <button
                           type="button"
                           className="ghost-hud-combat-btn defend"
-                          onClick={() => rerollZombieForestWave()}
+                          onClick={() => {
+                            if (zombieCompleted) {
+                              resetZombieMissionForReplay();
+                            } else {
+                              rerollZombieForestWave();
+                            }
+                            setActiveModal(null);
+                          }}
                         >
-                          🔄 Zombie အသစ် (13)
+                          {zombieCompleted ? '🔄 Mission 2 ပြန်စမည် (Reset)' : '🔄 Zombie အသစ် (13)'}
                         </button>
                       </div>
                     )}
@@ -923,6 +952,41 @@ export function ThreeGhostsMissionHud() {
           </div>
         )}
       </div>
+
+      {/* Always-visible Floating Sword Pickup Button when near the unlocked sword */}
+      {pickup.near && !progress.swordCollected && (
+        <div
+          className="ghost-sword-floating-pickup"
+          role="region"
+          aria-label="Sword Pickup Floating Action"
+          onPointerDown={e => e.stopPropagation()}
+        >
+          {pickup.ready ? (
+            <button
+              type="button"
+              className="ghost-sword-floating-btn"
+              onPointerDown={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                requestThreeGhostsAction('interact');
+              }}
+              onClick={e => {
+                if (e.detail === 0) requestThreeGhostsAction('interact');
+              }}
+            >
+              <span className="ghost-sword-floating-icon" aria-hidden="true">⚔️</span>
+              <span className="ghost-sword-floating-text">
+                <strong>ဓားကောက်ယူမည်</strong>
+                <small>နှိပ်ပါ သို့မဟုတ် E နှိပ်ပါ</small>
+              </span>
+            </button>
+          ) : (
+            <div className="ghost-sword-floating-warn">
+              ⚠️ Ghost ၃ ကောင်လုံး ဓားနှင့် 20m ကျော် ဝေးကွာရပါမည်
+            </div>
+          )}
+        </div>
+      )}
 
       {modalPortal}
     </>

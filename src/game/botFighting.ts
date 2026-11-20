@@ -14,6 +14,8 @@
  * - Bot celebrates defeating the player with `victory.glb` (`/motions/movement/victory.glb`).
  */
 
+import { isInsideFarmhouseCompound } from './homeAccess.ts';
+
 export type BoxMoveId = 'box_01' | 'box_02';
 export type KickMoveId = 'front_kick_01' | 'front_kick_02';
 export type BotFightMoveId = BoxMoveId | KickMoveId;
@@ -325,6 +327,33 @@ export function isChildBotTarget(botName: string, npcRole?: string): boolean {
   return lower.includes('kid') || lower.includes('younger-sister');
 }
 
+/** True for the player's own Farmhouse household family members (never fight family!). */
+export function isFarmhouseFamilyBot(botId: string | null | undefined): boolean {
+  if (!botId) return false;
+  return botId.toLowerCase().startsWith('farmhouse-family-');
+}
+
+/**
+ * True when fighting is forbidden because:
+ * - the bot is a Farmhouse household family member, OR
+ * - the bot is inside the player's Farmhouse home compound (visiting/resident), OR
+ * - the player is inside their own Farmhouse home sanctuary (no trespassing/fighting at home!).
+ */
+export function isProtectedFromFighting(
+  botId: string | null | undefined,
+  botX: number,
+  botZ: number,
+  playerX?: number,
+  playerZ?: number,
+): boolean {
+  if (isFarmhouseFamilyBot(botId)) return true;
+  if (isInsideFarmhouseCompound(botX, botZ)) return true;
+  if (playerX !== undefined && playerZ !== undefined && isInsideFarmhouseCompound(playerX, playerZ)) {
+    return true;
+  }
+  return false;
+}
+
 /** Human-friendly Burmese label derived from a bot group's name / userData role. */
 export function formatBotTargetLabel(botName: string, npcRole?: string): string {
   const lower = botName.toLowerCase();
@@ -615,7 +644,13 @@ export function recruitChildDefenders(
 
   const existing = new Set<string>([state.targetBotId, ...state.defenderBotIds]);
   const eligible = candidates
-    .filter((c) => c.id && !existing.has(c.id))
+    .filter(
+      (c) =>
+        c.id &&
+        !existing.has(c.id) &&
+        !isFarmhouseFamilyBot(c.id) &&
+        !isInsideFarmhouseCompound(c.x, c.z),
+    )
     .map((c) => ({
       ...c,
       dist: c.dist ?? Math.hypot(c.x - playerX, c.z - playerZ),
@@ -685,6 +720,9 @@ export function engageBotFight(target: {
   nearbyDefenders?: readonly ChildDefenderCandidate[];
 }): boolean {
   if (!target.id) return false;
+  if (isProtectedFromFighting(target.id, target.x, target.z, target.playerX, target.playerZ)) {
+    return false;
+  }
 
   const isSameTarget = state.active && state.targetBotId === target.id;
   if (state.targetBotId && state.targetBotId !== target.id) {
@@ -925,17 +963,20 @@ function stepBotChasePosition(
     const nx = r.worldX + (dx / distToSlot) * step;
     const nz = r.worldZ + (dz / distToSlot) * step;
 
+    const allowed = (x: number, z: number): boolean =>
+      !isInsideFarmhouseCompound(x, z, 0.35) && (!canBotMoveTo || canBotMoveTo(x, z));
+
     let movedX = r.worldX;
     let movedZ = r.worldZ;
-    if (!canBotMoveTo || canBotMoveTo(nx, nz)) {
+    if (allowed(nx, nz)) {
       movedX = nx;
       movedZ = nz;
-    } else if (canBotMoveTo(nx, r.worldZ)) {
+    } else if (allowed(nx, r.worldZ)) {
       movedX = nx;
-    } else if (canBotMoveTo(r.worldX, nz)) {
+    } else if (allowed(r.worldX, nz)) {
       movedZ = nz;
-    } else {
-      // Allow stepping out of house porches/doorways toward open player space so bots don't get stuck indoors
+    } else if (!isInsideFarmhouseCompound(nx, nz, 0.35)) {
+      // Allow stepping out of house porches/doorways toward open player space — NEVER into player's Farmhouse!
       movedX = r.worldX + (dx / distToSlot) * step * 0.82;
       movedZ = r.worldZ + (dz / distToSlot) * step * 0.82;
     }
@@ -1234,7 +1275,31 @@ export function stepBotFighting(
   }
 
   // 4. Advance Primary Bot's 2×-Speed Counter-Attack AI (real GLB box_01/02/03 & front_kick_01/02 combos!)
-  if (r.knockoutTime === 0 && r.celebrateTime === 0 && !state.playerKnockedOut) {
+  // Bots NEVER fight back or trespass inside the player's own Farmhouse home sanctuary!
+  const playerInFarmhouse = isInsideFarmhouseCompound(playerX, playerZ);
+  const primaryInFarmhouse = isInsideFarmhouseCompound(r.worldX, r.worldZ);
+  const farmhouseSanctuary = playerInFarmhouse || primaryInFarmhouse || isFarmhouseFamilyBot(state.targetBotId);
+  if (farmhouseSanctuary) {
+    if (r.attackMove !== null || r.queuedMoves.length > 0 || r.chasing) {
+      r.attackMove = null;
+      r.queuedMoves.length = 0;
+      r.chasing = false;
+      r.chaseSpeed = 0;
+      setBotMotion(r, 'warm_up', 1.4, true, false);
+      state.lastBotHitText = '🏠 မိမိအိမ်ဝန်းအတွင်း ဖြစ်၍ Bot များ မတိုက်ခိုက်နိုင်ပါ';
+      dirty = true;
+    }
+    for (const defId of activeDefenders) {
+      const dr = reactions.get(defId);
+      if (!dr) continue;
+      dr.attackMove = null;
+      dr.queuedMoves.length = 0;
+      dr.chasing = false;
+      dr.chaseSpeed = 0;
+    }
+  }
+
+  if (!farmhouseSanctuary && r.knockoutTime === 0 && r.celebrateTime === 0 && !state.playerKnockedOut) {
     if (r.attackMove) {
       const atk = BOT_COUNTER_ATTACK_META[r.attackMove];
       r.attackElapsed += dt;
@@ -1287,11 +1352,16 @@ export function stepBotFighting(
   }
 
   // 5. Advance Child-Defense Squad Attacks (4–10 defenders attack in staggered waves once in melee reach!)
-  if (!state.playerKnockedOut && activeDefenders.length > 0) {
+  if (!farmhouseSanctuary && !state.playerKnockedOut && activeDefenders.length > 0) {
     for (let i = 0; i < activeDefenders.length; i++) {
       if (state.playerKnockedOut) break;
       const dr = reactions.get(activeDefenders[i]);
       if (!dr || dr.knockoutTime > 0 || dr.celebrateTime > 0) continue;
+      if (isInsideFarmhouseCompound(dr.worldX, dr.worldZ)) {
+        dr.attackMove = null;
+        dr.queuedMoves.length = 0;
+        continue;
+      }
       const dDist = defenderDists[i] ?? Math.hypot(dr.worldX - playerX, dr.worldZ - playerZ);
 
       if (dr.attackMove) {

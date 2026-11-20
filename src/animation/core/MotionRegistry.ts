@@ -40,6 +40,7 @@ export type MotionId =
   | 'dive'
   | 'turn'
   | 'victory'
+  | 'flying-back-away'
   | 'vehicle-wait'
   | 'sitting-idle'
   | 'sit-to-stand'
@@ -492,6 +493,24 @@ const DEFAULT_MOTIONS: MotionDefinition[] = [
     fadeOutSec: 0.45,
     endHoldSec: 0,
     endPose: 'standing',
+    autoTriggeredOnly: true,
+  }),
+  makeActionDef({
+    id: 'flying-back-away',
+    category: 'movement',
+    subgroup: 'movement-moves',
+    label: 'Flying Back Away',
+    myanmarLabel: 'နောက်သို့လွင့်ကျ',
+    assetUrl: '/motions/movement/flying-back-away.glb',
+    clipName: 'mixamo.com',
+    durationSec: 3.067,
+    defaultLoop: false,
+    allowLoopToggle: false,
+    allowRetrigger: true,
+    crossFadeSec: 0.12,
+    fadeOutSec: 0.35,
+    endHoldSec: 0,
+    endPose: 'prone',
     autoTriggeredOnly: true,
   }),
 

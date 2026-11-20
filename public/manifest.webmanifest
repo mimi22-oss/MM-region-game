@@ -13,6 +13,30 @@
   "categories": ["games", "entertainment", "simulation"],
   "icons": [
     {
+      "src": "/app-icon-128.webp",
+      "sizes": "128x128",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "/app-icon-192.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/app-icon-256.webp",
+      "sizes": "256x256",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "/app-icon-384.webp",
+      "sizes": "384x384",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
       "src": "/app-icon.webp",
       "sizes": "512x512",
       "type": "image/webp",
@@ -20,7 +44,7 @@
     },
     {
       "src": "/favicon.png",
-      "sizes": "192x192",
+      "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },

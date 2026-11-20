@@ -15,9 +15,18 @@ import { balloonRide } from '../game/balloonRide';
 import { motorcycleRide } from '../game/motorcycleRide';
 import {
   GHOST_IDS, ENCOUNTER_RADIUS_M,
-  SWORD_PICKUP_RADIUS_M, collectGhostSword,
+  SWORD_PICKUP_RADIUS_M, collectGhostSword, tryAutoCollectGhostSword,
   getThreeGhostsProgress, isGhostDefeated, markGhostEncounter,
 } from '../game/missions/threeGhostsMission';
+
+/**
+ * Feature flag for the 20m 3-ghost guard clearance requirement on sword pickup.
+ * Temporarily disabled so players can pick up the sword immediately after encountering
+ * all 3 ghosts; set back to `true` in a future version to re-enable the lure challenge.
+ */
+export const REQUIRE_SWORD_GUARD_CLEAR = false;
+/** Distance at which the floating "⚔️ ဓားကောက်ယူမည်" button appears on screen. */
+export const SWORD_PROMPT_RADIUS_M = 6.5;
 
 /** Commands originate in user input, not a render loop. */
 let pendingAction: 'interact' | null = null;
@@ -87,22 +96,52 @@ export function ThreeGhostsMissionScene() {
         player: { x: playerPos.x, z: playerPos.z, yaw: player.rotation.y }, ghosts,
       } }));
     }
-    const nearSword = Math.hypot(playerPos.x-area5.pitch.x,playerPos.z-area5.pitch.z)<=SWORD_PICKUP_RADIUS_M;
-    const alive=getPlayerDeathState().phase==='alive';
-    const clear=swordGuardClear(20);
-    const canPickup=progress.encountered.length===3&&!progress.swordCollected&&nearSword&&onFoot&&alive&&clear&&!playerCombat.paused;
-    const action=pendingAction;pendingAction=null;
-    if(!canPickup)pickupStarted.current=null;
-    if(action==='interact'&&canPickup&&pickupStarted.current===null)pickupStarted.current=clock.elapsedTime;
-    if(pickupStarted.current!==null&&clock.elapsedTime-pickupStarted.current>=2){
-      if(collectGhostSword()){ghostMissionProximity.lastMessage='ဓား လက်ထဲရောက်ပါပြီ! F ဖြင့် combo တိုက်ခိုက်ပါ။';if(sword.current)sword.current.visible=false;}
-      pickupStarted.current=null;
+    const swordDist = Math.hypot(playerPos.x - area5.pitch.x, playerPos.z - area5.pitch.z);
+    const nearSwordPrompt = swordDist <= SWORD_PROMPT_RADIUS_M;
+    const nearSwordAuto = swordDist <= SWORD_PICKUP_RADIUS_M;
+    const alive = getPlayerDeathState().phase === 'alive';
+    const clear = REQUIRE_SWORD_GUARD_CLEAR ? swordGuardClear(20) : true;
+    const unlocked = progress.encountered.length === 3 && !progress.swordCollected;
+    const canPickup = unlocked && nearSwordPrompt && onFoot && alive && clear && !playerCombat.paused;
+    const action = pendingAction;
+    pendingAction = null;
+
+    if (!canPickup) pickupStarted.current = null;
+
+    const finishPickup = () => {
+      ghostMissionProximity.lastMessage = 'ဓား လက်ထဲရောက်ပါပြီ! F ဖြင့် combo တိုက်ခိုက်ပါ။';
+      if (sword.current) sword.current.visible = false;
+      pickupStarted.current = null;
+    };
+
+    // 1. Direct walk-up auto-pickup when stepping right next to the sword (<= 3.2m)
+    if (canPickup && nearSwordAuto && !REQUIRE_SWORD_GUARD_CLEAR) {
+      if (tryAutoCollectGhostSword(playerPos.x, playerPos.z, area5.pitch.x, area5.pitch.z, onFoot, alive)) {
+        finishPickup();
+      }
+    } else if (action === 'interact' && canPickup) {
+      // 2. Instant pickup when tapping the floating "⚔️ ဓားကောက်ယူမည်" button or pressing E (<= 6.5m)
+      if (!REQUIRE_SWORD_GUARD_CLEAR) {
+        if (collectGhostSword()) finishPickup();
+      } else if (pickupStarted.current === null) {
+        pickupStarted.current = clock.elapsedTime;
+      }
     }
-    ghostMissionProximity.pickupReady=clear&&alive;
-    ghostMissionProximity.pickupProgress=pickupStarted.current===null?0:Math.min(1,(clock.elapsedTime-pickupStarted.current)/2);
-    ghostMissionProximity.nearSword=nearSword&&onFoot&&!getThreeGhostsProgress().swordCollected&&progress.encountered.length===3;
-    ghostMissionProximity.nearGhost=onFoot&&ghostPositions.some(g=>g.distance<3);
-    if(playerCombat.message)ghostMissionProximity.lastMessage=playerCombat.message;
+
+    if (REQUIRE_SWORD_GUARD_CLEAR && pickupStarted.current !== null && clock.elapsedTime - pickupStarted.current >= 2) {
+      if (collectGhostSword()) finishPickup();
+      else pickupStarted.current = null;
+    }
+
+    const stillUncollected = !getThreeGhostsProgress().swordCollected;
+    ghostMissionProximity.pickupReady = clear && alive;
+    ghostMissionProximity.pickupProgress =
+      !REQUIRE_SWORD_GUARD_CLEAR || pickupStarted.current === null
+        ? 0
+        : Math.min(1, (clock.elapsedTime - pickupStarted.current) / 2);
+    ghostMissionProximity.nearSword = nearSwordPrompt && onFoot && stillUncollected && progress.encountered.length === 3;
+    ghostMissionProximity.nearGhost = onFoot && ghostPositions.some(g => g.distance < 3);
+    if (playerCombat.message) ghostMissionProximity.lastMessage = playerCombat.message;
 
   });
 

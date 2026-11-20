@@ -5,8 +5,11 @@ import {isPlayerHomeProtected} from '../game/playerHomeProtection';
 import {isGhostSegmentWalkable} from '../data/ghostWarehouseWaypoints';
 import { getGhostRuntime, registerGhostRuntime } from '../game/missions/ghostRuntimeRegistry';
 import { guardMissionActive, updateGhostGuard, getGuardGhost, seedGuardGhost } from '../game/missions/ghostGuardCoordinator';
-import { GHOST_STATS, isGhostDefeated } from '../game/missions/threeGhostsMission';
+import { GHOST_STATS, SWORD_DAMAGE, getActiveMissionWeapon, getThreeGhostsProgress, isGhostDefeated, type GhostId } from '../game/missions/threeGhostsMission';
 import {killPlayerFromGhost,playerUnavailableForGhost} from '../game/playerDeath';
+import {rideLife} from '../game/rideLife';
+import {playSpecialAction} from '../game/specialActions';
+import {triggerPlayerKnockback} from '../game/combat/playerKnockback';
 import {createGhostGrabPose} from '../game/ghostGrabPose';
 import {createGhostPersonalityConfig,ghostPersonalityForId} from '../game/ghostPersonalities';
 import {rememberGhostMaterial,applyGhostOpacity} from '../game/ghostVisuals';
@@ -19,6 +22,7 @@ import {
   Group,
   Material,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   type Texture,
   Vector3,
@@ -459,6 +463,24 @@ function LoadedGhostNpc({
   initialSeed?: number;
 }) {
   const rootRef = useRef<Group>(null);
+  const hpHudRef = useRef<Group>(null);
+  const hpPipRefs = useRef<Array<Mesh | null>>([]);
+  const hpPipMatRefs = useRef<Array<MeshBasicMaterial | null>>([]);
+  const ghostStats = GHOST_STATS[ghostId as GhostId];
+  const ghostScale = ghostStats?.scale ?? 2;
+  const ghostMaxHp = ghostStats?.maxHp ?? 100;
+  const hpPipCount = Math.max(1, Math.round(ghostMaxHp / SWORD_DAMAGE));
+  const hpBarHeightY = (GHOST_TARGET_HEIGHT_M / 2) * ghostScale + 0.42;
+  const hpPipWidth = hpPipCount <= 10 ? 0.095 : hpPipCount <= 15 ? 0.085 : 0.08;
+  const hpPipHeight = hpPipCount <= 10 ? 0.1 : 0.11;
+  const hpPipGap = 0.022;
+  const hpPipPitch = hpPipWidth + hpPipGap;
+  const hpBarWidth = hpPipCount * hpPipPitch - hpPipGap + 0.12;
+  const hpAnimRef = useRef({
+    lastHits: hpPipCount,
+    healFlash: 0,
+    damageFlash: 0,
+  });
   const runtimeRef = useRef<ReturnType<typeof registerGhostRuntime> | null>(null);
   const runtimeWorld = useMemo(() => new Vector3(), []);
   const rigRef = useRef<{
@@ -763,7 +785,55 @@ function LoadedGhostNpc({
       runtimeRef.current?.report(previous?.x ?? snap.x, previous?.z ?? snap.z, false, 'PAUSED', previous?.source ?? 'ai');
       return;
     }
+    const updateOverheadHpBar = (distToPlayer: number, stepDt: number, aliveNow: boolean) => {
+      const hud = hpHudRef.current;
+      if (!hud) return;
+      const show = aliveNow && distToPlayer <= 48;
+      hud.visible = show;
+      if (!show) return;
+
+      const prog = getThreeGhostsProgress();
+      const rawHp = ghostId in prog.hp ? prog.hp[ghostId as GhostId] : ghostMaxHp;
+      const clampedHp = Math.max(0, Math.min(ghostMaxHp, rawHp));
+      const hitsRemaining = Math.max(0, Math.min(hpPipCount, Math.ceil(clampedHp / SWORD_DAMAGE)));
+      const anim = hpAnimRef.current;
+
+      if (hitsRemaining < anim.lastHits) {
+        anim.damageFlash = 0.35;
+        anim.healFlash = 0;
+      } else if (hitsRemaining > anim.lastHits) {
+        anim.healFlash = 0.65;
+        anim.damageFlash = 0;
+      }
+      anim.lastHits = hitsRemaining;
+
+      if (anim.damageFlash > 0) anim.damageFlash = Math.max(0, anim.damageFlash - stepDt);
+      if (anim.healFlash > 0) anim.healFlash = Math.max(0, anim.healFlash - stepDt);
+
+      hud.position.y = hpBarHeightY;
+      hud.lookAt(camera.position);
+
+      const pipHex =
+        anim.healFlash > 0
+          ? 0x4ade80 // Bright emerald glow when life blocks increase
+          : anim.damageFlash > 0
+            ? 0x86efac // Crisp flash on remaining green blocks when hit
+            : 0x22c55e; // Vibrant green life block (1 block = 1 sword hit!)
+
+      for (let i = 0; i < hpPipCount; i++) {
+        const pip = hpPipRefs.current[i];
+        if (pip) {
+          pip.visible = i < hitsRemaining;
+        }
+        const mat = hpPipMatRefs.current[i];
+        if (mat) {
+          mat.color.setHex(pipHex);
+        }
+      }
+    };
+
     if (isGhostDefeated(ghostId)) {
+      if (hpHudRef.current) hpHudRef.current.visible = false;
       runtimeRef.current?.clear();root.userData.ghostAttackEnabled=false;root.userData.ghostCollisionEnabled=false;
       clearGhostEncounterInteraction(ghostId);clearGhostThreat(ghostId);rig.guardMelee.cancel();
       rig.audio.stop(ghostId);rig.mixerAudio.stopOwner(ghostId);
@@ -776,6 +846,18 @@ function LoadedGhostNpc({
       for(const material of rig.materials)applyGhostOpacity(material,opacity);
       if(!clip)rig.deathComplete=true;
       return;
+    }
+    // Cleanly revive a previously defeated ghost when Mission 1 is reset so it respawns visible & healthy!
+    if (rig.deathComplete || rig.reactionClip === 'Ghost_Death') {
+      rig.deathComplete = false;
+      rig.reactionClip = null;
+      rig.currentClipKey = '';
+      rig.lastAppliedOpacity = -1;
+      for (const material of rig.materials) applyGhostOpacity(material, 1);
+      clearGhostCombatReaction(ghostId);
+      rig.guardMelee.cancel(0);
+      root.userData.ghostAttackEnabled = true;
+      root.userData.ghostCollisionEnabled = true;
     }
     const reaction=ghostCombatReaction(ghostId);
     if(reaction&&reaction.seq!==rig.reactionSeq){
@@ -1021,10 +1103,34 @@ function LoadedGhostNpc({
         const heading=playerObjRef.current?.rotation.y??0;
         if((-Math.sin(heading)*(guard.x-px)-Math.cos(heading)*(guard.z-pz))/Math.max(.001,distanceToPlayer)<.3)defence='none';
       }
+      const swordEquipped = getActiveMissionWeapon() === 'ghost-sword';
+      const playerAttacking =
+        swordEquipped &&
+        playerCombat.running &&
+        (playerCombat.phase === 'STARTUP' || playerCombat.phase === 'ACTIVE');
+      if (reaction?.stunned && rig.guardMelee.engaged) {
+        rig.guardMelee.cancel(2.8);
+      }
       const interaction=rig.guardMelee.step({dt,x:guard.x,z:guard.z,distance:distanceToPlayer,protected:isPlayerHomeProtected(px,pz),
         valid:distanceToPlayer<=2.45&&guard.mode==='chase'&&combatLineClear(guard.x,guard.z,px,pz)&&!playerUnavailableForGhost()&&!camera.userData.playerOccupied&&(!rig.reactionClip||rig.reactionClip==='Ghost_Attack')&&isGhostSegmentWalkable(guard.x,guard.z,px,pz,.25),
-        attackNormalized,defence});
+        attackNormalized,defence,swordEquipped,playerAttacking});
       if(rig.guardMelee.started)rig.playCombat('Ghost_Attack');
+      if(rig.guardMelee.hitLanded&&rideLife.invulnerable<=0&&!isPlayerHomeProtected(px,pz)){
+        rideLife.mode='walking';
+        rideLife.damage=1;
+        rideLife.lives=Math.max(0,Math.round((rideLife.lives-1)*10)/10);
+        rideLife.invulnerable=0.85;
+        rideLife.crashTime=0;
+        const kb=triggerPlayerKnockback({ghostId,ghostX:guard.x,ghostZ:guard.z,playerX:px,playerZ:pz});
+        if(rideLife.lives<=0){
+          playSpecialAction('flying-back-away',{loop:false,force:true,restart:true,speed:kb.playbackSpeed});
+          killPlayerFromGhost(ghostId,interaction.seq,px,pz);
+          playerCombat.message=`💀 ${ghostId} ရိုက်ချက် (${kb.distance}m လွင့်) — Life ၃ ခုလုံး ကုန်သွားပါပြီ!`;
+        }else{
+          playSpecialAction('flying-back-away',{loop:false,force:true,restart:true,speed:kb.playbackSpeed});
+          playerCombat.message=`💥 ${ghostId} ရိုက်ခံရ၍ ${kb.distance}m လွင့်သွားသည်! (Life: ${rideLife.lives}/3)`;
+        }
+      }
       if(interaction.active&&interaction.phase==='neck-grab'&&rig.playerReactionSeq!==interaction.seq){rig.playerReactionSeq=interaction.seq;playerCombat.interrupt(ghostId==='ghost-3'?'Knockback':'Hit_React');}
       if(rig.guardMelee.parried)requestGhostReaction(ghostId,'Ghost_Stagger');
       setGhostCombatEngaged(ghostId,rig.guardMelee.engaged);
@@ -1051,6 +1157,7 @@ function LoadedGhostNpc({
       rig.controller.stepBlend(false,false,dt);
       rig.mixer.update(dt);
       if(interaction.active&&interaction.phase==='neck-grab'&&!rig.reactionClip)rig.grabPose.update(px,py+1.35,pz,root.rotation.y);
+      updateOverheadHpBar(distanceToPlayer, dt, true);
       return;
     }
     const withinVis = snap.visible && snap.distToPlayerM <= DEFAULT_GHOST_AI_CONFIG.visibleDistanceM;
@@ -1101,7 +1208,50 @@ function LoadedGhostNpc({
       rig.mixer.update(dt);
       if(snap.grabInteraction.phase==='neck-grab'&&!rig.reactionClip)rig.grabPose.update(px,py+1.35,pz,snap.yaw);
     }
+    updateOverheadHpBar(snap.distToPlayerM, dt, true);
   });
 
-  return <group ref={rootRef} name={`night-ghost-${ghostId}`} userData={{ dynamic: true }} />;
+  return (
+    <group ref={rootRef} name={`night-ghost-${ghostId}`} userData={{ dynamic: true }}>
+      {/* Overhead 3D Billboard Green Life Blocks (1 green block = 1 sword hit: 10 / 15 / 20 blocks) */}
+      <group ref={hpHudRef} name={`ghost-hp-bar-${ghostId}`} position={[0, hpBarHeightY, 0]} visible={false} renderOrder={10} userData={{ cameraIgnore: true }}>
+        {/* Dark slate backing panel */}
+        <mesh position={[0, 0, -0.012]} renderOrder={10}>
+          <planeGeometry args={[hpBarWidth, hpPipHeight + 0.08]} />
+          <meshBasicMaterial color="#0f172a" transparent opacity={0.86} fog={false} toneMapped={false} depthWrite={false} />
+        </mesh>
+        {Array.from({ length: hpPipCount }, (_, i) => {
+          const offsetX = (i - (hpPipCount - 1) * 0.5) * hpPipPitch;
+          return (
+            <group key={i} position={[offsetX, 0, 0]}>
+              {/* Empty lost-life slot underneath */}
+              <mesh position={[0, 0, -0.005]} renderOrder={11}>
+                <planeGeometry args={[hpPipWidth, hpPipHeight]} />
+                <meshBasicMaterial color="#1e293b" transparent opacity={0.85} fog={false} toneMapped={false} depthWrite={false} />
+              </mesh>
+              {/* Individual bright green life block (disappears 1 per sword hit!) */}
+              <mesh
+                ref={(el) => {
+                  hpPipRefs.current[i] = el;
+                }}
+                position={[0, 0, 0]}
+                renderOrder={12}
+              >
+                <planeGeometry args={[hpPipWidth, hpPipHeight]} />
+                <meshBasicMaterial
+                  ref={(mat) => {
+                    hpPipMatRefs.current[i] = mat;
+                  }}
+                  color="#22c55e"
+                  fog={false}
+                  toneMapped={false}
+                  depthWrite={false}
+                />
+              </mesh>
+            </group>
+          );
+        })}
+      </group>
+    </group>
+  );
 }

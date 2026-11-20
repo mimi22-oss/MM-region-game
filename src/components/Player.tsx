@@ -1,4 +1,5 @@
 import {playerCombat} from '../game/combat/combatRuntime';
+import {isPlayerKnockbackActive,resetPlayerKnockback,stepPlayerKnockback} from '../game/combat/playerKnockback';
 import {getActiveMissionWeapon,getThreeGhostsProgress} from '../game/missions/threeGhostsMission';
 import {HeldGhostSword} from './HeldGhostSword';
 import {HeldGun,isGunMotionId} from './HeldGun';
@@ -59,6 +60,7 @@ import {
   isBotFightMotionId,
   isChildBotTarget,
   isPlayerHitReactionMotionId,
+  isProtectedFromFighting,
   recruitChildDefenders,
   resetBotFighting,
   stepBotFighting,
@@ -487,7 +489,7 @@ export const Player = memo(function Player({
     Object.assign(s,{x:spot.x,z:spot.z,camX:spot.x,camZ:spot.z,bodyYaw:ward.spawnYaw,yaw:ward.spawnYaw,panning:false,first:false,topDown:false,pitch:-.12,distance:6,targetDistance:6});
     jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;s.keys.clear();
     clearGhostEncounterInteraction();clearGhostThreat();stopSpecialAction(true);resetChairSitting();ghostFallOwned.current=null;
-    resetBotFighting();stepBotGlbMotionPlayer(null,0,0,1,false);lastBotFightAttackSeq.current=0;lastBotPlayerHitSeq.current=0;
+    resetBotFighting();resetPlayerKnockback();stepBotGlbMotionPlayer(null,0,0,1,false);lastBotFightAttackSeq.current=0;lastBotPlayerHitSeq.current=0;
     if(mobileInput?.current)resetMobileInput(mobileInput.current);onMode(false);onTopDown(false);onZoom(6);completePlayerRespawn();
    }
   }
@@ -589,7 +591,8 @@ export const Player = memo(function Player({
    oldZ=s.z;
   }
   const botFightKoLocked=getBotFightingState().active&&getBotFightingState().playerKnockedOut;
-  if(playerCombat.movementLocked||controlsBlocked||introOwnsCamera||mapOpen||rideLife.crashTime>0||enteringVehicle||ghostGrabbedOnFoot||botFightKoLocked){forward=0;right=0;if(botFightKoLocked)wantsJump=false;}
+  const ghostKnockbackLocked=isPlayerKnockbackActive();
+  if(playerCombat.movementLocked||controlsBlocked||introOwnsCamera||mapOpen||rideLife.crashTime>0||enteringVehicle||ghostGrabbedOnFoot||botFightKoLocked||ghostKnockbackLocked){forward=0;right=0;if(botFightKoLocked||ghostKnockbackLocked)wantsJump=false;}
   const aerial=!balloonRide.riding&&!currentCar()&&!touch?.active&&!s.first&&(s.distance>20||s.topDown||s.panning);
   if(pickupLocked&&!aerial){forward=0;right=0;}
   if(ghostGrabbedOnFoot){
@@ -817,6 +820,7 @@ export const Player = memo(function Player({
      if(fix&&clear(fix.x,fix.z)){s.x=fix.x;s.z=fix.z;s.camX=fix.x;s.camZ=fix.z;}
     }
     let engagedNewBot=false;
+    let protectedBotBump=false;
     if(contact==='robot'){
      const bumped=
       findTrafficContactActor(s.x+mx,s.z+mz,s.bodyYaw,height(s.x,s.z),true,undefined,0.38)??
@@ -824,15 +828,19 @@ export const Player = memo(function Player({
      if(bumped&&bumped.kind==='robot'){
       const botId=bumped.root.name||bumped.root.uuid;
       const npcRole=bumped.root.userData?.npcRole as string|undefined;
-      const label=formatBotTargetLabel(bumped.root.name,npcRole);
-      const isChild=isChildBotTarget(botId,npcRole);
-      const nearbyDefenders=isChild
-       ? listNearbyBotColliders(bumped.x,bumped.z,75,new Set([botId]),CHILD_DEFENDER_MAX)
-       : undefined;
-      engagedNewBot=engageBotFight({id:botId,label,x:bumped.x,z:bumped.z,npcRole,isChild,playerX:s.x,playerZ:s.z,nearbyDefenders});
+      if(isProtectedFromFighting(botId,bumped.x,bumped.z,s.x,s.z)){
+       protectedBotBump=true;
+      }else{
+       const label=formatBotTargetLabel(bumped.root.name,npcRole);
+       const isChild=isChildBotTarget(botId,npcRole);
+       const nearbyDefenders=isChild
+        ? listNearbyBotColliders(bumped.x,bumped.z,75,new Set([botId]),CHILD_DEFENDER_MAX)
+        : undefined;
+       engagedNewBot=engageBotFight({id:botId,label,x:bumped.x,z:bumped.z,npcRole,isChild,playerX:s.x,playerZ:s.z,nearbyDefenders});
+      }
      }
     }
-    const skipFightRecoil=contact==='robot'&&(engagedNewBot||getBotFightingState().active);
+    const skipFightRecoil=contact==='robot'&&(protectedBotBump||engagedNewBot||getBotFightingState().active);
     if(!skipFightRecoil&&hitWalkingContact(contact)){
      if(j.airborne){s.x=j.safeX;s.z=j.safeZ;}jump.current=createHumanJump();jumpPose.current=createJumpPose();
      fallYaw.current=Math.hypot(mx,mz)>.0001?Math.atan2(-mx,-mz):s.bodyYaw;
@@ -843,6 +851,13 @@ export const Player = memo(function Player({
    s.camX=s.x;s.camZ=s.z;
   }
   const onFootFightingAllowed=!balloon.riding&&!currentCar()&&!ride.riding&&!chairControlled&&!mapOpen&&!controlsBlocked&&!loading;
+  let knockbackStepActive=false;
+  if(onFootFightingAllowed&&isPlayerKnockbackActive()){
+   const kbStep=stepPlayerKnockback(dt,s,clear);
+   knockbackStepActive=kbStep.active;
+   if(kbStep.faceYaw!==null)s.bodyYaw=kbStep.faceYaw;
+   s.camX=s.x;s.camZ=s.z;
+  }
   if(onFootFightingAllowed){
    stepBotFighting(dt,s.x,s.z,getTrafficColliderPosition,(bx,bz)=>canStand(bx,bz));
    const bf=getBotFightingState();
@@ -906,13 +921,14 @@ export const Player = memo(function Player({
    const isGunClip=isGunMotionId(activeSpecialId);
    const isFightClip=(isBotFightMotionId(activeSpecialId)||isPlayerHitReactionMotionId(activeSpecialId))&&getBotFightingState().active;
    const isGhostFall=activeSpecialId==='fall'&&ghostGrabbedOnFoot&&ghostInteraction.phase==='player-fall';
+   const isGhostKnockback=activeSpecialId==='flying-back-away';
    const baseConflict=
     !glbCapable||
     balloon.riding||
     !!currentCar()||
     ride.riding||
-    (!isFightClip&&isWalkingRecoil())||
-    (!isFightClip&&rideLife.crashTime>0)||
+    (!isFightClip&&!isGhostKnockback&&isWalkingRecoil())||
+    (!isFightClip&&!isGhostKnockback&&rideLife.crashTime>0)||
     jump.current.airborne||
     jumpPose.current.prepare>0;
    const cantDance=isWaitingClip
@@ -923,7 +939,7 @@ export const Player = memo(function Player({
     ? baseConflict||pickupLocked||enteringVehicle||wantsJump||chairSittingSnapshot.status!=='IDLE'
     : isFightClip
     ? baseConflict||pickupLocked||enteringVehicle||wantsJump||(!aerial&&len>0.18&&travelled>0.03)
-    : isGhostFall
+    : isGhostFall||isGhostKnockback
     ? baseConflict
     : baseConflict||pickupLocked||enteringVehicle||(!aerial&&(len>0.01||wantsJump))||travelled>0.015;
    if(cantDance)stopSpecialAction();
@@ -934,7 +950,7 @@ export const Player = memo(function Player({
   characterMotion.current.speed=balloon.riding||chairControlled?0:dt>0?travelled/dt:0;
   characterMotion.current.distance+=balloon.riding||chairControlled?0:isWalkingRecoil()?-travelled:travelled;
   updateSummonStand(dt,s.x,s.z,travelled>0.02,!!currentCar()||balloon.riding,ride.riding);
-  if(!balloon.riding&&!currentCar()&&!ride.riding&&!isWalkingRecoil()&&!chairControlled&&(!aerial||mapOpen))s.bodyYaw=avatarHeading(s.bodyYaw,dx,dz);
+  if(!balloon.riding&&!currentCar()&&!ride.riding&&!isWalkingRecoil()&&!chairControlled&&!knockbackStepActive&&!isPlayerKnockbackActive()&&(!aerial||mapOpen))s.bodyYaw=avatarHeading(s.bodyYaw,dx,dz);
   if(wheels.current&&(!aerial||mapOpen)){
    const travel=-Math.sin(s.bodyYaw)*dx-Math.cos(s.bodyYaw)*dz;
    wheels.current.rotation.x-=Math.hypot(dx,dz)*(travel<0?-1:1)/(0.24*0.95);

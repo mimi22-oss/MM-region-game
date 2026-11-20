@@ -9,6 +9,8 @@ export function createCameraObstructionQuery() {
     if (!object.visible || object === avatar || object.userData.cameraIgnore === true ||
       (ridingBalloon && object.userData.passengerBalloon === true) ||
       (carId !== null && object.userData.carId === carId)) return;
+    // Floating VFX/HUD sprites should never obstruct the camera and throw if ray.camera is unset.
+    if ((object as { isSprite?: boolean }).isSprite === true) return;
     if (object.layers.test(ray.layers)) {
       const propagate: unknown = object.raycast(ray, hits);
       if (propagate === false) return;

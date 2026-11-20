@@ -1,15 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {AnimationClip,AnimationMixer,Group,Quaternion,QuaternionKeyframeTrack,Vector3,PropertyBinding} from 'three';
+import {AnimationClip,AnimationMixer,Group,Quaternion,QuaternionKeyframeTrack,Raycaster,Sprite,SpriteMaterial,Vector3,PropertyBinding} from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
+import {createCameraObstructionQuery} from '../src/game/cameraObstruction.ts';
 import {CombatController} from '../src/game/combat/CombatController.ts';
 import {CombatAnimationDriver} from '../src/game/combat/CombatAnimationDriver.ts';
 import {ATTACKS,COMBAT_CLIPS,COMBO} from '../src/game/combat/AttackDefinitions.ts';
 import {SwordHitDetection} from '../src/game/combat/SwordHitDetection.ts';
-import {GuardMeleeController} from '../src/game/combat/GuardMeleeController.ts';
+import {GHOST_REACTION_DELAY_MAX_SEC,GHOST_REACTION_DELAY_MIN_SEC,GuardMeleeController,sampleGhostReactionDelay} from '../src/game/combat/GuardMeleeController.ts';
+import {getGhostKnockbackDistance,isPlayerKnockbackActive,resetPlayerKnockback,stepPlayerKnockback,triggerPlayerKnockback} from '../src/game/combat/playerKnockback.ts';
+import {getMotion} from '../src/animation/core/MotionRegistry.ts';
 import {requestGhostReaction,ghostCombatReaction,finishGhostReaction,setGhostCombatEngaged,ghostCombatMovementLocked,clearGhostCombatReaction} from '../src/game/combat/GhostCombatReactions.ts';
-import {playerCombat,registerCombatWeapon,registerCombatTarget,sampleCombatBlade,combatEffects} from '../src/game/combat/combatRuntime.ts';
+import {playerCombat,registerCombatWeapon,registerCombatTarget,sampleCombatBlade,combatEffects,REQUIRE_GHOST_GROUP_SHIELD} from '../src/game/combat/combatRuntime.ts';
 import {registerGhostRuntime} from '../src/game/missions/ghostRuntimeRegistry.ts';
 import {GHOST_IDS,markGhostEncounter,collectGhostSword,getThreeGhostsProgress,damageMissionGhost} from '../src/game/missions/threeGhostsMission.ts';
 
@@ -73,6 +76,51 @@ test('guard contact follows animation marker; protection, parry and invalid cont
  const parry=new GuardMeleeController();parry.step(input);parry.step({...input,attackNormalized:.5,defence:'parry'});assert.equal(parry.parried,true);assert.equal(parry.interaction.active,false);
  const caught=new GuardMeleeController(.1,.2);caught.step(input);caught.step({...input,attackNormalized:.5});
  let killed=0;for(let i=0;i<10;i++){caught.step(input);if(caught.killed)killed++;}assert.equal(killed,1);
+ // Sword-equipped player: ghost waits random 2-5s before reacting/striking, never instant-grabs, and lands 1-Heart hit (like Zombie)
+ assert.equal(GHOST_REACTION_DELAY_MIN_SEC,2.0);
+ assert.equal(GHOST_REACTION_DELAY_MAX_SEC,5.0);
+ assert.equal(sampleGhostReactionDelay(()=>0),2.0);
+ assert.equal(sampleGhostReactionDelay(()=>1),5.0);
+ const duel=new GuardMeleeController();
+ // Approaches at 1.35m -> enters wait (2-5s random delay), does NOT immediately swing or grab!
+ duel.step({...input,dt:0.05,distance:1.35,swordEquipped:true,rng:()=>0});
+ assert.equal(duel.waiting,true,'Ghost should enter 2-5s wait delay before reacting');
+ assert.equal(duel.started,false,'Ghost must not immediately attack upon closing distance');
+ assert.equal(duel.interaction.active,false,'Ghost must not instant-grab sword player');
+ // Advance 1.5s (< 2.0s min delay): still waiting so player has time to slash!
+ for(let i=0;i<15;i++)duel.step({...input,dt:0.1,distance:1.35,swordEquipped:true,rng:()=>0});
+ assert.equal(duel.started,false,'Ghost must still wait before 2s elapsed');
+ // Advance past 2.0s: ghost now starts attack windup
+ for(let i=0;i<6;i++){duel.step({...input,dt:0.1,distance:1.35,swordEquipped:true,rng:()=>0});if(duel.started)break;}
+ assert.equal(duel.started,true,'Ghost swings after 2-5s random hesitation delay');
+ // Strike connects at normalized >= 0.5: sets hitLanded=true (-1 Heart like Zombie), NOT instant grab/kill!
+ duel.step({...input,dt:0.05,distance:1.35,swordEquipped:true,attackNormalized:0.55,rng:()=>0.5});
+ assert.equal(duel.hitLanded,true,'Ghost sword-duel strike must emit hitLanded (-1 Heart like Zombie)');
+ assert.equal(duel.killed,false,'Single ghost strike must not insta-kill player');
+ assert.equal(duel.interaction.active,false,'Ghost sword-duel strike must not lock player in neck-grab');
+ assert.equal(duel.waiting,true,'Ghost enters next 2-5s random wait after striking');
+ // Camera obstruction raycast must safely ignore floating Sprites even when ray.camera is unset
+ const camScene=new Group();
+ const sprite=new Sprite(new SpriteMaterial());
+ sprite.position.set(0,1,-2);
+ camScene.add(sprite);
+ const query=createCameraObstructionQuery();
+ const ray=new Raycaster(new Vector3(0,1,0),new Vector3(0,0,-1));
+ assert.doesNotThrow(()=>query(ray,camScene,null,false,null),'cameraObstruction must never throw on Sprite when ray.camera is unset');
+
+ // Ghost strike knockback: ghost-1 = 0.5m, ghost-2 = 1.0m, ghost-3 = 2.0m using flying-back-away.glb
+ assert.equal(getMotion('flying-back-away')?.assetUrl,'/motions/movement/flying-back-away.glb');
+ for(const [gid,expectedDist] of [['ghost-1',0.5],['ghost-2',1.0],['ghost-3',2.0]] as const){
+  resetPlayerKnockback();
+  assert.equal(getGhostKnockbackDistance(gid),expectedDist);
+  const pos={x:10,z:12};
+  triggerPlayerKnockback({ghostId:gid,ghostX:10,ghostZ:10,playerX:pos.x,playerZ:pos.z});
+  assert.equal(isPlayerKnockbackActive(),true);
+  for(let i=0;i<30;i++)stepPlayerKnockback(0.05,pos,()=>true);
+  assert.equal(isPlayerKnockbackActive(),false);
+  assert.ok(Math.abs((pos.z-12)-expectedDist)<0.02,`${gid} should knock player back ${expectedDist}m, got ${(pos.z-12).toFixed(3)}m`);
+ }
+ resetPlayerKnockback();
 });
 test('ghost reaction and engagement state stays independent; stale completion cannot clear a newer stun',()=>{
  const seq=requestGhostReaction('test-1','Ghost_Hit');requestGhostReaction('test-2','Ghost_Attack');
@@ -92,12 +140,18 @@ test('real damage resolver requires active blade contact, facing and group clear
  const hp=()=>getThreeGhostsProgress().hp['ghost-1'];
  playerCombat.request('combo');const initial=hp();sampleCombatBlade(true);assert.equal(hp(),initial,'startup cannot damage even if caller passes active');
  playerCombat.sample(.4);sampleCombatBlade(true);assert.equal(hp(),initial-10);
+ const lastPopup=combatEffects.damagePopups[(combatEffects.damagePopupHead-1+combatEffects.damagePopups.length)%combatEffects.damagePopups.length];
+ assert.equal(lastPopup.text,'-10 HP','Sword hit must emit floating -10 HP damage popup');
  const impacts=combatEffects.impactHead;for(let i=0;i<20;i++)sampleCombatBlade(true);
  assert.equal(hp(),initial-10);assert.equal(combatEffects.impactHead,impacts);
  playerCombat.finish(playerCombat.sequence);playerCombat.request('combo');playerCombat.sample(.4);
- const other=registerGhostRuntime('ghost-2');other.report(avatar.position.x+5,avatar.position.z,true,'wait');sampleCombatBlade(true);assert.equal(hp(),initial-10,'group shield');other.release();
- ghost.position.z=avatar.position.z+1;weapon.position.z=ghost.position.z;sampleCombatBlade(true);assert.equal(hp(),initial-10,'behind-facing overlap misses');
- ghost.position.z=avatar.position.z-1;weapon.position.z=ghost.position.z;weapon.position.x+=4;sampleCombatBlade(true);assert.equal(hp(),initial-10,'actual blade miss');
+ const other=registerGhostRuntime('ghost-2');other.report(avatar.position.x+5,avatar.position.z,true,'wait');sampleCombatBlade(true);
+ assert.equal(hp(),REQUIRE_GHOST_GROUP_SHIELD?initial-10:initial-20,REQUIRE_GHOST_GROUP_SHIELD?'group shield blocks':'sword hits even when 2+ ghosts are nearby while group shield is disabled');
+ other.release();
+ playerCombat.finish(playerCombat.sequence);playerCombat.request('combo');playerCombat.sample(.4);
+ const hpAfterSecond=hp();
+ ghost.position.z=avatar.position.z+1;weapon.position.z=ghost.position.z;sampleCombatBlade(true);assert.equal(hp(),hpAfterSecond,'behind-facing overlap misses');
+ ghost.position.z=avatar.position.z-1;weapon.position.z=ghost.position.z;weapon.position.x+=4;sampleCombatBlade(true);assert.equal(hp(),hpAfterSecond,'actual blade miss');
  weapon.position.x=ghost.position.x;damageMissionGhost('ghost-1',hp()-10);sampleCombatBlade(true);
  assert.equal(hp(),0);assert.equal(ghostCombatReaction('ghost-1')?.clip,'Ghost_Death');
  const deathSeq=ghostCombatReaction('ghost-1')?.seq;sampleCombatBlade(true);assert.equal(ghostCombatReaction('ghost-1')?.seq,deathSeq);
