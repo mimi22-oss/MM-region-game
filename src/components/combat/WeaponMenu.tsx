@@ -1,12 +1,15 @@
 import {useCallback,useEffect,useRef,useState,type CSSProperties} from 'react';
 import {
   SWORD_DAMAGE,
+  getActiveMissionWeapon,
+  isZombieGunUnlockedState,
   selectMissionWeapon,
   useThreeGhostsMission,
   type ThreeGhostsProgress,
 } from '../../game/missions/threeGhostsMission';
+import {useZombieForestMission} from '../../game/missions/zombieForestMission';
 
-type WeaponValue = '' | 'ghost-sword';
+type WeaponValue = '' | 'ghost-sword' | 'zombie-gun';
 
 interface WeaponOption {
   value: WeaponValue;
@@ -33,6 +36,14 @@ const WEAPON_OPTIONS: readonly WeaponOption[] = [
     englishName: 'Ghost Sword',
     subtitle: 'ဓားခုတ်တိုက်ခိုက်ရေး · 6-Hit Combo',
     badges: [`${SWORD_DAMAGE} DMG`, 'မစ်ရှင်ဆု'],
+  },
+  {
+    value: 'zombie-gun',
+    weapon: 'zombie-gun',
+    myanmarName: 'သေနတ်',
+    englishName: 'Tactical Gun',
+    subtitle: 'အဝေးပစ်သေနတ် · Zombie မစ်ရှင်ဆု',
+    badges: [`${SWORD_DAMAGE} DMG`, 'Zombie 13 ဆု'],
   },
 ];
 
@@ -115,15 +126,45 @@ function GhostSwordArtwork() {
   );
 }
 
+function TacticalGunArtwork() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M3 7h15l2 2v3h-5l-1.5 2H10l-1.5 6H4.5l1.2-6H3V7Z"
+        fill="#475569"
+        stroke="#cbd5e1"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+      <path d="M18 9h3" stroke="#22c55e" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="11.2" cy="12.2" r="1.1" fill="#facc15" />
+    </svg>
+  );
+}
+
 export function WeaponMenu() {
   const mission = useThreeGhostsMission();
+  const zombieMission = useZombieForestMission();
   const [open, setOpen] = useState(false);
   const [popoverStyle, setPopoverStyle] = useState<CSSProperties | undefined>(undefined);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  const equippedValue: WeaponValue = mission.equippedWeapon === 'ghost-sword' ? 'ghost-sword' : '';
-  const isSwordEquipped = equippedValue === 'ghost-sword';
+  const gunUnlocked = zombieMission.gunUnlocked || isZombieGunUnlockedState();
+  const activeWeapon = getActiveMissionWeapon();
+  const equippedValue: WeaponValue =
+    activeWeapon === 'zombie-gun'
+      ? 'zombie-gun'
+      : activeWeapon === 'ghost-sword'
+        ? 'ghost-sword'
+        : '';
+  const isSwordEquipped = equippedValue === 'ghost-sword' || equippedValue === 'zombie-gun';
 
   const updatePopoverPosition = useCallback(() => {
     const trigger = triggerRef.current;
@@ -184,9 +225,12 @@ export function WeaponMenu() {
     };
   }, [open, updatePopoverPosition]);
 
-  if (!mission.completed) return null;
+  if (!mission.completed && !gunUnlocked && !zombieMission.inForest) return null;
 
-  const activeOption = WEAPON_OPTIONS.find(opt => opt.value === equippedValue) ?? WEAPON_OPTIONS[0];
+  const visibleOptions = WEAPON_OPTIONS.filter(
+    opt => opt.value !== 'zombie-gun' || gunUnlocked,
+  );
+  const activeOption = visibleOptions.find(opt => opt.value === equippedValue) ?? WEAPON_OPTIONS[0];
 
   const handleToggle = () => {
     if (document.pointerLockElement) document.exitPointerLock();
@@ -214,12 +258,17 @@ export function WeaponMenu() {
         value={equippedValue}
         onChange={event =>
           selectMissionWeapon(
-            event.currentTarget.value === 'ghost-sword' ? 'ghost-sword' : null,
+            event.currentTarget.value === 'zombie-gun'
+              ? 'zombie-gun'
+              : event.currentTarget.value === 'ghost-sword'
+                ? 'ghost-sword'
+                : null,
           )
         }
       >
         <option value="">လက်ဗလာ</option>
         <option value="ghost-sword">သရဲဓား</option>
+        {gunUnlocked && <option value="zombie-gun">သေနတ်</option>}
       </select>
 
       <button
@@ -284,9 +333,10 @@ export function WeaponMenu() {
           </div>
 
           <div className="weapon-card-list" role="radiogroup" aria-label="Weapon options">
-            {WEAPON_OPTIONS.map(option => {
+            {visibleOptions.map(option => {
               const selected = equippedValue === option.value;
               const isGhostSword = option.value === 'ghost-sword';
+              const isZombieGun = option.value === 'zombie-gun';
               return (
                 <button
                   key={option.value || 'unarmed'}
@@ -295,7 +345,7 @@ export function WeaponMenu() {
                   aria-checked={selected}
                   className={[
                     'weapon-card',
-                    isGhostSword ? 'weapon-card-sword' : 'weapon-card-unarmed',
+                    isGhostSword || isZombieGun ? 'weapon-card-sword' : 'weapon-card-unarmed',
                     selected ? 'is-selected' : '',
                   ]
                     .filter(Boolean)
@@ -303,7 +353,13 @@ export function WeaponMenu() {
                   onClick={() => handleSelect(option.weapon)}
                 >
                   <span className="weapon-card-icon" aria-hidden="true">
-                    {isGhostSword ? <GhostSwordArtwork /> : <UnarmedIcon />}
+                    {isZombieGun ? (
+                      <TacticalGunArtwork />
+                    ) : isGhostSword ? (
+                      <GhostSwordArtwork />
+                    ) : (
+                      <UnarmedIcon />
+                    )}
                   </span>
 
                   <span className="weapon-card-body">
@@ -336,7 +392,12 @@ export function WeaponMenu() {
           </div>
 
           <div className="weapon-menu-footer">
-            {isSwordEquipped ? (
+            {equippedValue === 'zombie-gun' ? (
+              <>
+                <span className="weapon-keycap">F</span>
+                <span>သေနတ်ပစ်ခတ်ရန် (Shoot Zombie / Ghost)</span>
+              </>
+            ) : equippedValue === 'ghost-sword' ? (
               <>
                 <span className="weapon-keycap">F</span>
                 <span>ဓားခုတ် Combo ·</span>
@@ -344,7 +405,7 @@ export function WeaponMenu() {
                 <span>Heavy Slash</span>
               </>
             ) : (
-              <span>သရဲဓားကို ရွေးချယ်၍ တိုက်ခိုက်ရေးမုဒ် ဖွင့်နိုင်ပါသည်</span>
+              <span>သရဲဓား သို့မဟုတ် သေနတ်ကို ရွေးချယ်၍ တိုက်ခိုက်ရေးမုဒ် ဖွင့်နိုင်ပါသည်</span>
             )}
           </div>
         </div>

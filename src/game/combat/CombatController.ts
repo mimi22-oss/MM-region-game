@@ -1,5 +1,6 @@
 import {ATTACKS,COMBO,type CombatClip,type CombatCommand} from './AttackDefinitions.ts';
 export type CombatPhase='UNARMED'|'IDLE'|'MOVE'|'STARTUP'|'ACTIVE'|'RECOVERY'|'BLOCK'|'PARRY'|'DODGE'|'STAGGER'|'KNOCKBACK'|'DEAD';
+const DEFENSIVE_COMMANDS=new Set<CombatCommand>(['Sword_Block','Sword_Parry','Dodge_Left','Dodge_Right']);
 export class CombatController {
  phase:CombatPhase='UNARMED'; clip:CombatClip|null=null; sequence=0; normalized=0; comboIndex=-1;
  equipped=false; allowed=false; paused=false; dead=false; capable=false; weaponReady=true; speed=0; message='';
@@ -22,6 +23,9 @@ export class CombatController {
  request(command:CombatCommand):boolean {
   if(!this.running||this.paused){this.message=this.capable?'Combat unavailable in this state':'Choose a combat GLB character';return false;}
   if(this.busy){
+   if(DEFENSIVE_COMMANDS.has(command)){
+    this.cancel();this.start(command);return true;
+   }
    const def=this.clip?ATTACKS[this.clip]:undefined;
    if(!def||command!=='combo'||this.normalized<def.bufferStart||this.normalized>.96||this.buffered)return false;
    this.buffered=command;return true;

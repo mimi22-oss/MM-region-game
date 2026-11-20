@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject, type PointerEvent } from 'react';
 import { MobileGesture, type MobileInput, type MobileDirection } from '../game/mobileInput';
-import {useThreeGhostsMission} from '../game/missions/threeGhostsMission';
+import {getActiveMissionWeapon,useThreeGhostsMission} from '../game/missions/threeGhostsMission';
 import {requestSwordAttack} from '../game/combat/combatInput';
 import type {CombatCommand} from '../game/combat/AttackDefinitions';
 import { tryTapSubscriptionBillboard } from '../game/subscriptionShop';
@@ -343,11 +343,16 @@ export function MobileControls({
 				onPointerCancel={release}
 				onLostPointerCapture={release}
 			/>
-      {canJump&&mission.equippedWeapon==='ghost-sword'&&<div className="mobile-fight-buttons" aria-label="တိုက်ခိုက်ရေး">
+      {canJump&&(mission.equippedWeapon==='ghost-sword'||getActiveMissionWeapon()==='ghost-sword')&&<div className="mobile-fight-buttons" aria-label="တိုက်ခိုက်ရေး">
         {([['combo','⚔','ခုတ်'],['Heavy_Slash','✦','အားပြင်း'],['Sword_Block','🛡','ကာ']] as const).map(([command,icon,label])=>
           <button key={command} type="button" aria-label={label} onPointerDown={e=>{
             e.preventDefault();e.stopPropagation();fight(command);
           }} onClick={e=>{if(e.detail===0)fight(command);}}><span aria-hidden="true">{icon}</span>{label}</button>)}
+      </div>}
+      {canJump&&getActiveMissionWeapon()==='zombie-gun'&&<div className="mobile-fight-buttons" aria-label="သေနတ်ပစ်ခတ်ရေး">
+        <button type="button" aria-label="ပစ်" onPointerDown={e=>{
+          e.preventDefault();e.stopPropagation();fight('combo');
+        }} onClick={e=>{if(e.detail===0)fight('combo');}}><span aria-hidden="true">🔫</span>ပစ်</button>
       </div>}
 			{canJump && <button type="button" className="mobile-sprint-btn mobile-jump-btn"
                 aria-label="ခုန်ရန် (Space)" title="ခုန်ရန် · Space"

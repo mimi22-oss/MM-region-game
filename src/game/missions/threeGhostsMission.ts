@@ -14,11 +14,12 @@ export const ENCOUNTER_RADIUS_M = 8;
 export const SWORD_PICKUP_RADIUS_M = 3.2;
 export const GROUP_SHIELD_RADIUS_M = 12;
 const STORAGE_KEY = 'mm-region-three-ghosts-mission-v1';
+export type MissionWeaponId = 'ghost-sword' | 'zombie-gun' | null;
 export interface ThreeGhostsProgress {
   version: 1;
   encountered: GhostId[];
   swordCollected: boolean;
-  equippedWeapon: 'ghost-sword' | null;
+  equippedWeapon: MissionWeaponId;
   hp: Record<GhostId, number>;
   completed: boolean;
 }
@@ -39,11 +40,18 @@ function load(): ThreeGhostsProgress {
     const completed = swordCollected && GHOST_IDS.every(id => hp[id] === 0);
     // Legacy completed saves enter the inventory with empty hands. An unfinished quest
     // keeps its already-collected sword equipped so the player can finish the encounter.
-    const equippedWeapon = swordCollected && (!completed || raw.equippedWeapon === 'ghost-sword') ? 'ghost-sword' : null;
+    const equippedWeapon: MissionWeaponId =
+      raw.equippedWeapon === 'zombie-gun'
+        ? 'zombie-gun'
+        : swordCollected && (!completed || raw.equippedWeapon === 'ghost-sword')
+          ? 'ghost-sword'
+          : null;
     return { version: 1, encountered, swordCollected, equippedWeapon, hp, completed };
   } catch { return initial(); }
 }
 let progress: ThreeGhostsProgress = load();
+let zombieGunUnlocked = progress.equippedWeapon === 'zombie-gun';
+let zombieForestSwordActive = false;
 const subscribers = new Set<() => void>();
 function publish(next: ThreeGhostsProgress) {
   progress = next;
@@ -54,8 +62,40 @@ export function getThreeGhostsProgress() { return progress; }
 export function subscribeThreeGhostsMission(fn: () => void) { subscribers.add(fn); return () => { subscribers.delete(fn); }; }
 export function useThreeGhostsMission() { return useSyncExternalStore(subscribeThreeGhostsMission, getThreeGhostsProgress, getThreeGhostsProgress); }
 export function hasCompletedThreeGhostsMission() { return progress.completed; }
+export function setZombieGunUnlockedState(unlocked: boolean, autoEquip = false) {
+  zombieGunUnlocked = unlocked;
+  if (unlocked && autoEquip) {
+    zombieForestSwordActive = false;
+    if (progress.equippedWeapon !== 'zombie-gun') {
+      publish({ ...progress, equippedWeapon: 'zombie-gun' });
+      return;
+    }
+  }
+  subscribers.forEach(fn => fn());
+}
+export function isZombieGunUnlockedState() { return zombieGunUnlocked; }
+export function setZombieForestSwordActive(active: boolean) {
+  if (zombieForestSwordActive !== active) {
+    zombieForestSwordActive = active;
+    subscribers.forEach(fn => fn());
+  }
+}
+export function isZombieForestSwordActive() { return zombieForestSwordActive; }
+export function getActiveMissionWeapon(): MissionWeaponId {
+  if (progress.equippedWeapon !== null) return progress.equippedWeapon;
+  if (zombieForestSwordActive) return 'ghost-sword';
+  return null;
+}
 export function selectMissionWeapon(weapon: ThreeGhostsProgress['equippedWeapon']) {
-  if (!progress.completed || !progress.swordCollected || (weapon !== null && weapon !== 'ghost-sword')) return false;
+  if (weapon === 'zombie-gun') {
+    if (!zombieGunUnlocked) return false;
+    zombieForestSwordActive = false;
+    if (progress.equippedWeapon !== 'zombie-gun') publish({ ...progress, equippedWeapon: 'zombie-gun' });
+    return true;
+  }
+  const swordAllowed = (progress.completed && progress.swordCollected) || zombieGunUnlocked || zombieForestSwordActive;
+  if (!swordAllowed || (weapon !== null && weapon !== 'ghost-sword')) return false;
+  if (weapon === null) zombieForestSwordActive = false;
   if (progress.equippedWeapon !== weapon) publish({ ...progress, equippedWeapon: weapon });
   return true;
 }

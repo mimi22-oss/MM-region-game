@@ -1,7 +1,7 @@
 import {useEffect,useLayoutEffect,useRef,useState,type RefObject} from 'react';
 import {createPortal,useFrame,useThree} from '@react-three/fiber';
 import {Group,Vector3,type Object3D} from 'three';
-import {useThreeGhostsMission} from '../game/missions/threeGhostsMission';
+import {getActiveMissionWeapon,useThreeGhostsMission} from '../game/missions/threeGhostsMission';
 import {belongsToAvatar,findSwordHand,swordGripRotation} from '../game/missions/ghostSwordAttachment';
 import {getPlayerDeathState} from '../game/playerDeath';
 import {currentCar} from '../game/carRide';
@@ -17,20 +17,25 @@ import {combatGrip} from '../game/combat/SwordPose';
 export function HeldGhostSword({avatar}:{avatar:RefObject<Group|null>}){
   const progress=useThreeGhostsMission();
   const scene=useThree(state=>state.scene);
-  const equipped=progress.equippedWeapon==='ghost-sword';
+  const equipped=getActiveMissionWeapon()==='ghost-sword';
   useEffect(()=>{
     if(!equipped)return;
     const attack=(e:KeyboardEvent)=>{
-      if(e.code!=='KeyF'||e.repeat||e.altKey||e.ctrlKey||e.metaKey||
+      if(e.repeat||e.altKey||e.ctrlKey||e.metaKey||
          (e.target instanceof HTMLElement && (e.target.isContentEditable||e.target.closest('input,textarea,select'))))return;
-      e.preventDefault();
-      requestSwordAttack(e.shiftKey?'Heavy_Slash':'attack');
+      if(e.code==='KeyF'){
+        e.preventDefault();
+        requestSwordAttack(e.shiftKey?'Heavy_Slash':'attack');
+      }else if(e.code==='KeyG'||e.code==='KeyB'){
+        e.preventDefault();
+        requestSwordAttack('Sword_Block');
+      }
     };
     window.addEventListener('keydown',attack);
     return ()=>window.removeEventListener('keydown',attack);
   },[equipped]);
   return <>{equipped&&<EquippedSword avatar={avatar}/>}
-    {progress.swordCollected&&createPortal(<SwordCombatVFX/>,scene)}</>;
+    {(progress.swordCollected||equipped)&&createPortal(<SwordCombatVFX/>,scene)}</>;
 }
 function EquippedSword({avatar}:{avatar:RefObject<Group|null>}){
   const [hand,setHand]=useState<Object3D|null>(null),lastCheck=useRef(-Infinity);

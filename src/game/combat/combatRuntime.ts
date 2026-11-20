@@ -2,7 +2,8 @@ import {Vector3,type Object3D} from 'three';
 import {CombatController} from './CombatController.ts';
 import {ATTACKS} from './AttackDefinitions.ts';
 import {SwordHitDetection} from './SwordHitDetection.ts';
-import {GHOST_IDS,GROUP_SHIELD_RADIUS_M,SWORD_DAMAGE,damageMissionGhost,getThreeGhostsProgress,isGhostDefeated} from '../missions/threeGhostsMission.ts';
+import {GHOST_IDS,GROUP_SHIELD_RADIUS_M,SWORD_DAMAGE,damageMissionGhost,getActiveMissionWeapon,getThreeGhostsProgress,isGhostDefeated} from '../missions/threeGhostsMission.ts';
+import {damageZombie,isZombieAlive,isZombieTargetId} from '../missions/zombieForestMission.ts';
 import {getGhostRuntime} from '../missions/ghostRuntimeRegistry.ts';
 import {requestGhostReaction} from './GhostCombatReactions.ts';
 import {clearGhostEncounterInteraction} from '../ghostConfig.ts';
@@ -33,7 +34,7 @@ export function combatLineClear(ax:number,az:number,bx:number,bz:number){
 /** Called by the player's one mixer owner, after each bounded animation substep. */
 export function sampleCombatBlade(active:boolean){
  active=active&&playerCombat.phase==='ACTIVE'&&playerCombat.actionActive;
- if(!weapon||!playerCombat.running||!active||getThreeGhostsProgress().equippedWeapon!=='ghost-sword'){previousValid=false;previousActive=false;return;}
+ if(!weapon||!playerCombat.running||!active||getActiveMissionWeapon()!=='ghost-sword'){previousValid=false;previousActive=false;return;}
  weapon.root.updateWorldMatrix(true,false);
  weapon.base.getWorldPosition(base);weapon.tip.getWorldPosition(tip);
  if(lastSequence!==playerCombat.sequence){lastSequence=playerCombat.sequence;previousValid=false;previousActive=false;}
@@ -46,7 +47,26 @@ export function sampleCombatBlade(active:boolean){
   let nearby=0;
   for(const id of GHOST_IDS){const g=getGhostRuntime(id);if(g?.active&&!isGhostDefeated(id)&&Math.hypot(g.x-player.x,g.z-player.z)<=GROUP_SHIELD_RADIUS_M)nearby++;}
   for(const [id,target] of targets){
-   if(playerCombat.hits.has(id)||isGhostDefeated(id)||!getGhostRuntime(id)?.active)continue;
+   if(playerCombat.hits.has(id))continue;
+   if(isZombieTargetId(id)){
+    if(!isZombieAlive(id))continue;
+    target.root.getWorldPosition(targetPos);
+    const dx=targetPos.x-player.x,dz=targetPos.z-player.z,distance=Math.hypot(dx,dz);
+    const facing=distance<.01?1:(dx*forward.x+dz*forward.z)/distance;
+    if(distance>3.15||facing<(playerCombat.clip==='Spin_Slash'?-.95:-.2))continue;
+    a.set(targetPos.x,targetPos.y+target.height*.08,targetPos.z);b.set(targetPos.x,targetPos.y+target.height*.92,targetPos.z);
+    const hit=detector.sweptBlade(previousBase,previousTip,base,tip,a,b,target.radius+.18)||(distance<=2.35&&facing>=.12);
+    if(!hit)continue;
+    if(!combatLineClear(player.x,player.z,targetPos.x,targetPos.z))continue;
+    const res=damageZombie(id,1,'sword');
+    if(!res)continue;
+    playerCombat.hits.add(id);
+    const impact=combatEffects.impacts[combatEffects.impactHead++%combatEffects.impacts.length];
+    impact.position.copy(base).lerp(tip,.5);impact.at=combatEffects.time;impact.seed=playerCombat.sequence*17+combatEffects.impactHead;
+    playerCombat.message=res.message;
+    continue;
+   }
+   if(isGhostDefeated(id)||!getGhostRuntime(id)?.active)continue;
    target.root.getWorldPosition(targetPos);
    const dx=targetPos.x-player.x,dz=targetPos.z-player.z,distance=Math.hypot(dx,dz);
    const facing=distance<.01?1:(dx*forward.x+dz*forward.z)/distance;

@@ -42,6 +42,9 @@ export type MotionId =
   | 'vehicle-wait'
   | 'sitting-idle'
   | 'sit-to-stand'
+  | 'shooting'
+  | 'gun-idle'
+  | 'gun-hold-walking'
   | (string & {});
 
 export interface MotionDefinition {
@@ -66,6 +69,7 @@ export interface MotionDefinition {
   readonly endPose: MotionEndPose;
   readonly rootMotion?: 'in-place' | 'preserve';
   readonly autoTriggeredOnly?: boolean;
+  readonly allowWhileMoving?: boolean;
 }
 
 export interface MotionCategoryMeta {
@@ -545,6 +549,84 @@ const DEFAULT_MOTIONS: MotionDefinition[] = [
     endPose: 'standing',
     rootMotion: 'in-place',
     autoTriggeredOnly: true,
+  },
+
+  // Interactions: Gun Shooting (auto-triggered on F / Shoot when Gun is equipped)
+  {
+    id: 'shooting',
+    category: 'interactions',
+    subgroup: 'vehicle',
+    label: 'Shooting',
+    myanmarLabel: 'သေနတ်ပစ်ခတ်သည်',
+    assetUrl: '/motions/interactions/shooting.glb',
+    clipName: 'mixamo.com',
+    durationSec: 1.2,
+    defaultLoop: false,
+    allowLoopToggle: false,
+    allowRetrigger: true,
+    interruptibility: 'always',
+    supportsGroupSync: false,
+    priority: 26,
+    defaultSpeed: 1,
+    crossFadeSec: 0.12,
+    fadeOutSec: 0.18,
+    endHoldSec: 0,
+    endPose: 'standing',
+    rootMotion: 'in-place',
+    autoTriggeredOnly: true,
+    allowWhileMoving: true,
+  },
+
+  // Interactions: Gun Idle & Walk Pose (auto-triggered while Gun is equipped)
+  {
+    id: 'gun-idle',
+    category: 'interactions',
+    subgroup: 'vehicle',
+    label: 'Gun Idle',
+    myanmarLabel: 'သေနတ်ကိုင် ရပ်/လျှောက်ဟန်',
+    assetUrl: '/motions/interactions/gun-idle.glb',
+    clipName: 'mixamo.com.001',
+    durationSec: 3.133,
+    defaultLoop: true,
+    allowLoopToggle: false,
+    allowRetrigger: false,
+    interruptibility: 'always',
+    supportsGroupSync: false,
+    priority: 22,
+    defaultSpeed: 1,
+    crossFadeSec: 0.2,
+    fadeOutSec: 0.2,
+    endHoldSec: 0,
+    endPose: 'standing',
+    rootMotion: 'in-place',
+    autoTriggeredOnly: true,
+    allowWhileMoving: true,
+  },
+
+  // Interactions: Gun Hold Walking (auto-triggered when walking with Gun equipped)
+  {
+    id: 'gun-hold-walking',
+    category: 'interactions',
+    subgroup: 'vehicle',
+    label: 'Gun Hold Walking',
+    myanmarLabel: 'သေနတ်ကိုင် လမ်းလျှောက်ဟန်',
+    assetUrl: '/motions/interactions/gun-hold-walking.glb',
+    clipName: 'mixamo.com.002',
+    durationSec: 1.5,
+    defaultLoop: true,
+    allowLoopToggle: false,
+    allowRetrigger: false,
+    interruptibility: 'always',
+    supportsGroupSync: false,
+    priority: 22,
+    defaultSpeed: 1,
+    crossFadeSec: 0.16,
+    fadeOutSec: 0.16,
+    endHoldSec: 0,
+    endPose: 'standing',
+    rootMotion: 'in-place',
+    autoTriggeredOnly: true,
+    allowWhileMoving: true,
   },
 ];
 

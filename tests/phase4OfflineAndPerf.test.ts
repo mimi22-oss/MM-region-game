@@ -14,6 +14,7 @@ import {
 } from '../src/game/perfMetrics.ts';
 import {
   StartupDiagnosticsManager,
+  isThirdPartyExtensionError,
   type StartupStorageAdapter,
 } from '../src/game/startupDiagnostics.ts';
 import {
@@ -229,6 +230,26 @@ test('Phase 4 startup diagnostics survives Android WebView cold kill across wipe
   assert.equal(summary.contextRestoredCount, 1);
   assert.ok(typeof summary.firstFrameMs === 'number');
   assert.ok(typeof summary.timeToReadyMs === 'number');
+
+  // Post-ready streaming checkpoints do not keep bloating startup history, and 200.js / M_ID extension errors are filtered
+  const countAfterReady = recoveryRun.getCheckpoints().length;
+  recoveryRun.record('map-data-load', { regionId: 'tharsi' });
+  recoveryRun.record('building-geom', { regionId: 'tharsi' });
+  assert.equal(recoveryRun.getCheckpoints().length, countAfterReady);
+  assert.equal(
+    isThirdPartyExtensionError({
+      message: "TypeError: Cannot read properties of undefined (reading 'M_ID')",
+      stack: 'at h (200.js:1:761)\n    at C (200.js:1:1442)',
+    }),
+    true,
+  );
+  assert.equal(
+    isThirdPartyExtensionError({
+      message: 'TypeError: Failed to load game asset',
+      filename: '/src/main.tsx',
+    }),
+    false,
+  );
 });
 
 test('Phase 4 content pack partitioning, compatibility bounds, and SHA-256 validation', async () => {

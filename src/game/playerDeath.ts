@@ -1,5 +1,6 @@
 import {useSyncExternalStore} from 'react';
 import {isPlayerHomeProtected,getPlayerHomeBoundary} from './playerHomeProtection.ts';
+import {rideLife} from './rideLife.ts';
 export interface PlayerDeathState {phase:'alive'|'dead'|'respawning';ghostId:string|null;generation:number}
 let state:PlayerDeathState={phase:'alive',ghostId:null,generation:0},grace=0,lastToken='';
 const listeners=new Set<()=>void>();
@@ -12,8 +13,18 @@ export function killPlayerFromGhost(ghostId:string,seq:number,x:number,z:number)
  if(playerUnavailableForGhost()||isPlayerHomeProtected(x,z)||lastToken===token)return false;
  lastToken=token;state={phase:'dead',ghostId,generation:state.generation+1};emit();return true;
 }
-export function requestPlayerRespawn(){if(state.phase==='dead'){state={...state,phase:'respawning'};emit();}}
-export function completePlayerRespawn(){if(state.phase==='respawning'){state={...state,phase:'alive',ghostId:null};grace=5;emit();}}
+export function requestPlayerRespawn(){
+ if(state.phase==='dead'){
+  rideLife.lives=3;rideLife.crashTime=0;rideLife.invulnerable=0;rideLife.contact=false;rideLife.damage=0;
+  state={...state,phase:'respawning'};emit();
+ }
+}
+export function completePlayerRespawn(){
+ if(state.phase==='respawning'){
+  rideLife.lives=3;rideLife.crashTime=0;rideLife.invulnerable=0;rideLife.contact=false;rideLife.damage=0;
+  state={...state,phase:'alive',ghostId:null};grace=5;emit();
+ }
+}
 export function stepPlayerRespawnGrace(dt:number){grace=Math.max(0,grace-Math.max(0,dt));}
 /** One-time bounded search: use a traversable point inside the configured protection. */
 export function findProtectedRespawn(walk:(x:number,z:number)=>boolean){

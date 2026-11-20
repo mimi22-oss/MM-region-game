@@ -13,6 +13,7 @@ import {
 export interface MotionRestBoneEntry {
   readonly bone: Bone;
   readonly q: Quaternion;
+  readonly isLowerBodyLeg?: boolean;
 }
 
 export interface MotionPlayOptions {
@@ -23,6 +24,7 @@ export interface MotionPlayOptions {
   endHoldSec?: number;
   speed?: number;
   restart?: boolean;
+  allowWhileMoving?: boolean;
 }
 
 function dampWeight(current: number, target: number, lambda: number, dt: number): number {
@@ -39,6 +41,7 @@ export class AnimationController {
   private readonly rootObject: Object3D;
   private activeAction: AnimationAction | null = null;
   private activeLoop = true;
+  private activeAllowWhileMoving = false;
   private activeSpeed = 1;
   private activeFadeOutSec = 0.28;
   private activeEndHoldSec = 0;
@@ -89,6 +92,10 @@ export class AnimationController {
 
   get isActive(): boolean {
     return (this.targetActive || this.holdingAtEnd) && this.activeAction !== null;
+  }
+
+  get allowsMovement(): boolean {
+    return this.activeAllowWhileMoving;
   }
 
   get currentClipName(): string | null {
@@ -215,6 +222,7 @@ export class AnimationController {
 
     this.activeAction = nextAction;
     this.activeLoop = nextLoop;
+    this.activeAllowWhileMoving = opts?.allowWhileMoving ?? false;
     this.activeSpeed = nextSpeed;
     this.targetActive = true;
   }
@@ -321,11 +329,15 @@ export class AnimationController {
     hipsBone: Bone,
     hipsRestPos: Vector3,
     placementObj: Object3D,
+    locomotionMoveWeight = 0,
   ): void {
     if (this.blendWeight <= 0 || this.activeAction === null) return;
 
     const isBlending = this.blendWeight < 0.999;
-    if (isBlending) {
+    const preserveWalkingLegs =
+      this.activeAllowWhileMoving && locomotionMoveWeight > 0.01;
+
+    if (isBlending || preserveWalkingLegs) {
       for (let i = 0; i < restList.length; i++) {
         procQuats[i].copy(restList[i].bone.quaternion);
       }
@@ -341,13 +353,34 @@ export class AnimationController {
 
     if (isBlending) {
       for (let i = 0; i < restList.length; i++) {
-        const b = restList[i].bone;
-        procQuats[i].slerp(b.quaternion, this.blendWeight);
+        const entry = restList[i];
+        const b = entry.bone;
+        const effectiveWeight =
+          preserveWalkingLegs && entry.isLowerBodyLeg
+            ? this.blendWeight * (1 - Math.min(1, locomotionMoveWeight))
+            : this.blendWeight;
+        procQuats[i].slerp(b.quaternion, effectiveWeight);
         b.quaternion.copy(procQuats[i]);
       }
       this.hipsActionPos.copy(hipsBone.position);
       hipsBone.position.lerpVectors(hipsRestPos, this.hipsActionPos, this.blendWeight);
-      placementObj.position.lerpVectors(procPlacementPos, this.zeroPlacementPos, this.blendWeight);
+      const posWeight = preserveWalkingLegs
+        ? this.blendWeight * (1 - Math.min(1, locomotionMoveWeight))
+        : this.blendWeight;
+      placementObj.position.lerpVectors(procPlacementPos, this.zeroPlacementPos, posWeight);
+    } else if (preserveWalkingLegs) {
+      const legProceduralWeight = Math.min(1, locomotionMoveWeight);
+      for (let i = 0; i < restList.length; i++) {
+        const entry = restList[i];
+        if (entry.isLowerBodyLeg) {
+          entry.bone.quaternion.slerp(procQuats[i], legProceduralWeight);
+        }
+      }
+      placementObj.position.lerpVectors(
+        this.zeroPlacementPos,
+        procPlacementPos,
+        legProceduralWeight,
+      );
     } else {
       placementObj.position.copy(this.zeroPlacementPos);
     }

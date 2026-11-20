@@ -108,10 +108,15 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
  const head=bone('Head');
 
  const rest=new Map<Bone,Quaternion>();
- const restList:{bone:Bone;q:Quaternion}[]=[];
+ const restList:{bone:Bone;q:Quaternion;isLowerBodyLeg:boolean}[]=[];
  const meshes:Mesh[]=[];
  object.traverse(child=>{
-  if(child instanceof Bone){const q=child.quaternion.clone();rest.set(child,q);restList.push({bone:child,q});}
+  if(child instanceof Bone){
+   const q=child.quaternion.clone();
+   const isLowerBodyLeg=/(?:UpLeg|Leg|Foot|Toe)/i.test(child.name);
+   rest.set(child,q);
+   restList.push({bone:child,q,isLowerBodyLeg});
+  }
   if(child instanceof Mesh){child.castShadow=initialCastShadow;child.receiveShadow=true;meshes.push(child);}
   if(child instanceof SkinnedMesh)child.frustumCulled=false;
  });
@@ -471,7 +476,7 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
   const rawAirborne=!seated&&motion.airborne?1:0;
   const rawJump=Math.max(rawAirborne,rawBend>.01?1:0);
   const specialStepDt=delta!==undefined&&delta>0?Math.min(delta,.06):0;
-  if(animController.stepBlend(seated,absSpeed>.35||rawJump>.5,specialStepDt)){
+  if(animController.stepBlend(seated,(absSpeed>.35&&!animController.allowsMovement)||rawJump>.5,specialStepDt)){
    onSpecialStoppedCb?.();
   }
   const targetMove=seated||rawAirborne>.5?0:clamp((absSpeed-.05)/.75,0,1);
@@ -757,6 +762,7 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
    hips,
    hipsRestPos,
    placement,
+   moveWeight,
   );
  }
 

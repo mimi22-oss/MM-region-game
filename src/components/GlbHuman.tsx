@@ -137,6 +137,7 @@ function LoadedHuman({model,preset,appearance,motion,riding=false,driving,combat
      crossFadeSec:def?.crossFadeSec,
      fadeOutSec:def?.fadeOutSec,
      endHoldSec:def?.endHoldSec,
+     allowWhileMoving:def?.allowWhileMoving,
      restart:true,
     });
     markSpecialActionPlaying(activeSpecialId,loadGen);

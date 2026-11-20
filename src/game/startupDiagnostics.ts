@@ -53,6 +53,31 @@ const STORAGE_KEY_CURRENT = 'mm_startup_current';
 const STORAGE_KEY_LAST_CRASH = 'mm_startup_last_crash';
 const STORAGE_KEY_EXIT = 'mm_startup_exit_type';
 
+/**
+ * Identifies errors and unhandled promise rejections originating from third-party browser
+ * extensions (such as injected `200.js` / `19200.js` scripts reading `M_ID` or `chrome-extension://` URLs)
+ * so they do not pollute game startup diagnostics or console error logs.
+ */
+export function isThirdPartyExtensionError(info: {
+  message?: string;
+  filename?: string;
+  stack?: string;
+}): boolean {
+  const combined = `${info.message ?? ''} ${info.filename ?? ''} ${info.stack ?? ''}`;
+  if (!combined.trim()) return false;
+  if (
+    /(?:chrome-extension|moz-extension|safari-web-extension|ms-browser-extension):\/\//i.test(
+      combined,
+    )
+  ) {
+    return true;
+  }
+  if (/reading\s+'M_ID'/i.test(combined) || /\b\d*200\.js:\d+/i.test(combined)) {
+    return true;
+  }
+  return false;
+}
+
 function readStorageItem(primary: StartupStorageAdapter | null, secondary: StartupStorageAdapter | null, key: string): string | null {
   try {
     const val = primary?.getItem(key);
@@ -198,29 +223,66 @@ export class StartupDiagnosticsManager {
   }
 
   private setupErrorListeners() {
-    window.addEventListener('error', (event) => {
-      if (!this.isGameReady) {
-        this.record('startup-error', {
-          message: event.message,
-          filename: event.filename,
-          lineno: event.lineno,
-          colno: event.colno,
-        });
-      }
-    });
+    window.addEventListener(
+      'error',
+      (event) => {
+        if (
+          isThirdPartyExtensionError({
+            message: event.message,
+            filename: event.filename,
+            stack: event.error?.stack,
+          })
+        ) {
+          event.preventDefault();
+          return;
+        }
+        if (!this.isGameReady) {
+          this.record('startup-error', {
+            message: event.message,
+            filename: event.filename,
+            lineno: event.lineno,
+            colno: event.colno,
+          });
+        }
+      },
+      { capture: true },
+    );
 
-    window.addEventListener('unhandledrejection', (event) => {
-      if (!this.isGameReady) {
-        this.record('startup-error', {
-          reason: String(event.reason),
-          stack: event.reason?.stack,
-        });
-      }
-    });
+    window.addEventListener(
+      'unhandledrejection',
+      (event) => {
+        const reasonStr = String(event.reason);
+        const stackStr = event.reason?.stack;
+        if (
+          isThirdPartyExtensionError({
+            message: reasonStr,
+            stack: stackStr,
+          })
+        ) {
+          event.preventDefault();
+          return;
+        }
+        if (!this.isGameReady) {
+          this.record('startup-error', {
+            reason: reasonStr,
+            stack: stackStr,
+          });
+        }
+      },
+      { capture: true },
+    );
   }
 
   record(stage: StartupStage, details?: Record<string, any>) {
     if (!this.sessionStore && !this.persistentStore && typeof window === 'undefined') return;
+    // Once game-ready is reached, ignore repeated streaming map-data-load / building-geom checkpoints
+    if (
+      this.isGameReady &&
+      stage !== 'webgl-context-lost' &&
+      stage !== 'webgl-context-restored'
+    ) {
+      return;
+    }
     const nowMs = typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now();
     const checkpoint: StartupCheckpoint = {
       stage,

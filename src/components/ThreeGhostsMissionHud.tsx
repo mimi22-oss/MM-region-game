@@ -1,5 +1,18 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { GHOST_IDS, GHOST_STATS, useThreeGhostsMission } from '../game/missions/threeGhostsMission';
+import {
+  GHOST_IDS,
+  GHOST_STATS,
+  getActiveMissionWeapon,
+  selectMissionWeapon,
+  setZombieForestSwordActive,
+  useThreeGhostsMission,
+} from '../game/missions/threeGhostsMission';
+import {
+  ZOMBIE_COUNT,
+  rerollZombieForestWave,
+  useZombieForestMission,
+} from '../game/missions/zombieForestMission';
+import { requestGunShot } from '../game/combat/gunCombatRuntime';
 import { ghostMissionProximity, requestThreeGhostsAction } from './ThreeGhostsMissionScene';
 import { CombatControls } from './combat/CombatControls';
 import './ThreeGhostsMissionHud.css';
@@ -16,6 +29,8 @@ interface Position {
 
 export function ThreeGhostsMissionHud() {
   const progress = useThreeGhostsMission();
+  const zombieMission = useZombieForestMission();
+  const activeWeapon = getActiveMissionWeapon();
   const [pickup, setPickup] = useState({ near: false, ready: false, progress: 0 });
   const [message, setMessage] = useState('');
 
@@ -514,10 +529,84 @@ export function ThreeGhostsMissionHud() {
               </span>
             </div>
 
+            {/* STAGE 5: Zombie Forest Mission (13 Zombies & Gun Reward) */}
+            <div className="ghost-hud-section">
+              <div className="ghost-hud-section-header">
+                <span>၄။ သစ်တောအုပ် Zombie Mission (13 ကောင်)</span>
+                <span className="ghost-hud-badge-tag">
+                  {zombieMission.defeatedCount} / {ZOMBIE_COUNT}
+                </span>
+              </div>
+              <div style={{ fontSize: '11.5px', color: '#cbd5e1', lineHeight: 1.4, marginBottom: 6 }}>
+                🧟 2-ချက်သေ Zombie: <strong>{zombieMission.twoHitCount}</strong> ကောင် · 3-ချက်သေ Zombie:{' '}
+                <strong>{ZOMBIE_COUNT - zombieMission.twoHitCount}</strong> ကောင်
+              </div>
+              <div className="ghost-hud-hp-bar-track" style={{ marginBottom: 8 }}>
+                <div
+                  className="ghost-hud-hp-bar-fill"
+                  style={{
+                    width: `${Math.round((zombieMission.defeatedCount / ZOMBIE_COUNT) * 100)}%`,
+                    background: zombieMission.gunUnlocked
+                      ? 'linear-gradient(90deg, #10b981, #34d399)'
+                      : 'linear-gradient(90deg, #f59e0b, #ef4444)',
+                  }}
+                />
+              </div>
+              <div className={`ghost-hud-reward-box ${zombieMission.gunUnlocked ? 'completed' : 'locked'}`}>
+                <span role="img" aria-hidden="true">
+                  {zombieMission.gunUnlocked ? '🔫' : '🔒'}
+                </span>
+                <span>
+                  {zombieMission.gunUnlocked
+                    ? 'ဆုလာဘ် သေနတ် (Tactical Gun) ရရှိပြီး! F နှိပ်၍ Zombie နှင့် သရဲများကို ပစ်ခတ်နိုင်ပါပြီ။'
+                    : 'သစ်တောအုပ်ထဲရှိ Zombie ၁၃ ကောင်လုံး နှိမ်နင်းအောင်မြင်ပါက သေနတ် (Gun) ဆုရရှိမည်။'}
+                </span>
+              </div>
+              <div className="ghost-hud-combat-actions" style={{ marginTop: 6 }}>
+                {zombieMission.gunUnlocked && (
+                  <button
+                    type="button"
+                    className="ghost-hud-combat-btn"
+                    onClick={() => selectMissionWeapon('zombie-gun')}
+                  >
+                    🔫 {activeWeapon === 'zombie-gun' ? 'သေနတ်ကိုင်ထားသည်' : 'သေနတ်ကိုင်မည်'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="ghost-hud-combat-btn"
+                  onClick={() => {
+                    setZombieForestSwordActive(true);
+                    selectMissionWeapon('ghost-sword');
+                  }}
+                >
+                  ⚔️ {activeWeapon === 'ghost-sword' ? 'ဓားကိုင်ထားသည်' : 'ဓားထုတ်ကိုင်မည်'}
+                </button>
+                <button
+                  type="button"
+                  className="ghost-hud-combat-btn defend"
+                  onClick={() => rerollZombieForestWave()}
+                >
+                  🔄 Zombie အသစ် (13)
+                </button>
+              </div>
+              {activeWeapon === 'zombie-gun' && (
+                <div className="ghost-hud-combat-actions" style={{ marginTop: 6 }}>
+                  <button
+                    type="button"
+                    className="ghost-hud-combat-btn"
+                    onClick={() => requestGunShot()}
+                  >
+                    🔫 သေနတ်ပစ်မည် (Shoot - F)
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Notification / Message Toast */}
-            {message && (
+            {(message || zombieMission.lastMessage) && (
               <div className="ghost-hud-message" role="status" aria-live="polite">
-                💬 {message}
+                💬 {message || zombieMission.lastMessage}
               </div>
             )}
 
@@ -553,8 +642,8 @@ export function ThreeGhostsMissionHud() {
               </div>
             )}
 
-            {/* Combat Controls Bar (when sword is collected) */}
-            {progress.equippedWeapon === 'ghost-sword' && <CombatControls />}
+            {/* Combat Controls Bar (when sword is equipped) */}
+            {activeWeapon === 'ghost-sword' && <CombatControls />}
 
             {/* Dev Map (Development only) */}
             {GhostDevMap && (

@@ -1,6 +1,7 @@
 import {playerCombat} from '../game/combat/combatRuntime';
-import {getThreeGhostsProgress} from '../game/missions/threeGhostsMission';
+import {getActiveMissionWeapon,getThreeGhostsProgress} from '../game/missions/threeGhostsMission';
 import {HeldGhostSword} from './HeldGhostSword';
+import {HeldGun,isGunMotionId} from './HeldGun';
 import { hasCompletedThreeGhostsMission } from '../game/missions/threeGhostsMission';
 import {getPlayerDeathState,findProtectedRespawn,completePlayerRespawn,stepPlayerRespawnGrace} from '../game/playerDeath';
 import {PLAYER_ON_FOOT_SPEED} from '../game/ghostPersonalities';
@@ -470,7 +471,7 @@ export const Player = memo(function Player({
     if(mobileInput?.current)resetMobileInput(mobileInput.current);onMode(false);onTopDown(false);onZoom(6);completePlayerRespawn();
    }
   }
-  if(life.phase==='dead'){playerCombat.context(getThreeGhostsProgress().equippedWeapon==='ghost-sword',false,false,true);s.keys.clear();s.jumpRequested=false;if(mobileInput?.current)resetMobileInput(mobileInput.current);return;}
+  if(life.phase==='dead'){playerCombat.context(getActiveMissionWeapon()==='ghost-sword',false,false,true);s.keys.clear();s.jumpRequested=false;if(mobileInput?.current)resetMobileInput(mobileInput.current);return;}
   if(tickRideLife(mapOpen||controlsBlocked?0:dt)){
    interruptVehicleWaiting();resetChairSitting();
    if(balloonRide.riding)resetBalloon();
@@ -522,7 +523,7 @@ export const Player = memo(function Player({
   if(ghostGrabbedOnFoot&&touch)resetMobileInput(touch);
   const combatReaction=playerCombat.clip==='Hit_React'||playerCombat.clip==='Knockback';
   const combatAllowed=!loading&&!controlsBlocked&&!mapOpen&&!introOwnsCamera&&!rideLife.crashTime&&(!ghostGrabbedOnFoot||combatReaction)&&!enteringVehicle&&!pickupLocked&&!balloonRide.riding&&!motorcycleRide.riding&&!currentCar()&&!jump.current.airborne;
-  playerCombat.context(getThreeGhostsProgress().equippedWeapon==='ghost-sword',combatAllowed,controlsBlocked||mapOpen||document.hidden,false);
+  playerCombat.context(getActiveMissionWeapon()==='ghost-sword',combatAllowed,controlsBlocked||mapOpen||document.hidden,false);
   let wantsJump=!playerCombat.movementLocked&&!pickupLocked&&!enteringVehicle&&!ghostGrabbedOnFoot&&(s.jumpRequested||!!touch?.jump);s.jumpRequested=false;if(touch)touch.jump=false;
   if(touch){
    if(touch.panX||touch.panY){panView(touch.panX,touch.panY);touch.panX=0;touch.panY=0;}
@@ -809,6 +810,7 @@ export const Player = memo(function Player({
   if(activeSpecialId!==null){
    const isWaitingClip=isWaitingMotionId(activeSpecialId);
    const isSittingClip=isChairSittingMotionId(activeSpecialId);
+   const isGunClip=isGunMotionId(activeSpecialId);
    const isGhostFall=activeSpecialId==='fall'&&ghostGrabbedOnFoot&&ghostInteraction.phase==='player-fall';
    const baseConflict=
     !glbCapable||
@@ -823,6 +825,8 @@ export const Player = memo(function Player({
     ? baseConflict||!isVehicleWaitingActiveState(waitingSnapshot.state)||travelled>0.05
     : isSittingClip
     ? baseConflict||chairSittingSnapshot.status==='IDLE'
+    : isGunClip
+    ? baseConflict||pickupLocked||enteringVehicle||wantsJump||chairSittingSnapshot.status!=='IDLE'
     : isGhostFall
     ? baseConflict
     : baseConflict||pickupLocked||enteringVehicle||(!aerial&&(len>0.01||wantsJump))||travelled>0.015;
@@ -889,6 +893,6 @@ export const Player = memo(function Player({
   }
   s.time+=dt;if(s.time>0.08){s.time=0;onBalloonStatus?.({riding:balloon.riding,near:nearBalloon,altitude:Math.max(0,Math.round(balloon.y-height(balloon.x,balloon.z))),kmh:Math.round(Math.hypot(balloon.vx,balloon.vz)*3.6),grounded:balloon.grounded,blocked:balloon.blocked,autoCruise:balloon.autoCruise,autoReturn:balloon.autoReturn,returnDist:balloon.returnDist});onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car||balloon.riding,ride.riding),summonStatus:carSummonState.status,lives:rideLife.lives});onRideStatus?.({riding:ride.riding,near:!balloon.riding&&!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0,impactMode:rideLife.mode,damage:rideLife.damage});onPosition(s.x,s.z,s.bodyYaw);onSaveSnapshot?.({x:s.x,z:s.z,yaw:s.bodyYaw,pitch:s.pitch,zoom:s.targetDistance,topDown:s.topDown,first:s.first});onViewPosition?.(target.current.x,target.current.z);}
  },-1);
- return <><PassengerBalloon/><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar"><HeldGhostSword avatar={avatar}/>{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter combat appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb} riding/></group></>:character==='cartoon'?<CartoonCharacter combat appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
+ return <><PassengerBalloon/><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar"><HeldGhostSword avatar={avatar}/><HeldGun avatar={avatar} motion={characterMotion}/>{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter combat appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb} riding/></group></>:character==='cartoon'?<CartoonCharacter combat appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
 
 });

@@ -1,6 +1,7 @@
 import { StreamedWorld, type StreamedWorldProps } from './StreamedWorld';
 import {SeparationFieldTiles} from './SeparationFieldTiles';
 import {ZombieForestTiles} from './ZombieForestTiles';
+import {ZombieForestScene} from './ZombieForestScene';
 import { Mountains } from './Mountains';
 import { memo } from 'react';
 
@@ -24,6 +25,7 @@ export const Town = memo(function Town({ minute = 780, ...streaming }: { minute?
 			<StreamedWorld minute={minute} {...streaming} />
             <SeparationFieldTiles/>
             <ZombieForestTiles/>
+            <ZombieForestScene paused={streaming.paused}/>
             <Mountains />
             <DynamicWorldObjects />
 
