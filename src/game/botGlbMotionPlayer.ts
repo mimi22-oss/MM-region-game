@@ -38,6 +38,7 @@ export const BOT_GLB_REACTION_MOTIONS: readonly MotionId[] = [
   'hit_to_body_01',
   'hit_to_stomach',
   'defeat_02',
+  'fall',
   'victory',
 ];
 

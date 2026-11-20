@@ -374,6 +374,30 @@ test('Player HP 100 -> 0 KO plays fall.glb, triggers Game Over dialog, and resta
   assert.equal(getPlayerDeathState().phase, 'alive');
   assert.equal(getBotFightingState().playerHp, PLAYER_FIGHT_MAX_HP);
 
+  // Verify defeating a bot (bot HP -> 0) also plays fall.glb on the losing bot
+  resetBotFighting();
+  engageBotFight({
+    id: 'street-villager-ko',
+    label: 'ရွာသား ဦးလေး',
+    x: 0,
+    z: 0,
+    playerX: 0,
+    playerZ: 0.85,
+  });
+  for (let strike = 0; strike < 6; strike++) {
+    triggerBotFightMove('kick', 'front_kick_02');
+    for (let i = 0; i < 12; i++) {
+      stepBotFighting(0.05, 0, 0.85);
+    }
+    if (getBotFightingState().targetKnockedOut) break;
+  }
+  assert.equal(getBotFightingState().targetKnockedOut, true, 'Repeated kicks should KO bot');
+  assert.equal(
+    getBotFightingState().botActiveGlbMotion,
+    'fall',
+    'Defeated bot must play fall.glb when losing',
+  );
+
   // Verify GhostGameOver renders bot-fight KO message and main.tsx hides GhostRadar in daytime
   const gameOverTsx = readFileSync('src/components/GhostGameOver.tsx', 'utf-8');
   const mainTsx = readFileSync('src/main.tsx', 'utf-8');
@@ -424,9 +448,10 @@ test('BotGlbMotionPlayer extracts real animated bone poses from all 7 training G
     warm_up: 'public/motions/training/warm_up.glb',
     press_up: 'public/motions/training/press_up.glb',
     victory: 'public/motions/movement/victory.glb',
+    fall: 'public/motions/movement/fall.glb',
   };
 
-  for (const id of [...BOT_GLB_TRAINING_MOTIONS, 'victory' as const]) {
+  for (const id of [...BOT_GLB_TRAINING_MOTIONS, 'victory' as const, 'fall' as const]) {
     const buf = readFileSync(fileMap[id]);
     const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
     const gltf = await new Promise<{ scene: any; animations: any[] }>((resolve, reject) =>

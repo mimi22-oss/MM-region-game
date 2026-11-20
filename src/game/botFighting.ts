@@ -29,6 +29,7 @@ export type BotGlbCombatMotionId =
   | 'warm_up'
   | 'press_up'
   | 'victory'
+  | 'fall'
   | 'hit_to_body_01'
   | 'hit_to_stomach'
   | 'defeat_02';
@@ -1199,7 +1200,7 @@ export function stepBotFighting(
           hitTarget.knockoutTime = BOT_KO_DURATION_SEC;
           hitTarget.attackMove = null;
           hitTarget.queuedMoves.length = 0;
-          setBotMotion(hitTarget, 'defeat_02', 1.35, false, true);
+          setBotMotion(hitTarget, 'fall', 1.25, false, true);
           state.lastHitText = hitIsPrimary
             ? `💥 ${meta.shortLabel} · KO!`
             : `💥 ${meta.shortLabel} · ကူတိုက် Bot KO!`;
