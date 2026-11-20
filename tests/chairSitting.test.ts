@@ -15,7 +15,17 @@ import {
   computeSeatedAvatarY,
   resolveStandUpExitSpot,
   STAND_UP_TOTAL_DURATION_SEC,
+  setChairOccupiedByNpc,
+  releaseNpcChairOccupant,
+  clearNpcChairOccupancy,
+  isChairOccupiedByNpc,
+  isChairOccupiedByPlayer,
 } from '../src/game/chairSitting.ts';
+import {
+  FARMHOUSE_FAMILY_MEMBERS,
+  createFarmhouseFamilyStates,
+  stepFarmhouseFamilyMember,
+} from '../src/game/farmhouseFamilyBot.ts';
 import { getMotion } from '../src/animation/core/MotionRegistry.ts';
 
 test('MotionRegistry has sitting-idle and sit-to-stand configured correctly', () => {
@@ -233,4 +243,81 @@ test('Standing up from dining chair plays Sit To Stand, glides to walkable exit 
   assert.equal(state.activeChair, null);
   assert.ok(state.seatPos, 'Handoff frame should supply walkable exit position');
   assert.equal(canStand(state.seatPos.x, state.seatPos.z), true, 'Stand-up exit position must be walkable');
+});
+
+test('Player cannot sit on chairs occupied by NPCs, can sit once vacated, and returning NPC waits if player is seated', () => {
+  resetChairSitting();
+  clearNpcChairOccupancy();
+
+  // Occupy all 4 Farmhouse family chairs
+  for (const m of FARMHOUSE_FAMILY_MEMBERS) {
+    setChairOccupiedByNpc(m.chairId, `farmhouse-${m.id}`, true);
+  }
+  const momChair = getAllChairSpots().find((c) => c.id === 'farmhouse-dining-s-0.7')!;
+  const dadChair = getAllChairSpots().find((c) => c.id === 'farmhouse-dining-s-0')!;
+  const brotherChair = getAllChairSpots().find((c) => c.id === 'farmhouse-dining-s--0.7')!;
+  const sisterChair = getAllChairSpots().find((c) => c.id === 'farmhouse-dining-n--0.7')!;
+  const emptyChair = getAllChairSpots().find((c) => c.id === 'farmhouse-dining-n-0.7')!;
+
+  assert.equal(isChairOccupiedByNpc(momChair.id), true);
+  assert.equal(isChairOccupiedByNpc(emptyChair.id), false);
+
+  // Direct sit attempt on an occupied chair must be rejected
+  assert.equal(sitOnChair(dadChair), false);
+  assert.equal(getChairSittingState().status, 'IDLE');
+
+  // Standing directly on Dad's occupied chair does NOT pick any occupied chair
+  const nearWhileOccupied = findNearbyChair(dadChair.x, dadChair.z, 0.9);
+  assert.ok(
+    !nearWhileOccupied ||
+      ![momChair.id, dadChair.id, brotherChair.id, sisterChair.id].includes(nearWhileOccupied.id),
+    'findNearbyChair must never select an NPC-occupied chair',
+  );
+
+  // Standing beside Mom's chair when ALL nearby chairs are occupied keeps player IDLE even after 3s
+  setChairOccupiedByNpc(emptyChair.id, 'temp-npc', true);
+  setChairOccupiedByNpc('farmhouse-dining-n-0', 'temp-npc', true);
+  const sBlocked = stepChairSitting(3.0, {
+    playerX: momChair.x,
+    playerZ: momChair.z,
+    playerMoving: false,
+    canSit: true,
+    canStand,
+  });
+  assert.equal(sBlocked.status, 'IDLE');
+  assert.equal(sBlocked.nearChair, null);
+  assert.equal(sBlocked.nearTime, 0);
+
+  // Once Mom vacates her chair, player CAN immediately detect and sit on it
+  setChairOccupiedByNpc(momChair.id, 'farmhouse-mom', false);
+  assert.equal(isChairOccupiedByNpc(momChair.id), false);
+  const foundMomChair = findNearbyChair(momChair.x, momChair.z, 0.5);
+  assert.equal(foundMomChair?.id, momChair.id);
+  assert.equal(sitOnChair(momChair), true);
+  assert.equal(getChairSittingState().status, 'SITTING');
+  assert.equal(isChairOccupiedByPlayer(momChair.id), true);
+
+  // Returning Mom waits politely at standSpot while player sits in her chair
+  const states = createFarmhouseFamilyStates();
+  const momCfg = FARMHOUSE_FAMILY_MEMBERS[0];
+  const momState = states[0];
+  momState.activityPhase = 'WALKING_TO_SEAT';
+  momState.waypointIndex = 0;
+  momState.x = momCfg.standSpot.x;
+  momState.z = momCfg.standSpot.z;
+  momState.sitBlend = 0;
+
+  stepFarmhouseFamilyMember(momState, momCfg, 0.1, isChairOccupiedByPlayer(momCfg.chairId));
+  assert.equal(momState.activityPhase, 'WALKING_TO_SEAT', 'Mom must wait while player occupies her chair');
+  assert.equal(momState.speed, 0);
+
+  // Once player leaves, Mom smoothly sits back down
+  resetChairSitting();
+  assert.equal(isChairOccupiedByPlayer(momChair.id), false);
+  stepFarmhouseFamilyMember(momState, momCfg, 0.1, isChairOccupiedByPlayer(momCfg.chairId));
+  assert.equal(momState.activityPhase, 'SITTING_DOWN');
+
+  // Cleanup
+  releaseNpcChairOccupant('temp-npc');
+  clearNpcChairOccupancy();
 });

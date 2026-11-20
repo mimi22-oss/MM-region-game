@@ -6,6 +6,7 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { area5 } from '../data/wards/myothar/area5';
 import { useActiveGhostZones } from '../game/ghostConfig';
 import { guardMissionActive, getGuardSummary } from '../game/missions/ghostGuardCoordinator';
@@ -62,7 +63,14 @@ export function GhostRadar() {
     pointerId: -1,
   });
 
+  const lastTapRef = useRef<{ time: number; x: number; y: number }>({
+    time: 0,
+    x: 0,
+    y: 0,
+  });
+
   const [isDragging, setIsDragging] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Size mode: normal (112px/96px), large (200px/175px), or minimized (38px/35px floating circle)
   const [sizeMode, setSizeMode] = useState<RadarSizeMode>(() => {
@@ -96,7 +104,7 @@ export function GhostRadar() {
   });
 
   const [snapshot, setSnapshot] = useState<Snapshot>(EMPTY_SNAPSHOT);
-  const progress = useThreeGhostsMission();
+  useThreeGhostsMission();
   const zones = useActiveGhostZones();
 
   const handleSetSizeMode = (mode: RadarSizeMode) => {
@@ -107,6 +115,17 @@ export function GhostRadar() {
       // ignore
     }
   };
+
+  const openFullscreenDialog = useCallback(() => {
+    if (typeof document !== 'undefined' && document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+    setIsFullscreen(true);
+  }, []);
+
+  const closeFullscreenDialog = useCallback(() => {
+    setIsFullscreen(false);
+  }, []);
 
   // Clamping helper to prevent dragging off-screen
   const clampPosition = useCallback((x: number, y: number): Position => {
@@ -141,7 +160,20 @@ export function GhostRadar() {
     }
   }, [sizeMode, clampPosition]);
 
-  // Pointer drag event handlers (identical robust pattern to ghost-hud-pill)
+  // Handle Escape key to close fullscreen dialog
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeFullscreenDialog();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isFullscreen, closeFullscreenDialog]);
+
+  // Pointer drag and double-tap detection event handlers
   const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
     const container = containerRef.current;
@@ -196,9 +228,24 @@ export function GhostRadar() {
     }
 
     if (!drag.hasMoved) {
-      // Tap/click without dragging: if minimized, expand to normal!
+      // Tap/click without dragging
       if (sizeMode === 'minimized') {
         handleSetSizeMode('normal');
+      } else {
+        // Double-tap detection for touch/pen/mouse
+        const now = performance.now();
+        const timeSinceLast = now - lastTapRef.current.time;
+        const distSinceLast = Math.hypot(
+          e.clientX - lastTapRef.current.x,
+          e.clientY - lastTapRef.current.y
+        );
+
+        if (timeSinceLast < 400 && distSinceLast < 28) {
+          openFullscreenDialog();
+          lastTapRef.current = { time: 0, x: 0, y: 0 };
+        } else {
+          lastTapRef.current = { time: now, x: e.clientX, y: e.clientY };
+        }
       }
     } else if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
@@ -232,14 +279,9 @@ export function GhostRadar() {
     }
   };
 
-  // Double-click resets back to default position under life hearts
-  const handleDoubleClick = () => {
-    setPosition(null);
-    try {
-      localStorage.removeItem(STORAGE_POS_KEY);
-    } catch {
-      // ignore
-    }
+  const handleCircleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    openFullscreenDialog();
   };
 
   useEffect(() => {
@@ -268,7 +310,7 @@ export function GhostRadar() {
   const now = performance.now();
   const field = area5.pitch;
 
-  // Process live markers for each ghost
+  // Process live markers for each ghost with live distance calculation
   const markers = GHOST_IDS.map((id, index) => {
     const marker = selectDevMarker(
       id,
@@ -278,15 +320,23 @@ export function GhostRadar() {
       now
     );
     const defeated = isGhostDefeated(id);
+    const distanceM =
+      snapshot.player && marker.x !== undefined && marker.z !== undefined
+        ? Math.round(Math.hypot(snapshot.player.x - marker.x, snapshot.player.z - marker.z))
+        : null;
     return {
       ...marker,
       index,
       defeated,
+      distanceM,
       color: GHOST_COLORS[index] || '#c084fc',
     };
   });
 
   const activeGhostsCount = markers.filter(m => !m.defeated).length;
+  const swordDistanceM = snapshot.player
+    ? Math.round(Math.hypot(snapshot.player.x - field.x, snapshot.player.z - field.z))
+    : null;
 
   const inlineStyle: React.CSSProperties = position
     ? {
@@ -311,7 +361,6 @@ export function GhostRadar() {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
-        onDoubleClick={handleDoubleClick}
       >
         <div
           className="ghost-radar-minimized"
@@ -340,208 +389,348 @@ export function GhostRadar() {
     ? clampToRadarCircle(proj.x(snapshot.player.x), proj.y(snapshot.player.z), 100, 100, 86)
     : null;
 
-  return (
-    <div
-      ref={containerRef}
-      className={widgetClassName}
-      style={inlineStyle}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerCancel}
-      onDoubleClick={handleDoubleClick}
-    >
-      <div
-        className={`ghost-radar-circle ghost-radar-size-${sizeMode}`}
-        title="နေရာရွှေ့ရန် ဖိဆွဲပါ / မူလနေရာသို့ ပြန်ထားရန် နှစ်ချက်နှိပ်ပါ"
-      >
-        {/* Enlarge and Minimize Overlay Buttons */}
-        <div
-          className="ghost-radar-controls"
-          onPointerDown={e => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            className="ghost-radar-btn"
-            title={sizeMode === 'normal' ? 'ကြီးရန် (Enlarge)' : 'မူလအရွယ် (Normal)'}
-            aria-label={sizeMode === 'normal' ? 'Enlarge Radar' : 'Normal Size Radar'}
-            onClick={() => handleSetSizeMode(sizeMode === 'normal' ? 'large' : 'normal')}
+  const fullscreenModal =
+    isFullscreen && typeof document !== 'undefined'
+      ? createPortal(
+          <div
+            className="ghost-radar-fullscreen-backdrop"
+            role="presentation"
+            onPointerDown={e => {
+              if (e.target === e.currentTarget) {
+                closeFullscreenDialog();
+              }
+            }}
           >
-            {sizeMode === 'normal' ? '⛶' : '❐'}
-          </button>
-          <button
-            type="button"
-            className="ghost-radar-btn"
-            title="သေးရန် / ဖျောက်ထားရန် (Minimize)"
-            aria-label="Minimize Radar"
-            onClick={() => handleSetSizeMode('minimized')}
-          >
-            −
-          </button>
-        </div>
-
-        {/* Circular Radar Visual (Clean gaming HUD, zero extraneous debug text) */}
-        <svg
-          viewBox="0 0 200 200"
-          className="ghost-radar-svg"
-          role="img"
-          aria-label="Ghost and player location radar"
-        >
-          <defs>
-            <clipPath id="ghostRadarClip">
-              <circle cx="100" cy="100" r="97" />
-            </clipPath>
-          </defs>
-
-          <g clipPath="url(#ghostRadarClip)">
-            {/* Background circular radar screen */}
-            <circle cx="100" cy="100" r="98" fill="#08171f" />
-
-            {/* Range distance rings */}
-            <circle cx="100" cy="100" r="32" fill="none" stroke="#164e63" strokeWidth="0.75" strokeDasharray="3 3" />
-            <circle cx="100" cy="100" r="64" fill="none" stroke="#164e63" strokeWidth="0.75" strokeDasharray="3 3" />
-            <circle cx="100" cy="100" r="94" fill="none" stroke="#334155" strokeWidth="1" />
-
-            {/* Crosshair grid lines */}
-            <line x1="100" y1="8" x2="100" y2="192" stroke="#164e63" strokeWidth="0.6" strokeDasharray="3 4" opacity="0.6" />
-            <line x1="8" y1="100" x2="192" y2="100" stroke="#164e63" strokeWidth="0.6" strokeDasharray="3 4" opacity="0.6" />
-
-            {/* Cardinal North indicator */}
-            <text x="100" y="16" fill="#f6ce67" fontSize="8" fontWeight="bold" textAnchor="middle" opacity="0.8">
-              N
-            </text>
-
-            {/* Football pitch boundary & Sword shrine */}
-            <rect
-              x={proj.x(field.x) - (field.width * proj.scale) / 2}
-              y={proj.y(field.z) - (field.depth * proj.scale) / 2}
-              width={field.width * proj.scale}
-              height={field.depth * proj.scale}
-              transform={`rotate(${(-field.rotation * 180) / Math.PI} ${proj.x(field.x)} ${proj.y(field.z)})`}
-              fill="rgba(16, 185, 129, 0.05)"
-              stroke="#10b981"
-              strokeWidth="0.9"
-              strokeDasharray="4 3"
-              opacity="0.55"
-            />
-            <circle
-              cx={proj.x(field.x)}
-              cy={proj.y(field.z)}
-              r={Math.max(4, SWORD_PICKUP_RADIUS_M * proj.scale)}
-              fill="rgba(250, 204, 21, 0.15)"
-              stroke="#facc15"
-              strokeWidth="0.9"
-              strokeDasharray="3 2"
-            />
-            <text
-              x={proj.x(field.x)}
-              y={proj.y(field.z) + 3}
-              fontSize="8"
-              fill="#fde68a"
-              textAnchor="middle"
+            <div
+              className="ghost-radar-fullscreen-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Ghost Radar Fullscreen Dialog"
+              onDoubleClick={e => {
+                e.stopPropagation();
+                closeFullscreenDialog();
+              }}
             >
-              ⚔
-            </text>
+              <div className="ghost-radar-fullscreen-header">
+                <div className="ghost-radar-fullscreen-title-group">
+                  <span className="ghost-radar-fullscreen-icon" aria-hidden="true">
+                    👻
+                  </span>
+                  <div>
+                    <h2 className="ghost-radar-fullscreen-title">Ghost Radar · ရေဒါ မြင်ကွင်းကျယ်</h2>
+                    <span className="ghost-radar-fullscreen-subtitle">
+                      {activeGhostsCount > 0
+                        ? `သရဲ ${activeGhostsCount} ကောင် ကျန်ရှိနေသည်`
+                        : 'သရဲ ၃ ကောင်လုံး နှိမ်နင်းပြီးပါပြီ'}
+                    </span>
+                  </div>
+                </div>
 
-            {/* Ghost markers */}
-            {markers.map((g, i) => {
-              if (g.x === undefined || g.z === undefined || g.defeated) return null;
-              const clamped = clampToRadarCircle(proj.x(g.x), proj.y(g.z), 100, 100, 86);
-              return (
-                <g key={g.id}>
-                  {/* Subtle pulse aura */}
-                  <circle
-                    cx={clamped.x}
-                    cy={clamped.y}
-                    r="8"
-                    fill={g.color}
-                    className="ghost-blip-pulse"
-                  />
-                  {/* Ghost blip dot */}
-                  <circle
-                    cx={clamped.x}
-                    cy={clamped.y}
-                    r="5"
-                    fill={g.color}
-                    stroke="#ffffff"
-                    strokeWidth="1.2"
-                    strokeDasharray={g.source === 'spawn' || g.source === 'guard' ? '2 1.5' : undefined}
-                  />
-                  {/* Ghost number badge */}
-                  <text
-                    x={clamped.x}
-                    y={clamped.y + 2.5}
-                    fontSize="7"
-                    fontWeight="bold"
-                    fill="#111827"
-                    textAnchor="middle"
-                  >
-                    {i + 1}
-                  </text>
-                </g>
-              );
-            })}
+                <button
+                  type="button"
+                  className="ghost-radar-fullscreen-close"
+                  onClick={closeFullscreenDialog}
+                  aria-label="Close Fullscreen Radar"
+                  title="ပိတ်မည် (Close · Esc)"
+                >
+                  ✕
+                </button>
+              </div>
 
-            {/* Player marker with head direction pointer */}
-            {playerClamped && (
-              <g>
-                {/* Vision cone & direction pointer rotated by character head orientation */}
-                {typeof snapshot.player?.yaw === 'number' && (
-                  <g transform={`rotate(${(-snapshot.player.yaw * 180) / Math.PI} ${playerClamped.x} ${playerClamped.y})`}>
-                    {/* Vision cone arc */}
-                    <path
-                      d={`M ${playerClamped.x} ${playerClamped.y} L ${playerClamped.x - 12} ${playerClamped.y - 25} A 28 28 0 0 1 ${playerClamped.x + 12} ${playerClamped.y - 25} Z`}
-                      fill="rgba(56, 189, 248, 0.3)"
-                    />
-                    {/* Head direction pointer triangle */}
-                    <polygon
-                      points={`${playerClamped.x},${playerClamped.y - 14} ${playerClamped.x - 4.5},${playerClamped.y - 4} ${playerClamped.x},${playerClamped.y - 6} ${playerClamped.x + 4.5},${playerClamped.y - 4}`}
-                      fill="#38bdf8"
-                      stroke="#ffffff"
-                      strokeWidth="0.8"
-                    />
-                  </g>
+              <div className="ghost-radar-fullscreen-body">
+                <div className="ghost-radar-fullscreen-circle-wrap">
+                  <RadarSvgContent
+                    snapshot={snapshot}
+                    markers={markers}
+                    playerClamped={playerClamped}
+                    proj={proj}
+                    field={field}
+                  />
+                </div>
+
+                <div className="ghost-radar-fullscreen-stats">
+                  {markers.map(m => (
+                    <div key={m.id} className="ghost-radar-stat-card">
+                      <span className="ghost-radar-stat-name" style={{ color: m.color }}>
+                        👻 Ghost {m.index + 1}
+                      </span>
+                      <span className={`ghost-radar-stat-dist${m.defeated ? ' defeated' : ''}`}>
+                        {m.defeated
+                          ? '💀 Defeated'
+                          : m.distanceM !== null
+                            ? `${m.distanceM}m`
+                            : 'Detecting...'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {swordDistanceM !== null && (
+                  <div className="ghost-radar-stat-card" style={{ width: '100%' }}>
+                    <span className="ghost-radar-stat-name" style={{ color: '#facc15' }}>
+                      ⚔️ ဘောလုံးကွင်း ဓားစင် (Sword Shrine)
+                    </span>
+                    <span className="ghost-radar-stat-dist">{swordDistanceM}m အကွာတွင် ရှိသည်</span>
+                  </div>
                 )}
-                <circle
-                  cx={playerClamped.x}
-                  cy={playerClamped.y}
-                  r="7"
-                  fill="#38bdf8"
-                  className="player-blip-pulse"
+
+                <span className="ghost-radar-fullscreen-hint">
+                  💡 Double-click / Double-tap သို့မဟုတ် ✕ နှိပ်၍ မူလအဝိုင်းသို့ ပြန်သွားနိုင်ပါသည်
+                </span>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
+
+  return (
+    <>
+      <div
+        ref={containerRef}
+        className={widgetClassName}
+        style={inlineStyle}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+      >
+        <div
+          className={`ghost-radar-circle ghost-radar-size-${sizeMode}`}
+          title="နေရာရွှေ့ရန် ဖိဆွဲပါ / မျက်နှာပြင်ပြည့် ဖွင့်ရန် နှစ်ချက်နှိပ်ပါ (Double click/tap for fullscreen)"
+          onDoubleClick={handleCircleDoubleClick}
+        >
+          {/* Enlarge, Minimize and Fullscreen Overlay Buttons */}
+          <div
+            className="ghost-radar-controls"
+            onPointerDown={e => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="ghost-radar-btn"
+              title="မျက်နှာပြင်ပြည့် ဖွင့်မည် (Fullscreen)"
+              aria-label="Open Fullscreen Radar"
+              onClick={openFullscreenDialog}
+            >
+              ⛶
+            </button>
+            <button
+              type="button"
+              className="ghost-radar-btn"
+              title={sizeMode === 'normal' ? 'ကြီးရန် (Enlarge)' : 'မူလအရွယ် (Normal)'}
+              aria-label={sizeMode === 'normal' ? 'Enlarge Radar' : 'Normal Size Radar'}
+              onClick={() => handleSetSizeMode(sizeMode === 'normal' ? 'large' : 'normal')}
+            >
+              {sizeMode === 'normal' ? '⌕' : '❐'}
+            </button>
+            <button
+              type="button"
+              className="ghost-radar-btn"
+              title="သေးရန် / ဖျောက်ထားရန် (Minimize)"
+              aria-label="Minimize Radar"
+              onClick={() => handleSetSizeMode('minimized')}
+            >
+              −
+            </button>
+          </div>
+
+          {/* Circular Radar Visual */}
+          <RadarSvgContent
+            snapshot={snapshot}
+            markers={markers}
+            playerClamped={playerClamped}
+            proj={proj}
+            field={field}
+          />
+        </div>
+      </div>
+
+      {fullscreenModal}
+    </>
+  );
+}
+
+function RadarSvgContent({
+  snapshot,
+  markers,
+  playerClamped,
+  proj,
+  field,
+}: {
+  snapshot: Snapshot;
+  markers: Array<{
+    id: string;
+    index: number;
+    color: string;
+    defeated: boolean;
+    x?: number;
+    z?: number;
+    source?: string;
+  }>;
+  playerClamped: { x: number; y: number; clamped: boolean } | null;
+  proj: { x: (v: number) => number; y: (v: number) => number; scale: number };
+  field: { x: number; z: number; width: number; depth: number; rotation: number };
+}) {
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      className="ghost-radar-svg"
+      role="img"
+      aria-label="Ghost and player location radar"
+    >
+      <defs>
+        <clipPath id="ghostRadarClip">
+          <circle cx="100" cy="100" r="97" />
+        </clipPath>
+      </defs>
+
+      <g clipPath="url(#ghostRadarClip)">
+        {/* Background circular radar screen */}
+        <circle cx="100" cy="100" r="98" fill="#08171f" />
+
+        {/* Range distance rings */}
+        <circle cx="100" cy="100" r="32" fill="none" stroke="#164e63" strokeWidth="0.75" strokeDasharray="3 3" />
+        <circle cx="100" cy="100" r="64" fill="none" stroke="#164e63" strokeWidth="0.75" strokeDasharray="3 3" />
+        <circle cx="100" cy="100" r="94" fill="none" stroke="#334155" strokeWidth="1" />
+
+        {/* Crosshair grid lines */}
+        <line x1="100" y1="8" x2="100" y2="192" stroke="#164e63" strokeWidth="0.6" strokeDasharray="3 4" opacity="0.6" />
+        <line x1="8" y1="100" x2="192" y2="100" stroke="#164e63" strokeWidth="0.6" strokeDasharray="3 4" opacity="0.6" />
+
+        {/* Cardinal North indicator */}
+        <text x="100" y="16" fill="#f6ce67" fontSize="8" fontWeight="bold" textAnchor="middle" opacity="0.8">
+          N
+        </text>
+
+        {/* Football pitch boundary & Sword shrine */}
+        <rect
+          x={proj.x(field.x) - (field.width * proj.scale) / 2}
+          y={proj.y(field.z) - (field.depth * proj.scale) / 2}
+          width={field.width * proj.scale}
+          height={field.depth * proj.scale}
+          transform={`rotate(${(-field.rotation * 180) / Math.PI} ${proj.x(field.x)} ${proj.y(field.z)})`}
+          fill="rgba(16, 185, 129, 0.05)"
+          stroke="#10b981"
+          strokeWidth="0.9"
+          strokeDasharray="4 3"
+          opacity="0.55"
+        />
+        <circle
+          cx={proj.x(field.x)}
+          cy={proj.y(field.z)}
+          r={Math.max(4, SWORD_PICKUP_RADIUS_M * proj.scale)}
+          fill="rgba(250, 204, 21, 0.15)"
+          stroke="#facc15"
+          strokeWidth="0.9"
+          strokeDasharray="3 2"
+        />
+        <text
+          x={proj.x(field.x)}
+          y={proj.y(field.z) + 3}
+          fontSize="8"
+          fill="#fde68a"
+          textAnchor="middle"
+        >
+          ⚔
+        </text>
+
+        {/* Ghost markers */}
+        {markers.map((g, i) => {
+          if (g.x === undefined || g.z === undefined || g.defeated) return null;
+          const clamped = clampToRadarCircle(proj.x(g.x), proj.y(g.z), 100, 100, 86);
+          return (
+            <g key={g.id}>
+              {/* Subtle pulse aura */}
+              <circle
+                cx={clamped.x}
+                cy={clamped.y}
+                r="8"
+                fill={g.color}
+                className="ghost-blip-pulse"
+              />
+              {/* Ghost blip dot */}
+              <circle
+                cx={clamped.x}
+                cy={clamped.y}
+                r="5"
+                fill={g.color}
+                stroke="#ffffff"
+                strokeWidth="1.2"
+                strokeDasharray={g.source === 'spawn' || g.source === 'guard' ? '2 1.5' : undefined}
+              />
+              {/* Ghost number badge */}
+              <text
+                x={clamped.x}
+                y={clamped.y + 2.5}
+                fontSize="7"
+                fontWeight="bold"
+                fill="#111827"
+                textAnchor="middle"
+              >
+                {i + 1}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Player marker with head direction pointer */}
+        {playerClamped && (
+          <g>
+            {/* Vision cone & direction pointer rotated by character head orientation */}
+            {typeof snapshot.player?.yaw === 'number' && (
+              <g transform={`rotate(${(-snapshot.player.yaw * 180) / Math.PI} ${playerClamped.x} ${playerClamped.y})`}>
+                {/* Vision cone arc */}
+                <path
+                  d={`M ${playerClamped.x} ${playerClamped.y} L ${playerClamped.x - 12} ${playerClamped.y - 25} A 28 28 0 0 1 ${playerClamped.x + 12} ${playerClamped.y - 25} Z`}
+                  fill="rgba(56, 189, 248, 0.3)"
                 />
-                <circle
-                  cx={playerClamped.x}
-                  cy={playerClamped.y}
-                  r="4.5"
+                {/* Head direction pointer triangle */}
+                <polygon
+                  points={`${playerClamped.x},${playerClamped.y - 14} ${playerClamped.x - 4.5},${playerClamped.y - 4} ${playerClamped.x},${playerClamped.y - 6} ${playerClamped.x + 4.5},${playerClamped.y - 4}`}
                   fill="#38bdf8"
                   stroke="#ffffff"
-                  strokeWidth="1.5"
+                  strokeWidth="0.8"
                 />
-                <text
-                  x={playerClamped.x}
-                  y={playerClamped.y + 11}
-                  fill="#38bdf8"
-                  fontSize="7"
-                  fontWeight="bold"
-                  textAnchor="middle"
-                >
-                  YOU
-                </text>
               </g>
             )}
+            <circle
+              cx={playerClamped.x}
+              cy={playerClamped.y}
+              r="7"
+              fill="#38bdf8"
+              className="player-blip-pulse"
+            />
+            <circle
+              cx={playerClamped.x}
+              cy={playerClamped.y}
+              r="4.5"
+              fill="#38bdf8"
+              stroke="#ffffff"
+              strokeWidth="1.5"
+            />
+            <text
+              x={playerClamped.x}
+              y={playerClamped.y + 11}
+              fill="#38bdf8"
+              fontSize="7"
+              fontWeight="bold"
+              textAnchor="middle"
+            >
+              YOU
+            </text>
           </g>
+        )}
+      </g>
 
-          {/* Outer radar metallic ring */}
-          <circle
-            cx="100"
-            cy="100"
-            r="98"
-            fill="none"
-            stroke="rgba(246, 206, 108, 0.45)"
-            strokeWidth="2"
-          />
-        </svg>
-      </div>
-    </div>
+      {/* Outer radar metallic ring */}
+      <circle
+        cx="100"
+        cy="100"
+        r="98"
+        fill="none"
+        stroke="rgba(246, 206, 108, 0.45)"
+        strokeWidth="2"
+      />
+    </svg>
   );
 }

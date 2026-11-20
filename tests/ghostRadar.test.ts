@@ -90,4 +90,13 @@ test('GhostRadar component and CSS support draggable placement, clean HUD, and s
   assert.ok(css.includes('.ghost-radar-minimized'), 'CSS must define .ghost-radar-minimized');
   assert.ok(css.includes('.ghost-radar-default-pos'), 'CSS must define .ghost-radar-default-pos');
   assert.ok(css.includes('@media (max-width: 600px)'), 'CSS must include mobile breakpoint');
+
+  // Fullscreen dialog modal on double-click / double-tap
+  assert.ok(tsx.includes('openFullscreenDialog'), 'Must provide openFullscreenDialog');
+  assert.ok(tsx.includes('closeFullscreenDialog'), 'Must provide closeFullscreenDialog');
+  assert.ok(tsx.includes('ghost-radar-fullscreen-dialog'), 'Must render fullscreen dialog modal');
+  assert.ok(tsx.includes('lastTapRef'), 'Must track touch double-tap events');
+  assert.ok(css.includes('.ghost-radar-fullscreen-dialog'), 'CSS must define .ghost-radar-fullscreen-dialog');
+  assert.ok(css.includes('.ghost-radar-fullscreen-backdrop'), 'CSS must define .ghost-radar-fullscreen-backdrop');
+  assert.ok(css.includes('.ghost-radar-fullscreen-circle-wrap'), 'CSS must define .ghost-radar-fullscreen-circle-wrap');
 });

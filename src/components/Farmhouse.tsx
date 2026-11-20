@@ -15,6 +15,7 @@ import {
 } from '../data/subscriptionBillboard';
 import { SubscriptionBillboard } from './SubscriptionBillboard';
 import { CatCompanion } from './CatCompanion';
+import { FarmhouseFamilyBots } from './FarmhouseFamilyBots';
 
 /**
  * Character's walk-in Farmhouse (စိုက်ခင်းအိမ်):
@@ -40,6 +41,7 @@ export function FarmhouseBuilding({ ignoreEdits = false }: { ignoreEdits?: boole
             <Suspense fallback={null}>
                 <CatCompanion />
             </Suspense>
+            <FarmhouseFamilyBots />
             <PorchCandles width={3.6} front={5} y={.23}/>
             <FestivalAnchor items={[
                 {x: 0, y: .88, z: 0, holder: true},

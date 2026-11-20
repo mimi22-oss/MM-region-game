@@ -14,6 +14,7 @@ import { mobileQuality, selectRegions, selectOverviewRegions } from '../game/sce
 import type { WorldDestination, WorldLoadingState } from '../game/regionLoading';
 import { StaticBatch } from './StaticBatch';
 import { RobotBots, prepareRobotPatrols } from './RobotBots';
+import { HouseResidentBots } from './HouseResidentBots';
 import { RegionActivity } from './RegionActivity';
 import { snapshotRegion, regionFlows, animateRegionFlows, warmRegion, disposePreparedRegion } from '../game/preparedScene';
 import { registerGroundRegion, releaseGroundRegion, releaseGroundRegions } from '../game/groundSurface';
@@ -398,6 +399,7 @@ const fallbackFocus = { x: 0, z: 0 };
     {regions.filter(region=>overviewIds.includes(region.id)).map(region => <group key={region.id} visible={!active.includes(region.id) || !prepared.includes(region.id)}><Overview region={region} /></group>)}
     {!paused && started && !diagnosticConfig.disableNPCs && !hideNpcsDuringHighIntro && <>
       <RobotBots activeRegions={active} />
+      <HouseResidentBots activeRegions={active} />
       <CarBots />
     </>}
     {/* F07: HauntedWarehouseAudioZone operates independently of NPC rendering / diagnostic toggles */}

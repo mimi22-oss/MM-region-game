@@ -2,7 +2,7 @@ import {useEffect,useLayoutEffect,useRef,useState,type RefObject} from 'react';
 import {useFrame} from '@react-three/fiber';
 import {Mesh,MeshStandardMaterial,type Texture} from 'three';
 import {GLTFLoader,type GLTF} from 'three/examples/jsm/loaders/GLTFLoader.js';
-import type {HumanAppearance} from '../data/appearance';
+import {effectiveHumanHeightScale,type HumanAppearance} from '../data/appearance';
 import {createGlbHuman} from '../game/glbHuman';
 import {COMBAT_MODEL_URLS} from '../game/combat/AttackDefinitions';
 import {getQualityPreset,useQualityPreset} from '../game/qualityPreset';
@@ -154,7 +154,7 @@ function LoadedHuman({model,preset,appearance,motion,riding=false,driving,combat
  useFrame((_,delta)=>{if(instance&&(!driving||driving.current.active))instance.update(motion.current,riding,driving?.current,delta);},combat?-.5:0);
  if(!instance)return null;
  // Preserve the supplied texture artwork; height remains adjustable in Appearance.
- return <group name={`glb-${preset}-character`} scale={riding||driving?1:appearance.height} userData={{humanPreset:preset,model:HUMAN_MODEL_URLS[preset]}}>
+ return <group name={`glb-${preset}-character`} scale={riding||driving?1:effectiveHumanHeightScale(preset,appearance.height)} userData={{humanPreset:preset,model:HUMAN_MODEL_URLS[preset]}}>
   <primitive object={instance.root} dispose={null}/>
  </group>;
 }

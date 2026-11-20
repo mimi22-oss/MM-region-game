@@ -3,7 +3,7 @@ import {garmentGeometry,closedSleeveGeometry,coveredStride} from '../game/charac
 import { CartoonFace } from './CartoonFace';
 import { CartoonHair } from './CartoonHair';
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from 'react';
-import { HUMAN_PRESETS, type HumanAppearance } from '../data/appearance';
+import { HUMAN_PRESETS, effectiveHumanHeightScale, type HumanAppearance } from '../data/appearance';
 import { useFrame } from '@react-three/fiber';
 import {
 	BufferGeometry, CatmullRomCurve3, Float32BufferAttribute, Group,
@@ -353,5 +353,5 @@ export function CartoonCharacter({appearance=HUMAN_PRESETS.boy,...props}:{appear
  },[appearance.skin,appearance.clothingColor,appearance.trousersColor,appearance.shoeColor]);
  useEffect(()=>()=>{for(const key of Object.keys(palette) as (keyof typeof palette)[])if(palette[key]!==defaultMaterials[key])palette[key].dispose();},[palette]);
  // Seated poses use the vehicle's seat and grip dimensions, while walking height is configurable.
- return <HumanContext.Provider value={appearance}><MaterialContext.Provider value={palette}><group scale={props.riding||props.driving?1:appearance.height} userData={{humanPreset:appearance.preset}}><CharacterBody {...props}/></group></MaterialContext.Provider></HumanContext.Provider>;
+ return <HumanContext.Provider value={appearance}><MaterialContext.Provider value={palette}><group scale={props.riding||props.driving?1:effectiveHumanHeightScale(appearance.preset,appearance.height)} userData={{humanPreset:appearance.preset}}><CharacterBody {...props}/></group></MaterialContext.Provider></HumanContext.Provider>;
 }

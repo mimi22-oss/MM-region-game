@@ -127,8 +127,58 @@ function smoothstep01(t: number): number {
 }
 
 const customChairRegistry = new Map<string, ChairSpot>();
+const npcOccupiedChairs = new Map<string, Set<string>>();
 const staticChairCache: ChairSpot[] = [];
 let staticChairsInitialized = false;
+
+/** Marks or clears a chair as occupied by an NPC bot (so the player cannot sit on top of them). */
+export function setChairOccupiedByNpc(
+  chairId: string,
+  occupantId: string,
+  occupied: boolean,
+): void {
+  if (occupied) {
+    let set = npcOccupiedChairs.get(chairId);
+    if (!set) {
+      set = new Set();
+      npcOccupiedChairs.set(chairId, set);
+    }
+    set.add(occupantId);
+  } else {
+    const set = npcOccupiedChairs.get(chairId);
+    if (!set) return;
+    set.delete(occupantId);
+    if (set.size === 0) npcOccupiedChairs.delete(chairId);
+  }
+}
+
+/** Releases all chairs currently held by `occupantId` (call on unmount or pool slot eviction). */
+export function releaseNpcChairOccupant(occupantId: string): void {
+  for (const [chairId, set] of npcOccupiedChairs) {
+    if (set.delete(occupantId) && set.size === 0) {
+      npcOccupiedChairs.delete(chairId);
+    }
+  }
+}
+
+/** Clears all NPC seat occupancy entries (primarily for unit tests). */
+export function clearNpcChairOccupancy(): void {
+  npcOccupiedChairs.clear();
+}
+
+/** Returns true if any NPC bot is currently occupying `chairId`. */
+export function isChairOccupiedByNpc(chairId: string): boolean {
+  const set = npcOccupiedChairs.get(chairId);
+  return Boolean(set && set.size > 0);
+}
+
+/** Returns true if the player character is currently sitting on or standing up from `chairId`. */
+export function isChairOccupiedByPlayer(chairId: string): boolean {
+  return (
+    runtime.activeChair?.id === chairId &&
+    (runtime.status === 'SITTING' || runtime.status === 'STANDING_UP')
+  );
+}
 
 function buildStaticChairs(): ChairSpot[] {
   const chairs: ChairSpot[] = [];
@@ -340,12 +390,15 @@ export function findNearbyChair(
   playerX: number,
   playerZ: number,
   maxDistance = CHAIR_PROXIMITY_RADIUS,
+  options?: { includeOccupied?: boolean },
 ): ChairSpot | null {
   const chairs = getAllChairSpots();
+  const includeOccupied = Boolean(options?.includeOccupied);
   let nearest: ChairSpot | null = null;
   let minDistSq = maxDistance * maxDistance;
 
   for (const chair of chairs) {
+    if (!includeOccupied && isChairOccupiedByNpc(chair.id)) continue;
     const dx = chair.x - playerX;
     const dz = chair.z - playerZ;
     const distSq = dx * dx + dz * dz;
@@ -495,7 +548,10 @@ export function sitOnChair(
   groundY?: number,
   bodyScale = 1.0,
   preset = 'boy',
-): void {
+): boolean {
+  if (isChairOccupiedByNpc(chair.id)) {
+    return false;
+  }
   runtime.status = 'SITTING';
   runtime.activeChair = chair;
   runtime.entrySpot = entrySpot ? { ...entrySpot } : null;
@@ -517,6 +573,7 @@ export function sitOnChair(
     void loadRawSpecialActionAsset(CHAIR_SIT_TO_STAND_ID).catch(() => {});
   }
   syncSnapshot(true);
+  return true;
 }
 
 export function standUpFromChair(canStand?: (x: number, z: number) => boolean): void {

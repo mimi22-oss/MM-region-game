@@ -11,6 +11,7 @@ import {createJumpPose,prepareJump,stepJumpPose,jumpKneeBend} from '../game/huma
 import {createHumanJump,rememberJumpMomentum,startHumanJump,stepHumanJump,steerHumanJump} from '../game/humanJump';
 import {walkWithContacts,createWalkingRecoil,stepWalkingRecoil} from '../game/walkingCollision';
 import {useAppearance} from '../game/appearanceStore';
+import {effectiveHumanHeightScale} from '../data/appearance';
 import {shouldUseGlbCharacter} from '../game/characterRenderer';
 import {isIntroHighAltitude,isIntroOwningCamera} from '../game/IntroStateMachine';
 import {
@@ -543,7 +544,7 @@ export const Player = memo(function Player({
    playerMoving:rawMoveIntent,
    canSit:canChairSit,
    canStand,
-   bodyScale:appearance.human.height,
+   bodyScale:effectiveHumanHeightScale(appearance.human.preset,appearance.human.height),
    preset:appearance.human.preset,
   });
   const chairControlled=chairSittingSnapshot.status==='SITTING'||chairSittingSnapshot.status==='STANDING_UP';
@@ -846,7 +847,7 @@ export const Player = memo(function Player({
   const bikePose=motorcycleGroundPose(ride.x,ride.z,ride.yaw,height);
   ride.groundY=bikePose.y;ride.pitch=bikePose.pitch;
   const center=height(s.x,s.z),c=Math.cos(s.bodyYaw),sn=Math.sin(s.bodyYaw);
-  const bodyScale=character==='cartoon'?appearance.human.height:appearance.robot.size;
+  const bodyScale=character==='cartoon'?effectiveHumanHeightScale(appearance.human.preset,appearance.human.height):appearance.robot.size;
   const footWidth=(character==='cartoon'?.104:appearance.robot.legs==='wheels'?.305*.95:appearance.robot.legs==='tracks'?.27*.95:.16*.95)*bodyScale;
   const left=height(s.x-footWidth*c,s.z+footWidth*sn),rightHeight=height(s.x+footWidth*c,s.z-footWidth*sn);
   const car=currentCar();

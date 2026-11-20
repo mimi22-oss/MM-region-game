@@ -24,6 +24,11 @@ export const HUMAN_PRESETS:Record<HumanPreset,HumanAppearance>={
  grandfather:{preset:'grandfather',hair:'swept',hairColor:'#b4b2af',skin:'#b88a68',face:'mature',clothes:'longyi',clothingColor:'#ded2af',trousersColor:'#59675d',height:1.05,shoes:'sandals',shoeColor:'#594531'},
  father:{preset:'father',hair:'swept',hairColor:'#252222',skin:'#aa7552',face:'mature',clothes:'shirt',clothingColor:'#4f7198',trousersColor:'#303b47',height:1.16,shoes:'boots',shoeColor:'#4b3529'},
 };
+/** Youthful protagonist render scale so boy/girl player characters stand naturally shorter than adult Dad & Older Brother. */
+export const PROTAGONIST_YOUTH_SCALE = 0.88;
+export function effectiveHumanHeightScale(preset: HumanPreset, height: number): number {
+ return height * (preset === 'boy' || preset === 'girl' ? PROTAGONIST_YOUTH_SCALE : 1);
+}
 export const CAR_MODELS:Record<CarModel,{label:string;roofFront:number;roofRear:number;roofY:number}>={
  compact:{label:'Compact · မူလကား',roofFront:-.2,roofRear:.65,roofY:2.1},
  toyota:{label:'Toyota ပုံစံ · Sedan',roofFront:-.22,roofRear:.60,roofY:2.12},

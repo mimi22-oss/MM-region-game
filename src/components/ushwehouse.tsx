@@ -1,8 +1,11 @@
+import { useRef } from 'react';
+import type { Group } from 'three';
 import { Box } from './Primitives';
 import { angle } from '../data/ward';
 import { uShweHouseCoords, U_SHWE_HOUSE_ID } from '../data/ushwehouse';
 import { mobileQuality } from '../game/sceneBudget';
 import { sourceIsEdited } from '../game/worldEdits';
+import { UShweCoupleBots } from './UShweCoupleBots';
 
 export { U_SHWE_HOUSE_ID };
 
@@ -20,6 +23,8 @@ export { U_SHWE_HOUSE_ID };
  *   - လက်ဖက်ရည်ခွက်များ၊ ဓာတ်ဗူး၊ ရေနွေးကြမ်းအိုးနှင့် စားပွဲဝိုင်း၊ ခုံပုလေးများ
  */
 export function UShweHouse({ ignoreEdits = false }: { ignoreEdits?: boolean } = {}) {
+	const leftDoorRef = useRef<Group>(null);
+	const rightDoorRef = useRef<Group>(null);
 	if (!ignoreEdits && sourceIsEdited(U_SHWE_HOUSE_ID)) return null;
 	const h = uShweHouseCoords;
 	const rot = angle + Math.PI / 2; // 3*pi/4, facing front street
@@ -36,8 +41,22 @@ export function UShweHouse({ ignoreEdits = false }: { ignoreEdits?: boolean } = 
 				{/* အောက်ခြေ ကွန်ကရစ်ဖောင်ဒေးရှင်းခုံ (Foundation Base) */}
 				<Box position={[0, 0.15, 0]} size={[h.width + 0.3, 0.3, h.depth + 0.3]} color="#aaa18d" />
 
-				{/* အောက်ထပ် ပင်မနံရံများ (Ground Floor Walls) */}
-				<Box position={[0, 1.8, 0]} size={[h.width, 3.0, h.depth]} color="#d6cbb6" />
+				{/* အောက်ထပ် ပင်မနံရံများ — အလယ်တံခါးပေါက် ဝင်ထွက်နိုင်ရန် အတွင်းခန်းဖွင့်ထားသည် */}
+				<Box position={[0, 1.8, -0.75]} size={[h.width, 3.0, h.depth - 1.5]} color="#d6cbb6" />
+				<Box position={[-2.85, 1.8, 3.75]} size={[4.3, 3.0, 1.5]} color="#d6cbb6" />
+				<Box position={[2.85, 1.8, 3.75]} size={[4.3, 3.0, 1.5]} color="#d6cbb6" />
+				<Box position={[0, 2.95, 3.75]} size={[1.4, 0.7, 1.5]} color="#d6cbb6" />
+				{/* အိမ်တွင်း အဝင်ခန်း နွေးထွေးသော အလင်းရောင်ရှိ နောက်ခံ (Warm-Lit Interior Vestibule so open doorway is clearly visible) */}
+				<Box position={[0, 1.45, 3.05]} size={[1.42, 2.32, 0.08]} color="#c9b18b" />
+				<Box position={[-0.68, 1.45, 3.78]} size={[0.06, 2.32, 1.44]} color="#b89f79" />
+				<Box position={[0.68, 1.45, 3.78]} size={[0.06, 2.32, 1.44]} color="#b89f79" />
+				{/* အိမ်တွင်း ကြမ်းခင်းပြား (Interior Teak Floor) */}
+				<Box position={[0, 0.27, 3.78]} size={[1.42, 0.04, 1.46]} color="#8b623c" />
+				{/* အိမ်တွင်း မီးချောင်းနွေးနွေး (Warm Interior Ceiling Lamp Strip) */}
+				<mesh position={[0, 2.52, 3.65]}>
+					<boxGeometry args={[0.7, 0.04, 0.22]} />
+					<meshStandardMaterial color="#fff3c4" emissive="#fbbf24" emissiveIntensity={0.85} />
+				</mesh>
 
 				{/* အလယ်ထပ် ကြမ်းခင်းလိုင်းဘောင် (Floor Divider Band) */}
 				<Box position={[0, 3.4, 0]} size={[h.width + 0.35, 0.2, h.depth + 0.35]} color="#71523c" />
@@ -73,8 +92,47 @@ export function UShweHouse({ ignoreEdits = false }: { ignoreEdits?: boolean } = 
 					</group>
 				))}
 
-				{/* ပင်မ အိမ်တံခါးမကြီး (Main House Front Entrance Door) */}
-				<Box position={[0, 1.45, front + 0.05]} size={[1.4, 2.3, 0.12]} color="#573f30" />
+				{/* ပင်မ အိမ်တံခါးမကြီး — Farmhouse HomeGate ပုံစံ တံခါးရွက် ၂ ချပ် (userData.dynamic=true ဖြင့် StaticBatch မအေးခဲစေရန်) */}
+				{/* တံခါးဘောင် (Door Frame) */}
+				<Box position={[-0.7, 1.45, front + 0.04]} size={[0.08, 2.34, 0.14]} color="#422c1f" />
+				<Box position={[0.7, 1.45, front + 0.04]} size={[0.08, 2.34, 0.14]} color="#422c1f" />
+				<Box position={[0, 2.6, front + 0.04]} size={[1.48, 0.08, 0.14]} color="#422c1f" />
+				{/* အတွင်းသို့ ၉၀ ဒီဂရီ ဖွင့်ပိတ်နိုင်သော တံခါးရွက် ၂ ချပ် (Farmhouse-style Double Swinging Doors) */}
+				<group position={[0, 0.3, front + 0.02]} userData={{ dynamic: true }} name="u-shwe-front-double-door">
+					{([-1, 1] as const).map((side) => (
+						<group
+							key={side}
+							ref={side < 0 ? leftDoorRef : rightDoorRef}
+							position={[side * 0.66, 0, 0]}
+							name={side < 0 ? 'u-shwe-front-door-left' : 'u-shwe-front-door-right'}
+						>
+							<mesh position={[-side * 0.325, 1.15, 0]} castShadow receiveShadow>
+								<boxGeometry args={[0.64, 2.28, 0.08]} />
+								<meshStandardMaterial color="#6b4832" roughness={0.5} />
+							</mesh>
+							{/* အလှဆင် တံခါးဘောင်အကွက် (Front & Back Decorative Door Panels) */}
+							{[0.045, -0.045].map((pz) => (
+								<group key={pz}>
+									<mesh position={[-side * 0.325, 1.62, pz]}>
+										<boxGeometry args={[0.42, 0.78, 0.016]} />
+										<meshStandardMaterial color="#7d563c" roughness={0.55} />
+									</mesh>
+									<mesh position={[-side * 0.325, 0.68, pz]}>
+										<boxGeometry args={[0.42, 0.78, 0.016]} />
+										<meshStandardMaterial color="#7d563c" roughness={0.55} />
+									</mesh>
+								</group>
+							))}
+							{/* ရွှေရောင် တံခါးလက်ကိုင်ဘု (Brass Doorknobs Front & Back) */}
+							{[0.068, -0.068].map((kz) => (
+								<mesh key={kz} position={[-side * 0.54, 1.08, kz]}>
+									<sphereGeometry args={[0.048, 8, 6]} />
+									<meshStandardMaterial color="#f5cb55" metalness={0.55} roughness={0.3} />
+								</mesh>
+							))}
+						</group>
+					))}
+				</group>
 				<Box position={[0, 4.65, front + 0.05]} size={[1.4, 2.3, 0.12]} color="#573f30" />
 
 				{/* အပေါ်ထပ် ဝရံတာလက်ရန်း (Upper Floor Balcony at y=3.4) */}
@@ -434,6 +492,11 @@ export function UShweHouse({ ignoreEdits = false }: { ignoreEdits?: boolean } = 
 					<meshStandardMaterial color="#68767a" roughness={0.6} />
 				</mesh>
 			</group>
+
+			{/* ======================================================== */}
+			{/* ၇။ ဦးလေးနှင့် ဒေါ်လေး လင်မယား ၂ ယောက် Bot နှင့် ထိုင်ခုံ ၂ ခု */}
+			{/* ======================================================== */}
+			<UShweCoupleBots leftDoorRef={leftDoorRef} rightDoorRef={rightDoorRef} />
 		</group>
 	);
 }
