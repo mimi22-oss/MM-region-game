@@ -177,11 +177,13 @@ header p {
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-	background: radial-gradient(circle at 20% 0%, rgba(92, 42, 18, 0.96), rgba(40, 14, 7, 0.97) 60%, rgba(28, 10, 5, 0.98));
-	border: 1px solid rgba(247, 206, 114, 0.34);
-	border-radius: 22px;
-	color: #f6ebd4;
-	box-shadow: 0 26px 72px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 224, 150, 0.16);
+	background: linear-gradient(160deg, rgba(15, 23, 42, 0.95) 0%, rgba(17, 24, 39, 0.94) 55%, rgba(28, 22, 54, 0.95) 100%);
+	border: 1px solid rgba(148, 163, 184, 0.26);
+	border-radius: 20px;
+	color: #f8fafc;
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	box-shadow: 0 24px 64px rgba(0, 0, 0, 0.68), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
 }
 
 .guide-header {
@@ -560,6 +562,7 @@ kbd {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+	overflow: hidden;
 	box-shadow: 0 0 0 100vmax rgba(20, 61, 54, 0.65), 0 20px 50px rgba(0, 0, 0, 0.4);
 	background: #f6f1e5;
 	border: 1.5px solid #dcd4be;
@@ -596,9 +599,36 @@ kbd {
 	justify-content: center;
 	gap: 8px;
 	width: 100%;
-	padding: 0 0 10px;
+	max-height: min(140px, 25dvh);
+	overflow-y: auto;
+	overflow-x: hidden;
+	overscroll-behavior: contain;
+	-webkit-overflow-scrolling: touch;
+	flex-shrink: 0;
+	box-sizing: border-box;
+	padding: 4px 6px 10px;
 	font-size: 11.5px;
 	color: #2b4c43;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(22, 62, 54, 0.35) transparent;
+}
+
+.map-jump-bar::-webkit-scrollbar {
+	width: 6px;
+}
+
+.map-jump-bar::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0.04);
+	border-radius: 999px;
+}
+
+.map-jump-bar::-webkit-scrollbar-thumb {
+	background: rgba(22, 62, 54, 0.28);
+	border-radius: 999px;
+}
+
+.map-jump-bar::-webkit-scrollbar-thumb:hover {
+	background: rgba(22, 62, 54, 0.48);
 }
 
 .map-jump-btn {
@@ -756,11 +786,23 @@ main.night-mode .map-haunt-note {
 	}
 }
 
+@keyframes locationToastIn {
+	from {
+		opacity: 0;
+		transform: translateY(-8px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
 .location-toast {
 	position: absolute;
-	top: 24px;
-	left: 50%;
-	transform: translateX(-50%);
+	top: 90px;
+	left: 25px;
+	transform: none;
 	z-index: 12;
 	display: flex;
 	align-items: center;
@@ -771,7 +813,7 @@ main.night-mode .map-haunt-note {
 	padding: 8px 18px 8px 14px;
 	box-shadow: 0 10px 32px #163e362e;
 	pointer-events: none;
-	animation: toastIn 0.22s ease-out;
+	animation: locationToastIn 0.22s ease-out;
 }
 
 .location-toast-icon {
@@ -1496,10 +1538,10 @@ main.night-mode .settings-btn-active {
 }
 
 main.night-mode .settings-menu {
-	background: radial-gradient(circle at 20% 0%, rgba(72, 34, 18, 0.96), rgba(32, 12, 8, 0.97) 60%, rgba(22, 8, 5, 0.98));
-	border-color: rgba(247, 206, 114, 0.34);
-	box-shadow: 0 26px 72px rgba(0, 0, 0, 0.78), inset 0 1px 0 rgba(255, 224, 150, 0.14);
-	color: #f6ebd4;
+	background: linear-gradient(160deg, rgba(15, 23, 42, 0.96) 0%, rgba(17, 24, 39, 0.95) 55%, rgba(28, 22, 54, 0.96) 100%);
+	border-color: rgba(167, 139, 250, 0.32);
+	box-shadow: 0 24px 64px rgba(0, 0, 0, 0.78), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+	color: #f8fafc;
 }
 
 main.night-mode .guide-header {
@@ -1842,6 +1884,19 @@ main.night-mode .map-expanded {
 
 main.night-mode .map-jump-bar {
 	color: #b5cbe2;
+	scrollbar-color: rgba(181, 203, 226, 0.35) transparent;
+}
+
+main.night-mode .map-jump-bar::-webkit-scrollbar-track {
+	background: rgba(255, 255, 255, 0.04);
+}
+
+main.night-mode .map-jump-bar::-webkit-scrollbar-thumb {
+	background: rgba(181, 203, 226, 0.3);
+}
+
+main.night-mode .map-jump-bar::-webkit-scrollbar-thumb:hover {
+	background: rgba(181, 203, 226, 0.5);
 }
 
 main.night-mode .map-jump-btn {
@@ -2035,11 +2090,11 @@ main.night-mode .home-guidance-pill {
 
 	.location-toast {
 		display: flex !important;
-		top: max(4px, calc(env(safe-area-inset-top, 0px) + 8px)) !important;
-		left: max(5%, calc(env(safe-area-inset-left, 0px) + 12px)) !important;
-		transform: translateX(-5%) !important;
+		top: max(52px, calc(env(safe-area-inset-top, 0px) + 52px)) !important;
+		left: max(25px, calc(env(safe-area-inset-left, 0px) + 25px)) !important;
+		transform: none !important;
 		width: auto;
-		max-width: calc(100vw - 28px);
+		max-width: calc(100vw - 40px);
 		padding: 6px 14px 6px 12px;
 		gap: 8px;
 		border-radius: 999px;
@@ -2636,6 +2691,12 @@ main.night-mode .home-guidance-pill {
 
 	.map-expanded svg {
 		max-width: 100%;
+	}
+
+	.map-jump-bar {
+		max-height: min(110px, 20dvh);
+		gap: 6px;
+		padding: 2px 4px 8px;
 	}
 
 	.map-expanded small {
@@ -6361,7 +6422,7 @@ body:has(.balloon-controls-layer) .player-life {
 	}
 }
 
-/* Full-Panel Icon-Grid Settings Modal (Lacquer & Gold Theme) */
+/* Full-Panel Icon-Grid Settings Modal (Mission Hub Dark-Glass Slate & Violet Theme) */
 .settings-backdrop {
 	position: fixed;
 	inset: 0;
@@ -6370,23 +6431,16 @@ body:has(.balloon-controls-layer) .player-life {
 	align-items: center;
 	justify-content: center;
 	padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-	background: rgba(14, 6, 3, 0.58);
-	backdrop-filter: blur(6px);
-	-webkit-backdrop-filter: blur(6px);
+	background: rgba(2, 6, 23, 0.72);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
 }
 
 .settings-menu-trim {
-	flex: 0 0 8px;
+	flex: 0 0 4px;
 	width: 100%;
-	background-color: #6b1512;
-	background-image:
-		linear-gradient(135deg, rgba(247, 204, 102, 0.92) 25%, transparent 25%),
-		linear-gradient(225deg, rgba(247, 204, 102, 0.92) 25%, transparent 25%),
-		linear-gradient(45deg, rgba(214, 52, 42, 0.92) 25%, transparent 25%),
-		linear-gradient(315deg, rgba(214, 52, 42, 0.92) 25%, #3a0b07 25%);
-	background-position: 8px 0, 8px 0, 0 0, 0 0;
-	background-size: 16px 8px;
-	border-bottom: 1px solid rgba(247, 206, 114, 0.35);
+	background: linear-gradient(90deg, rgba(99, 102, 241, 0.9) 0%, rgba(139, 92, 246, 0.95) 50%, rgba(168, 85, 247, 0.9) 100%);
+	border-bottom: 1px solid rgba(167, 139, 250, 0.3);
 }
 
 .settings-menu-header {
@@ -6396,8 +6450,8 @@ body:has(.balloon-controls-layer) .player-life {
 	justify-content: space-between;
 	gap: 12px;
 	padding: 14px 20px 12px;
-	border-bottom: 1px solid rgba(247, 206, 114, 0.16);
-	background: rgba(29, 10, 5, 0.55);
+	border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+	background: linear-gradient(90deg, rgba(99, 102, 241, 0.18) 0%, rgba(168, 85, 247, 0.12) 100%);
 }
 
 .settings-menu-title-group {
@@ -6411,9 +6465,9 @@ body:has(.balloon-controls-layer) .player-life {
 .settings-menu-title-group h2 {
 	margin: 0;
 	font-size: 20px;
-	font-weight: 700;
-	color: #f6ce67;
-	letter-spacing: 0.4px;
+	font-weight: 800;
+	color: #f8fafc;
+	letter-spacing: 0.35px;
 	white-space: nowrap;
 }
 
@@ -6423,9 +6477,9 @@ body:has(.balloon-controls-layer) .player-life {
 	gap: 7px;
 	padding: 4px 11px;
 	border-radius: 999px;
-	border: 1px solid rgba(247, 206, 114, 0.25);
-	background: rgba(84, 38, 16, 0.55);
-	color: #f3dfc0;
+	border: 1px solid rgba(167, 139, 250, 0.35);
+	background: rgba(139, 92, 246, 0.2);
+	color: #ede9fe;
 	font-size: 11px;
 	white-space: nowrap;
 }
@@ -6434,8 +6488,8 @@ body:has(.balloon-controls-layer) .player-life {
 	width: 7px;
 	height: 7px;
 	border-radius: 50%;
-	background: #6ad379;
-	box-shadow: 0 0 6px #6ad379;
+	background: #34d399;
+	box-shadow: 0 0 6px #34d399;
 }
 
 .settings-menu-header-actions {
@@ -6449,9 +6503,9 @@ body:has(.balloon-controls-layer) .player-life {
 	height: 36px;
 	padding: 0 14px;
 	border-radius: 999px;
-	border: 1px solid rgba(247, 206, 114, 0.28);
-	background: rgba(74, 34, 15, 0.56);
-	color: #f5e6cc;
+	border: 1px solid rgba(148, 163, 184, 0.28);
+	background: rgba(30, 41, 59, 0.68);
+	color: #e2e8f0;
 	font: inherit;
 	font-size: 12px;
 	font-weight: 600;
@@ -6461,34 +6515,37 @@ body:has(.balloon-controls-layer) .player-life {
 }
 
 .settings-header-pill:hover {
-	background: rgba(114, 56, 24, 0.72);
-	border-color: rgba(247, 206, 114, 0.56);
+	background: rgba(139, 92, 246, 0.28);
+	border-color: rgba(167, 139, 250, 0.62);
+	color: #ffffff;
 }
 
 .settings-header-pill.is-selected {
-	background: #f4cd5a;
-	color: #2c1306;
-	border-color: #f9db82;
+	background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+	color: #ffffff;
+	border-color: rgba(196, 181, 253, 0.78);
 }
 
 .settings-menu-close {
 	width: 36px;
 	height: 36px;
-	border-radius: 50%;
-	border: 1px solid rgba(255, 224, 170, 0.22);
-	background: rgba(255, 255, 255, 0.08);
-	color: #f7eedc;
+	border-radius: 10px;
+	border: 1px solid rgba(148, 163, 184, 0.26);
+	background: rgba(255, 255, 255, 0.06);
+	color: #e2e8f0;
 	font-size: 16px;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	cursor: pointer;
-	transition: background 0.15s ease, transform 0.15s ease;
+	transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
 .settings-menu-close:hover {
-	background: rgba(255, 255, 255, 0.18);
-	transform: scale(1.06);
+	background: rgba(239, 68, 68, 0.24);
+	border-color: rgba(248, 113, 113, 0.55);
+	color: #ffffff;
+	transform: scale(1.04);
 }
 
 .settings-menu-body {
@@ -6500,7 +6557,7 @@ body:has(.balloon-controls-layer) .player-life {
 	-webkit-overflow-scrolling: touch;
 	padding: 16px 20px 22px;
 	scrollbar-width: thin;
-	scrollbar-color: rgba(246, 206, 103, 0.36) rgba(255, 255, 255, 0.04);
+	scrollbar-color: rgba(148, 163, 184, 0.38) rgba(15, 23, 42, 0.3);
 }
 
 .settings-menu-body::-webkit-scrollbar {
@@ -6508,17 +6565,17 @@ body:has(.balloon-controls-layer) .player-life {
 }
 
 .settings-menu-body::-webkit-scrollbar-track {
-	background: rgba(255, 255, 255, 0.04);
+	background: rgba(15, 23, 42, 0.3);
 	border-radius: 999px;
 }
 
 .settings-menu-body::-webkit-scrollbar-thumb {
-	background: rgba(246, 206, 103, 0.35);
+	background: rgba(148, 163, 184, 0.36);
 	border-radius: 999px;
 }
 
 .settings-menu-body::-webkit-scrollbar-thumb:hover {
-	background: rgba(246, 206, 103, 0.55);
+	background: rgba(167, 139, 250, 0.58);
 }
 
 .settings-icon-grid {
@@ -6537,9 +6594,9 @@ body:has(.balloon-controls-layer) .player-life {
 	min-height: 88px;
 	padding: 12px 8px;
 	border-radius: 14px;
-	border: 1px solid rgba(246, 206, 108, 0.24);
-	background: rgba(74, 34, 15, 0.44);
-	color: #f6ebd5;
+	border: 1px solid rgba(148, 163, 184, 0.2);
+	background: linear-gradient(145deg, rgba(30, 41, 59, 0.68) 0%, rgba(15, 23, 42, 0.82) 100%);
+	color: #f8fafc;
 	font: inherit;
 	cursor: pointer;
 	text-align: center;
@@ -6551,15 +6608,16 @@ body:has(.balloon-controls-layer) .player-life {
 }
 
 .settings-tile:hover:not(:disabled) {
-	background: rgba(116, 58, 25, 0.6);
-	border-color: rgba(246, 206, 108, 0.55);
+	background: linear-gradient(145deg, rgba(49, 27, 88, 0.56) 0%, rgba(17, 24, 39, 0.88) 100%);
+	border-color: rgba(167, 139, 250, 0.62);
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35), 0 0 14px rgba(139, 92, 246, 0.18);
 	transform: translateY(-1px);
 }
 
 .settings-tile.is-active {
-	background: rgba(173, 102, 34, 0.44);
-	border-color: rgba(247, 209, 108, 0.78);
-	box-shadow: inset 0 0 18px rgba(246, 188, 72, 0.16);
+	background: linear-gradient(145deg, rgba(76, 29, 149, 0.55) 0%, rgba(30, 27, 75, 0.86) 100%);
+	border-color: rgba(167, 139, 250, 0.78);
+	box-shadow: inset 0 0 18px rgba(139, 92, 246, 0.22);
 }
 
 .settings-tile:disabled {
@@ -6570,7 +6628,7 @@ body:has(.balloon-controls-layer) .player-life {
 .settings-tile:focus-visible,
 .settings-header-pill:focus-visible,
 .settings-menu-close:focus-visible {
-	outline: 2px solid #f7cf67;
+	outline: 2px solid #a78bfa;
 	outline-offset: 2px;
 }
 
@@ -6578,7 +6636,7 @@ body:has(.balloon-controls-layer) .player-life {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	color: #f6cd68;
+	color: #c4b5fd;
 }
 
 .settings-tile-svg {
@@ -6589,7 +6647,7 @@ body:has(.balloon-controls-layer) .player-life {
 	font-size: 12px;
 	line-height: 1.35;
 	font-weight: 500;
-	color: #f5ebd7;
+	color: #f1f5f9;
 }
 
 .settings-tile-badge {
@@ -6598,12 +6656,12 @@ body:has(.balloon-controls-layer) .player-life {
 	right: 8px;
 	padding: 1px 7px;
 	border-radius: 999px;
-	background: #f4cc58;
-	color: #2f1406;
+	background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+	color: #ffffff;
 	font-size: 10px;
 	font-weight: 700;
 	letter-spacing: 0.2px;
-	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .settings-details-divider {
@@ -6611,9 +6669,9 @@ body:has(.balloon-controls-layer) .player-life {
 	align-items: center;
 	gap: 12px;
 	margin: 18px 0 14px;
-	color: rgba(246, 206, 108, 0.78);
+	color: #c4b5fd;
 	font-size: 11px;
-	font-weight: 600;
+	font-weight: 700;
 	letter-spacing: 0.3px;
 }
 
@@ -6622,7 +6680,7 @@ body:has(.balloon-controls-layer) .player-life {
 	content: "";
 	flex: 1;
 	height: 1px;
-	background: linear-gradient(90deg, rgba(246, 206, 108, 0.08), rgba(246, 206, 108, 0.32), rgba(246, 206, 108, 0.08));
+	background: linear-gradient(90deg, rgba(148, 163, 184, 0.08), rgba(167, 139, 250, 0.35), rgba(148, 163, 184, 0.08));
 }
 
 .settings-details-grid {
@@ -6639,95 +6697,95 @@ body:has(.balloon-controls-layer) .player-life {
 	overflow: hidden;
 	padding: 14px;
 	border-radius: 14px;
-	border: 1px solid rgba(246, 206, 108, 0.2);
-	background: rgba(58, 25, 11, 0.62);
-	color: #f4e8cf;
+	border: 1px solid rgba(148, 163, 184, 0.2);
+	background: rgba(15, 23, 42, 0.62);
+	color: #f8fafc;
 	transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .settings-detail-card.is-focused {
-	border-color: rgba(247, 209, 108, 0.75);
-	box-shadow: 0 0 0 1px rgba(247, 209, 108, 0.28), 0 8px 24px rgba(0, 0, 0, 0.35);
+	border-color: rgba(167, 139, 250, 0.72);
+	box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.26), 0 8px 24px rgba(0, 0, 0, 0.38);
 }
 
 .settings-detail-card-wide {
 	grid-column: 1 / -1;
 }
 
-/* Harmonize nested settings widgets with warm mahogany & gold panel theme */
+/* Harmonize nested settings widgets with ghost-hud-card dark slate & violet theme */
 .settings-menu .character-picker,
 main.night-mode .settings-menu .character-picker {
-	background: rgba(74, 33, 15, 0.56);
-	border-color: rgba(246, 206, 108, 0.24);
-	color: #f5ebd5;
+	background: rgba(15, 23, 42, 0.62);
+	border-color: rgba(148, 163, 184, 0.22);
+	color: #f8fafc;
 	margin-bottom: 12px;
 }
 
 .settings-menu .character-picker legend,
 main.night-mode .settings-menu .character-picker legend {
-	color: #f6ce67;
+	color: #c4b5fd;
 }
 
 .settings-menu .character-options button,
 main.night-mode .settings-menu .character-options button {
-	background: rgba(45, 18, 8, 0.78);
-	border-color: rgba(246, 206, 108, 0.22);
-	color: #f5ebd5;
+	background: rgba(30, 41, 59, 0.7);
+	border-color: rgba(148, 163, 184, 0.24);
+	color: #f1f5f9;
 }
 
 .settings-menu .character-options button[aria-pressed="true"],
 main.night-mode .settings-menu .character-options button[aria-pressed="true"] {
-	border-color: #f4cd5a;
-	background: rgba(164, 96, 36, 0.45);
-	color: #fff8ea;
+	border-color: rgba(167, 139, 250, 0.8);
+	background: linear-gradient(135deg, rgba(99, 102, 241, 0.38) 0%, rgba(139, 92, 246, 0.38) 100%);
+	color: #ffffff;
 }
 
 .settings-menu .character-options strong,
 main.night-mode .settings-menu .character-options strong {
-	color: #fff6e2;
+	color: #f8fafc;
 }
 
 .settings-menu .character-picker p,
 main.night-mode .settings-menu .character-picker p {
-	color: rgba(245, 229, 198, 0.76);
+	color: #cbd5e1;
 }
 
 .settings-menu .appearance-settings,
 main.night-mode .settings-menu .appearance-settings {
 	border-block: 0;
-	border-top: 1px solid rgba(246, 206, 108, 0.18);
+	border-top: 1px solid rgba(148, 163, 184, 0.18);
 	padding: 12px 0 0;
 	margin: 4px 0 0;
-	color: #f5ebd5;
+	color: #f8fafc;
 }
 
 .settings-menu .appearance-tabs button,
 main.night-mode .settings-menu .appearance-tabs button {
-	background: rgba(74, 33, 15, 0.6);
-	border-color: rgba(246, 206, 108, 0.24);
-	color: #f5ebd5;
+	background: rgba(30, 41, 59, 0.68);
+	border-color: rgba(148, 163, 184, 0.24);
+	color: #e2e8f0;
 }
 
 .settings-menu .appearance-tabs button[aria-selected="true"],
 main.night-mode .settings-menu .appearance-tabs button[aria-selected="true"] {
-	background: #f4cd5a;
-	border-color: #f8da7c;
-	color: #2c1306;
+	background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+	border-color: rgba(196, 181, 253, 0.78);
+	color: #ffffff;
 	font-weight: 700;
 }
 
 .settings-menu .appearance-field,
 main.night-mode .settings-menu .appearance-field {
-	color: #f5ebd5;
+	color: #f1f5f9;
 }
 
 .settings-menu .appearance-field select,
 main.night-mode .settings-menu .appearance-field select,
 .settings-menu .appearance-field input[type="color"],
 main.night-mode .settings-menu .appearance-field input[type="color"] {
-	background: rgba(34, 13, 6, 0.9);
-	border-color: rgba(246, 206, 108, 0.28);
-	color: #f7eedb;
+	background: rgba(15, 23, 42, 0.9);
+	border-color: rgba(148, 163, 184, 0.3);
+	color: #f8fafc;
 	box-sizing: border-box;
 	max-width: 100%;
 }
@@ -6747,29 +6805,29 @@ main.night-mode .settings-menu .appearance-field input[type="color"] {
 
 .settings-menu .appearance-field select option,
 main.night-mode .settings-menu .appearance-field select option {
-	background: #2b1008;
-	color: #f7eedb;
+	background: #0f172a;
+	color: #f8fafc;
 }
 
 .settings-menu .appearance-field input[type="range"],
 main.night-mode .settings-menu .appearance-field input[type="range"],
 .settings-menu .environment-volume input,
 .settings-menu .environment-sound input {
-	accent-color: #f4cd5a;
+	accent-color: #8b5cf6;
 }
 
 .settings-menu .appearance-settings p,
 .settings-menu .appearance-saved,
 main.night-mode .settings-menu .appearance-settings p,
 main.night-mode .settings-menu .appearance-saved {
-	color: rgba(243, 224, 189, 0.72);
+	color: #94a3b8;
 }
 
 .settings-menu .appearance-reset,
 main.night-mode .settings-menu .appearance-reset {
-	background: rgba(96, 46, 20, 0.72);
-	border-color: rgba(246, 206, 108, 0.32);
-	color: #f8e5ba;
+	background: rgba(30, 41, 59, 0.75);
+	border-color: rgba(167, 139, 250, 0.34);
+	color: #ede9fe;
 }
 
 .settings-menu .time-controls,
@@ -6777,69 +6835,70 @@ main.night-mode .settings-menu .time-controls {
 	border-bottom: 0;
 	margin-bottom: 0;
 	padding-bottom: 0;
-	color: #f5ebd5;
+	color: #f8fafc;
 }
 
 .settings-menu .time-title,
 main.night-mode .settings-menu .time-title {
-	color: #f6ce67;
+	color: #c4b5fd;
 	font-size: 12px;
 }
 
 .settings-menu .time-status-pill,
 main.night-mode .settings-menu .time-status-pill {
-	background: rgba(164, 96, 36, 0.38);
-	border-color: rgba(246, 206, 108, 0.34);
-	color: #fde39b;
+	background: rgba(139, 92, 246, 0.22);
+	border-color: rgba(167, 139, 250, 0.4);
+	color: #ede9fe;
 }
 
 .settings-menu .time-btn,
 .settings-menu .cam-btn,
 main.night-mode .settings-menu .time-btn,
 main.night-mode .settings-menu .cam-btn {
-	background: rgba(74, 34, 15, 0.62);
-	border-color: rgba(246, 206, 108, 0.24);
-	color: #f5ebd5;
+	background: rgba(30, 41, 59, 0.68);
+	border-color: rgba(148, 163, 184, 0.24);
+	color: #e2e8f0;
 }
 
 .settings-menu .time-btn:hover,
 .settings-menu .cam-btn:hover,
 main.night-mode .settings-menu .time-btn:hover,
 main.night-mode .settings-menu .cam-btn:hover {
-	background: rgba(112, 54, 24, 0.76);
-	border-color: rgba(246, 206, 108, 0.5);
+	background: rgba(139, 92, 246, 0.28);
+	border-color: rgba(167, 139, 250, 0.6);
+	color: #ffffff;
 }
 
 .settings-menu .time-btn-active,
 .settings-menu .cam-btn-active,
 main.night-mode .settings-menu .time-btn-active,
 main.night-mode .settings-menu .cam-btn-active {
-	background: #f4cd5a;
-	border-color: #f9dc82;
-	color: #2b1206;
+	background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+	border-color: rgba(196, 181, 253, 0.78);
+	color: #ffffff;
 	font-weight: 700;
-	box-shadow: 0 3px 12px rgba(244, 205, 90, 0.25);
+	box-shadow: 0 3px 12px rgba(99, 102, 241, 0.32);
 }
 
 .settings-menu .robot-location-panel,
 main.night-mode .settings-menu .robot-location-panel {
-	background: rgba(74, 33, 15, 0.45);
-	border-color: rgba(246, 206, 108, 0.24);
-	color: #f5ebd5;
+	background: rgba(15, 23, 42, 0.56);
+	border-color: rgba(148, 163, 184, 0.22);
+	color: #f8fafc;
 }
 
 .settings-menu .robot-location-toggle,
 .settings-menu .robot-copy,
 main.night-mode .settings-menu .robot-location-toggle,
 main.night-mode .settings-menu .robot-copy {
-	background: rgba(114, 56, 24, 0.68);
-	color: #fce8bd;
+	background: rgba(139, 92, 246, 0.26);
+	color: #ede9fe;
 }
 
 .settings-menu .robot-location-panel textarea {
-	background: rgba(30, 11, 5, 0.9);
-	border-color: rgba(246, 206, 108, 0.26);
-	color: #f5ebd5;
+	background: rgba(15, 23, 42, 0.9);
+	border-color: rgba(148, 163, 184, 0.28);
+	color: #f8fafc;
 }
 
 .settings-menu .cam-controls,
@@ -6851,26 +6910,26 @@ main.night-mode .settings-menu .cam-controls {
 
 .settings-menu .guide-header,
 main.night-mode .settings-menu .guide-header {
-	border-bottom-color: rgba(246, 206, 108, 0.18);
+	border-bottom-color: rgba(148, 163, 184, 0.2);
 }
 
 .settings-menu .guide-header strong,
 main.night-mode .settings-menu .guide-header strong {
-	color: #f6ce67;
+	color: #c4b5fd;
 	font-size: 13px;
 }
 
 .settings-menu .badge,
 main.night-mode .settings-menu .badge {
-	background: rgba(74, 34, 15, 0.65);
-	border-color: rgba(246, 206, 108, 0.26);
-	color: #f3dfc0;
+	background: rgba(139, 92, 246, 0.2);
+	border-color: rgba(167, 139, 250, 0.36);
+	color: #ede9fe;
 }
 
 .settings-menu .badge b,
 main.night-mode .settings-menu .badge b {
-	border-left-color: rgba(246, 206, 108, 0.26);
-	color: #fce8bd;
+	border-left-color: rgba(167, 139, 250, 0.35);
+	color: #f8fafc;
 }
 
 .settings-menu .guide-list,
@@ -6878,14 +6937,14 @@ main.night-mode .settings-menu .guide-list {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 8px 18px;
-	color: #f2e4c7;
+	color: #cbd5e1;
 }
 
 .settings-menu .guide-list kbd,
 main.night-mode .settings-menu .guide-list kbd {
-	background: rgba(246, 206, 108, 0.14);
-	border-color: rgba(246, 206, 108, 0.32);
-	color: #fde39b;
+	background: rgba(139, 92, 246, 0.2);
+	border-color: rgba(167, 139, 250, 0.38);
+	color: #ede9fe;
 }
 
 @media (max-width: 880px) {

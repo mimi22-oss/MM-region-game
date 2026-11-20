@@ -45,4 +45,11 @@ test('ThreeGhostsMissionHud imports CSS, defines drag & collapse classes, and su
   assert.ok(tsx.includes('mission-modal-dialog'), 'Should render mission guide dialog modal');
   assert.ok(tsx.includes('role="dialog"'), 'Mission modal should have dialog role');
   assert.ok(css.includes('.mission-modal-dialog'), 'CSS must style mission dialog modal');
+
+  // Verify ghost-hud-container positioned above location-toast (left: 25px, top: 12px vs top: 52px)
+  const mainCss = readFileSync('src/style.css', 'utf-8');
+  assert.ok(tsx.includes("'max(25px, calc(env(safe-area-inset-left, 0px) + 25px))'"), 'ghost-hud-container aligned at left: 25px');
+  assert.ok(tsx.includes("'max(12px, calc(env(safe-area-inset-top, 0px) + 12px))'"), 'ghost-hud-container placed above at top: 12px');
+  assert.ok(mainCss.includes('top: 52px;'), 'location-toast placed below at top: 52px');
+  assert.ok(mainCss.includes('left: 25px;'), 'location-toast placed at left: 25px');
 });

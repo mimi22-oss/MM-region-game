@@ -6,6 +6,8 @@
 .ghost-hud-container {
   position: fixed;
   z-index: 85;
+  top: max(12px, calc(env(safe-area-inset-top, 0px) + 12px));
+  left: max(25px, calc(env(safe-area-inset-left, 0px) + 25px));
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;

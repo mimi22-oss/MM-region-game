@@ -21,7 +21,7 @@ import './ThreeGhostsMissionHud.css';
 const GhostDevMap = import.meta.env.DEV ? lazy(() => import('./GhostDevMap')) : null;
 
 const STORAGE_COLLAPSED_KEY = 'mm-ghost-hud-collapsed-v2';
-const STORAGE_POS_KEY = 'mm-ghost-hud-pos-v2';
+const STORAGE_POS_KEY = 'mm-ghost-hud-pos-v3';
 
 type MissionModalId = 'ghost' | 'zombie' | null;
 
@@ -262,15 +262,15 @@ export function ThreeGhostsMissionHud() {
     : 0;
   const completedMissionsCount = (progress.completed ? 1 : 0) + (zombieCompleted ? 1 : 0);
 
-  // Inline positioning style
+  // Inline positioning style (positioned above location-toast at left: 25px, top: 12px)
   const style: React.CSSProperties = position
     ? {
         left: `${position.x}px`,
         top: `${position.y}px`,
       }
     : {
-        left: 'max(12px, calc(env(safe-area-inset-left, 0px) + 12px))',
-        top: 'max(64px, calc(env(safe-area-inset-top, 0px) + 16px))',
+        left: 'max(25px, calc(env(safe-area-inset-left, 0px) + 25px))',
+        top: 'max(12px, calc(env(safe-area-inset-top, 0px) + 12px))',
       };
 
   const modalPortal =
