@@ -11301,3 +11301,302 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
     min-height: 32px;
   }
 }
+
+/* ==========================================================================
+   🐎 Horse Riding Prompt (Horse Icon) & Dismount HUD Bar
+   ========================================================================== */
+.horse-ride-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: max(92px, calc(env(safe-area-inset-bottom, 0px) + 84px));
+  transform: translateX(-50%);
+  z-index: 18;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 16px 9px 13px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(251, 191, 36, 0.8);
+  background: linear-gradient(135deg, rgba(69, 26, 3, 0.94), rgba(120, 53, 15, 0.92));
+  color: #fef3c7;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.44), 0 0 18px rgba(245, 158, 11, 0.34);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Myanmar", sans-serif;
+}
+
+.horse-ride-prompt:hover {
+  transform: translateX(-50%) translateY(-2px) scale(1.04);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.52), 0 0 24px rgba(251, 191, 36, 0.5);
+}
+
+.horse-ride-prompt:active {
+  transform: translateX(-50%) scale(0.96);
+}
+
+.horse-ride-prompt-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+
+.horse-ride-prompt-text strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.horse-ride-prompt-text small {
+  font-size: 10px;
+  font-weight: 600;
+  color: #fde68a;
+}
+
+.horse-locked-toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(92px, calc(env(safe-area-inset-bottom, 0px) + 84px));
+  transform: translateX(-50%);
+  z-index: 19;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(251, 191, 36, 0.7);
+  background: linear-gradient(135deg, rgba(28, 25, 23, 0.94), rgba(69, 26, 3, 0.92));
+  color: #fef3c7;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.48), 0 0 16px rgba(245, 158, 11, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  animation: toastIn 0.2s ease-out;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Myanmar", sans-serif;
+}
+
+.horse-ride-speed {
+  position: fixed;
+  top: max(58px, calc(env(safe-area-inset-top, 0px) + 58px));
+  left: max(25px, calc(env(safe-area-inset-left, 0px) + 25px));
+  z-index: 16;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: rgba(28, 25, 23, 0.9);
+  border: 1.5px solid rgba(251, 191, 36, 0.58);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 12px;
+  font-weight: 700;
+  color: #fde68a;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Myanmar", sans-serif;
+  transition: top 0.2s ease, left 0.2s ease;
+}
+
+.horse-ride-speed.horse-ride-speed-below-ghost.horse-ride-speed-football {
+  top: max(116px, calc(env(safe-area-inset-top, 0px) + 116px));
+  left: max(18px, calc(env(safe-area-inset-left, 0px) + 14px));
+}
+
+.horse-ride-speed.horse-ride-speed-below-ghost.horse-ride-speed-school {
+  top: max(96px, calc(env(safe-area-inset-top, 0px) + 96px));
+  left: max(18px, calc(env(safe-area-inset-left, 0px) + 14px));
+}
+
+.horse-ride-speed.horse-ride-speed-below-location {
+  top: max(146px, calc(env(safe-area-inset-top, 0px) + 146px));
+  left: max(25px, calc(env(safe-area-inset-left, 0px) + 25px));
+}
+
+.horse-ride-speed.horse-ride-speed-below-location.horse-ride-speed-football {
+  top: max(172px, calc(env(safe-area-inset-top, 0px) + 172px));
+  left: max(18px, calc(env(safe-area-inset-left, 0px) + 14px));
+}
+
+.horse-ride-speed.horse-ride-speed-below-location.horse-ride-speed-school {
+  top: max(152px, calc(env(safe-area-inset-top, 0px) + 152px));
+  left: max(18px, calc(env(safe-area-inset-left, 0px) + 14px));
+}
+
+.horse-ride-dismount {
+  position: fixed;
+  right: max(22px, env(safe-area-inset-right, 0px));
+  bottom: max(28px, calc(env(safe-area-inset-bottom, 0px) + 16px));
+  width: 72px;
+  height: 72px;
+  z-index: 18;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  background: radial-gradient(circle at 35% 32%,
+    rgba(30, 80, 68, 0.75) 0%,
+    rgba(16, 46, 38, 0.88) 70%,
+    rgba(10, 30, 25, 0.95) 100%);
+  color: #ffffff;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.78;
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.4),
+    inset 0 0 14px rgba(116, 215, 180, 0.2),
+    inset 0 1px 2px rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+  outline: none;
+  transition:
+    opacity 0.15s ease,
+    transform 0.12s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+main.night-mode .horse-ride-dismount {
+  background: radial-gradient(circle at 35% 32%,
+    rgba(28, 65, 120, 0.75) 0%,
+    rgba(14, 38, 75, 0.88) 70%,
+    rgba(8, 22, 45, 0.95) 100%);
+  border-color: rgba(147, 197, 253, 0.4);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.6),
+    inset 0 0 14px rgba(56, 113, 184, 0.28),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+.horse-ride-dismount:hover {
+  opacity: 0.95;
+}
+
+.horse-ride-dismount:active {
+  opacity: 1;
+  transform: scale(0.92);
+  border-color: #34d399;
+  background: radial-gradient(circle at 35% 32%,
+    rgba(45, 120, 100, 0.9) 0%,
+    rgba(20, 70, 56, 0.95) 70%,
+    rgba(12, 44, 36, 0.98) 100%);
+  box-shadow:
+    0 4px 14px rgba(52, 211, 153, 0.42),
+    inset 0 0 14px rgba(52, 211, 153, 0.6);
+}
+
+.horse-ride-dismount:focus-visible {
+  outline: 3px solid #b5f7db;
+  outline-offset: 3px;
+}
+
+.horse-ride-dismount-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  line-height: 1;
+  gap: 2px;
+}
+
+.horse-ride-dismount-icon {
+  width: 36px;
+  height: 36px;
+  color: #ffffff;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+.horse-ride-dismount-label {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Myanmar", sans-serif;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+  .horse-ride-prompt {
+    bottom: max(96px, calc(env(safe-area-inset-bottom, 0px) + 88px));
+    padding: 7px 13px 7px 11px;
+    gap: 7px;
+  }
+
+  .horse-ride-prompt svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .horse-ride-prompt-text strong {
+    font-size: 11.5px;
+  }
+
+  .horse-ride-prompt-text small {
+    font-size: 9px;
+  }
+
+  .horse-ride-speed {
+    top: max(50px, calc(env(safe-area-inset-top, 0px) + 50px));
+    left: max(25px, calc(env(safe-area-inset-left, 0px) + 25px));
+    padding: 4px 10px;
+    font-size: 10.5px;
+  }
+
+  .horse-ride-speed.horse-ride-speed-below-ghost.horse-ride-speed-football {
+    top: max(90px, calc(env(safe-area-inset-top, 0px) + 88px));
+    left: max(10px, calc(env(safe-area-inset-left, 0px) + 8px));
+  }
+
+  .horse-ride-speed.horse-ride-speed-below-ghost.horse-ride-speed-school {
+    top: max(82px, calc(env(safe-area-inset-top, 0px) + 80px));
+    left: max(10px, calc(env(safe-area-inset-left, 0px) + 8px));
+  }
+
+  .horse-ride-speed.horse-ride-speed-below-location {
+    top: max(96px, calc(env(safe-area-inset-top, 0px) + 96px));
+    left: max(25px, calc(env(safe-area-inset-left, 0px) + 25px));
+  }
+
+  .horse-ride-speed.horse-ride-speed-below-location.horse-ride-speed-football {
+    top: max(134px, calc(env(safe-area-inset-top, 0px) + 132px));
+    left: max(10px, calc(env(safe-area-inset-left, 0px) + 8px));
+  }
+
+  .horse-ride-speed.horse-ride-speed-below-location.horse-ride-speed-school {
+    top: max(126px, calc(env(safe-area-inset-top, 0px) + 124px));
+    left: max(10px, calc(env(safe-area-inset-left, 0px) + 8px));
+  }
+
+  /* Match Jump (ခုန်) and Sprint (ပြေး) 72×72 circular button right to their left */
+  .horse-ride-dismount {
+    right: calc(max(22px, env(safe-area-inset-right, 0px)) + 86px);
+    bottom: calc(max(28px, env(safe-area-inset-bottom, 0px) + 16px) + 42px);
+    width: 72px;
+    height: 72px;
+  }
+
+  .horse-ride-dismount-label {
+    font-size: 7px;
+  }
+}

@@ -72,6 +72,7 @@ export interface ChannelReleaseDescriptor {
   readonly bundleUrl: string;
   readonly bundleSha256: string;
   readonly bundleBytes: number;
+  readonly bundleIncludesAssets?: boolean;
   readonly assetManifestUrl: string;
   readonly assetManifestSha256: string;
   readonly minNativeVersion: string;
@@ -316,7 +317,7 @@ function validateNativeCompatibilityGate(
 export function checkUpdateCompatibility(
   release: ChannelReleaseDescriptor | null | undefined,
   local: LocalNativeRuntimeInfo,
-  options?: { allowChannelSwitch?: boolean; allowLocalDevHttp?: boolean },
+  options?: { allowChannelSwitch?: boolean; allowLocalDevHttp?: boolean; allowSameVersion?: boolean },
 ): UpdateCompatibilityResult {
   const gateError = validateNativeCompatibilityGate(release, local, 'Update descriptor');
   if (gateError || !release) {
@@ -348,7 +349,7 @@ export function checkUpdateCompatibility(
   }
 
   const cmp = compareSemver(release.version, local.currentVersion);
-  if (cmp === 0 && release.channel === local.channel) {
+  if (cmp === 0 && release.channel === local.channel && !options?.allowSameVersion) {
     return {
       compatible: true,
       updateAvailable: false,

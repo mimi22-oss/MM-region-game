@@ -7,6 +7,7 @@ import {getPlayerDeathState} from '../game/playerDeath';
 import {currentCar} from '../game/carRide';
 import {balloonRide} from '../game/balloonRide';
 import {motorcycleRide} from '../game/motorcycleRide';
+import {isRidingOrMountingHorse} from '../game/horseRide';
 import {GhostSwordModel} from './GhostSwordModel';
 import {registerCombatWeapon} from '../game/combat/combatRuntime';
 
@@ -59,7 +60,7 @@ function SwordGrip({hand,avatar}:{hand:Object3D;avatar:Object3D}){
   useLayoutEffect(()=>root.current?registerCombatWeapon(root.current,avatar):undefined,[hand,avatar]);
   useFrame(()=>{
     const weapon=root.current;if(!weapon)return;
-    weapon.visible=!currentCar()&&!balloonRide.riding&&!motorcycleRide.riding&&getPlayerDeathState().phase==='alive';
+    weapon.visible=!currentCar()&&!balloonRide.riding&&!motorcycleRide.riding&&!isRidingOrMountingHorse()&&getPlayerDeathState().phase==='alive';
     if(!weapon.visible)return;
     // Mixamo bones may inherit a centimetre-unit scale; keep the blade at 0.95 world metres.
     hand.getWorldScale(scale.current);

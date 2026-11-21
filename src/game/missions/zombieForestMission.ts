@@ -552,6 +552,11 @@ export function isZombieGunUnlocked(): boolean {
   return Boolean(state.gunUnlocked && hasCompletedThreeGhostsMission());
 }
 
+/** Horse riding is unlocked together with the Tactical Gun upon completing Zombie Mission. */
+export function isHorseRidingUnlocked(): boolean {
+  return isZombieGunUnlocked();
+}
+
 export function rerollZombieForestWave(
   rng: () => number = Math.random,
   keepGunUnlocked = true,
@@ -628,7 +633,7 @@ export function damageZombie(
   const weaponIcon = source === 'gun' ? '🔫' : '⚔️';
   const labelNum = target.index + 1;
   const message = missionCompletedNow
-    ? '🏆 Zombie ၁၃ ကောင်လုံး နှိမ်နင်းအောင်မြင်ပါပြီ! ဆုလာဘ် သေနတ် (Gun) ရရှိပြီး လက်ထဲတပ်ဆင်ပြီးပါပြီ (F နှိပ်၍ ပစ်ခတ်ပါ)!'
+    ? '🏆 Zombie ၁၃ ကောင်လုံး နှိမ်နင်းအောင်မြင်ပါပြီ! ဆုလာဘ် သေနတ် (Gun) နှင့် မြင်းစီးခွင့် (Horse) ရရှိပြီးပါပြီ (F ဖြင့် ပစ်ခတ်ပြီး မြင်းနားကပ်၍ စီးနိုင်ပါပြီ)!'
     : defeated
       ? `${weaponIcon} Zombie #${labelNum} သေဆုံး! (${defeatedCount}/${ZOMBIE_COUNT} နှိမ်နင်းပြီး)`
       : `${weaponIcon} Zombie #${labelNum} ထိမှန်! (${target.hitsRemaining}/${target.maxHits} ချက် ကျန်)`;

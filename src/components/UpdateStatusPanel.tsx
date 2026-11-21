@@ -62,12 +62,13 @@ export function UpdateStatusPanel() {
   const [exportedJson, setExportedJson] = useState<string | null>(null);
 
   const badge = getPhaseBadge(ota.phase, ota.online);
-  const canCheck = ota.online && ota.phase !== 'checking' && ota.phase !== 'downloading' && ota.phase !== 'applying';
+  const syncing = ota.phase === 'downloading' || ota.phase === 'verifying';
+  const canCheck = ota.online && !syncing && !ota.pendingBundleId && ota.phase !== 'checking' && ota.phase !== 'applying';
   const canDownload =
     ota.online &&
     (ota.phase === 'update_available' || ota.phase === 'failed') &&
     Boolean(ota.availableRelease);
-  const canRestart = ota.phase === 'ready_to_restart' || ota.phase === 'deferred_busy';
+  const canRestart = ota.phase === 'ready_to_restart' || (ota.phase === 'deferred_busy' && ota.pendingApplyOnSafeBoundary);
   const showProgress =
     ota.phase === 'downloading' ||
     ota.phase === 'verifying' ||
@@ -236,7 +237,7 @@ export function UpdateStatusPanel() {
             </div>
           )}
 
-          {ota.lastError && ota.phase === 'failed' && (
+          {ota.lastError && (
             <div className="ota-notice ota-notice-error" role="alert">
               <strong>Update Error:</strong> {ota.lastError}
             </div>
@@ -377,7 +378,7 @@ export function UpdateStatusPanel() {
           {ota.contentPacks.length === 0 ? (
             <div className="ota-status-line">
               <span>
-                All assets currently run from verified APK / builtin bundle. Tap Check Updates when online to inspect segmented OTA packs.
+                No content pack catalog loaded. The bundled game assets are still available. Fetch the manifest when online.
               </span>
             </div>
           ) : (
@@ -390,7 +391,7 @@ export function UpdateStatusPanel() {
                     </strong>
                     <small>
                       {pack.id} · {pack.fileCount} files · {formatBytesCompact(pack.totalBytes)} ·{' '}
-                      {pack.cachedVersion ? `Cached v${pack.cachedVersion}` : 'APK Bundled'}
+                      {pack.cachedVersion ? `Cached v${pack.cachedVersion}` : 'Available to sync'}
                       {pack.previousVersion ? ` (prev v${pack.previousVersion})` : ''}
                     </small>
                   </div>
@@ -399,7 +400,7 @@ export function UpdateStatusPanel() {
                       <button
                         type="button"
                         className="ota-mini-btn"
-                        disabled={ota.phase === 'downloading' || ota.phase === 'verifying'}
+                        disabled={syncing || ota.phase === 'checking' || ota.phase === 'applying' || Boolean(ota.pendingBundleId)}
                         onClick={() => void otaCoordinator.downloadContentPack(pack.id)}
                       >
                         Sync
@@ -437,6 +438,7 @@ export function UpdateStatusPanel() {
               Verify Checksums
             </button>
           </div>
+          {ota.lastError && <div className="ota-notice ota-notice-error" role="alert">{ota.lastError}</div>}
         </div>
       )}
 

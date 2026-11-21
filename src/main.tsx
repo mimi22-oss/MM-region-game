@@ -22,6 +22,15 @@ import { AudioDiagnosticsPanel } from './components/AudioDiagnosticsPanel';
 import { GhostAiDebugOverlay } from './components/GhostAiDebugOverlay';
 import { BalloonControls } from './components/BalloonControls';
 import { emptyBalloonStatus, clearBalloonInput, type BalloonStatus } from './game/balloonRide';
+import {
+  HORSE_LOCKED_MESSAGE,
+  getHorseRideStatusSnapshot,
+  subscribeHorseRide,
+  triggerHorseDismountButton,
+  triggerHorseMountButton,
+} from './game/horseRide';
+import { useThreeGhostsMission } from './game/missions/threeGhostsMission';
+import { isHorseRidingUnlocked, useZombieForestMission } from './game/missions/zombieForestMission';
 import { isVehicleWaitingPickupLocked, useVehicleWaiting } from './game/vehicleWaiting';
 import {LifeMeter} from './components/LifeMeter';
 import { GhostRadar } from './components/GhostRadar';
@@ -431,7 +440,7 @@ function App() {
   }, [subscriptionShop.isOpen, flushSaveNow]);
 
   useEffect(() => {
-    const removeInterceptor = installOfflineAssetInterceptor(otaCoordinator.assetCache);
+    const removeInterceptor = installOfflineAssetInterceptor(otaCoordinator.assetCache, () => otaCoordinator.getState().currentVersion);
     let disposed = false;
     void otaCoordinator.initialize().then((state) => {
       if (disposed || !state.online) return;
@@ -582,6 +591,15 @@ function App() {
     getFootballViewState,
     getFootballViewState,
   );
+  useThreeGhostsMission();
+  useZombieForestMission();
+  const horseUnlocked = isHorseRidingUnlocked();
+  const horseStatus = useSyncExternalStore(
+    subscribeHorseRide,
+    getHorseRideStatusSnapshot,
+    getHorseRideStatusSnapshot,
+  );
+  const ridingHorse = horseStatus.phase === 'mounting' || horseStatus.phase === 'riding';
   const footballMatchActive = areFootballPlayersVisibleAtMinute(environment.minute);
   const activeFootballScore = nearFootballPitch ? footballScoreboard[nearFootballPitch.id] : null;
   const charAtFootballPitch = useMemo(
@@ -632,6 +650,43 @@ function App() {
   );
   const [teleportMode, setTeleportMode] = useState(false);
   teleportModeRef.current = teleportMode;
+  const [horseLockedNotice, setHorseLockedNotice] = useState(false);
+  const prevNearLockedHorseRef = useRef(false);
+  const prevHorseLockedSeqRef = useRef(horseStatus.lockedNoticeSeq);
+  const nearHorseEligible =
+    !intro.active &&
+    !loading &&
+    !mapOpen &&
+    !settingsOpen &&
+    !teleportMode &&
+    !footballView.active &&
+    !carStatus.driving &&
+    !balloonStatus.riding &&
+    !rideStatus.riding &&
+    horseStatus.near &&
+    horseStatus.phase === "idle";
+  const nearLockedHorse = nearHorseEligible && !horseUnlocked;
+
+  useEffect(() => {
+    const enteredLocked = nearLockedHorse && !prevNearLockedHorseRef.current;
+    const retriedLocked =
+      nearLockedHorse && horseStatus.lockedNoticeSeq !== prevHorseLockedSeqRef.current;
+    prevNearLockedHorseRef.current = nearLockedHorse;
+    prevHorseLockedSeqRef.current = horseStatus.lockedNoticeSeq;
+    if (horseUnlocked) {
+      setHorseLockedNotice(false);
+      return;
+    }
+    if (enteredLocked || retriedLocked) {
+      setHorseLockedNotice(true);
+    }
+  }, [nearLockedHorse, horseUnlocked, horseStatus.lockedNoticeSeq]);
+
+  useEffect(() => {
+    if (!horseLockedNotice) return;
+    const timer = window.setTimeout(() => setHorseLockedNotice(false), 2600);
+    return () => window.clearTimeout(timer);
+  }, [horseLockedNotice, horseStatus.lockedNoticeSeq]);
   const [teleportPin, setTeleportPin] = useState<TeleportPin | null>(null);
   const [teleportScreenPos, setTeleportScreenPos] = useState<ScreenPosition | null>(null);
   const [teleportDragging, setTeleportDragging] = useState(false);
@@ -1159,7 +1214,7 @@ function App() {
         key={navigationRequest?.seq ?? 0}
         input={mobileInput}
         flying={balloonStatus.riding}
-        onFoot={!rideStatus.riding&&!carStatus.driving&&!rideStatus.crashed}
+        onFoot={!rideStatus.riding&&!carStatus.driving&&!rideStatus.crashed&&!ridingHorse}
         canJump={!balloonStatus.riding && character === "cartoon" && !rideStatus.riding && !carStatus.driving && !rideStatus.crashed}
         disabled={mapOpen || settingsOpen || loading || carStatus.driving || subscriptionShop.isOpen || teleportMode || footballView.active || !visible}
         onInteract={activateMobile}
@@ -1173,6 +1228,7 @@ function App() {
             carStatus.driving ||
             rideStatus.riding ||
             balloonStatus.riding ||
+            ridingHorse ||
             subscriptionShop.isOpen ||
             teleportMode ||
             footballView.active ||
@@ -1208,6 +1264,110 @@ function App() {
           onConfirm={handleConfirmTeleport}
           onCancel={handleCancelTeleport}
         />
+      )}
+
+      {/* Near-Horse Mount Button (unlocked only after Zombie Mission) */}
+      {nearHorseEligible && horseUnlocked && (
+          <button
+            type="button"
+            className="horse-ride-prompt"
+            aria-label="မြင်းစီးမည် (E)"
+            title="မြင်းစီးမည် (E)"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={() => triggerHorseMountButton()}
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M19.8 6.4c-.6-.7-1.4-1.2-2.3-1.4l-.8-1.7c-.2-.4-.8-.4-1 .1l-.6 1.5c-1.7.3-3.2 1.2-4.3 2.5L9.5 9H6.2C4.5 9 3.2 10.3 3 12l-.5 3.4c-.1.5.3 1 .8 1h.9l.4-2.5c.1-.5.5-.9 1-.9h.7l-.9 6.2c-.1.5.3.8.8.8h1.1c.4 0 .8-.3.8-.7l.7-4.3h4.5l.6 4.3c.1.4.4.7.8.7h1.1c.5 0 .9-.4.8-.9l-.8-5.7c1.4-.7 2.4-2 2.7-3.6l1.4-.4c.6-.2 1-.8.9-1.4l-.2-1.6Z" />
+            </svg>
+            <span className="horse-ride-prompt-text">
+              <strong>မြင်းစီးမည်</strong>
+              <small>Horse · E</small>
+            </span>
+          </button>
+        )}
+
+      {/* Brief auto-hiding toast when approaching a horse before completing Zombie Mission */}
+      {horseLockedNotice && !horseUnlocked && !intro.active && !loading && !mapOpen && !settingsOpen && (
+        <div className="horse-locked-toast" role="status" aria-live="polite">
+          <span aria-hidden="true">🔒🐎</span>
+          <span>{HORSE_LOCKED_MESSAGE}</span>
+        </div>
+      )}
+
+      {/* Active Horse Riding Speed Pill (below ghost-hud-pill, or below location-toast while visible) & Dismount Button (left of Jump & Sprint) */}
+      {!intro.active && !loading && !mapOpen && !settingsOpen && ridingHorse && (
+        <>
+          <div
+            className={[
+              "horse-ride-speed",
+              classroomNotice || arrivalToast
+                ? "horse-ride-speed-below-location"
+                : "horse-ride-speed-below-ghost",
+              nearFootballPitch
+                ? "horse-ride-speed-football"
+                : nearSchoolHall
+                  ? "horse-ride-speed-school"
+                  : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            role="status"
+            aria-live="polite"
+            aria-label="မြင်းစီး အမြန်နှုန်း"
+          >
+            🐎 {horseStatus.phase === "mounting" ? "တက်နေသည်…" : `${horseStatus.speedKmh} km/h`}
+            {horseStatus.airborne ? " · ခုန်" : horseStatus.galloping ? " · ပြေး" : ""}
+          </div>
+          <button
+            type="button"
+            className="horse-ride-dismount"
+            aria-label="မြင်းပေါ်မှ ဆင်းမည် (E)"
+            title="မြင်းပေါ်မှ ဆင်းမည် (E)"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={() => triggerHorseDismountButton()}
+          >
+            <div className="horse-ride-dismount-inner">
+              <svg
+                className="horse-ride-dismount-icon"
+                viewBox="0 0 64 64"
+                width="36"
+                height="36"
+                fill="none"
+                aria-hidden="true"
+              >
+                {/* Horse silhouette (standing profile) */}
+                <path
+                  d="M 52.5 23.5 L 48.2 19.2 L 46.8 14.8 L 44.3 18.2 C 40.6 19.3 37.8 22.1 35.8 25.8 L 23.5 26.8 C 19.4 27.1 16.5 29.8 15.6 33.6 L 12.6 39.2 C 11.8 40.6 13.6 41.9 14.9 40.8 L 17.8 38.2 L 17.5 52.5 C 17.5 53.7 18.4 54.5 19.5 54.5 L 21.3 54.5 C 22.3 54.5 23.1 53.7 23.2 52.6 L 24.4 41.5 L 36.2 41.5 L 37.5 52.6 C 37.6 53.7 38.4 54.5 39.5 54.5 L 41.3 54.5 C 42.4 54.5 43.3 53.6 43.2 52.5 L 42.4 38.8 C 45.4 36.8 47.4 33.4 48.2 29.2 L 52.4 27.8 C 53.9 27.3 54.2 25.0 52.5 23.5 Z"
+                  fill="currentColor"
+                />
+                {/* Rider dismounting curved down-arrow from saddle to ground */}
+                <path
+                  d="M 30 22 C 29 12 18 10 11 16 C 7.5 19 6.5 24 6.5 31"
+                  stroke="#38bdf8"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M 2.5 27.5 L 6.5 33.5 L 11.5 27.5"
+                  stroke="#38bdf8"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                {/* Saddle accent */}
+                <path
+                  d="M 25.5 25.2 Q 30.5 28.5 35.2 25.2"
+                  stroke="#38bdf8"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span className="horse-ride-dismount-label">ဆင်း</span>
+            </div>
+          </button>
+        </>
       )}
 
       {/* Near-Character "Football View" button when arriving at any football pitch */}

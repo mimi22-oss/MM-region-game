@@ -38,10 +38,10 @@ export function npcScalpHair(hairline: (angle: number) => number, rearY: number)
       const angle = side / sides * Math.PI * 2;
       const front = Math.sin(angle);
       const edgeY = front > 0 ? .027 + front * hairline(angle) : .027 - front * rearY;
-      const edgeLatitude = Math.asin((edgeY - .01) / .163);
-      const latitude = edgeLatitude + (Math.PI / 2 - edgeLatitude) * row / rings;
+      const edgeLatitude = Math.asin(Math.max(-1, Math.min(1, (edgeY - .01) / .163)));
+      const latitude = row === rings ? Math.PI / 2 : edgeLatitude + (Math.PI / 2 - edgeLatitude) * row / rings;
       const edgeTaper = row === 0 ? .98 : 1;
-      const radius = Math.pow(Math.cos(latitude), .68) * edgeTaper;
+      const radius = Math.pow(Math.max(0, Math.cos(latitude)), .68) * edgeTaper;
       const x = Math.cos(angle) * radius * .152;
       const y = .01 + Math.sin(latitude) * .163;
       const z = front * radius * .155 - .001;

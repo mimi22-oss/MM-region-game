@@ -14,6 +14,7 @@ import {
 import {clone} from 'three/examples/jsm/utils/SkeletonUtils.js';
 import {AnimationController,type MotionPlayOptions} from '../animation/core/AnimationController.ts';
 import {createLimbFitter} from './characterRig.ts';
+import type {HorseRiderPose} from './horseAnimation.ts';
 import {driverGrip} from './carCabin.ts';
 import {createGlbEyeBlink,type GlbEyePreset} from './glbEyeBlink.ts';
 import {CombatAnimationDriver} from './combat/CombatAnimationDriver.ts';
@@ -206,6 +207,7 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
    shin,
    foot,
    toe,
+   footRestWorld:foot.getWorldQuaternion(new Quaternion()),
    armReach,
    neutralAdduction,
    hasHandBasis,
@@ -450,8 +452,11 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
  }
 
  const handWQForGrip=new Quaternion();
- function update(motion:Motion,riding=false,driving?:Driving,delta?:number){
-  if(combat?.enabled){
+ const horseFootRotation=new Quaternion();
+ function update(motion:Motion,riding=false,driving?:Driving,delta?:number,horsePose?:HorseRiderPose|null){
+  const onHorse=Boolean(horsePose?.active);
+  placement.rotation.y=Math.PI;
+  if(combat?.enabled&&!onHorse){
    placement.position.set(0,0,0);
    head.scale.setScalar(1);
    eyeBlink.step(Math.min(delta??0,.06));
@@ -467,6 +472,50 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
   combat?.stop();
   for(let i=0;i<restList.length;i++)restList[i].bone.quaternion.copy(restList[i].q);
   hips.position.copy(hipsRestPos);
+
+  if(onHorse&&horsePose){
+   eyeBlink.step(Math.min(Math.max(delta??0,0),.05));
+   head.scale.setScalar(1);
+
+   const yaw=horsePose.yaw, sin=Math.sin(yaw), cos=Math.cos(yaw);
+   root.getWorldScale(tempVec);
+   const avatarScale=tempVec.x;
+   placement.rotation.y=Math.PI+yaw;
+   placement.position.set(
+    horsePose.hip.x/avatarScale-hipsRestZ*sin,
+    horsePose.hip.y/avatarScale-hipHeight,
+    horsePose.hip.z/avatarScale-hipsRestZ*cos,
+   );
+   rotateAxis(hips,cos,0,-sin,-horsePose.lean*.38);
+   rotateAxis(hips,sin,0,cos,horsePose.roll*.55);
+   const segCount=Math.max(1,spineSegments.length);
+   for(const seg of spineSegments){
+    rotateAxis(seg,cos,0,-sin,-horsePose.lean*.62/segCount);
+    rotateAxis(seg,sin,0,cos,horsePose.roll*.45/segCount);
+   }
+   rotateAxis(neck,cos,0,-sin,horsePose.lean*.40);
+   rotateAxis(head,cos,0,-sin,horsePose.lean*.38);
+   rotateAxis(head,0,1,0,horsePose.headTurn);
+
+   root.getWorldQuaternion(rootRotation);
+   for(let i=0;i<limbs.length;i++){
+    const limb=limbs[i],side=limb.side;
+    const foot=horsePose.feet[i],hand=horsePose.hands[i];
+    fit(limb.fitLeg,foot.x/avatarScale,foot.y/avatarScale,foot.z/avatarScale,
+     side*.58*cos-sin,.06,-cos-side*.58*sin);
+    limb.foot.parent!.getWorldQuaternion(parentRotation);
+    horseFootRotation.setFromAxisAngle(axis.set(0,1,0),horsePose.footYaw[i]);
+    rotation.setFromAxisAngle(axis.set(1,0,0),horsePose.footPitch);
+    limb.foot.quaternion.copy(parentRotation.invert()).multiply(rootRotation)
+     .multiply(horseFootRotation).multiply(rotation).multiply(limb.footRestWorld);
+
+    const curl=.30+horsePose.reinGrip*.65;
+    fitPalmToGrip(limb,hand.x/avatarScale,hand.y/avatarScale,hand.z/avatarScale,
+     side*.50*cos+sin*.5,-.68,.50*cos-side*.50*sin,
+     -sin,-.32,-cos,-side*cos,0,side*sin,curl);
+   }
+   return;
+  }
 
   currentClip=selectBoyClip(motion,riding,!!driving);
   const seated=riding||!!driving;

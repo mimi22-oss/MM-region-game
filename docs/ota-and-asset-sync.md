@@ -13,7 +13,7 @@
 
 ### Bundled Fallback Guarantee
 
-The APK ships with the complete `dist/` web bundle (`models/`, `motions/`, `map/`, compiled Three.js bundles, and icons/textures). On fresh offline launch, `otaCoordinator.initialize()` calls `CapacitorUpdater.notifyAppReady()` immediately before any network traffic so `@capgo/capacitor-updater` marks the local bundle healthy offline and never resets after `appReadyTimeout`.
+The APK ships with the complete web bundle and its offline pack catalog when prepared with `npm run cap:sync`. On fresh offline launch, `otaCoordinator.initialize()` calls `CapacitorUpdater.notifyAppReady()` before attempting to read the bundled catalog or contacting the release server.
 
 ---
 
@@ -48,41 +48,29 @@ If a push modifies native files or increments `minNativeVersion` / `minAndroidVe
    - Enforces bounded disk budget (`DEFAULT_MAX_ASSET_STORAGE_BYTES = 128 MB`) and never deletes the sole working offline copy or required packs.
    - Intercepts same-origin asset requests (`/models/`, `/motions/`, `/map/`, `/assets/`, textures) in `src/services/offlineAssetResolver.ts`, strictly serving the newest active verified generation or falling back directly to the APK builtin assets.
 3. **Capacitor Web Bundle & Rollback**:
-   - Downloads verified OTA ZIP (`CapacitorUpdater.download({ url, version, checksum, manifest })`) in background with `httpsOnly: true`.
+   - Downloads the complete checksum-verified OTA ZIP through `CapacitorUpdater.download({ url, version, checksum })` with `httpsOnly: true`. The ZIP already includes the offline assets, so the Android updater does not duplicate this download in IndexedDB.
+   - An installed APK can download an OTA ZIP with the same version. After activation, the Android bundle checksum identifies whether that release is already installed. Content packs remain available when no code update is needed.
    - **Never interrupts** an active ghost chase (`isAnyGhostThreatActive()`), ghost neck-grab/fall (`getGhostEncounterInteraction()`), motorcycle ride, car drive, balloon ride, cinematic intro, or loading state (`src/game/updateSafety.ts`).
    - Flushes player position & settings (`flushGameSave`) immediately before `CapacitorUpdater.set()` reloads the WebView.
    - If the newly applied bundle fails startup health check (`appReadyTimeout: 10000`) or reports `status: 'error'` / `updateFailed`, Capacitor rolls back natively to the prior healthy/builtin bundle, `assetCacheManager.rollbackToPrevious()` restores paired assets, and `UpdateStatusPanel` surfaces the rollback notice.
 
 ---
 
-## 4. GitHub Actions CI/CD & Secrets
+## 4. Publish Web and Android OTA Releases
 
-Workflow: `.github/workflows/release-ota.yml`
+The Git-connected Vercel project is the publisher. Its production build uses `npm run build:vercel` to build with a Git-derived release version and verify the pack catalog, checksums, and ZIP. The release descriptor and its ZIP under `/ota/bundles/` are published with the same deployment. Normal game code and asset changes take this path when merged to the production branch.
 
-Required repository secrets:
-- `VERCEL_TOKEN`: Vercel API token
-- `VERCEL_ORG_ID`: Vercel Team/Org ID
-- `VERCEL_PROJECT_ID`: Vercel Project ID
-- `GITHUB_TOKEN`: Built-in token with `contents: write` for GitHub Releases
+GitHub Actions runs the tests, server and map checks, and OTA artifact verification, then archives the results. The GitHub workflow does not deploy a second site or require deployment tokens. Preview deployments use their own staging origin and do not publish to the APK's production feed.
 
-Pipeline order:
-1. Run `npm test` and `npm run map:audit`.
-2. Classify git diff (`scripts/classifyGitChanges.mjs`).
-3. Run `npm run build` (`tsc -b && vite build`).
-4. Generate `dist/ota/asset-manifest.json`, `dist/ota/native-compat.json`, `dist/ota/<channel>.json`, `ota-artifacts/mm-region-ota-<version>.zip`, and `ota-artifacts/checksums.sha256` (`scripts/generateOtaArtifacts.mjs`).
-5. Validate every built file hash, zip size/hash, and compatibility rule (`scripts/verifyOtaArtifacts.mjs`). Fail hard before publishing if invalid.
-6. Upload GitHub Release assets (`mm-region-ota-<version>.zip` + manifests) ONLY when verification and native-compatibility checks pass.
-7. Publish `dist/` + `/ota/*.json` prebuilt output to Vercel.
+For native or Capacitor plugin changes, increase Android's `versionCode` in `android/app/build.gradle` when releasing the signed APK. Subsequent OTA builds take their minimum Android version from this file so older APKs remain gated after the native-changing commit.
 
 ---
 
 ## 5. Local Commands & Verification
 
 ```bash
-# Build web bundle & generate OTA manifests + ZIP + checksums
-npm run build
-npm run ota:manifest
-npm run ota:verify
+# Build and verify a deployable release with its hosted ZIP
+npm run build:vercel
 
 # Inspect git classification against previous commit
 npm run ota:classify
@@ -90,7 +78,7 @@ npm run ota:classify
 # Run full unit & integration test suite (including tests/otaUpdate.test.ts)
 npm test
 
-# Sync Capacitor Android assets & compile Debug APK
-npx cap sync android
-.\android\gradlew.bat -p android assembleDebug
+# Prepare the offline catalog and build a signed APK after a native change
+npm run cap:sync
+.\android\gradlew.bat -p android assembleRelease
 ```

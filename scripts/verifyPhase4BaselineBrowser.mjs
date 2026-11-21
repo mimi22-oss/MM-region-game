@@ -3,7 +3,7 @@
 // UpdateStatusPanel (Device Baseline & Content Packs tabs), IndexedDB storage, and offline detection.
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import assert from 'node:assert/strict';
@@ -11,6 +11,16 @@ import assert from 'node:assert/strict';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 assert.ok(existsSync(resolve('dist/index.html')), 'dist/index.html required (run npm run build first)');
 assert.ok(existsSync(resolve('dist/ota/asset-manifest.json')), 'dist/ota/asset-manifest.json required (run npm run ota:manifest first)');
+const release = JSON.parse(await readFile('dist/ota/production.json', 'utf8'));
+const manifest = JSON.parse(await readFile('dist/ota/asset-manifest.json', 'utf8'));
+const pack = manifest.packs.find((entry) => entry.id === 'region-sithar-fields');
+assert.ok(pack?.paths.length, 'Expected a small map pack for the offline round trip');
+const otaOrigin = new URL(release.assetManifestUrl).origin;
+const fixtureResponses = new Map([
+  [`${otaOrigin}/ota/production.json`, 'ota/production.json'],
+  [release.assetManifestUrl, 'ota/asset-manifest.json'],
+  ...pack.paths.map((path) => [`${otaOrigin}/${path}`, path]),
+]);
 
 const artifacts = await mkdtemp(join(tmpdir(), 'phase4-baseline-e2e-'));
 const chrome = [
@@ -109,6 +119,25 @@ try {
   await page.call('Runtime.enable');
   await page.call('Page.enable');
   await page.call('Network.enable');
+  page.on('Fetch.requestPaused', (event) => {
+    const file = fixtureResponses.get(event.request.url);
+    void (async () => {
+      if (!file) {
+        await page.call('Fetch.continueRequest', { requestId: event.requestId });
+        return;
+      }
+      await page.call('Fetch.fulfillRequest', {
+        requestId: event.requestId,
+        responseCode: 200,
+        responseHeaders: [
+          { name: 'Access-Control-Allow-Origin', value: '*' },
+          { name: 'Content-Type', value: 'application/json' },
+        ],
+        body: (await readFile(join('dist', file))).toString('base64'),
+      });
+    })().catch((error) => errors.push(String(error)));
+  });
+  await page.call('Fetch.enable', { patterns: [...fixtureResponses.keys()].map(urlPattern => ({ urlPattern })) });
   await page.call('Emulation.setDeviceMetricsOverride', {
     width: 412,
     height: 915,
@@ -189,7 +218,10 @@ try {
     const tab = Array.from(document.querySelectorAll('[role="tab"]')).find((el) => el.textContent?.includes('Content Packs'));
     if (tab) tab.click();
   })()`);
-  await sleep(250);
+  const packCard = `Array.from(document.querySelectorAll('.ota-pack-card')).find(el => el.textContent?.includes(${JSON.stringify(pack.id)}))`;
+  await until(`Boolean(${packCard})`);
+  await evaluate(`(${packCard})?.querySelector('button')?.click()`);
+  await until(`(${packCard})?.textContent?.includes('Cached v${manifest.version}')`);
   const idbVerified = await evaluate(`(async () => {
     const payload = new TextEncoder().encode('phase4-idb-pack-probe');
     const digestBuf = await crypto.subtle.digest('SHA-256', payload);
@@ -238,6 +270,12 @@ try {
   });
   await evaluate('window.dispatchEvent(new Event("offline"))');
   await sleep(300);
+  const offlineAsset = await evaluate(`(async () => {
+    const r = await fetch(${JSON.stringify('/' + pack.paths[0])});
+    return { source: r.headers.get('X-MM-Asset-Source'), bytes: (await r.arrayBuffer()).byteLength };
+  })()`);
+  assert.equal(offlineAsset.source, 'ota-cache');
+  assert.equal(offlineAsset.bytes, manifest.files.find(file => file.path === pack.paths[0]).bytes);
 
   assert.deepEqual(errors, []);
   console.log(

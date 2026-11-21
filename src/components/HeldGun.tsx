@@ -31,6 +31,7 @@ import { getPlayerDeathState } from '../game/playerDeath';
 import { currentCar } from '../game/carRide';
 import { balloonRide } from '../game/balloonRide';
 import { motorcycleRide } from '../game/motorcycleRide';
+import { isRidingOrMountingHorse } from '../game/horseRide';
 import { getChairSittingState } from '../game/chairSitting';
 import { type CharacterMotion } from './CartoonCharacter';
 import {
@@ -105,6 +106,7 @@ export function HeldGun({
       !currentCar() &&
       !balloonRide.riding &&
       !motorcycleRide.riding &&
+      !isRidingOrMountingHorse() &&
       getPlayerDeathState().phase === 'alive' &&
       getChairSittingState().status === 'IDLE';
 
@@ -181,6 +183,7 @@ function GunGrip({ hand, avatar }: { hand: Object3D; avatar: Object3D }) {
       !currentCar() &&
       !balloonRide.riding &&
       !motorcycleRide.riding &&
+      !isRidingOrMountingHorse() &&
       getPlayerDeathState().phase === 'alive';
     if (!weapon.visible) return;
 
@@ -357,6 +360,7 @@ function GunCombatVFX() {
       !currentCar() &&
       !balloonRide.riding &&
       !motorcycleRide.riding &&
+      !isRidingOrMountingHorse() &&
       getPlayerDeathState().phase === 'alive';
     const preview = onFootAlive ? evaluateHeldGunAimPreview() : null;
     if (preview && reticleRef.current) {

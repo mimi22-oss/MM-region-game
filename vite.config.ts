@@ -44,6 +44,7 @@ function mapRouteSpaPlugin(): Plugin {
 		if (!req.url) return false;
 		const [pathname] = req.url.split('?');
 		if (!pathname.startsWith('/ota/')) return false;
+		if (/^\/ota\/bundles\/mm-region-ota-[\w.-]+\.zip$/.test(pathname)) return false;
 
 		const safeName = path.basename(pathname);
 		const candidates = [

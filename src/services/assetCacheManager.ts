@@ -2,6 +2,7 @@ import {
   APP_NATIVE_BASELINE,
   checkContentPackCompatibility,
   classifyContentPack,
+  compareSemver,
   DEFAULT_MAX_ASSET_STORAGE_BYTES,
   diffAssetManifests,
   isValidSha256,
@@ -675,20 +676,21 @@ export class AssetCacheManager {
     return active.codeVersion === expectedCodeVersion;
   }
 
-  async resolveActiveAsset(requestPath: string): Promise<{ bytes: Uint8Array; sha256: string; contentType: string } | null> {
+  async resolveActiveAsset(requestPath: string, currentCodeVersion?: string): Promise<{ bytes: Uint8Array; sha256: string; contentType: string } | null> {
     const cleanPath = normalizeAssetPath(requestPath);
     const state = this.metadataStore.read();
     const active = state.active;
     let bestEntry: { sha256: string; activatedAt: string } | null = null;
 
-    if (active && active.files[cleanPath]) {
+    const matches = (codeVersion: string) => !currentCodeVersion || compareSemver(codeVersion, currentCodeVersion) === 0;
+    if (active && matches(active.codeVersion) && active.files[cleanPath]) {
       bestEntry = { sha256: active.files[cleanPath].sha256, activatedAt: active.activatedAt };
     }
     if (state.packs) {
       for (const packState of Object.values(state.packs)) {
         const pActive = packState.active;
         const pFile = pActive?.files[cleanPath];
-        if (!pActive || !pFile) continue;
+        if (!pActive || !pFile || !matches(pActive.codeVersion)) continue;
         if (!bestEntry || pActive.activatedAt >= bestEntry.activatedAt) {
           bestEntry = { sha256: pFile.sha256, activatedAt: pActive.activatedAt };
         }

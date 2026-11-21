@@ -12,6 +12,7 @@ import {
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { driverGrip, DRIVER_POSITION, DRIVER_SCALE, STEERING_TILT } from '../game/carCabin';
 import { getBotFightingState } from '../game/botFighting';
+import type { HorseRiderPose } from '../game/horseAnimation';
 
 type Point = [number, number, number];
 export type CharacterMotion = { airborne?:boolean; jumpBend?:number; speed: number; distance: number; stepLift?:number;leftFoot?:number;rightFoot?:number };
@@ -292,8 +293,43 @@ function DrivingLeg({side,pose}:{side:number;pose:RefObject<DrivingPose>}){
  </group>;
 }
 
+function HorseRiderLimb({side, leg, pose, body, heightScale}:{
+ side:number;leg:boolean;pose:RefObject<HorseRiderPose>;body:RefObject<Group|null>;heightScale:number;
+}){
+ const materials=useHumanMaterials();
+ const upper=useRef<Mesh>(null),lower=useRef<Mesh>(null),end=useRef<Group>(null);
+ const points=useRef({base:new Vector3(),tip:new Vector3(),bend:new Vector3(),axis:new Vector3(),pole:new Vector3()});
+ useFrame(()=>{
+  const rider=pose.current;
+  if(!rider.active||!body.current||!end.current)return;
+  const p=points.current,i=side<0?0:1;
+  const sin=Math.sin(rider.yaw),cos=Math.cos(rider.yaw);
+  p.base.set(side*(leg?.104:.219),leg?.707:1.175,leg?.016:0).applyMatrix4(body.current.matrix);
+  p.tip.copy(leg?rider.feet[i]:rider.hands[i]).multiplyScalar(1/heightScale);
+  p.axis.subVectors(p.tip,p.base).normalize();
+  p.pole.set(side*.53*cos+(leg?-sin:sin*.5),leg?.07:-.65,(leg?-cos:cos*.50)-side*.53*sin);
+  p.pole.addScaledVector(p.axis,-p.pole.dot(p.axis)).normalize();
+  const length=leg?.325:.235;
+  const halfDistance=p.tip.distanceTo(p.base)*.5;
+  p.bend.lerpVectors(p.base,p.tip,.5).addScaledVector(p.pole,Math.sqrt(Math.max(0,length*length-halfDistance*halfDistance)));
+  fitLimb(upper.current,p.base,p.bend,leg?.093:.073);
+  fitLimb(lower.current,p.bend,p.tip,leg?.067:.059);
+  end.current.position.copy(p.tip);
+  end.current.rotation.set(leg?rider.footPitch:0,leg?rider.footYaw[i]:rider.yaw,0,'YXZ');
+  if(leg)end.current.position.y-=.09;
+ });
+ const cloth=leg?materials.trousers:materials.hoodie;
+ return <group>
+  <mesh ref={upper} geometry={ball} material={cloth} castShadow/>
+  <mesh ref={lower} geometry={ball} material={cloth} castShadow/>
+  <group ref={end}>{leg?<HumanShoes/>:<Ellipsoid position={[0,0,0]} scale={[.046,.043,.056]} material={materials.skin}/>}</group>
+ </group>;
+}
+
 /** Reference-inspired boy. Facing -Z; origin at the soles; no world movement here. */
-function CharacterBody({ motion, riding=false, driving }: { motion: RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose> }) {
+function CharacterBody({ motion, riding=false, driving, horsePose, heightScale }: {
+ motion: RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>;horsePose?:RefObject<HorseRiderPose>;heightScale:number;
+}) {
  const appearance=useContext(HumanContext),materials=useHumanMaterials();
  const covered=appearance.clothes==='dress'||appearance.clothes==='longyi';
 	const body = useRef<Group>(null), headGroup = useRef<Group>(null);
@@ -305,9 +341,11 @@ function CharacterBody({ motion, riding=false, driving }: { motion: RefObject<Ch
 		if(driving&&!driving.current.active)return;
 		const dt = Math.min(delta, .06), a = animation.current;
 		a.time += dt;
-		const airborne=!!motion.current.airborne&&!riding&&!driving;
-        const bend=riding||driving?0:motion.current.jumpBend??0,{drop}=jumpLegPose(bend,covered),jumping=airborne||bend>0;
-		const speed = jumping||riding||driving?0:Math.abs(motion.current.speed), active = Math.min(1, speed / .8);
+		const rider=horsePose?.current;
+		const seated=riding||!!driving||!!rider?.active;
+		const airborne=!!motion.current.airborne&&!seated;
+        const bend=seated?0:motion.current.jumpBend??0,{drop}=jumpLegPose(bend,covered),jumping=airborne||bend>0;
+		const speed = jumping||seated?0:Math.abs(motion.current.speed), active = Math.min(1, speed / .8);
 		a.stride += (active - a.stride) * (1 - Math.exp(-dt * 11));
         if(jumping)a.stride=0;
 		const run = Math.min(1, Math.max(0, (speed - 2.8) / 4));
@@ -317,13 +355,17 @@ function CharacterBody({ motion, riding=false, driving }: { motion: RefObject<Ch
 		if (rightLeg.current) {rightLeg.current.rotation.x = jumping?0:-swing;rightLeg.current.position.y=.707-drop+(motion.current.rightFoot??0)+Math.max(0,-Math.sin(phase))*Math.min(covered?.05:1,motion.current.stepLift??0)*a.stride;}
 		if (leftArm.current) leftArm.current.rotation.x = airborne?-.25:bend>0?.4*bend:-swing * .82;
 		if (rightArm.current) rightArm.current.rotation.x = airborne?-.25:bend>0?.4*bend:swing * .82;
-		if (body.current) {
+		if (body.current&&rider?.active) {
+			body.current.rotation.set(-rider.lean,rider.yaw,rider.roll,'YXZ');
+			body.current.position.set(0,-.707,0).applyEuler(body.current.rotation).addScaledVector(rider.hip,1/heightScale);
+			body.current.updateMatrix();
+		}else if(body.current){
 			body.current.position.y = jumping?-drop:driving?0:Math.abs(Math.sin(phase)) * .018 * a.stride + Math.sin(a.time * 1.8) * .0025 * (1 - a.stride);
 			body.current.rotation.z = jumping?0:Math.sin(phase) * .013 * a.stride;
 			body.current.rotation.y = 0;
 		}
 		// Procedural boxing/kicking fallback pose when fighting bots without GLB rig
-		if (!riding && !driving && !jumping) {
+		if (!seated && !jumping) {
 			const fight = getBotFightingState();
 			if (fight.active && fight.activeMove) {
 				const p = Math.sin(fight.moveProgress * Math.PI);
@@ -349,6 +391,7 @@ function CharacterBody({ motion, riding=false, driving }: { motion: RefObject<Ch
 			}
 		}
 		if (headGroup.current) headGroup.current.rotation.y = Math.sin(a.time * .65) * .022 * (1 - a.stride);
+		if (headGroup.current&&rider?.active) headGroup.current.rotation.set(rider.lean*.72,rider.headTurn,0);
 		if (headGroup.current&&driving) headGroup.current.visible=!driving.current.interior;
 		a.blink -= dt;
 		const blinkScale = a.blink < 0 ? Math.max(.06, Math.abs(a.blink + .085) / .085) : 1;
@@ -357,15 +400,16 @@ function CharacterBody({ motion, riding=false, driving }: { motion: RefObject<Ch
 		if (rightEye.current) rightEye.current.scale.y = Math.min(1, blinkScale);
 	});
 	return <group name="cartoon-boy-character" dispose={null}>
-		{driving?<><DrivingLeg side={-1} pose={driving}/><DrivingLeg side={1} pose={driving}/></>:riding?<><RidingLeg side={-1}/><RidingLeg side={1}/></>:<><Leg side={-1} innerRef={leftLeg} covered={covered} motion={motion}/><Leg side={1} innerRef={rightLeg} covered={covered} motion={motion}/></>}
+		{horsePose?<>{[-1,1].map(side=><HorseRiderLimb key={side} side={side} leg pose={horsePose} body={body} heightScale={heightScale}/>)}</>:driving?<><DrivingLeg side={-1} pose={driving}/><DrivingLeg side={1} pose={driving}/></>:riding?<><RidingLeg side={-1}/><RidingLeg side={1}/></>:<><Leg side={-1} innerRef={leftLeg} covered={covered} motion={motion}/><Leg side={1} innerRef={rightLeg} covered={covered} motion={motion}/></>}
+		{horsePose&&[-1,1].map(side=><HorseRiderLimb key={side} side={side} leg={false} pose={horsePose} body={body} heightScale={heightScale}/>)}
 		<group ref={body}>
 			<Ellipsoid position={[0, .72, .01]} scale={[.194, .106, .121]} material={materials.trousers} />
 			<mesh name="human-torso" geometry={torso} material={materials.hoodie} castShadow />
 			<mesh geometry={hem} material={materials.rib} castShadow />
-			<HumanClothes seated={riding||!!driving} motion={motion}/>
+			<HumanClothes seated={riding||!!driving||!!horsePose} motion={motion}/>
 			<mesh geometry={shirtV} material={materials.white} />
 			<Ellipsoid position={[0, 1.273, .004]} scale={[.077, .111, .072]} material={materials.skin} />
-			{driving?<><DrivingArm side={-1} pose={driving}/><DrivingArm side={1} pose={driving}/></>:riding?<RidingArms/>:<><Arm side={-1} innerRef={leftArm}/><Arm side={1} innerRef={rightArm}/></>}
+			{!horsePose&&(driving?<><DrivingArm side={-1} pose={driving}/><DrivingArm side={1} pose={driving}/></>:riding?<RidingArms/>:<><Arm side={-1} innerRef={leftArm}/><Arm side={1} innerRef={rightArm}/></>)}
 			<group ref={headGroup} position={[0, 1.565, 0]}>
 				<group scale={[appearance.face==='round'?1.09:appearance.face==='mature'?.96:1,appearance.face==='mature'?1.02:1,1]}><CartoonFace leftEye={leftEye} rightEye={rightEye} appearance={appearance}/><CartoonHair style={appearance.hair} color={appearance.hairColor} motion={riding||driving?undefined:motion}/></group>
 			</group>
@@ -374,12 +418,13 @@ function CharacterBody({ motion, riding=false, driving }: { motion: RefObject<Ch
 }
 
 /** Reusable person: independent appearance, shared geometry, walking/riding/driving poses. */
-export function CartoonCharacter({appearance=HUMAN_PRESETS.boy,...props}:{appearance?:HumanAppearance;motion:RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>}){
+export function CartoonCharacter({appearance=HUMAN_PRESETS.boy,horsePose,...props}:{appearance?:HumanAppearance;motion:RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>;horsePose?:RefObject<HorseRiderPose>}){
  const palette=useMemo(()=>{
   const tint=(base:MeshStandardMaterial,color:string,factor=1)=>{const m=base.clone();m.color.set(color).multiplyScalar(factor);return m;};
   return {...defaultMaterials,skin:tint(defaultMaterials.skin,appearance.skin),hoodie:tint(defaultMaterials.hoodie,appearance.clothingColor),rib:tint(defaultMaterials.rib,appearance.clothingColor,.8),hoodInside:tint(defaultMaterials.hoodInside,appearance.clothingColor,.6),seam:tint(defaultMaterials.seam,appearance.clothingColor,1.12),trousers:tint(defaultMaterials.trousers,appearance.trousersColor),trouserSeam:tint(defaultMaterials.trouserSeam,appearance.trousersColor,1.15),white:tint(defaultMaterials.white,appearance.shoeColor)};
  },[appearance.skin,appearance.clothingColor,appearance.trousersColor,appearance.shoeColor]);
  useEffect(()=>()=>{for(const key of Object.keys(palette) as (keyof typeof palette)[])if(palette[key]!==defaultMaterials[key])palette[key].dispose();},[palette]);
  // Seated poses use the vehicle's seat and grip dimensions, while walking height is configurable.
- return <HumanContext.Provider value={appearance}><MaterialContext.Provider value={palette}><group scale={props.riding||props.driving?1:effectiveHumanHeightScale(appearance.preset,appearance.height)} userData={{humanPreset:appearance.preset}}><CharacterBody {...props}/></group></MaterialContext.Provider></HumanContext.Provider>;
+ const heightScale=props.riding||props.driving?1:effectiveHumanHeightScale(appearance.preset,appearance.height);
+ return <HumanContext.Provider value={appearance}><MaterialContext.Provider value={palette}><group scale={heightScale} userData={{humanPreset:appearance.preset}}><CharacterBody {...props} horsePose={horsePose} heightScale={heightScale}/></group></MaterialContext.Provider></HumanContext.Provider>;
 }

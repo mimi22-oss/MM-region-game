@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { App } from '@capacitor/app';
 import { CapacitorUpdater, type BundleInfo } from '@capgo/capacitor-updater';
 import {
   APP_NATIVE_BASELINE,
@@ -20,6 +21,7 @@ import { isNetworkOnline, subscribeNetworkState } from './networkStatus.ts';
 import {
   AssetCacheManager,
   requestPersistentOfflineStorage,
+  sha256HexBytes,
   type AssetSyncProgressEvent,
   type ContentPackStatus,
   type StorageBackendKind,
@@ -87,6 +89,7 @@ interface PersistedOtaMeta {
     bundleId: string;
     previousVersion: string;
     requestedAt: string;
+    pairedAssets?: boolean;
   } | null;
   rollbackNotification: RollbackNotification | null;
   lastCheckedAt: string | null;
@@ -95,6 +98,7 @@ interface PersistedOtaMeta {
 export interface NativeUpdaterBridge {
   notifyAppReady(): Promise<void>;
   current(): Promise<{ bundle: BundleInfo; native: string }>;
+  getVersionCode?(): Promise<number>;
   list(): Promise<{ bundles: BundleInfo[] }>;
   download(options: {
     url: string;
@@ -161,6 +165,10 @@ function readDefaultChannelFallback(): OtaChannel {
   return 'production';
 }
 
+function readUpdateBaseUrl(): string {
+  return (import.meta as { env?: Record<string, string> }).env?.VITE_OTA_BASE_URL || DEFAULT_OTA_BASE_URL;
+}
+
 function createLocalStorageMetaStore(): {
   read(): Partial<PersistedOtaMeta> | null;
   write(meta: PersistedOtaMeta): void;
@@ -195,6 +203,7 @@ function createCapacitorNativeBridge(): NativeUpdaterBridge {
       await CapacitorUpdater.notifyAppReady();
     },
     current: () => CapacitorUpdater.current(),
+    getVersionCode: async () => Number((await App.getInfo()).build),
     list: () => CapacitorUpdater.list(),
     download: (options) => CapacitorUpdater.download(options),
     next: (options) => CapacitorUpdater.next(options),
@@ -227,6 +236,7 @@ async function parseOtaJsonResponse<T>(
   response: Response,
   url: string,
   label: string,
+  expectedSha256?: string,
 ): Promise<T> {
   if (response.status === 404) {
     throw new Error(`${label} not published yet at ${url} (HTTP 404).`);
@@ -247,6 +257,9 @@ async function parseOtaJsonResponse<T>(
       throw new Error(
         `${label} returned HTML instead of JSON (${url}). Deploy the latest web build with /ota/*.json manifests enabled.`,
       );
+    }
+    if (expectedSha256 && await sha256HexBytes(new TextEncoder().encode(rawText)) !== expectedSha256.toLowerCase()) {
+      throw new Error(`${label} SHA-256 does not match the release descriptor.`);
     }
     try {
       return JSON.parse(trimmed) as T;
@@ -287,6 +300,8 @@ export class OtaCoordinator {
   private checkInFlight: Promise<OtaUpdateState> | null = null;
   private downloadInFlight: Promise<OtaUpdateState> | null = null;
   private pendingManifest: ReturnType<typeof validateAssetManifest> | null = null;
+  private bundledManifest: ReturnType<typeof validateAssetManifest> | null = null;
+  private activeBundleChecksum = '';
   private state: OtaUpdateState;
 
   constructor(deps: OtaCoordinatorDependencies = {}) {
@@ -322,7 +337,7 @@ export class OtaCoordinator {
     this.state = {
       platform: this.checkNativeAndroid() ? 'android-native' : 'web',
       channel: initialChannel,
-      updateBaseUrl: (deps.updateBaseUrl ?? DEFAULT_OTA_BASE_URL).replace(/\/+$/, ''),
+      updateBaseUrl: (deps.updateBaseUrl ?? readUpdateBaseUrl()).replace(/\/+$/, ''),
       currentVersion,
       nativeVersion,
       androidVersionCode: deps.androidVersionCode ?? APP_NATIVE_BASELINE.androidVersionCode,
@@ -362,7 +377,7 @@ export class OtaCoordinator {
       activeAssetVersion: this.assetCache.getActiveVersion(),
       offlineFallbackReady: this.assetCache.hasOfflineCopy(),
       storageBackend: this.assetCache.getStorageBackend(),
-      contentPacks: partial.contentPacks ?? this.assetCache.getPackSummaries(this.pendingManifest),
+      contentPacks: partial.contentPacks ?? this.assetCache.getPackSummaries(this.pendingManifest ?? this.bundledManifest),
       safety: evaluateUpdateApplySafety(this.busyContext),
     };
     this.emit();
@@ -461,19 +476,23 @@ export class OtaCoordinator {
       }
 
       try {
-        const cur = await this.nativeUpdater.current();
+        const [cur, code] = await Promise.all([
+          this.nativeUpdater.current(),
+          this.nativeUpdater.getVersionCode?.().catch(() => undefined),
+        ]);
         const bundleId = cur.bundle.id || 'builtin';
         const nativeVer = cur.native || this.state.nativeVersion;
         const bundleVersion =
-          bundleId === 'builtin' ? nativeVer : cur.bundle.version || this.state.currentVersion;
+          bundleId === 'builtin' ? this.state.currentVersion : cur.bundle.version || this.state.currentVersion;
+        this.activeBundleChecksum = cur.bundle.checksum?.toLowerCase() ?? '';
 
         const persisted = this.metaStore.read();
         let rollbackNote = persisted?.rollbackNotification ?? null;
 
         if (persisted?.pendingApply) {
           const expected = persisted.pendingApply;
-          if (bundleId !== expected.bundleId && bundleVersion !== expected.version) {
-            await this.assetCache.rollbackToPrevious();
+          if (bundleId !== expected.bundleId) {
+            if (expected.pairedAssets !== false) await this.assetCache.rollbackToPrevious();
             await this.assetCache.rollbackPacksForCodeVersion(expected.version);
             rollbackNote = {
               failedVersion: expected.version,
@@ -511,6 +530,7 @@ export class OtaCoordinator {
 
         this.patchState({
           nativeVersion: nativeVer,
+          androidVersionCode: code && Number.isSafeInteger(code) && code > 0 ? code : this.state.androidVersionCode,
           currentVersion: bundleVersion,
           activeBundleId: bundleId,
           rollbackNotification: rollbackNote,
@@ -525,12 +545,24 @@ export class OtaCoordinator {
         // Native bridge degraded gracefully to bundled defaults
       }
 
+      if (typeof window !== 'undefined') {
+        try {
+          const url = '/ota/asset-manifest.json';
+          const response = await this.fetcher(url, AbortSignal.timeout(3000));
+          this.bundledManifest = validateAssetManifest(await parseOtaJsonResponse(response, url, 'Bundled asset manifest'));
+        } catch {
+          // Older APKs can still load their bundled assets without a local catalog.
+        }
+      }
+
       try {
         const h1 = await this.nativeUpdater.addListener('download', (payload) => {
           const percent = typeof payload.percent === 'number' ? Math.max(0, Math.min(100, payload.percent)) : 0;
+          const bundleOnly = this.state.availableRelease?.bundleIncludesAssets === true;
           this.patchState({
             phase: 'downloading',
-            downloadPercent: Math.max(this.state.downloadPercent, Math.round(50 + percent * 0.5)),
+            downloadPercent: Math.max(this.state.downloadPercent, Math.round(bundleOnly ? percent : 50 + percent * .5)),
+            ...(bundleOnly ? { downloadedBytes: Math.round(this.state.totalDownloadBytes * percent / 100) } : {}),
             statusMessage: `Downloading app bundle (${Math.round(percent)}%)...`,
           });
         });
@@ -543,7 +575,7 @@ export class OtaCoordinator {
             reason: `OTA bundle ${failedVersion} failed activation and rolled back.`,
             timestamp: new Date().toISOString(),
           };
-          void this.assetCache.rollbackToPrevious();
+          if (this.metaStore.read()?.pendingApply?.pairedAssets !== false) void this.assetCache.rollbackToPrevious();
           void this.assetCache.rollbackPacksForCodeVersion(failedVersion);
           this.persistMeta({ pendingApply: null, rollbackNotification: rollbackNote });
           this.patchState({
@@ -569,12 +601,23 @@ export class OtaCoordinator {
 
   async checkForUpdate(options?: { allowChannelSwitch?: boolean; signal?: AbortSignal }): Promise<OtaUpdateState> {
     if (this.checkInFlight) return this.checkInFlight;
+    if (this.downloadInFlight || this.state.pendingBundleId) return this.state;
 
     const task = this.performCheck(options).finally(() => {
       if (this.checkInFlight === task) this.checkInFlight = null;
     });
     this.checkInFlight = task;
     return task;
+  }
+
+  private async readReleaseManifest(release: ChannelReleaseDescriptor, signal?: AbortSignal) {
+    const url = release.assetManifestUrl;
+    const response = await this.fetcher(url, signal);
+    const manifest = validateAssetManifest(await parseOtaJsonResponse(response, url, 'Asset manifest', release.assetManifestSha256));
+    if (manifest.version !== release.version || manifest.channel !== release.channel) {
+      throw new Error('Asset manifest version or channel does not match the release descriptor.');
+    }
+    return manifest;
   }
 
   private async performCheck(options?: { allowChannelSwitch?: boolean; signal?: AbortSignal }): Promise<OtaUpdateState> {
@@ -589,6 +632,8 @@ export class OtaCoordinator {
 
     this.patchState({
       phase: 'checking',
+      availableRelease: null,
+      compatibility: null,
       lastError: null,
       statusMessage: `Checking ${this.state.channel} updates...`,
     });
@@ -602,6 +647,9 @@ export class OtaCoordinator {
         channelUrl,
         'Update metadata',
       );
+      if (descriptor?.channel !== this.state.channel) {
+        throw new Error(`Expected ${this.state.channel} release metadata.`);
+      }
       const nowIso = new Date().toISOString();
       this.persistMeta({ lastCheckedAt: nowIso });
 
@@ -617,6 +665,10 @@ export class OtaCoordinator {
         {
           allowChannelSwitch: options?.allowChannelSwitch,
           allowLocalDevHttp: this.allowLocalDevHttp,
+          allowSameVersion: this.checkNativeAndroid() && (
+            this.state.activeBundleId === 'builtin' ||
+            (Boolean(this.activeBundleChecksum) && this.activeBundleChecksum !== descriptor.bundleSha256?.toLowerCase())
+          ),
         },
       );
 
@@ -643,6 +695,7 @@ export class OtaCoordinator {
         return this.state;
       }
 
+      this.pendingManifest = await this.readReleaseManifest(descriptor, options?.signal);
       if (!compat.updateAvailable) {
         this.patchState({
           phase: 'up_to_date',
@@ -655,33 +708,21 @@ export class OtaCoordinator {
         return this.state;
       }
 
-      // Pre-fetch and validate the versioned asset manifest so delta bytes can be surfaced accurately
-      const manifestResp = await this.fetcher(descriptor.assetManifestUrl, options?.signal);
-      const manifestRaw = await parseOtaJsonResponse<unknown>(
-        manifestResp,
-        descriptor.assetManifestUrl,
-        'Asset manifest',
-      );
-      const validatedManifest = validateAssetManifest(manifestRaw);
-      if (validatedManifest.version !== descriptor.version) {
-        throw new Error(
-          `Version mismatch between channel descriptor (${descriptor.version}) and asset manifest (${validatedManifest.version})`,
-        );
-      }
-
-      const delta = await this.assetCache.computeDelta(validatedManifest);
-      this.pendingManifest = validatedManifest;
+      const bundleOnly = this.checkNativeAndroid() && descriptor.bundleIncludesAssets === true;
+      const downloadBytes = bundleOnly
+        ? descriptor.bundleBytes
+        : (await this.assetCache.computeDelta(this.pendingManifest)).downloadBytes;
 
       this.patchState({
         phase: 'update_available',
         availableRelease: descriptor,
         compatibility: compat,
         lastCheckedAt: nowIso,
-        totalDownloadBytes: delta.downloadBytes,
+        totalDownloadBytes: downloadBytes,
         downloadedBytes: 0,
         downloadPercent: 0,
         lastError: null,
-        statusMessage: `Update v${descriptor.version} available (${Math.round(delta.downloadBytes / 1024)} KB delta)`,
+        statusMessage: `Update v${descriptor.version} available (${Math.round(downloadBytes / 1024)} KB ${bundleOnly ? 'bundle' : 'delta'})`,
       });
       return this.state;
     } catch (error) {
@@ -737,15 +778,10 @@ export class OtaCoordinator {
     }
 
     try {
+      const bundleOnly = this.checkNativeAndroid() && target.bundleIncludesAssets === true;
       let manifest = this.pendingManifest;
-      if (!manifest || manifest.version !== target.version) {
-        const res = await this.fetcher(target.assetManifestUrl, signal);
-        const manifestJson = await parseOtaJsonResponse<unknown>(
-          res,
-          target.assetManifestUrl,
-          'Asset manifest',
-        );
-        manifest = validateAssetManifest(manifestJson);
+      if (!manifest || manifest.version !== target.version || manifest.channel !== target.channel) {
+        manifest = await this.readReleaseManifest(target, signal);
         this.pendingManifest = manifest;
       }
 
@@ -768,20 +804,23 @@ export class OtaCoordinator {
         });
       };
 
-      await this.assetCache.syncToManifest(manifest, {
-        assetBaseUrl: this.state.updateBaseUrl,
-        codeVersion: target.version,
-        manifestSha256: target.assetManifestSha256,
-        signal,
-        onProgress: handleAssetProgress,
-      });
-      await this.refreshStorageDiagnostics();
+      if (!bundleOnly) {
+        await this.assetCache.syncToManifest(manifest, {
+          assetBaseUrl: this.state.updateBaseUrl,
+          codeVersion: target.version,
+          manifestSha256: target.assetManifestSha256,
+          signal,
+          onProgress: handleAssetProgress,
+        });
+        await this.refreshStorageDiagnostics();
+      }
 
       let bundleId: string | null = null;
       if (this.checkNativeAndroid()) {
         this.patchState({
           phase: 'downloading',
-          downloadPercent: Math.max(this.state.downloadPercent, 55),
+          downloadPercent: bundleOnly ? 0 : Math.max(this.state.downloadPercent, 55),
+          ...(bundleOnly ? { totalDownloadBytes: target.bundleBytes, downloadedBytes: 0 } : {}),
           statusMessage: `Downloading Android bundle v${target.version}...`,
         });
 
@@ -789,7 +828,7 @@ export class OtaCoordinator {
           url: target.bundleUrl,
           version: target.version,
           checksum: target.bundleSha256,
-          ...(target.deltaManifest && target.deltaManifest.length > 0
+          ...(!bundleOnly && target.deltaManifest && target.deltaManifest.length > 0
             ? {
                 manifest: target.deltaManifest.map((item) => ({
                   file_name: item.file_name,
@@ -806,6 +845,7 @@ export class OtaCoordinator {
         phase: 'ready_to_restart',
         pendingBundleId: bundleId,
         downloadPercent: 100,
+        ...(bundleOnly ? { downloadedBytes: target.bundleBytes } : {}),
         lastError: null,
         statusMessage: `v${target.version} downloaded and verified. Ready to restart when safe.`,
       });
@@ -852,6 +892,7 @@ export class OtaCoordinator {
               bundleId,
               previousVersion: this.state.currentVersion,
               requestedAt: new Date().toISOString(),
+              pairedAssets: release.bundleIncludesAssets !== true,
             },
           });
           await this.nativeUpdater.set({ id: bundleId });
@@ -864,7 +905,17 @@ export class OtaCoordinator {
           this.onReloadWeb();
         }
       },
-    );
+    ).catch((error: unknown) => {
+      this.persistMeta({ pendingApply: null });
+      this.patchState({
+        phase: 'ready_to_restart',
+        statusMessage: 'Android could not apply the saved update. Try Restart & Apply again.',
+        lastError: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    });
+
+    if (!result) return { applied: false, deferred: false, reason: this.state.lastError ?? undefined };
 
     if (result.deferred) {
       this.patchState({
@@ -888,11 +939,21 @@ export class OtaCoordinator {
       storagePersisted: quota.persisted,
       storageUsedBytes: usedBytes,
       storageQuotaBytes: quota.quotaBytes,
-      contentPacks: this.assetCache.getPackSummaries(this.pendingManifest),
+      contentPacks: this.assetCache.getPackSummaries(this.pendingManifest ?? this.bundledManifest),
     });
   }
 
   async downloadContentPack(packId: string, signal?: AbortSignal): Promise<OtaUpdateState> {
+    if (this.downloadInFlight) return this.downloadInFlight;
+    if (this.state.pendingBundleId) return this.state;
+    const task = this.performPackDownload(packId, signal).finally(() => {
+      if (this.downloadInFlight === task) this.downloadInFlight = null;
+    });
+    this.downloadInFlight = task;
+    return task;
+  }
+
+  private async performPackDownload(packId: string, signal?: AbortSignal): Promise<OtaUpdateState> {
     if (!this.getOnline()) {
       this.patchState({
         online: false,
@@ -905,21 +966,23 @@ export class OtaCoordinator {
     const safety = evaluateUpdateApplySafety(this.busyContext);
     if (!safety.safeToDownloadInBackground) {
       this.patchState({
-        phase: 'deferred_busy',
         statusMessage: `Pack download deferred: ${safety.summaryEn}`,
       });
       return this.state;
     }
 
+    const previousPhase = this.state.phase;
     try {
       let manifest = this.pendingManifest;
       if (!manifest) {
-        const manifestUrl =
-          this.state.availableRelease?.assetManifestUrl ??
-          `${this.state.updateBaseUrl}/ota/asset-manifest.json`;
-        const res = await this.fetcher(manifestUrl, signal);
-        const raw = await parseOtaJsonResponse<unknown>(res, manifestUrl, 'Content pack manifest');
-        manifest = validateAssetManifest(raw);
+        if (this.state.availableRelease) {
+          manifest = await this.readReleaseManifest(this.state.availableRelease, signal);
+        } else {
+          const url = `${this.state.updateBaseUrl}/ota/asset-manifest.json`;
+          const response = await this.fetcher(url, signal);
+          manifest = validateAssetManifest(await parseOtaJsonResponse(response, url, 'Content pack manifest'));
+        }
+        if (manifest.channel !== this.state.channel) throw new Error(`Expected the ${this.state.channel} content pack catalog.`);
         this.pendingManifest = manifest;
       }
 
@@ -951,7 +1014,9 @@ export class OtaCoordinator {
 
       await this.refreshStorageDiagnostics();
       this.patchState({
-        phase: 'up_to_date',
+        phase: previousPhase === 'ready_to_restart' || previousPhase === 'deferred_busy'
+          ? previousPhase
+          : this.state.availableRelease ? 'update_available' : 'up_to_date',
         downloadPercent: 100,
         lastError: null,
         statusMessage: `Cached pack "${packId}" v${result.version} (${Math.round(result.totalBytes / 1024)} KB offline-ready).`,

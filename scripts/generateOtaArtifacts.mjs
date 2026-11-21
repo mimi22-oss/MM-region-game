@@ -162,10 +162,12 @@ const baseUrl = (args['base-url'] ?? process.env.OTA_BASE_URL ?? DEFAULT_OTA_BAS
 const releaseTag = (args['release-tag'] ?? process.env.OTA_RELEASE_TAG ?? `ota-v${version}`).trim();
 const repoSlug = (args.repo ?? process.env.GITHUB_REPOSITORY ?? DEFAULT_GITHUB_REPO).trim();
 const zipFileName = `mm-region-ota-${version}.zip`;
+const hostBundle = args['host-bundle'] === 'true';
 const bundleUrl = (
-  args['bundle-url'] ??
-  process.env.OTA_BUNDLE_URL ??
-  `https://github.com/${repoSlug}/releases/download/${releaseTag}/${zipFileName}`
+  hostBundle ? `${baseUrl}/ota/bundles/${zipFileName}` : (
+    args['bundle-url'] ?? process.env.OTA_BUNDLE_URL ??
+    `https://github.com/${repoSlug}/releases/download/${releaseTag}/${zipFileName}`
+  )
 ).trim();
 const requiresNativeApk =
   (args['requires-native-apk'] ?? process.env.OTA_REQUIRES_NATIVE_APK ?? 'false') === 'true';
@@ -308,7 +310,7 @@ const releaseDescriptor = {
   mandatory: false,
   requiresNativeApk,
   releaseNotes: `MM Region Game ${version} (${channel})`,
-  deltaManifest,
+  ...(hostBundle ? { bundleIncludesAssets: true } : { deltaManifest }),
 };
 const releaseDescriptorJson = `${JSON.stringify(releaseDescriptor, null, 2)}\n`;
 
@@ -320,6 +322,11 @@ fs.writeFileSync(path.join(distOtaDir, 'asset-manifest.json'), assetManifestJson
 fs.writeFileSync(path.join(distOtaDir, 'native-compat.json'), nativeCompatJson, 'utf8');
 fs.writeFileSync(path.join(distOtaDir, 'packs.json'), packsIndexJson, 'utf8');
 fs.writeFileSync(path.join(distOtaDir, `${channel}.json`), releaseDescriptorJson, 'utf8');
+if (hostBundle) {
+  const bundlesDir = path.join(distOtaDir, 'bundles');
+  fs.mkdirSync(bundlesDir, { recursive: true });
+  fs.writeFileSync(path.join(bundlesDir, zipFileName), zipBuffer);
+}
 
 fs.writeFileSync(path.join(outArtifactDir, zipFileName), zipBuffer);
 fs.writeFileSync(path.join(outArtifactDir, 'asset-manifest.json'), assetManifestJson, 'utf8');

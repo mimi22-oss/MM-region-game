@@ -355,7 +355,7 @@ export function MobileControls({
 				onPointerCancel={release}
 				onLostPointerCapture={release}
 			/>
-      {canJump && quickWeapon === 'ghost-sword' && (
+      {onFoot && canJump && quickWeapon === 'ghost-sword' && (
         <div className="mobile-fight-buttons" aria-label="ဓားတိုက်ခိုက်ရေး">
           <button
             type="button"
@@ -410,7 +410,7 @@ export function MobileControls({
             )}
         </div>
       )}
-      {canJump && quickWeapon === 'zombie-gun' && (
+      {onFoot && canJump && quickWeapon === 'zombie-gun' && (
         <div className="mobile-fight-buttons" aria-label="သေနတ်ပစ်ခတ်ရေး">
           <button
             type="button"

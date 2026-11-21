@@ -37,7 +37,7 @@ let interceptorInstalled = false;
  * so Three.js loaders and `fetchMapJson` transparently read the active atomic OTA asset generation when synced,
  * or fall through directly to the offline APK builtin bundle when no OTA asset override is active.
  */
-export function installOfflineAssetInterceptor(cacheManager: AssetCacheManager): () => void {
+export function installOfflineAssetInterceptor(cacheManager: AssetCacheManager, getCodeVersion?: () => string): () => void {
   if (typeof window === 'undefined' || typeof window.fetch !== 'function' || interceptorInstalled) {
     return () => {};
   }
@@ -78,7 +78,7 @@ export function installOfflineAssetInterceptor(cacheManager: AssetCacheManager):
     }
 
     try {
-      const cached = await cacheManager.resolveActiveAsset(requestUrl.pathname);
+      const cached = await cacheManager.resolveActiveAsset(requestUrl.pathname, getCodeVersion?.());
       if (cached) {
         const body = new Uint8Array(cached.bytes.byteLength);
         body.set(cached.bytes);

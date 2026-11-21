@@ -6,6 +6,7 @@ import {
 } from '../game/characterRenderer';
 import {BlenderCharacter} from './BlenderCharacter';
 import {GlbHuman} from './GlbHuman';
+import type {HorseRiderPose} from '../game/horseAnimation';
 
 export {
  DEFAULT_CHARACTER_RENDERER,
@@ -22,12 +23,12 @@ export type DrivingPose={active:boolean;wheelAngle:number;interior:boolean;clutc
 const ProceduralHuman=lazy(()=>import('./ProceduralHuman').then(module=>({default:module.CartoonCharacter})));
 
 /** Renders GLB (`boy.glb`/`girl.glb`) when enabled or falls back to `ProceduralHuman`. */
-export function CartoonCharacter({appearance=HUMAN_PRESETS.boy,deferGlb=false,...props}:{appearance?:HumanAppearance;motion:RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>;deferGlb?:boolean;combat?:boolean}){
+export function CartoonCharacter({appearance=HUMAN_PRESETS.boy,deferGlb=false,...props}:{appearance?:HumanAppearance;motion:RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>;horsePose?:RefObject<HorseRiderPose>;deferGlb?:boolean;combat?:boolean}){
  const [failed,setFailed]=useState<string|null>(null);
  const [glbUnlocked,setGlbUnlocked]=useState(!deferGlb);
  const rendererMode=useCharacterRendererMode();
  const useGlb=shouldUseGlbCharacter(appearance.preset,rendererMode);
- const useCanolia=rendererMode==='canolia';
+ const useCanolia=rendererMode==='canolia'&&!props.horsePose;
  useEffect(()=>{if(!deferGlb)setGlbUnlocked(true);},[deferGlb]);
  useEffect(()=>{setFailed(null);},[rendererMode,appearance.preset]);
  if((useGlb||useCanolia)&&!glbUnlocked&&failed!==appearance.preset)return null;

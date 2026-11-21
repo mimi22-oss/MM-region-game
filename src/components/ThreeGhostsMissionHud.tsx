@@ -567,8 +567,8 @@ export function ThreeGhostsMissionHud() {
                       </span>
                       <span>
                         {zombieCompleted
-                          ? 'ဆုလာဘ် သေနတ် (Tactical Gun) ရရှိပြီး! Menu → Weapon မှ ရွေးချယ်၍ F ဖြင့် ပစ်ခတ်နိုင်ပါပြီ။'
-                          : 'ဆုလာဘ်: Zombie ၁၃ ကောင်လုံး နှိမ်နင်းအောင်မြင်ပါက သေနတ် (Tactical Gun) ရရှိမည်။'}
+                          ? 'ဆုလာဘ် သေနတ် (Tactical Gun) နှင့် မြင်းစီးခွင့် (Horse) ရရှိပြီး! Menu → Weapon မှ သေနတ်ရွေးချယ်နိုင်ပြီး မြင်းနားကပ်၍ စီးနိုင်ပါပြီ။'
+                          : 'ဆုလာဘ်: Zombie ၁၃ ကောင်လုံး နှိမ်နင်းအောင်မြင်ပါက သေနတ် (Tactical Gun) နှင့် မြင်းစီးခွင့် (Horse) ရရှိမည်။'}
                       </span>
                     </div>
 
@@ -854,7 +854,7 @@ export function ThreeGhostsMissionHud() {
                         <strong className="mission-item-name">Zombie Mission</strong>
                         <span className="mission-item-sub">
                           {zombieCompleted
-                            ? 'Zombie ၁၃ ကောင် နှိမ်နင်းပြီး · သေနတ်ရရှိပြီး'
+                            ? 'Zombie ၁၃ ကောင် နှိမ်နင်းပြီး · သေနတ်နှင့် မြင်းစီးခွင့် ရရှိပြီး'
                             : zombieUnlocked
                               ? `သစ်တောအုပ် Zombie (${zombieMission.defeatedCount}/${ZOMBIE_COUNT})`
                               : 'Ghost Mission ပြီးဆုံးမှ ဖွင့်လှစ်မည်'}

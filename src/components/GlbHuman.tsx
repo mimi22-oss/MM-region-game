@@ -6,6 +6,7 @@ import {effectiveHumanHeightScale,type HumanAppearance} from '../data/appearance
 import {createGlbHuman} from '../game/glbHuman';
 import {COMBAT_MODEL_URLS} from '../game/combat/AttackDefinitions';
 import {getQualityPreset,useQualityPreset} from '../game/qualityPreset';
+import type {HorseRiderPose} from '../game/horseAnimation';
 import {
  getSpecialAction,
  getSpecialActionSyncPhase,
@@ -74,7 +75,7 @@ function loadModel(url:string){
  }
  return pending;
 }
-type Props={preset:'boy'|'girl';appearance:HumanAppearance;motion:RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>;combat?:boolean;onError:()=>void};
+type Props={preset:'boy'|'girl';appearance:HumanAppearance;motion:RefObject<CharacterMotion>;riding?:boolean;driving?:RefObject<DrivingPose>;horsePose?:RefObject<HorseRiderPose>;combat?:boolean;onError:()=>void};
 export function GlbHuman(props:Props){
  const url=HUMAN_MODEL_URLS[props.preset];
  const [model,setModel]=useState<GLTF>();
@@ -85,10 +86,10 @@ export function GlbHuman(props:Props){
  },[url]);
  return model?<LoadedHuman {...props} model={model}/>:null;
 }
-function LoadedHuman({model,preset,appearance,motion,riding=false,driving,combat=false}:Props&{model:GLTF}){
+function LoadedHuman({model,preset,appearance,motion,riding=false,driving,horsePose,combat=false}:Props&{model:GLTF}){
  const quality=useQualityPreset();
  const special=useSpecialAction();
- const canPlaySpecial=!riding&&!driving;
+ const canPlaySpecial=!riding&&!driving&&!horsePose?.current?.active;
  const activeSpecialId=canPlaySpecial?special.activeActionId:null;
  const [instance,setInstance]=useState<ReturnType<typeof createGlbHuman>|null>(null);
  // Manage the imperative Three.js controller inside useLayoutEffect so StrictMode remounts create a fresh instance instead of reusing a disposed useMemo instance.
@@ -151,7 +152,7 @@ function LoadedHuman({model,preset,appearance,motion,riding=false,driving,combat
    });
   return ()=>{cancelled=true;};
  },[instance,activeSpecialId,special.startedAtMs,special.generation,preset,model]);
- useFrame((_,delta)=>{if(instance&&(!driving||driving.current.active))instance.update(motion.current,riding,driving?.current,delta);},combat?-.5:0);
+ useFrame((_,delta)=>{if(instance&&(!driving||driving.current.active))instance.update(motion.current,riding,driving?.current,delta,horsePose?.current);},combat?-.5:0);
  if(!instance)return null;
  // Preserve the supplied texture artwork; height remains adjustable in Appearance.
  return <group name={`glb-${preset}-character`} scale={riding||driving?1:effectiveHumanHeightScale(preset,appearance.height)} userData={{humanPreset:preset,model:HUMAN_MODEL_URLS[preset]}}>

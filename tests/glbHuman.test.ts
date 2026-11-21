@@ -4,6 +4,8 @@ import {readFile} from 'node:fs/promises';
 import {AnimationClip,Box3,QuaternionKeyframeTrack,SkinnedMesh,Vector3} from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {createGlbHuman,selectBoyClip} from '../src/game/glbHuman.ts';
+import {effectiveHumanHeightScale,HUMAN_PRESETS} from '../src/data/appearance.ts';
+import {createHorseRiderPose,planHorseMountApproach,sampleHorseGait,sampleHorseRider} from '../src/game/horseAnimation.ts';
 import {
  DEFAULT_CHARACTER_RENDERER,
  getCharacterRendererMode,
@@ -23,6 +25,41 @@ async function parseCharacterGlb(relativePath:string){
  bytes.copy(buffer,0,0,12);buffer.writeUInt32LE(buffer.length,8);buffer.writeUInt32LE(encoded.length,12);buffer.writeUInt32LE(0x4e4f534a,16);encoded.copy(buffer,20);bin.copy(buffer,20+encoded.length);
  return new GLTFLoader().parseAsync(buffer.buffer.slice(buffer.byteOffset,buffer.byteOffset+buffer.byteLength),'');
 }
+
+test('Player rigs keep the boots in the stirrups and the hands on the reins through the gallop',async()=>{
+ const horseScale=1.06;
+ const route=planHorseMountApproach(-1.6,.1,0,horseScale,()=>true)!;
+ for(const preset of ['boy','girl'] as const){
+  const model=await parseCharacterGlb(`../public/models/characters/${preset}-combat-animated.glb`);
+  const avatar=createGlbHuman(model.scene);
+  const scale=effectiveHumanHeightScale(preset,HUMAN_PRESETS[preset].height);
+  avatar.root.scale.setScalar(scale);
+  const pose=createHorseRiderPose();
+  pose.active=true;
+  const bone=(name:string)=>avatar.object.getObjectByName(`mixamorig${name}`)!.getWorldPosition(new Vector3());
+  const apply=()=>avatar.update({speed:0,distance:0},false,undefined,.016,pose);
+  const still=sampleHorseGait(0,0,0,false);
+  for(const t of [.40,.53,.67,.74,.84]){
+   sampleHorseRider(pose,horseScale,scale,still,0,false,route,route.seconds+t,1,()=>0);
+   apply();
+   assert.ok(bone('LeftFoot').distanceTo(pose.feet[0])<.03,`${preset} planted foot at ${t}`);
+   if(t===.74){
+    const right=bone('RightFoot');
+    assert.ok(right.x>0&&right.y>1.72&&right.z>.38,`${preset} right boot clears the back of the saddle`);
+   }
+  }
+  for(const [cycle,speed,pitch] of [[0,0,0],[.18,4.6,0],[.37,10.8,.08],[.77,10.8,-.08]]){
+   sampleHorseRider(pose,horseScale,scale,sampleHorseGait(cycle,speed,pitch,false),0,false,null,0,1,()=>0);
+   apply();
+   for(const [i,side] of ['Left','Right'].entries()){
+    assert.ok(bone(`${side}Foot`).distanceTo(pose.feet[i])<.03,`${preset} ${side} stirrup at ${speed} m/s`);
+    const grip=bone(`${side}HandMiddle1`).lerp(bone(`${side}HandMiddle2`),.5);
+    assert.ok(grip.distanceTo(pose.hands[i])<.03,`${preset} ${side} rein at ${speed} m/s`);
+   }
+  }
+  avatar.dispose();
+ }
+});
 
 for(const preset of ['boy','girl'] as const){
  test(`${preset} GLB normalizes at the soles and poses independently for gameplay`,async()=>{

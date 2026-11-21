@@ -35,6 +35,13 @@ const rootDir = process.cwd();
 const distDir = path.resolve(rootDir, args['dist-dir'] ?? 'dist');
 const artifactDir = path.resolve(rootDir, args['out-dir'] ?? 'ota-artifacts');
 const channel = (args.channel ?? process.env.OTA_CHANNEL ?? 'production') === 'staging' ? 'staging' : 'production';
+const verificationDevice = {
+  nativeVersion: args['native-version'] ?? APP_NATIVE_BASELINE.nativeVersion,
+  androidVersionCode: Number(args['android-version-code'] ?? APP_NATIVE_BASELINE.androidVersionCode),
+  schemaVersion: APP_NATIVE_BASELINE.otaSchemaVersion,
+  currentVersion: '0.0.1',
+  channel,
+};
 
 const manifestRaw = fs.readFileSync(path.join(distDir, 'ota', 'asset-manifest.json'), 'utf8');
 const manifest = validateAssetManifest(JSON.parse(manifestRaw));
@@ -63,13 +70,7 @@ if (manifest.packs && manifest.packs.length > 0) {
     if (expectedPackSha !== pack.sha256) {
       throw new Error(`Content pack "${pack.id}" SHA-256 mismatch: ${expectedPackSha} !== ${pack.sha256}`);
     }
-    const packCompat = checkContentPackCompatibility(pack, {
-      nativeVersion: APP_NATIVE_BASELINE.nativeVersion,
-      androidVersionCode: APP_NATIVE_BASELINE.androidVersionCode,
-      schemaVersion: APP_NATIVE_BASELINE.otaSchemaVersion,
-      currentVersion: '0.0.1',
-      channel,
-    });
+    const packCompat = checkContentPackCompatibility(pack, verificationDevice);
     if (!packCompat.compatible) {
       throw new Error(`Content pack "${pack.id}" compatibility failed: ${packCompat.message}`);
     }
@@ -102,14 +103,16 @@ const zipSha = sha256Hex(zipBytes);
 if (zipSha !== release.bundleSha256) {
   throw new Error(`OTA zip SHA-256 mismatch: ${zipSha} !== ${release.bundleSha256}`);
 }
+if (release.bundleIncludesAssets) {
+  const servedPath = `/ota/bundles/${path.basename(zipPath)}`;
+  if (new URL(release.bundleUrl).pathname !== servedPath || release.deltaManifest) {
+    throw new Error('Hosted OTA must point at its bundled ZIP and use whole-ZIP verification.');
+  }
+  const hostedZip = fs.readFileSync(path.join(distDir, servedPath.slice(1)));
+  if (sha256Hex(hostedZip) !== zipSha) throw new Error('Hosted OTA ZIP does not match the verified artifact.');
+}
 
-const compatAgainstOlderVersion = checkUpdateCompatibility(release, {
-  nativeVersion: APP_NATIVE_BASELINE.nativeVersion,
-  androidVersionCode: APP_NATIVE_BASELINE.androidVersionCode,
-  schemaVersion: APP_NATIVE_BASELINE.otaSchemaVersion,
-  currentVersion: '0.0.1',
-  channel,
-});
+const compatAgainstOlderVersion = checkUpdateCompatibility(release, verificationDevice);
 
 if (!release.requiresNativeApk && !compatAgainstOlderVersion.compatible) {
   throw new Error(`Compatibility gate failed: ${compatAgainstOlderVersion.message}`);

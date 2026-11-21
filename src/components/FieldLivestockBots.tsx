@@ -13,6 +13,11 @@ import {
   FieldLivestockFixedPoolController,
   type LivestockBotState,
 } from '../game/fieldLivestockPool';
+import {
+  clearFieldHorseCandidates,
+  getMountedFieldHorseId,
+  registerFieldHorseCandidate,
+} from '../game/horseRide';
 
 const POOL_DESKTOP = 63;
 const POOL_MOBILE = 35;
@@ -276,6 +281,8 @@ export function FieldLivestockBots() {
     };
 
     controller.update(focus.x, focus.z, dt, false);
+    clearFieldHorseCandidates();
+    const mountedFieldHorseId = getMountedFieldHorseId();
 
     for (let i = 0; i < controller.slots.length; i++) {
       const a = controller.slots[i].animal;
@@ -283,7 +290,7 @@ export function FieldLivestockBots() {
       const actorId = `field-livestock-${i}`;
       if (!refs || !refs.root) continue;
 
-      if (!a) {
+      if (!a || (a.species === 'horse' && a.id === mountedFieldHorseId)) {
         refs.root.visible = false;
         removeAvoidanceActor(actorId);
         continue;
@@ -328,6 +335,9 @@ export function FieldLivestockBots() {
       upsertAvoidanceActor(actorId, 'livestock', a.worldX, a.worldZ, a.yaw, radius, {
         speed: a.speed,
       });
+      if (a.species === 'horse') {
+        registerFieldHorseCandidate(a.id, a.worldX, a.worldZ, a.yaw, a.coatIndex, a.scale);
+      }
       refs.root.visible = true;
 
       refs.root.position.set(a.worldX, a.worldY, a.worldZ);

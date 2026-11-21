@@ -485,6 +485,48 @@ test('Phase 6.1 & 6.2 & 6.3: Fresh offline APK boots immediately, delta-updates 
   assert.equal(Buffer.from(resolvedGhost.bytes).toString('utf8'), 'GLB-GHOST-V2');
 });
 
+test('A same-version Android APK can install the hosted ZIP once and load the offline pack catalog', async () => {
+  const releaseData = makeManifestAndAssets('1.0.0', 'production', { 'models/canolia-character.glb': 'GLB' });
+  let release = makeReleaseDescriptor(releaseData.manifest, releaseData.manifestSha256, {
+    bundleIncludesAssets: true,
+    bundleUrl: 'https://mm-region-game.vercel.app/ota/bundles/mm-region-ota-1.0.0.zip',
+  });
+  const native = createMockNativeUpdater();
+  native.bridge.getVersionCode = async () => 3;
+  const fetcher = async (url: string) => {
+    if (url.endsWith('production.json')) return Response.json(release);
+    if (url.endsWith('asset-manifest.json')) return new Response(releaseData.manifestJson);
+    throw new Error(`ZIP upgrade must not separately download ${url}`);
+  };
+  const deps = {
+    isNativeAndroidPlatform: () => true,
+    nativeUpdater: native.bridge,
+    metaStore: createMemoryMetaStore(),
+    initialVersion: '1.0.0',
+    getOnline: () => true,
+    fetcher,
+  };
+  const before = new OtaCoordinator(deps);
+  assert.equal((await before.initialize()).androidVersionCode, 3);
+  assert.equal((await before.checkForUpdate()).phase, 'update_available');
+  assert.ok(before.getState().contentPacks.some(pack => pack.id === 'characters-core'));
+  assert.equal((await before.downloadAvailableUpdate()).phase, 'ready_to_restart');
+  assert.equal(before.assetCache.getActiveVersion(), null);
+  assert.equal((await before.applyUpdateNow()).applied, true);
+
+  const after = new OtaCoordinator(deps);
+  await after.initialize();
+  assert.equal((await after.checkForUpdate()).phase, 'up_to_date');
+  assert.ok(after.getState().contentPacks.some(pack => pack.id === 'characters-core'));
+  assert.equal(native.calls.filter(call => call.startsWith('download:')).length, 1);
+
+  release = { ...release, bundleSha256: sha256('changed ZIP for the same version') };
+  assert.equal((await after.checkForUpdate()).phase, 'update_available');
+  release = { ...release, assetManifestSha256: 'a'.repeat(64) };
+  await after.checkForUpdate();
+  assert.match(after.getState().lastError ?? '', /Asset manifest SHA-256/);
+});
+
 test('Phase 6.4 & 6.5: Interrupted download resumes cleanly without corrupting active assets or leaking stale files', async () => {
   const blobStore = new InMemoryAssetBlobStore();
   const metadataStore = new InMemoryAssetMetadataStore();
