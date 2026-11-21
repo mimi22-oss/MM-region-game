@@ -68,6 +68,14 @@ import {
   getFootballScoreboardSnapshot,
   subscribeFootballScoreboard,
 } from "./game/footballMatch";
+import {
+  FOOTBALL_CAMERA_PRESETS,
+  cycleFootballViewPreset,
+  enterFootballView,
+  exitFootballView,
+  getFootballViewState,
+  subscribeFootballView,
+} from "./game/footballBroadcastCam";
 import { FrameBudget } from "./components/FrameBudget";
 import { CinematicIntroController } from "./components/CinematicIntroController";
 import { IntroOverlay } from "./components/IntroOverlay";
@@ -509,6 +517,10 @@ function App() {
           skipIntro();
           return true;
         }
+        if (getFootballViewState().active) {
+          exitFootballView();
+          return true;
+        }
         if (teleportModeRef.current) {
           setTeleportPin(null);
           setTeleportScreenPos(null);
@@ -565,8 +577,25 @@ function App() {
     getFootballScoreboardSnapshot,
     getFootballScoreboardSnapshot,
   );
+  const footballView = useSyncExternalStore(
+    subscribeFootballView,
+    getFootballViewState,
+    getFootballViewState,
+  );
   const footballMatchActive = areFootballPlayersVisibleAtMinute(environment.minute);
   const activeFootballScore = nearFootballPitch ? footballScoreboard[nearFootballPitch.id] : null;
+  const charAtFootballPitch = useMemo(
+    () => findNearestFootballPitch(pos.x, pos.z),
+    [pos.x, pos.z],
+  );
+  const footballViewPitch = charAtFootballPitch ?? nearFootballPitch;
+
+  // Automatically exit Football TV View if evening/night starts or overlays open
+  useEffect(() => {
+    if (footballView.active && (!footballMatchActive || mapOpen || settingsOpen || loading)) {
+      exitFootballView();
+    }
+  }, [footballView.active, footballMatchActive, mapOpen, settingsOpen, loading]);
   const schoolClockMinute = effectiveSchoolMinute(environment.minute, environment.preferences.mode);
   const currentSchoolPeriod = resolveSchoolPeriod(environment.minute, environment.preferences.mode);
   const currentPeriodMeta = TIME_PERIODS.find((p) => p.id === environment.period);
@@ -665,16 +694,23 @@ function App() {
     [viewPos.x, viewPos.z],
   );
   currentLocIdRef.current = currentLoc.id;
-  const prevLocKey = useRef(`${currentLoc.id}:${currentLoc.subArea ?? ""}`);
+  const currentLocRef = useRef(currentLoc);
+  currentLocRef.current = currentLoc;
+  const currentLocKey = `${currentLoc.id}:${currentLoc.subArea ?? ""}`;
+  const prevLocKey = useRef(currentLocKey);
 
   useEffect(() => {
-    const key = `${currentLoc.id}:${currentLoc.subArea ?? ""}`;
-    if (prevLocKey.current === key) return;
-    prevLocKey.current = key;
-    setArrivalToast(currentLoc);
-    const timer = window.setTimeout(() => setArrivalToast(null), 3200);
+    if (prevLocKey.current === currentLocKey) return;
+    prevLocKey.current = currentLocKey;
+    setArrivalToast(currentLocRef.current);
+  }, [currentLocKey]);
+
+  // Always auto-hide location-toast briefly (2.2s), including after teleport or continuous walking
+  useEffect(() => {
+    if (!arrivalToast) return;
+    const timer = window.setTimeout(() => setArrivalToast(null), 2200);
     return () => window.clearTimeout(timer);
-  }, [currentLoc]);
+  }, [arrivalToast]);
 
   const rawGuidance = useMemo(
     () => homeGuidance(pos.x, pos.z),
@@ -750,6 +786,10 @@ function App() {
       if (e.code === "Escape") {
         if (getSubscriptionShopState().isOpen) {
           closeSubscriptionShop();
+          return;
+        }
+        if (getFootballViewState().active) {
+          exitFootballView();
           return;
         }
         if (getIntroState().active) {
@@ -1061,7 +1101,7 @@ function App() {
             <CinematicIntroController />
             <Player
               minute={environment.minute}
-              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || intro.active || subscriptionShop.isOpen || !visible} loading={loading}
+              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || intro.active || subscriptionShop.isOpen || footballView.active || !visible} loading={loading}
               deferGlb={(loading && shouldPlayIntro("entry", introSettings, { diagnosticDisabled: diagnosticConfig.enabled }) && !(introSettings.respectReducedMotion && isReducedMotionPreferred())) || (intro.active && isIntroHighAltitude(intro))}
               onCarStatus={carUpdate}
               onBalloonStatus={balloonUpdate}
@@ -1121,7 +1161,7 @@ function App() {
         flying={balloonStatus.riding}
         onFoot={!rideStatus.riding&&!carStatus.driving&&!rideStatus.crashed}
         canJump={!balloonStatus.riding && character === "cartoon" && !rideStatus.riding && !carStatus.driving && !rideStatus.crashed}
-        disabled={mapOpen || settingsOpen || loading || carStatus.driving || subscriptionShop.isOpen || teleportMode || !visible}
+        disabled={mapOpen || settingsOpen || loading || carStatus.driving || subscriptionShop.isOpen || teleportMode || footballView.active || !visible}
         onInteract={activateMobile}
       />}
       {!intro.active && (
@@ -1135,6 +1175,7 @@ function App() {
             balloonStatus.riding ||
             subscriptionShop.isOpen ||
             teleportMode ||
+            footballView.active ||
             !visible
           }
           onInteract={activateMobile}
@@ -1169,6 +1210,66 @@ function App() {
         />
       )}
 
+      {/* Near-Character "Football View" button when arriving at any football pitch */}
+      {!intro.active &&
+        !loading &&
+        !mapOpen &&
+        !settingsOpen &&
+        !teleportMode &&
+        !footballView.active &&
+        !carStatus.driving &&
+        !balloonStatus.riding &&
+        !rideStatus.riding &&
+        footballMatchActive &&
+        footballViewPitch && (
+          <button
+            type="button"
+            className="football-view-prompt"
+            aria-label="Football View (TV ကဲ့သို့ ဘောလုံးပွဲကြည့်မည်)"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={() => {
+              if (document.pointerLockElement) document.exitPointerLock();
+              resetMobileInput(mobileInput.current);
+              enterFootballView(footballViewPitch.id, "tv");
+            }}
+          >
+            <span className="football-view-prompt-icon" aria-hidden="true">📺</span>
+            <span className="football-view-prompt-text">
+              <strong>Football View</strong>
+              <small>TV ကဲ့သို့ ပွဲကြည့်မည်</small>
+            </span>
+          </button>
+        )}
+
+      {/* Live TV Broadcast Control Bar while inside Football View */}
+      {footballView.active && !loading && !mapOpen && !settingsOpen && (
+        <div
+          className="football-view-bar"
+          role="region"
+          aria-label="Football View TV ကင်မရာ ထိန်းချုပ်မှု"
+          onPointerDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="football-view-bar-angle"
+            onClick={() => cycleFootballViewPreset()}
+            title="ကင်မရာထောင့် ပြောင်းမည်"
+          >
+            {FOOTBALL_CAMERA_PRESETS.find((p) => p.id === footballView.preset)?.label ?? "📺 TV View"} · ပြောင်း
+          </button>
+          <button
+            type="button"
+            className="football-view-bar-exit"
+            onClick={() => exitFootballView()}
+            aria-label="Football View မှ ထွက်မည်"
+          >
+            ✕ ထွက်မည်
+          </button>
+        </div>
+      )}
+
       <SubscriptionProximityPrompt
         shop={subscriptionShop}
         visible={
@@ -1198,7 +1299,17 @@ function App() {
         {/* <p>{currentLoc.subtitle}</p> */}
       </header>
       {!intro.active && classroomNotice && !mapOpen && (
-        <div className="location-toast" role="status" aria-live="polite">
+        <div
+          className={
+            nearFootballPitch
+              ? "location-toast location-toast-below-football"
+              : nearSchoolHall
+                ? "location-toast location-toast-below-school"
+                : "location-toast"
+          }
+          role="status"
+          aria-live="polite"
+        >
           <span className="location-toast-icon">📚</span>
           <div className="location-toast-body">
             <strong>{classroomNotice.hallName}</strong>
@@ -1207,7 +1318,17 @@ function App() {
         </div>
       )}
       {!intro.active && arrivalToast && !classroomNotice && !mapOpen && (
-        <div className="location-toast" role="status" aria-live="polite">
+        <div
+          className={
+            nearFootballPitch
+              ? "location-toast location-toast-below-football"
+              : nearSchoolHall
+                ? "location-toast location-toast-below-school"
+                : "location-toast"
+          }
+          role="status"
+          aria-live="polite"
+        >
           <span className="location-toast-icon">📍</span>
           <div className="location-toast-body">
             <strong>{arrivalToast.title}</strong>

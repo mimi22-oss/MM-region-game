@@ -25,6 +25,15 @@ import {
   disposeFootballMatchAssetCache,
   getFootballMatchAssetCache,
 } from '../src/game/footballMatchAssets.ts';
+import {
+  computeFootballBroadcastTarget,
+  cycleFootballViewPreset,
+  enterFootballView,
+  exitFootballView,
+  getFootballViewState,
+  isFootballViewActive,
+  stepFootballBroadcastPose,
+} from '../src/game/footballBroadcastCam.ts';
 
 test('FootballMatchAssetCache is a strict Singleton reusing shared human anatomy with Red & Green kits', () => {
   const a = getFootballMatchAssetCache();
@@ -184,6 +193,64 @@ test('Football scoreboard HUD detects every football pitch, publishes live Red v
   assert.ok(notifications > 0, 'scoreboard notifies HUD subscribers on match updates');
 
   const mainSrc = fs.readFileSync(path.join(process.cwd(), 'src/main.tsx'), 'utf8');
+  const cssSrc = fs.readFileSync(path.join(process.cwd(), 'src/style.css'), 'utf8');
   assert.ok(mainSrc.includes('!nearSchoolHall && !nearFootballPitch && <ThreeGhostsMissionHud'), 'hides ghost HUD near football pitches');
   assert.ok(mainSrc.includes('football-score-hud'), 'renders football-score-hud in main.tsx');
+  assert.ok(mainSrc.includes('location-toast-below-football'), 'offsets location-toast below football-score-hud');
+  assert.ok(mainSrc.includes('setTimeout(() => setArrivalToast(null), 2200)'), 'auto-hides arrivalToast after 2.2s even after teleport or walking');
+  assert.ok(cssSrc.includes('.location-toast.location-toast-below-football'), 'defines non-overlapping desktop/mobile toast offset');
+});
+
+test('Football View TV-broadcast auto camera frames action, shots/saves, all 3 presets, and toggles cleanly', () => {
+  exitFootballView();
+  assert.equal(isFootballViewActive(), false);
+
+  enterFootballView('myothar-pitch', 'tv');
+  assert.equal(isFootballViewActive(), true);
+  assert.equal(getFootballViewState().pitchId, 'myothar-pitch');
+  assert.equal(getFootballViewState().preset, 'tv');
+
+  const p2 = cycleFootballViewPreset();
+  assert.equal(p2, 'close');
+  const p3 = cycleFootballViewPreset();
+  assert.equal(p3, 'goal-behind');
+  const p4 = cycleFootballViewPreset();
+  assert.equal(p4, 'tv');
+
+  // Verify framing on both large (Myothar) and compact (Kanbale) pitches across all 3 presets
+  for (const spec of [FOOTBALL_PITCH_SPECS[0], FOOTBALL_PITCH_SPECS[3]]) {
+    const match = createFootballMatchState(spec);
+    for (let i = 0; i < 60; i++) stepFootballMatch(match, 0.04);
+
+    const tvPose = computeFootballBroadcastTarget(match, 'tv');
+    const closePose = computeFootballBroadcastTarget(match, 'close');
+    const goalPose = computeFootballBroadcastTarget(match, 'goal-behind');
+
+    for (const pose of [tvPose, closePose, goalPose]) {
+      assert.ok(Number.isFinite(pose.camX) && Number.isFinite(pose.camY) && Number.isFinite(pose.camZ));
+      assert.ok(Number.isFinite(pose.lookX) && Number.isFinite(pose.lookY) && Number.isFinite(pose.lookZ));
+      assert.ok(pose.camY > spec.surfaceY + 2, 'broadcast camera stays elevated above pitch');
+    }
+
+    // Damping smoothly interpolates without jumping
+    const damped = stepFootballBroadcastPose(tvPose, closePose, 0.05, true);
+    assert.ok(Math.hypot(damped.camX - tvPose.camX, damped.camZ - tvPose.camZ) > 0);
+
+    // Shot toward goal tightens framing toward goal mouth
+    match.ball.isShot = true;
+    match.ball.shotTargetTeam = 'green';
+    match.ball.z = spec.halfLength * 0.6;
+    const shotPose = computeFootballBroadcastTarget(match, 'tv');
+    assert.ok(Number.isFinite(shotPose.lookZ));
+  }
+
+  exitFootballView();
+  assert.equal(isFootballViewActive(), false);
+
+  const root = process.cwd();
+  const mainSrc = fs.readFileSync(path.join(root, 'src/main.tsx'), 'utf8');
+  const playerSrc = fs.readFileSync(path.join(root, 'src/components/Player.tsx'), 'utf8');
+  assert.ok(mainSrc.includes('football-view-prompt'), 'renders near-character Football View button');
+  assert.ok(mainSrc.includes('football-view-bar'), 'renders TV broadcast controls bar');
+  assert.ok(playerSrc.includes('isFootballViewActive()'), 'Player yields camera ownership during Football View');
 });

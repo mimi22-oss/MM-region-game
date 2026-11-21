@@ -816,6 +816,16 @@ main.night-mode .map-haunt-note {
 	animation: locationToastIn 0.22s ease-out;
 }
 
+.location-toast.location-toast-below-football {
+	top: max(116px, calc(env(safe-area-inset-top, 0px) + 116px));
+	left: max(18px, calc(env(safe-area-inset-left, 0px) + 14px));
+}
+
+.location-toast.location-toast-below-school {
+	top: max(96px, calc(env(safe-area-inset-top, 0px) + 96px));
+	left: max(18px, calc(env(safe-area-inset-left, 0px) + 14px));
+}
+
 .location-toast-icon {
 	font-size: 18px;
 	line-height: 1;
@@ -2199,6 +2209,18 @@ main.night-mode .home-guidance-pill {
 		z-index: 14;
 		pointer-events: none;
 		box-sizing: border-box;
+	}
+
+	.location-toast.location-toast-below-football {
+		top: max(90px, calc(env(safe-area-inset-top, 0px) + 88px)) !important;
+		left: max(10px, calc(env(safe-area-inset-left, 0px) + 8px)) !important;
+		max-width: calc(100vw - 24px);
+	}
+
+	.location-toast.location-toast-below-school {
+		top: max(82px, calc(env(safe-area-inset-top, 0px) + 80px)) !important;
+		left: max(10px, calc(env(safe-area-inset-left, 0px) + 8px)) !important;
+		max-width: calc(100vw - 24px);
 	}
 
 	.location-toast-icon {
@@ -11101,5 +11123,154 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
     max-width: min(236px, calc(100vw - 196px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
     padding: 4px 7px;
     border-radius: 9px;
+  }
+
+  .location-toast.location-toast-below-football {
+    top: max(80px, calc(env(safe-area-inset-top, 0px) + 78px)) !important;
+  }
+
+  .location-toast.location-toast-below-school {
+    top: max(74px, calc(env(safe-area-inset-top, 0px) + 72px)) !important;
+  }
+}
+
+/* ==========================================================================
+   📺 Near-Character "Football View" Button & Live TV Broadcast Bar
+   ========================================================================== */
+.football-view-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: max(26px, calc(env(safe-area-inset-bottom, 0px) + 20px));
+  transform: translateX(-50%);
+  z-index: 16;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 8px 13px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(74, 222, 128, 0.72);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(6, 78, 59, 0.92));
+  color: #f8fafc;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42), 0 0 18px rgba(16, 185, 129, 0.28);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Myanmar", sans-serif;
+}
+
+.football-view-prompt:hover {
+  transform: translateX(-50%) translateY(-2px) scale(1.03);
+  border-color: #86efac;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 24px rgba(34, 197, 94, 0.4);
+}
+
+.football-view-prompt:active {
+  transform: translateX(-50%) scale(0.97);
+}
+
+.football-view-prompt-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.football-view-prompt-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+
+.football-view-prompt-text strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.football-view-prompt-text small {
+  font-size: 10px;
+  font-weight: 600;
+  color: #86efac;
+}
+
+.football-view-bar {
+  position: fixed;
+  left: 50%;
+  bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 14px));
+  transform: translateX(-50%);
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1.5px solid rgba(74, 222, 128, 0.5);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Myanmar", sans-serif;
+}
+
+.football-view-bar-angle {
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  background: rgba(14, 165, 233, 0.22);
+  color: #e0f2fe;
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.football-view-bar-exit {
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  background: rgba(239, 68, 68, 0.24);
+  color: #fecaca;
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+  .football-view-prompt {
+    bottom: max(30px, calc(env(safe-area-inset-bottom, 0px) + 22px));
+    padding: 6px 12px 6px 10px;
+    gap: 6px;
+  }
+
+  .football-view-prompt-icon {
+    font-size: 15px;
+  }
+
+  .football-view-prompt-text strong {
+    font-size: 11px;
+  }
+
+  .football-view-prompt-text small {
+    font-size: 9px;
+  }
+
+  .football-view-bar {
+    bottom: max(14px, calc(env(safe-area-inset-bottom, 0px) + 10px));
+    padding: 5px 8px;
+    gap: 6px;
+  }
+
+  .football-view-bar-angle,
+  .football-view-bar-exit {
+    padding: 6px 11px;
+    font-size: 11px;
+    min-height: 32px;
   }
 }

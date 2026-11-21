@@ -8,6 +8,7 @@ import {getPlayerDeathState,findProtectedRespawn,completePlayerRespawn,stepPlaye
 import {PLAYER_ON_FOOT_SPEED} from '../game/ghostPersonalities';
 import {PassengerBalloon} from './PassengerBalloon';
 import {areBalloonsVisibleAtMinute} from '../game/environmentTime';
+import {isFootballViewActive} from '../game/footballBroadcastCam';
 import {balloonRide,balloonInput,BALLOON_DECK,BALLOON_LAUNCH,clearBalloonInput,resetBalloon,balloonFlightFloor,balloonLanding,stepBalloon,balloonExitSpot,type BalloonStatus} from '../game/balloonRide';
 import {createJumpPose,prepareJump,stepJumpPose,jumpKneeBend} from '../game/humanJumpPose';
 import {createHumanJump,rememberJumpMomentum,startHumanJump,stepHumanJump,steerHumanJump} from '../game/humanJump';
@@ -506,10 +507,11 @@ export const Player = memo(function Player({
  },[gl,onLock,onMode,onTopDown,onZoom,mapOpen,controlsBlocked,teleportMode,teleportDragging]);
  useFrame(({clock},delta)=>{
   const introOwnsCamera=isIntroOwningCamera();
+  const footballViewOwnsCamera=isFootballViewActive();
   const introHighAlt=introOwnsCamera&&isIntroHighAltitude();
   // F03: bounded frame step up to 0.25s so low-FPS devices (<20 FPS) don't lose displacement
   const s=state.current;const dt=loading?0:Math.min(delta,0.25);
-  if(introOwnsCamera){s.keys.clear();s.panning=false;s.dragging=false;}
+  if(introOwnsCamera||footballViewOwnsCamera){s.keys.clear();s.panning=false;s.dragging=false;}
   const ground=sceneGround(scene,clock.elapsedTime);
   const footHeightCeiling=!balloonRide.riding&&!currentCar()&&!motorcycleRide.riding?(jump.current.airborne?jump.current.y+0.5:playerGroundYRef.current+1.15):undefined;
   const height=(x:number,z:number)=>ground.height(x,z,footHeightCeiling);
@@ -1033,7 +1035,7 @@ export const Player = memo(function Player({
    tmpEuler.current.set(car.pitch,car.yaw,car.roll,'YXZ');
    target.current.set(DRIVER_EYE[0]*car.size,DRIVER_EYE[1]*car.size,DRIVER_EYE[2]*car.size).applyEuler(tmpEuler.current).add(tmpVecA.current.set(car.x,car.groundY,car.z));
   }
-  if(!introOwnsCamera){
+  if(!introOwnsCamera&&!footballViewOwnsCamera){
    viewFocusScratch.current.x=target.current.x;viewFocusScratch.current.z=target.current.z;
    camera.userData.viewFocus=viewFocusScratch.current;
    const viewPitch=s.pitch+(car&&s.first?car.pitch:0);

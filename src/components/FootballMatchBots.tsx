@@ -5,6 +5,12 @@ import { mobileQuality } from '../game/sceneBudget';
 import { areFootballPlayersVisibleAtMinute } from '../game/environmentTime';
 import { getFootballMatchAssetCache } from '../game/footballMatchAssets';
 import {
+  computeFootballBroadcastTarget,
+  getFootballViewState,
+  stepFootballBroadcastPose,
+  type FootballCameraPose,
+} from '../game/footballBroadcastCam';
+import {
   FOOTBALL_BALL_POOL_SIZE,
   FOOTBALL_PLAYER_POOL_DESKTOP,
   FOOTBALL_PLAYER_POOL_MOBILE,
@@ -454,6 +460,9 @@ export function FootballMatchBots({
       shadow: null,
     })),
   );
+  const broadcastPoseRef = useRef<FootballCameraPose | null>(null);
+  const broadcastKeyRef = useRef<string | null>(null);
+  const broadcastFocusScratch = useRef({ x: 0, z: 0 });
 
   // Keep refs array length synchronized if poolSize ever changes
   useEffect(() => {
@@ -463,8 +472,10 @@ export function FootballMatchBots({
   }, [poolSize]);
 
   useFrame(({ camera, clock }, dt) => {
-    // Hide all football players & balls strictly at night (ညပိုင်း hide)
+    // Hide all football players & balls strictly at night/evening
     if (!visibleAtTime) {
+      broadcastPoseRef.current = null;
+      broadcastKeyRef.current = null;
       for (let i = 0; i < playerRefs.current.length; i++) {
         const slot = playerRefs.current[i];
         if (slot?.root) slot.root.visible = false;
@@ -476,13 +487,49 @@ export function FootballMatchBots({
       return;
     }
 
-    const focus = (camera.userData.viewFocus as { x: number; z: number } | undefined) ?? {
-      x: camera.position.x,
-      z: camera.position.z,
-    };
+    const fbView = getFootballViewState();
+    const viewedMatch =
+      fbView.active && fbView.pitchId
+        ? controller.matches.find((m) => m.spec.id === fbView.pitchId) ?? null
+        : null;
+
+    const focus = viewedMatch
+      ? { x: viewedMatch.spec.centerX, z: viewedMatch.spec.centerZ }
+      : (camera.userData.viewFocus as { x: number; z: number } | undefined) ?? {
+          x: camera.position.x,
+          z: camera.position.z,
+        };
 
     // Balloons are hidden during daytime, so the entire Myothar pitch center stays open for football.
     controller.update(focus.x, focus.z, dt, activeRegions, null);
+
+    // Apply live TV-Broadcast auto camera ("Football View") right after simulation update for zero lag!
+    if (viewedMatch) {
+      const key = `${viewedMatch.spec.id}:${fbView.preset}`;
+      const switched = broadcastKeyRef.current !== key;
+      broadcastKeyRef.current = key;
+      const targetPose = computeFootballBroadcastTarget(viewedMatch, fbView.preset);
+      const fastAction =
+        viewedMatch.ball.isShot ||
+        viewedMatch.phase === 'goal-celebration' ||
+        viewedMatch.phase === 'gk-hold' ||
+        viewedMatch.phase === 'throw-in';
+      const nextPose = stepFootballBroadcastPose(
+        switched ? null : broadcastPoseRef.current,
+        targetPose,
+        dt,
+        fastAction,
+      );
+      broadcastPoseRef.current = nextPose;
+      camera.position.set(nextPose.camX, nextPose.camY, nextPose.camZ);
+      camera.lookAt(nextPose.lookX, nextPose.lookY, nextPose.lookZ);
+      broadcastFocusScratch.current.x = nextPose.lookX;
+      broadcastFocusScratch.current.z = nextPose.lookZ;
+      camera.userData.viewFocus = broadcastFocusScratch.current;
+    } else if (broadcastPoseRef.current !== null) {
+      broadcastPoseRef.current = null;
+      broadcastKeyRef.current = null;
+    }
 
     const elapsed = clock.elapsedTime;
 
