@@ -1,5 +1,7 @@
 import { memo } from 'react';
 import { Block as Box } from '../../Primitives.tsx';
+import { SchoolClassroomHall } from '../../SchoolClassroomHall.tsx';
+import { WALKIN_SCHOOL_HALL_BY_ID } from '../../../game/schoolClassrooms.ts';
 import type { KanbaleBuildingData } from '../../../data/villages/kanbale';
 
 export interface KanbaleSchoolProps {
@@ -36,107 +38,33 @@ export const KanbaleSchool = memo(function KanbaleSchool({
     onSelect?.(building.id);
   };
 
-  const wallColor = selected ? '#fef08a' : '#f8fafc';
-  const roofColor = selected ? '#38bdf8' : '#1b4332'; // Classic Myanmar School Emerald Green
+  const mainHallSpec = WALKIN_SCHOOL_HALL_BY_ID.get('kanbale-school-main-hall')!;
+  const leftWingSpec = WALKIN_SCHOOL_HALL_BY_ID.get('kanbale-school-left-wing')!;
+  const rightWingSpec = WALKIN_SCHOOL_HALL_BY_ID.get('kanbale-school-right-wing')!;
 
   return (
-    <group
-      position={[building.x, 0, building.z]}
-      rotation={[0, rot, 0]}
-      name="kanbale-custom-school"
-      onClick={handleClick}
-      userData={{
-        id: building.id,
-        osmId: building.osmId,
-        custom: true,
-        name: 'ကံပုလဲကျောင်း',
-      }}
-    >
-      {/* ======================================================== */}
-      {/* ၀။ ကျောင်းဝင်း ပတ်လည် မြေခင်း (School Compound Ground) */}
-      {/* ======================================================== */}
-      <Box x={6} y={0.03} z={-16} w={42} h={0.06} d={46} color="#d1d5db" walkable={true} />
+    <group name="kanbale-custom-school-root">
+      {/* ၁–၃။ အိမ် ၂၀ စာ ကျယ်ဝန်းပြီး စာသင်ခန်း ၁၃ ခန်း ခွဲခြားပါဝင်သော Walk-In စာသင်ဆောင် ၃ ဆောင် */}
+      <SchoolClassroomHall spec={mainHallSpec} selected={selected} onClick={handleClick} />
+      <SchoolClassroomHall spec={leftWingSpec} selected={selected} onClick={handleClick} />
+      <SchoolClassroomHall spec={rightWingSpec} selected={selected} onClick={handleClick} />
 
-      {/* ======================================================== */}
-      {/* ၁။ ပင်မ စာသင်ဆောင်ကြီး (Main Classroom Hall) */}
-      {/* ======================================================== */}
-      <group position={[0, 0, 0]}>
-        {/* အောက်ခံ ကွန်ကရစ်ခုံ */}
-        <Box x={0} y={0.2} z={0} w={27} h={0.4} d={10} color="#e2e8f0" walkable={true} />
-
-        {/* ပင်မနံရံများ */}
-        <Box x={0} y={2.1} z={0} w={25} h={3.4} d={8.4} color={wallColor} />
-
-        {/* အမိုးကြီး (Emerald Green Gable Roof with Eaves) */}
-        <Box x={0} y={4.3} z={0} w={26.6} h={0.45} d={9.8} color={roofColor} />
-        <Box x={0} y={5.0} z={0} w={23.5} h={1.0} d={7.2} color={roofColor} />
-        <Box x={0} y={5.7} z={0} w={20.0} h={0.5} d={4.8} color={roofColor} />
-
-        {/* မျက်နှာစာ ဝရန်တာ တိုင်လုံးဖြူများ (Front Veranda Colonnade) */}
-        {[-11, -7.5, -4, 0, 4, 7.5, 11].map((colX) => (
-          <Box key={`main-col-${colX}`} x={colX} y={2.0} z={-4.4} w={0.4} h={3.2} d={0.4} color="#ffffff" />
-        ))}
-
-        {/* ဝရန်တာ အမိုးစွန်း (Porch Eave) */}
-        <Box x={0} y={3.8} z={-4.5} w={25.4} h={0.25} d={1.4} color={roofColor} />
-
-        {/* ပြတင်းပေါက်တန်းများ (Louvered Classroom Windows) */}
-        {[-9, -5.5, -2, 2, 5.5, 9].map((winX) => (
-          <group key={`main-win-${winX}`}>
-            <Box x={winX} y={2.1} z={-4.22} w={1.6} h={1.8} d={0.08} color="#0284c7" />
-            <Box x={winX} y={2.1} z={-4.24} w={1.75} h={0.08} d={0.12} color="#ffffff" />
-          </group>
-        ))}
-
-        {/* အလယ် အဝင်မုခ်ဦးနှင့် ကျောင်းဆိုင်းဘုတ်ကြီး (Central Entrance & School Signboard) */}
-        <group position={[0, 0, -4.6]}>
-          <Box x={0} y={2.0} z={0} w={2.4} h={3.2} d={0.1} color="#0f172a" />
-          {/* Signboard Panel */}
-          <Box x={0} y={4.2} z={-0.1} w={12.0} h={1.1} d={0.16} color="#14532d" />
-          {/* Signboard Gold Trim Frame */}
-          <Box x={0} y={4.2} z={-0.12} w={12.2} h={1.25} d={0.06} color="#d97706" />
-          {/* Inner Text Band */}
-          <Box x={0} y={4.2} z={-0.2} w={11.2} h={0.75} d={0.04} color="#fef08a" />
-        </group>
-      </group>
-
-      {/* ======================================================== */}
-      {/* ၂။ လက်ဝဲဘက် စာသင်ဆောင် (Left Classroom Wing) */}
-      {/* ======================================================== */}
-      <group position={[-8.5, 0, -7]}>
-        {/* အောက်ခံခုံ */}
-        <Box x={0} y={0.18} z={0} w={7.6} h={0.36} d={11} color="#e2e8f0" walkable={true} />
-        {/* နံရံ */}
-        <Box x={0} y={1.9} z={0} w={6.8} h={3.1} d={10} color={wallColor} />
-        {/* အမိုး */}
-        <Box x={0} y={3.8} z={0} w={7.8} h={0.4} d={11} color={roofColor} />
-        <Box x={0} y={4.4} z={0} w={5.8} h={0.8} d={9.5} color={roofColor} />
-        {/* ပြတင်းပေါက်များ (Windows facing courtyard) */}
-        {[-3, 0, 3].map((wZ) => (
-          <Box key={`left-win-${wZ}`} x={3.42} y={1.9} z={wZ} w={0.08} h={1.5} d={1.4} color="#0284c7" />
-        ))}
-        {/* အဝင်တံခါး */}
-        <Box x={3.42} y={1.4} z={-4.5} w={0.1} h={2.2} d={1.4} color="#334155" />
-      </group>
-
-      {/* ======================================================== */}
-      {/* ၃။ လက်ယာဘက် စာသင်ဆောင် (Right Classroom Wing) */}
-      {/* ======================================================== */}
-      <group position={[14, 0, -7]}>
-        {/* အောက်ခံခုံ */}
-        <Box x={0} y={0.18} z={0} w={7.6} h={0.36} d={11} color="#e2e8f0" walkable={true} />
-        {/* နံရံ */}
-        <Box x={0} y={1.9} z={0} w={6.8} h={3.1} d={10} color={wallColor} />
-        {/* အမိုး */}
-        <Box x={0} y={3.8} z={0} w={7.8} h={0.4} d={11} color={roofColor} />
-        <Box x={0} y={4.4} z={0} w={5.8} h={0.8} d={9.5} color={roofColor} />
-        {/* ပြတင်းပေါက်များ (Windows facing courtyard) */}
-        {[-3, 0, 3].map((wZ) => (
-          <Box key={`right-win-${wZ}`} x={-3.42} y={1.9} z={wZ} w={0.08} h={1.5} d={1.4} color="#0284c7" />
-        ))}
-        {/* အဝင်တံခါး */}
-        <Box x={-3.42} y={1.4} z={-4.5} w={0.1} h={2.2} d={1.4} color="#334155" />
-      </group>
+      <group
+        position={[building.x, 0, building.z]}
+        rotation={[0, rot, 0]}
+        name="kanbale-custom-school"
+        onClick={handleClick}
+        userData={{
+          id: building.id,
+          osmId: building.osmId,
+          custom: true,
+          name: 'ကံပုလဲကျောင်း',
+        }}
+      >
+        {/* ======================================================== */}
+        {/* ၀။ ကျောင်းဝင်း ပတ်လည် မြေခင်း (School Compound Ground) */}
+        {/* ======================================================== */}
+        <Box x={2.5} y={0.03} z={-16} w={46} h={0.06} d={48} color="#d1d5db" walkable={true} />
 
       {/* ======================================================== */}
       {/* ၄။ အလယ်တွင် အလံအလေးပြုသည့်နေရာ (Flag Ceremony Plaza) */}
@@ -244,6 +172,7 @@ export const KanbaleSchool = memo(function KanbaleSchool({
             <Box x={0.15} y={1.35} z={0} w={0.3} h={0.25} d={0.02} color="#ef4444" />
           </group>
         ))}
+      </group>
       </group>
     </group>
   );

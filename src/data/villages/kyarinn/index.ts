@@ -43,23 +43,21 @@ export const kyarInnLanes = [3675, 3710, 3745, 3780, 3815, 3850, 3885, 3920, 395
 // ရွာတွင်း မြောက်-တောင် လမ်းသွယ်များ (အနောက်ဘက် ၆ လမ်း၊ အရှေ့ဘက် ၄ လမ်း)
 export const kyarInnCrossLanes = [-210, -172, -134, -96, -58, 56, 98, 140, 182];
 
-// AH1 အနောက်ဘက်ခြမ်း အိမ်အကွက် ၆ ကွက်
+// AH1 အနောက်ဘက်ခြမ်း အိမ်အကွက် ၅ ကွက် (Spacious Farmhouse-style Chin compounds: 12.4m x 15.5m lots cleanly clear of AH1 & every cross-lane!)
 const westBlockCols = [
-	[-22, -32],
-	[-48, -60],
-	[-86, -98],
-	[-124, -136],
-	[-162, -174],
-	[-200, -212],
+	[-24, -44],
+	[-70.5, -87.0],
+	[-108.5, -125.0],
+	[-146.5, -163.0],
+	[-184.5, -201.0],
 ];
 
-// AH1 အရှေ့ဘက်ခြမ်း အိမ်အကွက် ၄ ကွက်
+// AH1 အရှေ့ဘက်ခြမ်း အိမ်အကွက် ၄ ကွက် (Spacious Farmhouse-style Chin compounds cleanly clear of AH1 & every cross-lane!)
 const eastBlockCols = [
-	[22, 32],
-	[50, 62],
-	[92, 104],
-	[134, 146],
-	[176, 188],
+	[25, 45],
+	[69.5, 88.0],
+	[111.5, 130.0],
+	[153.5, 172.0],
 ];
 
 const houses: House[] = [];
@@ -87,72 +85,85 @@ export type KyarInnLandmarkBuilding = House & {
 
 export const kyarInnLandmarkBuildings: KyarInnLandmarkBuilding[] = [
 	// -------------------------------------------------------------------------
-	// ၁။ အလက ကြာအင်း (Kyarinn middle school) အဆောက်အအုံများ (ဂြိုဟ်တုပုံအတိုင်း)
+	// ၁။ အလက ကြာအင်း (Kyarinn middle school) အဆောက်အအုံများ (အိမ် ၂၀+ စာ ကျယ်ဝန်းသော စာသင်ခန်း ၂၂ ခန်းပါ ကျောင်းဝင်းကြီး)
 	// -------------------------------------------------------------------------
-	// မြောက်ဘက် စာသင်ဆောင် ၁ (သွပ်ပြာရောင်အမိုးရှည်)
+	// မြောက်ဘက် စာသင်ဆောင် ၁ (KG, G-1, G-2, G-3 — v=3815 လမ်းနှင့် ကင်းလွတ်စွာ v=3824 တွင် ချိန်ညှိထားသည်)
 	{
 		id: 'ki-school-north-hall-1',
 		name: 'အလက ကြာအင်း မြောက်ဘက်ဆောင် ၁',
 		kind: 'school-hall',
 		height: 6.5,
-		...toWorld(50, 3816),
-		width: 32,
-		depth: 9.5,
+		...toWorld(52, 3824),
+		width: 34,
+		depth: 10.5,
 		color: '#e4decb',
 		rotation: angle,
 		roof: '#7fa2b2',
 	},
-	// မြောက်ဘက် စာသင်ဆောင် ၂ (သွပ်ပြာရောင်အမိုးရှည်)
+	// မြောက်ဘက် စာသင်ဆောင် ၂ (G-4, G-5, G-6, G-7)
 	{
 		id: 'ki-school-north-hall-2',
 		name: 'အလက ကြာအင်း မြောက်ဘက်ဆောင် ၂',
 		kind: 'school-hall',
 		height: 6.5,
-		...toWorld(86, 3816),
+		...toWorld(89, 3824),
 		width: 34,
-		depth: 9.5,
+		depth: 10.5,
 		color: '#e4decb',
 		rotation: angle,
 		roof: '#7fa2b2',
 	},
-	// မြောက်ဘက် အနောက်စွန်း ရုံးခန်းဆောင် (အညိုရောင်အမိုး)
+	// မြောက်ဘက် အနောက်စွန်း ရုံးခန်းဆောင် (ကျောင်းအုပ်ရုံးခန်း + ဆရာနားနေခန်း)
 	{
 		id: 'ki-school-office',
 		name: 'အလက ကြာအင်း ရုံးခန်းဆောင်',
 		kind: 'school-office',
 		height: 5.5,
-		...toWorld(25, 3816),
+		...toWorld(25, 3824),
 		width: 14,
-		depth: 8,
+		depth: 10.5,
 		color: '#dad3c2',
 		rotation: angle,
 		roof: '#984a3b',
 	},
-	// အရှေ့ဘက် စာသင်ဆောင်ကြီး (မြေနီရောင်/ကြက်သွေးရောင် အမိုး)
+	// အရှေ့ဘက် စာသင်ဆောင်ကြီး (G-8A, G-8B, G-9A, G-9B, စာကြည့်တိုက်)
 	{
 		id: 'ki-school-east-hall',
 		name: 'အလက ကြာအင်း အရှေ့ဘက် ပင်မဆောင်',
 		kind: 'school-wing',
 		height: 6.5,
-		...toWorld(116, 3848),
-		width: 11,
-		depth: 42,
+		...toWorld(116, 3851),
+		width: 10.5,
+		depth: 38,
 		color: '#e5dfd2',
 		rotation: angle,
 		roof: '#963e32',
 	},
-	// အရှေ့ဘက် စာသင်ဆောင် တောင်ဘက်တိုးချဲ့ဆောင် (မြေနီရောင်အမိုး)
+	// အရှေ့ဘက် စာသင်ဆောင် တောင်ဘက်တိုးချဲ့ဆောင် (သိပ္ပံခန်း + ခန်းမ)
 	{
 		id: 'ki-school-east-wing',
 		name: 'အလက ကြာအင်း အရှေ့တောင်ဆောင်',
 		kind: 'school-wing',
 		height: 6,
-		...toWorld(116, 3880),
-		width: 11,
-		depth: 22,
+		...toWorld(116, 3882),
+		width: 10.5,
+		depth: 20,
 		color: '#e5dfd2',
 		rotation: angle,
 		roof: '#963e32',
+	},
+	// တောင်ဘက် စာသင်ဆောင်ကြီး (G-10A, G-10B, G-11A, G-11B, ကွန်ပျူတာခန်း — v=3885 လမ်းနှင့် ကင်းလွတ်သည်)
+	{
+		id: 'ki-school-south-hall',
+		name: 'အလက ကြာအင်း တောင်ဘက် စာသင်ဆောင်',
+		kind: 'school-hall',
+		height: 6.5,
+		...toWorld(62, 3876),
+		width: 44,
+		depth: 10.5,
+		color: '#e4decb',
+		rotation: angle,
+		roof: '#2f6a4f',
 	},
 
 	// -------------------------------------------------------------------------
@@ -574,25 +585,78 @@ export const kyarInnLakeTrees: TreePlot[] = [
 	radius: 0.9,
 }));
 
-// လူနေအိမ်ခြေများ ထည့်သွင်းခြင်း (ကျောင်းဝင်းနှင့် ဘုရားကျောင်းနေရာများ ချန်လှပ်သည်)
+const CHIN_COMPOUND_SIDE_HALF = 7.5 / 2 + 2.45;
+const CHIN_COMPOUND_BACK_HALF = 6.5 / 2 + 2.55;
+const CHIN_COMPOUND_FRONT_HALF = 6.5 / 2 + 6.45;
+const COS_ANGLE = Math.cos(angle);
+const SIN_ANGLE = Math.sin(angle);
+
+function worldToUV(x: number, z: number): { u: number; v: number } {
+	return {
+		u: x * COS_ANGLE - z * SIN_ANGLE,
+		v: x * SIN_ANGLE + z * COS_ANGLE,
+	};
+}
+
+const kyarInnReservedBoxes = [
+	...kyarInnLandmarkBuildings.map(b => {
+		const { u, v } = worldToUV(b.x, b.z);
+		const pad = b.kind.startsWith('church-') ? 3.5 : 2.5;
+		return {
+			uMin: u - b.width / 2 - pad,
+			uMax: u + b.width / 2 + pad,
+			vMin: v - b.depth / 2 - pad,
+			vMax: v + b.depth / 2 + pad,
+		};
+	}),
+	...kyarInnLandmarks.map(m => {
+		const { u, v } = worldToUV(m.x, m.z);
+		return {
+			uMin: u - m.width / 2 - 2.5,
+			uMax: u + m.width / 2 + 2.5,
+			vMin: v - m.depth / 2 - 2.5,
+			vMax: v + m.depth / 2 + 2.5,
+		};
+	}),
+	...kyarInnLakePonds.map(p => ({
+		uMin: p.u - p.width / 2 - 2.0,
+		uMax: p.u + p.width / 2 + 2.0,
+		vMin: p.v - p.depth / 2 - 2.0,
+		vMax: p.v + p.depth / 2 + 2.0,
+	})),
+];
+
+function overlapsReservedZone(u: number, v: number): boolean {
+	// West houses (u < 0) face East (+u); East houses (u > 0) face West (-u)
+	const uMin = u < 0 ? u - CHIN_COMPOUND_BACK_HALF : u - CHIN_COMPOUND_FRONT_HALF;
+	const uMax = u < 0 ? u + CHIN_COMPOUND_FRONT_HALF : u + CHIN_COMPOUND_BACK_HALF;
+	const vMin = v - CHIN_COMPOUND_SIDE_HALF;
+	const vMax = v + CHIN_COMPOUND_SIDE_HALF;
+	for (const box of kyarInnReservedBoxes) {
+		if (uMax > box.uMin && uMin < box.uMax && vMax > box.vMin && vMin < box.vMax) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// လူနေအိမ်ခြေများ ထည့်သွင်းခြင်း (ကျယ်ဝန်းသော ချင်းရိုးရာ အိမ်ဝန်းခြံများ — ကျောင်းဝင်း၊ ဘုရားကျောင်း နှင့် ရေကန်နေရာများ ချန်လှပ်သည်)
 for (let rowBlock = 0; rowBlock < kyarInnLanes.length - 1; rowBlock++) {
 	const baseV = kyarInnLanes[rowBlock];
-	for (const offsetV of [11, 23]) {
+	const nextV = kyarInnLanes[rowBlock + 1];
+	const rowOffsets = nextV - baseV >= 34 ? [9.5, 25.5] : [8.5, 21.5];
+
+	for (const offsetV of rowOffsets) {
 		const v = baseV + offsetV;
 
-		// အနောက်ဘက်ခြမ်း အိမ်များ
+		// အနောက်ဘက်ခြမ်း ချင်းအိမ်များ
 		for (let colBlock = 0; colBlock < westBlockCols.length; colBlock++) {
-			// Kyarinn Baptist Church နေရာ (u = -60, v = 3745)
-			if (v >= 3735 && v <= 3760 && colBlock === 1) continue;
-			// IBC Kyarinn နေရာ (u = -76, v = 3920)
-			if (v >= 3910 && v <= 3935 && (colBlock === 1 || colBlock === 2)) continue;
-			// CJC Church နေရာ (u = -146, v = 3890)
-			if (v >= 3880 && v <= 3905 && colBlock === 3) continue;
 			// ရွာအစွန် ကွေးဝိုက်ချက်များ
-			if (rowBlock === 0 && colBlock >= 4) continue;
-			if (rowBlock >= 9 && colBlock >= 5) continue;
+			if (rowBlock === 0 && colBlock >= 3) continue;
+			if (rowBlock >= 9 && colBlock >= 4) continue;
 
 			for (const u of westBlockCols[colBlock]) {
+				if (overlapsReservedZone(u, v)) continue;
 				const i = houses.length;
 				houses.push({
 					id: `kyarinn-h${i + 1}`,
@@ -607,17 +671,14 @@ for (let rowBlock = 0; rowBlock < kyarInnLanes.length - 1; rowBlock++) {
 			}
 		}
 
-		// အရှေ့ဘက်ခြမ်း အိမ်များ
+		// အရှေ့ဘက်ခြမ်း ချင်းအိမ်များ
 		for (let colBlock = 0; colBlock < eastBlockCols.length; colBlock++) {
-			// အလက ကြာအင်း ကျောင်းဝင်းနှင့် ကွင်းပြင်ကြီး နေရာ (u = 18..126, v = 3810..3895)
-			if (v >= 3810 && v <= 3895 && colBlock <= 2) continue;
-			// St. Peter Catholic Church နေရာ (u = 58, v = 3945)
-			if (v >= 3935 && v <= 3960 && (colBlock === 1 || colBlock === 2)) continue;
 			// ရွာအစွန်ပိုင်းများ
 			if (rowBlock === 0 && colBlock >= 3) continue;
-			if (rowBlock >= 9 && colBlock >= 4) continue;
+			if (rowBlock >= 9 && colBlock >= 3) continue;
 
 			for (const u of eastBlockCols[colBlock]) {
+				if (overlapsReservedZone(u, v)) continue;
 				const i = houses.length;
 				houses.push({
 					id: `kyarinn-h${i + 1}`,

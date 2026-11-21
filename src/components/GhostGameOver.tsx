@@ -58,90 +58,94 @@ export function GhostGameOver() {
       <section className="game-over-card">
         <div className="game-over-top-glow" aria-hidden="true" />
 
-        {/* Contextual Emblem */}
-        <div className="game-over-emblem" aria-hidden="true">
-          <div className="game-over-emblem-ring" />
-          <span className="game-over-emblem-icon">
-            {isBotFight ? '🥊' : isZombie ? '☣️' : '👻'}
-          </span>
+        <div className="game-over-hero">
+          {/* Contextual Emblem */}
+          <div className="game-over-emblem" aria-hidden="true">
+            <div className="game-over-emblem-ring" />
+            <span className="game-over-emblem-icon">
+              {isBotFight ? '🥊' : isZombie ? '☣️' : '👻'}
+            </span>
+          </div>
+
+          {/* Status Pill */}
+          <div className="game-over-badge">{badgeText}</div>
+
+          {/* Title & Subtitle */}
+          <h1 className="game-over-title">GAME OVER</h1>
+          <div className="game-over-subtitle">{subtitle}</div>
         </div>
-
-        {/* Status Pill */}
-        <div className="game-over-badge">{badgeText}</div>
-
-        {/* Title & Subtitle */}
-        <h1 className="game-over-title">GAME OVER</h1>
-        <div className="game-over-subtitle">{subtitle}</div>
 
         <div className="game-over-divider" aria-hidden="true" />
 
-        {/* Message */}
-        <p className="game-over-message">{message}</p>
+        <div className="game-over-body">
+          {/* Message */}
+          <p className="game-over-message">{message}</p>
 
-        {/* Contextual Summary Stats */}
-        <div className="game-over-stats" aria-label="Battle Summary">
-          {isBotFight && fight ? (
-            <>
-              <div className="game-over-stat">
-                <span className="game-over-stat-label">ပြိုင်ဘက်</span>
-                <strong className="game-over-stat-value">{fight.targetLabel}</strong>
-              </div>
-              <div className="game-over-stat">
-                <span className="game-over-stat-label">မိမိ HP</span>
-                <strong className="game-over-stat-value is-danger">0 / {fight.playerMaxHp}</strong>
-              </div>
-              <div className="game-over-stat">
-                <span className="game-over-stat-label">ထိချက်</span>
-                <strong className="game-over-stat-value">{fight.hitCount} ချက်</strong>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="game-over-stat">
-                <span className="game-over-stat-label">အခြေအနေ</span>
-                <strong className="game-over-stat-value is-danger">
-                  {isZombie ? 'Life 0 / 3' : 'Caught'}
-                </strong>
-              </div>
-              <div className="game-over-stat">
-                <span className="game-over-stat-label">ပြန်စမည့်နေရာ</span>
-                <strong className="game-over-stat-value">🏡 အိမ် Safe Zone</strong>
-              </div>
-            </>
-          )}
-        </div>
+          {/* Contextual Summary Stats */}
+          <div className="game-over-stats" aria-label="Battle Summary">
+            {isBotFight && fight ? (
+              <>
+                <div className="game-over-stat">
+                  <span className="game-over-stat-label">ပြိုင်ဘက်</span>
+                  <strong className="game-over-stat-value">{fight.targetLabel}</strong>
+                </div>
+                <div className="game-over-stat">
+                  <span className="game-over-stat-label">မိမိ HP</span>
+                  <strong className="game-over-stat-value is-danger">0 / {fight.playerMaxHp}</strong>
+                </div>
+                <div className="game-over-stat">
+                  <span className="game-over-stat-label">ထိချက်</span>
+                  <strong className="game-over-stat-value">{fight.hitCount} ချက်</strong>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="game-over-stat">
+                  <span className="game-over-stat-label">အခြေအနေ</span>
+                  <strong className="game-over-stat-value is-danger">
+                    {isZombie ? 'Life 0 / 3' : 'Caught'}
+                  </strong>
+                </div>
+                <div className="game-over-stat">
+                  <span className="game-over-stat-label">ပြန်စမည့်နေရာ</span>
+                  <strong className="game-over-stat-value">🏡 အိမ် Safe Zone</strong>
+                </div>
+              </>
+            )}
+          </div>
 
-        {/* Primary Action CTA */}
-        <button
-          type="button"
-          className="game-over-restart-btn"
-          disabled={isRespawning}
-          onClick={requestPlayerRespawn}
-        >
-          {isRespawning ? (
-            <span className="game-over-spinner" aria-hidden="true" />
-          ) : (
-            <svg
-              className="game-over-btn-icon"
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
-              <path d="M3 3v5h5" />
-            </svg>
-          )}
-          <span>{btnLabel}</span>
-        </button>
+          {/* Primary Action CTA */}
+          <button
+            type="button"
+            className="game-over-restart-btn"
+            disabled={isRespawning}
+            onClick={requestPlayerRespawn}
+          >
+            {isRespawning ? (
+              <span className="game-over-spinner" aria-hidden="true" />
+            ) : (
+              <svg
+                className="game-over-btn-icon"
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+            )}
+            <span>{btnLabel}</span>
+          </button>
 
-        <div className="game-over-footer-note">
-          HP နှင့် Life အပြည့်ဖြင့် အိမ်အစနေရာမှ ပြန်လည်စတင်ပါမည်
+          <div className="game-over-footer-note">
+            HP နှင့် Life အပြည့်ဖြင့် အိမ်အစနေရာမှ ပြန်လည်စတင်ပါမည်
+          </div>
         </div>
       </section>
     </div>

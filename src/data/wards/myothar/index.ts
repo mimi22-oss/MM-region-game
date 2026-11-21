@@ -29,7 +29,7 @@ export const myotharWard = {
 	shortName: 'မြို့သာရပ်ကွက်',
 	currentArea: area5.name,
 	areas: [area5, myotharCenterMeta, kalayArea1Meta],
-	size: 8600,
+	size: 16000,
 	spawn: { x: farmhouse.x + 2 * Math.cos(farmhouse.rotation) + 1.8 * Math.sin(farmhouse.rotation), z: farmhouse.z - 2 * Math.sin(farmhouse.rotation) + 1.8 * Math.cos(farmhouse.rotation) },
 	spawnYaw: farmhouse.rotation,
 	spawnZoom: 3,

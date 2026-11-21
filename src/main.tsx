@@ -867,7 +867,7 @@ function App() {
               antialias: !mobileQuality,
               powerPreference: "default",
             }}
-            camera={{ position: [0, 5, 33], fov: 65, near: 0.1, far: 9000 }}
+            camera={{ position: [0, 5, 33], fov: 65, near: 0.1, far: 14000 }}
             dpr={renderDpr}
             onCreated={({ gl, invalidate }) => {
               canvasCleanupRef.current?.();

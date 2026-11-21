@@ -368,6 +368,17 @@ export function formatBotTargetLabel(botName: string, npcRole?: string): string 
   if (lower.startsWith('u-shwe-')) {
     return npcRole === 'auntie' ? 'ဒေါ်လေး (ဦးရွှေအိမ်)' : 'ဦးရွှေ';
   }
+  if (lower.startsWith('chin-') || lower.startsWith('weipula-')) {
+    if (npcRole === 'boy' || npcRole === 'girl' || lower.includes('kid')) return 'ချင်းကလေးငယ်';
+    if (npcRole === 'auntie') return 'ချင်းရိုးရာ အမျိုးသမီး';
+    return 'ချင်းရိုးရာ အမျိုးသား';
+  }
+  if (lower.startsWith('institution-npc-')) {
+    if (npcRole === 'boy') return 'ကျောင်းသား';
+    if (npcRole === 'girl') return 'ကျောင်းသူ';
+    if (npcRole === 'auntie') return 'ဆရာမ / ဆရာတော်မ';
+    return 'ဆရာ / ဆရာတော်';
+  }
   if (npcRole === 'boy') return 'ကလေး ယောကျ်ားလေး';
   if (npcRole === 'girl') return 'ကလေး မိန်းကလေး';
   if (npcRole === 'auntie') return 'ရွာသူ ဒေါ်လေး';

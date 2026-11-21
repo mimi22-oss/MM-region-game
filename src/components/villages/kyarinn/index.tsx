@@ -1,4 +1,9 @@
+import { useEffect, useMemo, useRef } from 'react';
+import { useThree } from '@react-three/fiber';
+import type { Group } from 'three';
 import {
+	angle,
+	toWorld,
 	kyarInnVillage,
 	kyarInnTaphiChaung,
 	kyarInnLandmarks,
@@ -12,70 +17,38 @@ import { MainRoad } from '../../MainRoad';
 import { Lanes } from '../../Lane';
 import { Field } from '../../Field';
 import { EastWestCanal } from '../../Canal';
-import { House, houseFenceBounds, houseVisualRotation } from '../../House';
+import { House, houseVisualRotation } from '../../House';
+import { ChinTraditionalHouseBatch, type ChinHouseBatchItem } from '../../ChinTraditionalHouse';
+import { ChristianChurch } from '../../ChristianChurch';
+import { SchoolClassroomHall } from '../../SchoolClassroomHall';
+import { WALKIN_SCHOOL_HALL_BY_ID } from '../../../game/schoolClassrooms';
 import { Tree } from '../../Tree';
 import { Block } from '../../Primitives';
+import { sourceIsEdited } from '../../../game/worldEdits';
+import { registerGroundRegion, releaseGroundRegion } from '../../../game/groundSurface';
+import { defaultChinCompoundBounds } from '../../../game/chinVillagerPool';
 
-/** ခရစ်ယာန် ဘုရားကျောင်းများ (Baptist, IBC, CJC, St. Peter Catholic Church) */
-function ChurchBuilding({ b }: { b: KyarInnLandmarkBuilding }) {
-	const steepleH = b.steepleHeight ?? b.height + 6;
-	const isCatholic = b.kind === 'church-catholic';
-	const pitch = 3.2;
+const CHIN_TIMBER_WALLS = [
+	'#6a482d',
+	'#5c3b22',
+	'#785233',
+	'#4d311d',
+	'#634227',
+	'#734c2f',
+] as const;
 
-	return (
-		<group position={[b.x, 0, b.z]} rotation={[0, b.rotation, 0]}>
-			{/* အောက်ခြေ ကျောက်သား ပန္နက် */}
-			<Block y={0.25} w={b.width + 1.6} h={0.5} d={b.depth + 1.6} color="#d4ccb8" />
-			{/* ပင်မ ဝတ်ပြုဆောင်မကြီး (Sanctuary Hall) */}
-			<Block y={b.height / 2} w={b.width} h={b.height} d={b.depth} color={b.color} />
+const CHIN_ROOF_COLORS = [
+	'#7d3c2e',
+	'#8a4435',
+	'#2f523b',
+	'#4f3d2e',
+	'#52463e',
+	'#3e5446',
+] as const;
 
-			{/* စောက်နက်သော ခရစ်ယာန် ဘုရားကျောင်း အမိုး */}
-			{[-1, 1].map(s => (
-				<mesh
-					key={s}
-					position={[0, b.height + 1.2, s * (b.depth / 4)]}
-					rotation={[s * Math.atan2(pitch, b.depth / 2), 0, 0]}
-					castShadow
-				>
-					<boxGeometry args={[b.width + 1.4, 0.28, Math.hypot(b.depth / 2, pitch) + 1]} />
-					<meshStandardMaterial color={b.roof} roughness={0.7} />
-				</mesh>
-			))}
-
-			{/* ခေါင်းလောင်းမျှော်စင် / မျှော်စင်တိုက် (Bell Tower / Steeple) */}
-			<group position={[-b.width / 2 + 3.5, 0, 0]}>
-				{/* မျှော်စင် ကိုယ်ထည် */}
-				<Block y={steepleH / 2} w={6} h={steepleH} d={6} color={b.color} />
-				{/* မျှော်စင် ထိပ်ပြူတင်းပေါက် လေသာပေါက်များ */}
-				{[-1, 1].map(sx => (
-					<Block key={sx} x={sx * 2.5} y={steepleH - 1.8} w={0.15} h={2.2} d={2} color="#2b475e" />
-				))}
-				{/* မျှော်စင် အမိုးချွန် (Gothic Spire / Pyramid Spire) */}
-				<mesh position={[0, steepleH + (isCatholic ? 3.6 : 2.6), 0]} castShadow>
-					<coneGeometry args={[isCatholic ? 2.8 : 3.4, isCatholic ? 7.2 : 5.2, isCatholic ? 8 : 4]} />
-					<meshStandardMaterial color={b.roof} roughness={0.6} />
-				</mesh>
-				{/* ထိပ်ဖျားရှိ ခရစ်ယာန် လက်ဝါးကပ်တိုင်တော် (Christian Cross) */}
-				<group position={[0, steepleH + (isCatholic ? 7.8 : 5.8), 0]}>
-					{/* ဒေါင်လိုက်တိုင် */}
-					<Block y={1.2} w={0.25} h={2.4} d={0.25} color="#f5d061" />
-					{/* ကန့်လန့်ဖြတ်တန်း */}
-					<Block y={1.6} w={0.25} h={0.25} d={1.5} color="#f5d061" />
-				</group>
-			</group>
-
-			{/* ဘုရားကျောင်း မျက်နှာစာ ဝင်ပေါက် မုခ်ဦးနှင့် ကနုတ်ပြတင်းပေါက်များ */}
-			<Block x={-b.width / 2 - 0.15} y={2.2} z={0} w={0.3} h={3.4} d={2.6} color="#453123" />
-			{/* အလျားလိုက် ဘုရားကျောင်း ပြတင်းပေါက်ရှည်များ */}
-			{[-6, 0, 6].map(xx => (
-				<group key={xx}>
-					<Block x={xx} y={b.height * 0.55} z={b.depth / 2 + 0.08} w={1.8} h={3.2} d={0.14} color="#8fb3cc" />
-					<Block x={xx} y={b.height * 0.55} z={-b.depth / 2 - 0.08} w={1.8} h={3.2} d={0.14} color="#8fb3cc" />
-				</group>
-			))}
-		</group>
-	);
-}
+// Dedicated walkable village ground cleanly spanning residential grid u ∈ [-211, +185], v ∈ [3670, 4025]
+// (stops safely east of Kyar Inn Lake ponds at u <= -212 and sits below lanes/yards with zero z-fighting)
+const KYARINN_VILLAGE_GROUND_POS = toWorld(-13, 3847.5);
 
 /** အလက ကြာအင်း ကျောင်းဆောင်များ (North Halls, East Wings, Office) */
 function SchoolBuilding({ b }: { b: KyarInnLandmarkBuilding }) {
@@ -281,10 +254,54 @@ function LakeFootbridge({ b }: { b: (typeof kyarInnLakeStructures)[1] }) {
 }
 
 /**
- * ကြာအင်းကျေးရွာ (Kyar Inn Village) — 3D Scene Component
+ * ကြာအင်းကျေးရွာ (Kyar Inn Chin Village) — 3D Scene Component
+ * - သာယာကုန်းကျေးရွာကဲ့သို့ပင် ချင်းရွာဖြစ်သဖြင့် လူနေအိမ်အားလုံးကို ကျယ်ဝန်းသော အိမ်ခြံဝန်း +
+ *   အိမ်နှင့်တွဲနေသော အလိုအလျောက်ပွင့်ပိတ် အိမ်တံခါးပါ ချင်းရိုးရာ အောက်ချင်းငှက်ခေါင်မိုးအိမ်များ
+ *   (`<ChinTraditionalHouseBatch flatGround showCompoundFence omitStaticDoorLeaves />`) ဖြင့် ပြသသည်။
+ * - ခရစ်ယာန်ဘုရားကျောင်း ၄ ကျောင်း (Baptist, IBC, CJC, St. Peter Catholic)၊ အလက ကြာအင်းကျောင်း နှင့်
+ *   ကြာအင်းရေကန်တို့ကို မူလအတိုင်း ထိန်းသိမ်းထားသည်။
  */
 export function KyarInnVillage() {
-	const residentialHouses = kyarInnVillage.houses.filter(h => !h.id.startsWith('ki-'));
+	const { scene } = useThree();
+	const groundGroupRef = useRef<Group>(null);
+	const walkableHousesRef = useRef<Group>(null);
+
+	const chinResidentialHouses = useMemo<ChinHouseBatchItem[]>(() => {
+		const residential = kyarInnVillage.houses.filter(
+			h => !h.id.startsWith('ki-') && !sourceIsEdited(h.id),
+		);
+		return residential.map((h, i) => {
+			const isTwoStorey = i % 5 === 2;
+			return {
+				id: h.id,
+				x: h.x,
+				z: h.z,
+				baseY: 0,
+				width: h.width,
+				depth: h.depth,
+				height: isTwoStorey ? 4.7 : 3.65,
+				rotation: houseVisualRotation(h),
+				wallColor: CHIN_TIMBER_WALLS[i % CHIN_TIMBER_WALLS.length],
+				roofColor: CHIN_ROOF_COLORS[(i * 3 + 1) % CHIN_ROOF_COLORS.length],
+				hornbillScale: isTwoStorey ? 1.15 : 1.04,
+				compound: defaultChinCompoundBounds(h.width, h.depth),
+			};
+		});
+	}, []);
+
+	useEffect(() => {
+		if (groundGroupRef.current) {
+			registerGroundRegion(scene, 'kyarinn-village-ground', groundGroupRef.current);
+		}
+		if (walkableHousesRef.current) {
+			registerGroundRegion(scene, 'kyarinn-chin-house-decks', walkableHousesRef.current);
+		}
+		return () => {
+			releaseGroundRegion(scene, 'kyarinn-chin-house-decks');
+			releaseGroundRegion(scene, 'kyarinn-village-ground');
+		};
+	}, [scene]);
+
 	const churches = kyarInnLandmarkBuildings.filter(b => b.kind.startsWith('church-'));
 	const schoolBuildings = kyarInnLandmarkBuildings.filter(b => b.kind.startsWith('school-'));
 	const schoolField = kyarInnLandmarks.find(m => m.id === 'ki-school-field')!;
@@ -294,6 +311,19 @@ export function KyarInnVillage() {
 
 	return (
 		<group name="village-kyarinn">
+			{/* ကြာအင်းချင်းကျေးရွာ မြေပြင်အခင်း (Dedicated Walkable Village Ground Plane cleanly below lanes & yards) */}
+			<group ref={groundGroupRef} name="kyarinn-ground-surface">
+				<mesh
+					userData={{ walkable: true }}
+					position={[KYARINN_VILLAGE_GROUND_POS.x, 0.008, KYARINN_VILLAGE_GROUND_POS.z]}
+					rotation={[0, angle, 0]}
+					receiveShadow
+				>
+					<boxGeometry args={[396, 0.016, 355]} />
+					<meshStandardMaterial color="#738b56" roughness={0.95} />
+				</mesh>
+			</group>
+
 			{/* ထောက်ကြန့်-ကြာအင်းကြား လယ်ကွင်းများနှင့် သပြေချောင်း (Taphi Chaung) */}
 			{kyarInnVillage.separationFields.map((f, i) => (
 				<Field key={f.id ?? `ki-sep-${i}`} f={f} bunded />
@@ -330,19 +360,45 @@ export function KyarInnVillage() {
 				<Field key={f.id ?? `ki-bf-${i}`} f={f} bunded />
 			))}
 
-			{/* လူနေအိမ်ခြေများ */}
-			{residentialHouses.map(h => (
-				<House key={h.id} h={h} />
-			))}
+			{/* ကြာအင်းကျေးရွာ ချင်းရိုးရာ အောက်ချင်းငှက်ခေါင်မိုးအိမ် + ကျယ်ဝန်းသော အိမ်ခြံဝန်း
+			    (အိမ်နှင့်တွဲနေသော ပွင့်ပိတ်တံခါးများနှင့် ချင်းလူမျိုးစု ၁–၁၀ ဦး/အိမ်ကို StreamedWorld မှ <ChinVillageBots /> က live မောင်းနှင်သည်) */}
+			<ChinTraditionalHouseBatch
+				houses={chinResidentialHouses}
+				name="kyarinn-chin-hornbill-houses"
+				walkableGroupRef={walkableHousesRef}
+				flatGround
+				showCompoundFence
+				omitStaticDoorLeaves
+			/>
 
-			{/* အလက ကြာအင်း ကျောင်းဆောင်များ */}
-			{schoolBuildings.map(b => (
-				<SchoolBuilding key={b.id} b={b} />
-			))}
+			{/* အလက ကြာအင်း ကျောင်းဆောင်များ — စာသင်ခန်း ၂၂ ခန်း ခွဲခြားပါဝင်သော ဝင်ရောက်ကြည့်ရှုနိုင်သည့် SchoolClassroomHall */}
+			{schoolBuildings.map(b => {
+				const hallSpec = WALKIN_SCHOOL_HALL_BY_ID.get(b.id);
+				return hallSpec ? (
+					<SchoolClassroomHall key={b.id} spec={hallSpec} />
+				) : (
+					<SchoolBuilding key={b.id} b={b} />
+				);
+			})}
 
-			{/* ခရစ်ယာန် ဘုရားကျောင်းများ (Baptist, IBC, CJC, St. Peter) */}
+			{/* ခရစ်ယာန် ဘုရားကျောင်းများ — သီးသန့် ChristianChurch component (Baptist, IBC, CJC, St. Peter) */}
 			{churches.map(b => (
-				<ChurchBuilding key={b.id} b={b} />
+				<ChristianChurch
+					key={b.id}
+					id={b.id}
+					name={b.name}
+					x={b.x}
+					z={b.z}
+					width={b.width}
+					depth={b.depth}
+					height={b.height}
+					rotation={b.rotation}
+					wallColor={b.color}
+					roofColor={b.roof}
+					variant="steeple-church"
+					steepleHeight={b.steepleHeight}
+					isCatholic={b.kind === 'church-catholic'}
+				/>
 			))}
 
 			{/* သစ်ပင်များ */}
@@ -542,18 +598,20 @@ export function KyarInnVillagePlan({
 				/>
 			))}
 
-			{/* လူနေအိမ်ခြေများ */}
-			{residentialHouses.map(h => {
-				const { sideHalf, backHalf, frontHalf } = houseFenceBounds(h);
+			{/* လူနေအိမ်ခြေများ (ချင်းရိုးရာ ကျယ်ဝန်းသော အိမ်ခြံဝန်းများ) */}
+			{residentialHouses.map((h, i) => {
+				const { sideHalf, backHalf, frontHalf } = defaultChinCompoundBounds(h.width, h.depth);
 				const rot = houseVisualRotation(h);
+				const roofFill = CHIN_ROOF_COLORS[(i * 3 + 1) % CHIN_ROOF_COLORS.length];
 				return (
 					<g key={h.id}>
 						<g transform={`translate(${h.x} ${h.z}) rotate(${(-rot * 180) / Math.PI})`}>
 							<line x1={-sideHalf} y1={-backHalf} x2={-sideHalf} y2={frontHalf} stroke="#68767a" strokeWidth="0.6" strokeDasharray="1.2 0.8" />
 							<line x1={sideHalf} y1={-backHalf} x2={sideHalf} y2={frontHalf} stroke="#68767a" strokeWidth="0.6" strokeDasharray="1.2 0.8" />
-							<line x1={-sideHalf} y1={frontHalf} x2={-1.3} y2={frontHalf} stroke="#2563a6" strokeWidth="1.1" />
-							<line x1={1.3} y1={frontHalf} x2={sideHalf} y2={frontHalf} stroke="#2563a6" strokeWidth="1.1" />
-							<rect x={-h.width / 2} y={-h.depth / 2} width={h.width} height={h.depth} fill={h.roof} />
+							<line x1={-sideHalf} y1={-backHalf} x2={sideHalf} y2={-backHalf} stroke="#68767a" strokeWidth="0.6" strokeDasharray="1.2 0.8" />
+							<line x1={-sideHalf} y1={frontHalf} x2={-1.5} y2={frontHalf} stroke="#2563a6" strokeWidth="1.1" />
+							<line x1={1.5} y1={frontHalf} x2={sideHalf} y2={frontHalf} stroke="#2563a6" strokeWidth="1.1" />
+							<rect x={-h.width / 2} y={-h.depth / 2} width={h.width} height={h.depth} fill={roofFill} />
 						</g>
 					</g>
 				);

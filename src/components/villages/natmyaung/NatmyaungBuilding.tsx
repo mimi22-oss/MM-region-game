@@ -2,6 +2,8 @@ import { memo, useMemo } from 'react';
 import {CandleRow,PorchCandles} from '../../FestivalAnchor';
 import type { NatmyaungBuildingData } from '../../../data/villages/natmyaung';
 import { Box } from '../../Primitives';
+import { SchoolClassroomHall } from '../../SchoolClassroomHall';
+import { WALKIN_SCHOOL_HALL_BY_ID } from '../../../game/schoolClassrooms';
 import { sourceIsEdited } from '../../../game/worldEdits';
 
 export interface NatmyaungBuildingProps {
@@ -59,6 +61,17 @@ export const NatmyaungBuilding = memo(function NatmyaungBuilding({
     e.stopPropagation();
     onSelect?.(building.id);
   };
+
+  const walkInSchoolHall = isSchool ? WALKIN_SCHOOL_HALL_BY_ID.get(building.id) : undefined;
+  if (walkInSchoolHall) {
+    return (
+      <SchoolClassroomHall
+        spec={walkInSchoolHall}
+        selected={selected}
+        onClick={handleClick}
+      />
+    );
+  }
 
   const wallColor = selected ? '#fef08a' : building.wallColor;
   const roofColor = selected ? '#38bdf8' : building.roofColor;

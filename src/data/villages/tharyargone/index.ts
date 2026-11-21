@@ -46,21 +46,22 @@ export const tharYarGoneLanes = [2540, 2572, 2604, 2636, 2668, 2700, 2732, 2764,
 export const tharYarGoneCrossLanes = [-40, -84, -128, -172, -216, -260];
 
 // AH1 အနောက်ဘက်ခြမ်း အိမ်အကွက် ၆ ကွက်၏ u တန်ဖိုးများ
+// (Spacious Farmhouse-style Chin compounds: 12.4m x 15.5m lots cleanly clear of every road & cross-lane!)
 const westBlocks = [
- [-22, -32],
- [-52, -66],
- [-96, -110],
- [-140, -154],
- [-184, -198],
- [-228, -242],
+ [-26.5],
+ [-53, -72],
+ [-97, -116],
+ [-141, -160],
+ [-185, -204],
+ [-229, -248],
 ];
 
 const houses: House[] = [];
 
-// AH1 အနောက်ဘက်ခြမ်း — Google Maps ပုံအတိုင်း လမ်းဆုံတန်းစီ အိမ်ခြေများ ပါဝင်သော ရွာကြီး
+// AH1 အနောက်ဘက်ခြမ်း — ကျယ်ဝန်းသော ချင်းရိုးရာ အိမ်ဝန်းခြံများ ပါဝင်သော သာယာကုန်းကျေးရွာ
 for (let rowBlock = 0; rowBlock < tharYarGoneLanes.length - 1; rowBlock++) {
  const baseV = tharYarGoneLanes[rowBlock];
- for (const offsetV of [10, 22]) {
+ for (const offsetV of [9.5, 22.5]) {
   const v = baseV + offsetV;
   for (let colBlock = 0; colBlock < westBlocks.length; colBlock++) {
    // St. Assumption Church ဘုရားကျောင်းဝင်း (ရွာအလယ်ဗဟို)
@@ -291,8 +292,8 @@ const largeTrees: TreePlot[] = [
  [-215, 2722],
  [60, 2690],
  [60, 2740],
- [-75, 2590],
- [-75, 2780],
+ [-80.5, 2590],
+ [-80.5, 2780],
 ].map(([u, v], i) => ({
  id: `tharyargone-shade-${i}`,
  ...toWorld(u, v),

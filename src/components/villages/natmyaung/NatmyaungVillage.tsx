@@ -1,5 +1,6 @@
-import { memo, useMemo, useState } from 'react';
-import { BufferGeometry, Vector3 } from 'three';
+import { memo, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useThree } from '@react-three/fiber';
+import { BufferGeometry, Color, InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
 import {
   natmyaungVillage,
   natmyaungBuildings,
@@ -9,9 +10,73 @@ import {
   natmyaungPonds,
   type NatmyaungBuildingData,
 } from '../../../data/villages/natmyaung';
+import { natmyaungWeipulaSeparationFields } from '../../../data/villages/natmyaung/separationFields';
+import { registerGroundRegion, releaseGroundRegion } from '../../../game/groundSurface';
 import { NatmyaungBuilding } from './NatmyaungBuilding';
 import { Tree } from '../../Tree';
 import { diagnosticConfig } from '../../../game/diagnosticMode';
+
+/** 10 bunded separation paddy fields between Nat Myaung village and Maha Weipula Mountain (1 instanced draw call). */
+function NatmyaungWeipulaPaddyFields() {
+  const meshRef = useRef<InstancedMesh>(null);
+  const { scene } = useThree();
+
+  useLayoutEffect(() => {
+    const object = meshRef.current;
+    if (!object) return;
+    const matrix = new Matrix4();
+    const rotation = new Quaternion();
+    const axis = new Vector3(0, 1, 0);
+    const position = new Vector3();
+    const size = new Vector3();
+    const color = new Color();
+    let idx = 0;
+
+    for (const f of natmyaungWeipulaSeparationFields) {
+      const c = Math.cos(f.rotation);
+      const s = Math.sin(f.rotation);
+      rotation.setFromAxisAngle(axis, f.rotation);
+      const put = (u: number, y: number, v: number, w: number, h: number, d: number, paint: string) => {
+        matrix.compose(
+          position.set(f.x + u * c + v * s, y, f.z - u * s + v * c),
+          rotation,
+          size.set(w, h, d),
+        );
+        object.setMatrixAt(idx, matrix);
+        object.setColorAt(idx++, color.set(paint));
+      };
+      // Paddy interior plot
+      put(0, 0.02, 0, f.width, 0.08, f.depth, f.color);
+      // 4 earthen bund walls (ကန်သင်းရိုး)
+      for (const side of [-1, 1]) {
+        put(0, 0.07, (side * f.depth) / 2, f.width, 0.1, 0.45, '#556b2f');
+        put((side * f.width) / 2, 0.07, 0, 0.45, 0.1, f.depth, '#556b2f');
+      }
+    }
+
+    object.instanceMatrix.needsUpdate = true;
+    if (object.instanceColor) object.instanceColor.needsUpdate = true;
+    object.computeBoundingSphere();
+    object.computeBoundingBox();
+
+    const regionId = 'natmyaung-weipula-separation-fields';
+    registerGroundRegion(scene, regionId, object);
+    return () => releaseGroundRegion(scene, regionId);
+  }, [scene]);
+
+  return (
+    <instancedMesh
+      name="natmyaung-weipula-paddy-fields"
+      ref={meshRef}
+      args={[undefined, undefined, natmyaungWeipulaSeparationFields.length * 5]}
+      receiveShadow
+      userData={{ walkable: true }}
+    >
+      <boxGeometry />
+      <meshLambertMaterial />
+    </instancedMesh>
+  );
+}
 
 export interface NatmyaungVillageProps {
   onSelectBuilding?: (building: NatmyaungBuildingData) => void;
@@ -163,7 +228,12 @@ export const NatmyaungVillage = memo(function NatmyaungVillage({
       )}
 
       {/* ======================================================== */}
-      {/* ၄။ နတ်မြောင်း ရွာလယ်ရေကန် (Village Pond) */}
+      {/* ၄။ နတ်မြောင်း-မဟာဝေပုလ္လကြား လယ်ကွင်း ၁၀ ကွင်း (10 Separation Paddy Fields) */}
+      {/* ======================================================== */}
+      <NatmyaungWeipulaPaddyFields />
+
+      {/* ======================================================== */}
+      {/* ၅။ နတ်မြောင်း ရွာလယ်ရေကန် (Village Pond) */}
       {/* ======================================================== */}
       {natmyaungPonds.map((pond) => (
         <group key={pond.id} position={[pond.x, 0.05, pond.z]}>

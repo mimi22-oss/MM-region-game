@@ -3,6 +3,8 @@ import { MainRoad } from '../../MainRoad';
 import { Lanes } from '../../Lane';
 import { Field } from '../../Field';
 import { House, houseFenceBounds, houseVisualRotation } from '../../House';
+import { SchoolClassroomHall } from '../../SchoolClassroomHall';
+import { WALKIN_SCHOOL_HALL_BY_ID } from '../../../game/schoolClassrooms';
 import { Tree } from '../../Tree';
 import { Block } from '../../Primitives';
 
@@ -62,11 +64,15 @@ export function HtomarVillage(){
     </group>)}
    </group>;
   })}
-  {campusBuildings.map(b=><group key={b.id} position={[b.x,0,b.z]} rotation={[0,b.rotation,0]}>
-   <Block y={0.25} w={b.width+1.6} h={0.5} d={b.depth+1.6} color="#cfc4a9"/>
-   <Block y={4.2} w={b.width} h={7.4} d={b.depth} color={b.color}/>
-   {[-1,1].map(s=><mesh key={s} position={[s*b.width/4,8.9,0]} rotation={[0,0,-s*Math.atan2(2.2,b.width/2)]} castShadow><boxGeometry args={[Math.hypot(b.width/2,2.2)+1.4,0.24,b.depth+1.8]}/><meshStandardMaterial color={b.roof}/></mesh>)}
-  </group>)}
+  {campusBuildings.map(b=>{
+   const hallSpec = WALKIN_SCHOOL_HALL_BY_ID.get(b.id);
+   if (hallSpec) return <SchoolClassroomHall key={b.id} spec={hallSpec} />;
+   return <group key={b.id} position={[b.x,0,b.z]} rotation={[0,b.rotation,0]}>
+    <Block y={0.25} w={b.width+1.6} h={0.5} d={b.depth+1.6} color="#cfc4a9"/>
+    <Block y={4.2} w={b.width} h={7.4} d={b.depth} color={b.color}/>
+    {[-1,1].map(s=><mesh key={s} position={[s*b.width/4,8.9,0]} rotation={[0,0,-s*Math.atan2(2.2,b.width/2)]} castShadow><boxGeometry args={[Math.hypot(b.width/2,2.2)+1.4,0.24,b.depth+1.8]}/><meshStandardMaterial color={b.roof}/></mesh>)}
+   </group>;
+  })}
   {htomarVillage.largeTrees.map((t,i)=><Tree key={t.id} t={t} i={i} variant="large"/>)}
   {htomarVillage.trees.map((t,i)=><Tree key={t.id} t={t} i={i} variant="canopy"/>)}
   {htomarVillage.farmTrees.map(t=><Tree key={t.id} t={t} variant="farm"/>)}

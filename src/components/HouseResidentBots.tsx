@@ -26,6 +26,7 @@ import { kalayArea1Buildings } from '../data/wards/kalayArea1/kalayArea1Building
 import { houseVisualRotation } from './House';
 import { spatialIndex } from '../game/spatialIndex';
 import { mobileQuality } from '../game/sceneBudget';
+import { isChinVillageRegion } from '../game/chinVillages';
 import { useQualityPreset } from '../game/qualityPreset';
 import { sourceIsEdited } from '../game/worldEdits';
 import {
@@ -111,6 +112,16 @@ const regionHouseCache = new Map<
 >();
 
 function getRegionHouses(regionId: string, chunkVersion: number) {
+  // Chin villages are populated exclusively by Chin ethnic villagers via `<ChinVillagePopulation>`
+  // (never generic non-Chin resident bots or detached floating door overlays!).
+  if (isChinVillageRegion(regionId)) {
+    const existingChin = regionHouseCache.get(regionId);
+    if (existingChin) return existingChin;
+    const empty = { sig: 1, houses: [] as ResidentHouseRecord[], lookup: () => [] as readonly ResidentHouseRecord[] };
+    regionHouseCache.set(regionId, empty);
+    return empty;
+  }
+
   const existing = regionHouseCache.get(regionId);
   const isStreamed = regionId === 'kanbale';
   const sig = isStreamed ? chunkVersion : 1;

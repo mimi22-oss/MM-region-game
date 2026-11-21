@@ -18,6 +18,7 @@ import { canStand } from '../game/collision';
 import { buildRoadGraph, type RouteNode } from '../game/robotRoutes';
 import { sceneGround } from '../game/groundSurface';
 import { mobileQuality } from '../game/sceneBudget';
+import { isChinVillageRegion } from '../game/chinVillages';
 import { useQualityPreset } from '../game/qualityPreset';
 import type { TimeMode } from '../game/environmentTime';
 import {
@@ -170,10 +171,12 @@ export function VillagePedestrianBots({
     [],
   );
 
-  // Build / reuse connected road graphs for active regions
+  // Build / reuse connected road graphs for active non-Chin regions
+  // (Chin villages use dedicated Chin ethnic villagers exclusively via `<ChinVillagePopulation>`!)
   const regionGraphs = useMemo(() => {
     const map = new Map<string, RouteNode[]>();
     for (const id of activeRegions) {
+      if (isChinVillageRegion(id)) continue;
       const g = getRoadGraphForRegion(id);
       if (g.length > 1) map.set(id, g);
     }

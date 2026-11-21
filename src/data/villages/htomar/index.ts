@@ -76,7 +76,7 @@ for (let rowBlock = 0; rowBlock < htomarLanes.length - 1; rowBlock++) {
   for (let colBlock = 0; colBlock < eastInteriorBlocks.length; colBlock++) {
    if (rowBlock <= 1 && colBlock > 1) continue;
    if ((rowBlock === 2 || rowBlock === 3) && colBlock > 2) continue;
-   if (rowBlock === 2 && colBlock === 2) continue;
+   if ((rowBlock === 2 || rowBlock === 3) && colBlock === 2) continue;
    if (rowBlock === 6 && colBlock === 4) continue;
    if (rowBlock === 10 && colBlock > 3) continue;
    if (rowBlock === 11 && colBlock > 2) continue;
@@ -138,11 +138,11 @@ export const htomarLandmarks = [
  {
   id: 'behs-htomar',
   name: 'အထက-ထိုမာ',
-  u: 361,
-  v: 1815,
-  ...toWorld(361, 1815),
-  width: 32,
-  depth: 20,
+  u: 382,
+  v: 1830,
+  ...toWorld(382, 1830),
+  width: 80,
+  depth: 60,
   rotation: angle,
  },
 ];
@@ -334,13 +334,43 @@ export const htomarCampusBuildings: House[] = [
  },
  {
   id: 'htomar-campus-behs-main',
-  name: 'အထက-ထိုမာ · ကျောင်းဆောင်',
-  ...toWorld(361, 1815),
-  width: 16,
-  depth: 9,
-  color: '#d8cfb7',
-  rotation: angle - Math.PI / 2,
-  roof: '#547b69',
+  name: 'အထက-ထိုမာ · မြောက်ဘက် ပင်မစာသင်ဆောင်',
+  ...toWorld(361, 1808),
+  width: 34,
+  depth: 10,
+  color: '#e5dfd2',
+  rotation: angle,
+  roof: '#2f6a4f',
+ },
+ {
+  id: 'htomar-campus-behs-east',
+  name: 'အထက-ထိုမာ · အရှေ့မြောက် စာသင်ဆောင်',
+  ...toWorld(403, 1808),
+  width: 34,
+  depth: 10,
+  color: '#e5dfd2',
+  rotation: angle,
+  roof: '#2f6a4f',
+ },
+ {
+  id: 'htomar-campus-behs-south',
+  name: 'အထက-ထိုမာ · တောင်ဘက် စာသင်ဆောင်',
+  ...toWorld(361, 1852),
+  width: 34,
+  depth: 10,
+  color: '#e5dfd2',
+  rotation: angle,
+  roof: '#964638',
+ },
+ {
+  id: 'htomar-campus-behs-lab',
+  name: 'အထက-ထိုမာ · အရှေ့တောင် အထက်တန်းဆောင်',
+  ...toWorld(403, 1852),
+  width: 34,
+  depth: 10,
+  color: '#e5dfd2',
+  rotation: angle,
+  roof: '#964638',
  },
 ];
 

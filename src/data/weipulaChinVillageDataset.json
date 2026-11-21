@@ -1,0 +1,44 @@
+{
+  "dataset": "weipula-chin-village",
+  "regionId": "weipula-chin-village",
+  "manifest": "/map/weipula-chin-village/d09b145a28b3bdc82002/manifest.json",
+  "projection": {
+    "origin": [
+      94.0349118,
+      23.1151187
+    ],
+    "anchor": [
+      2953.73,
+      4680.254
+    ],
+    "metersPerDegree": [
+      102351.44195621753,
+      111320
+    ],
+    "rotation": 0.7853981633974483
+  },
+  "houseCount": 100,
+  "tiers": 10,
+  "colsPerTier": 10,
+  "anchorUV": {
+    "u": -1220.837,
+    "v": 5398.042
+  },
+  "anchorWorld": {
+    "x": 2953.73,
+    "z": 4680.254
+  },
+  "label": {
+    "id": "weipula-chin-village-label",
+    "text": "မဟာဝေပုလ္လ ချင်းလှေကားထစ်ရွာ",
+    "subtitle": "တောင်ခါးပန်း ချင်းလှေကားထစ်ရွာ · အိမ်ခြေ ၁၀၀ · အောက်ချင်းငှက်ခေါင်မိုးအိမ်များ",
+    "x": 3011.478,
+    "z": 4565.102
+  },
+  "bounds": {
+    "minX": 2911.19,
+    "maxX": 3114.69,
+    "minZ": 4441.42,
+    "maxZ": 4698.19
+  }
+}

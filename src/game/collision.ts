@@ -43,6 +43,10 @@ import {
   queryStreamedBuildings,
   queryStreamedTrees,
 } from "./streamedChunkRegistry.ts";
+import {
+  WALKIN_SCHOOL_HALL_IDS,
+  canStandWalkInSchoolHalls,
+} from "./schoolClassrooms.ts";
 export const PLAYER_RADIUS = 0.4;
 const nearbyAreca = spatialIndex(estatePalms, (p) => ({
   x: p.x,
@@ -51,7 +55,12 @@ const nearbyAreca = spatialIndex(estatePalms, (p) => ({
 }));
 const villageHouses = kalayVillages
   .flatMap((v) => v.houses)
-  .filter((h) => h.id !== "way/403027623" && h.id !== "way/403030614");
+  .filter(
+    (h) =>
+      h.id !== "way/403027623" &&
+      h.id !== "way/403030614" &&
+      !WALKIN_SCHOOL_HALL_IDS.has(h.id),
+  );
 const villageTrees = kalayVillages.flatMap((v) => [
   ...v.trees,
   ...v.largeTrees,
@@ -261,12 +270,7 @@ const schoolRot = 2.4226;
 const scC = Math.cos(schoolRot);
 const scS = Math.sin(schoolRot);
 const schoolObstacles = [
-  // ၁။ ပင်မ စာသင်ဆောင်ကြီး (Main Classroom Hall)
-  { minX: -12.5, maxX: 12.5, minZ: -4.2, maxZ: 4.2 },
-  // ၂။ လက်ဝဲဘက် စာသင်ဆောင် (Left Classroom Wing)
-  { minX: -11.9, maxX: -5.1, minZ: -12.0, maxZ: -2.0 },
-  // ၃။ လက်ယာဘက် စာသင်ဆောင် (Right Classroom Wing)
-  { minX: 10.6, maxX: 17.4, minZ: -12.0, maxZ: -2.0 },
+  // Classroom halls are now walk-in separated classrooms handled by `canStandWalkInSchoolHalls`!
   // ၄။ အလံတိုင် အဆင့်ဆင့်ခုံ (Flagpole Plinth)
   { minX: 0.9, maxX: 4.1, minZ: -12.1, maxZ: -8.9 },
   // ၅။ ဘောလုံးဂိုးတိုင်များ (Goalposts)
@@ -448,13 +452,13 @@ const mountainVillageHouses = [
 function canStandMountainVillage(x: number, z: number): boolean {
   const u = x * cosA - z * sinA;
   const v = x * sinA + z * cosA;
-  if (v < 4360 || v > 4470 || u < -360 || u > -310) return true;
+  if (v < 4780 || v > 4890 || u < -360 || u > -310) return true;
   for (const h of mountainVillageHouses) {
     if (
       u >= h.minU - PLAYER_RADIUS &&
       u <= h.maxU + PLAYER_RADIUS &&
-      v >= h.minV - PLAYER_RADIUS &&
-      v <= h.maxV + PLAYER_RADIUS
+      v >= h.minV + 420 - PLAYER_RADIUS &&
+      v <= h.maxV + 420 + PLAYER_RADIUS
     ) {
       return false;
     }
@@ -661,6 +665,7 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
   }
   if (!canStandMountainVillage(x, z)) return false;
   if (!canStandKanbaleSchool(x, z)) return false;
+  if (!canStandWalkInSchoolHalls(x, z, PLAYER_RADIUS)) return false;
   if (sourceIsEdited(nankaleinTeaShopData.id)) {
     // Tea shop is edited or deleted, skip static collision
   } else if (!canStandNankaleinTeaShop(x, z)) {

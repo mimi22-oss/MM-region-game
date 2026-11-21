@@ -9659,8 +9659,8 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
   z-index: 20000;
   display: grid;
   place-items: center;
-  padding: max(18px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
-    max(18px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  padding: max(2.2vh, env(safe-area-inset-top)) max(2.5vw, env(safe-area-inset-right))
+    max(2.2vh, env(safe-area-inset-bottom)) max(2.5vw, env(safe-area-inset-left));
   background: radial-gradient(circle at 50% 42%, rgba(45, 10, 22, 0.78), rgba(4, 7, 15, 0.94) 72%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -9702,9 +9702,12 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 
 .game-over-card {
   position: relative;
-  width: min(420px, 100%);
-  padding: 28px 24px 22px;
-  border-radius: 24px;
+  width: min(420px, 92vw);
+  max-height: 92vh;
+  max-height: 92dvh;
+  box-sizing: border-box;
+  padding: clamp(14px, 3vh, 28px) clamp(14px, 3.6vw, 24px) clamp(12px, 2.4vh, 22px);
+  border-radius: clamp(16px, 3vh, 24px);
   background: linear-gradient(165deg, rgba(22, 26, 40, 0.95) 0%, rgba(10, 13, 24, 0.98) 100%);
   border: 1.5px solid var(--go-accent-border);
   box-shadow:
@@ -9716,8 +9719,18 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   animation: gameOverCardRise 0.34s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.game-over-hero,
+.game-over-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .game-over-top-glow {
@@ -9734,20 +9747,21 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 
 .game-over-emblem {
   position: relative;
-  width: 72px;
-  height: 72px;
+  width: clamp(46px, 9.5vh, 72px);
+  height: clamp(46px, 9.5vh, 72px);
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.12), rgba(15, 23, 42, 0.92));
   border: 1.5px solid var(--go-accent-border);
   box-shadow: 0 0 28px var(--go-accent-soft);
-  margin-bottom: 12px;
+  margin-bottom: clamp(6px, 1.5vh, 12px);
+  flex-shrink: 0;
 }
 
 .game-over-emblem-ring {
   position: absolute;
-  inset: -6px;
+  inset: -5px;
   border-radius: 50%;
   border: 1px dashed var(--go-accent-border);
   opacity: 0.7;
@@ -9755,7 +9769,7 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 }
 
 .game-over-emblem-icon {
-  font-size: 32px;
+  font-size: clamp(22px, 4.4vh, 32px);
   line-height: 1;
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
 }
@@ -9763,21 +9777,21 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 .game-over-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 12px;
+  padding: clamp(3px, 0.6vh, 4px) clamp(9px, 2vw, 12px);
   border-radius: 999px;
   background: var(--go-accent-soft);
   border: 1px solid var(--go-accent-border);
   color: #fde68a;
-  font-size: 10.5px;
+  font-size: clamp(9px, 1.45vh, 10.5px);
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin-bottom: clamp(6px, 1.2vh, 10px);
 }
 
 .game-over-title {
   margin: 0;
-  font-size: clamp(28px, 6vw, 36px);
+  font-size: clamp(22px, min(6vw, 4.6vh), 36px);
   font-weight: 900;
   letter-spacing: 0.12em;
   line-height: 1.08;
@@ -9789,8 +9803,8 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 }
 
 .game-over-subtitle {
-  margin-top: 6px;
-  font-size: 14px;
+  margin-top: clamp(3px, 0.8vh, 6px);
+  font-size: clamp(12px, 1.9vh, 14px);
   font-weight: 700;
   color: #e2e8f0;
 }
@@ -9798,14 +9812,15 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 .game-over-divider {
   width: 68%;
   height: 1px;
-  margin: 14px 0;
+  margin: clamp(8px, 1.8vh, 14px) 0;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.24), transparent);
+  flex-shrink: 0;
 }
 
 .game-over-message {
-  margin: 0 0 16px;
-  font-size: 13px;
-  line-height: 1.65;
+  margin: 0 0 clamp(10px, 2vh, 16px);
+  font-size: clamp(11px, 1.75vh, 13px);
+  line-height: 1.55;
   color: #cbd5e1;
   max-width: 340px;
 }
@@ -9813,29 +9828,29 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 .game-over-stats {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-  gap: 8px;
-  margin-bottom: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: clamp(6px, 1.2vw, 8px);
+  margin-bottom: clamp(10px, 2.2vh, 18px);
 }
 
 .game-over-stat {
-  padding: 9px 10px;
-  border-radius: 13px;
+  padding: clamp(6px, 1.2vh, 9px) clamp(7px, 1.4vw, 10px);
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .game-over-stat-label {
-  font-size: 10px;
+  font-size: clamp(9px, 1.35vh, 10px);
   font-weight: 600;
   color: #94a3b8;
 }
 
 .game-over-stat-value {
-  font-size: 12.5px;
+  font-size: clamp(11px, 1.7vh, 12.5px);
   font-weight: 800;
   color: #f8fafc;
   overflow: hidden;
@@ -9849,14 +9864,14 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 
 .game-over-restart-btn {
   width: 100%;
-  min-height: 48px;
-  padding: 12px 20px;
+  min-height: clamp(40px, 6.2vh, 48px);
+  padding: clamp(8px, 1.5vh, 12px) clamp(14px, 2.8vw, 20px);
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.28);
   background: linear-gradient(135deg, var(--go-btn-from) 0%, var(--go-btn-to) 100%);
   color: #ffffff;
   font-family: inherit;
-  font-size: 14px;
+  font-size: clamp(12.5px, 1.9vh, 14px);
   font-weight: 800;
   letter-spacing: 0.02em;
   display: inline-flex;
@@ -9903,8 +9918,8 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 }
 
 .game-over-footer-note {
-  margin-top: 12px;
-  font-size: 11px;
+  margin-top: clamp(7px, 1.5vh, 12px);
+  font-size: clamp(9.5px, 1.5vh, 11px);
   color: #94a3b8;
 }
 
@@ -9939,18 +9954,108 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 
 @media (max-width: 480px) {
   .game-over-card {
-    padding: 22px 18px 18px;
+    padding: clamp(14px, 2.8vh, 22px) 4vw clamp(12px, 2.4vh, 18px);
     border-radius: 20px;
   }
+}
+
+/* Mobile Landscape / Short Viewport: single-screen 2-column vh/vw fit (no scrolling needed) */
+@media (max-height: 540px) and (min-width: 480px),
+  (orientation: landscape) and (max-height: 580px) and (min-width: 480px) {
+  .game-over-overlay {
+    padding: max(2vh, env(safe-area-inset-top)) max(2.4vw, env(safe-area-inset-right))
+      max(2vh, env(safe-area-inset-bottom)) max(2.4vw, env(safe-area-inset-left));
+  }
+
+  .game-over-card {
+    width: min(90vw, 680px);
+    max-height: 92vh;
+    max-height: 92dvh;
+    padding: 3vh 3vw;
+    border-radius: clamp(14px, 4vh, 22px);
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.25fr);
+    align-items: center;
+    column-gap: 2.6vw;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .game-over-hero {
+    padding-right: 2.2vw;
+    border-right: 1px solid rgba(255, 255, 255, 0.14);
+  }
+
+  .game-over-divider {
+    display: none;
+  }
+
+  .game-over-body {
+    align-items: stretch;
+    text-align: left;
+  }
+
   .game-over-emblem {
-    width: 60px;
-    height: 60px;
+    width: clamp(38px, 15vh, 60px);
+    height: clamp(38px, 15vh, 60px);
+    margin-bottom: 1.8vh;
   }
+
   .game-over-emblem-icon {
-    font-size: 27px;
+    font-size: clamp(18px, 7vh, 28px);
   }
+
+  .game-over-badge {
+    padding: 0.7vh 1.4vw;
+    font-size: clamp(8.5px, 2.5vh, 10.5px);
+    margin-bottom: 1.4vh;
+  }
+
+  .game-over-title {
+    font-size: clamp(19px, 7.6vh, 30px);
+  }
+
+  .game-over-subtitle {
+    margin-top: 0.9vh;
+    font-size: clamp(11px, 3.4vh, 14px);
+  }
+
   .game-over-message {
-    font-size: 12px;
+    max-width: none;
+    margin: 0 0 2vh;
+    font-size: clamp(10.5px, 3.1vh, 12.5px);
+    line-height: 1.45;
+  }
+
+  .game-over-stats {
+    gap: 1.2vw;
+    margin-bottom: 2.2vh;
+  }
+
+  .game-over-stat {
+    padding: 1.3vh 1.2vw;
+    border-radius: clamp(8px, 2.4vh, 12px);
+  }
+
+  .game-over-stat-label {
+    font-size: clamp(8.5px, 2.4vh, 10px);
+  }
+
+  .game-over-stat-value {
+    font-size: clamp(10.5px, 3vh, 12.5px);
+  }
+
+  .game-over-restart-btn {
+    min-height: clamp(38px, 12vh, 46px);
+    padding: 1.5vh 2vw;
+    border-radius: clamp(10px, 2.8vh, 14px);
+    font-size: clamp(12px, 3.6vh, 14px);
+  }
+
+  .game-over-footer-note {
+    margin-top: 1.4vh;
+    font-size: clamp(8.5px, 2.4vh, 10.5px);
+    text-align: center;
   }
 }
 
@@ -10050,15 +10155,18 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 .mission-victory-overlay {
   position: fixed;
   inset: 0;
-  z-index: 120;
+  z-index: 20010;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  padding: max(2.2vh, env(safe-area-inset-top)) max(2.5vw, env(safe-area-inset-right))
+    max(2.2vh, env(safe-area-inset-bottom)) max(2.5vw, env(safe-area-inset-left));
   background: rgba(2, 6, 23, 0.78);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   animation: missionVictoryFadeIn 0.28s ease-out;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .mission-victory-vignette {
@@ -10074,22 +10182,35 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 
 .mission-victory-card {
   position: relative;
-  width: min(440px, calc(100vw - 28px));
-  max-height: calc(100dvh - 32px);
+  width: min(440px, 92vw);
+  max-height: 92vh;
+  max-height: 92dvh;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
   box-sizing: border-box;
-  padding: 28px 24px 22px;
-  border-radius: 24px;
+  padding: clamp(14px, 3vh, 28px) clamp(14px, 3.6vw, 24px) clamp(12px, 2.4vh, 22px);
+  border-radius: clamp(16px, 3vh, 24px);
   border: 1.5px solid rgba(250, 204, 21, 0.45);
   background: linear-gradient(165deg, rgba(15, 23, 42, 0.96) 0%, rgba(17, 24, 39, 0.95) 55%, rgba(20, 40, 36, 0.96) 100%);
   color: #f8fafc;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   box-shadow:
     0 28px 72px rgba(0, 0, 0, 0.78),
     0 0 42px rgba(250, 204, 21, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
   animation: missionVictoryCardPop 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mission-victory-hero,
+.mission-victory-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .mission-victory-top-glow {
@@ -10107,10 +10228,11 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 
 .mission-victory-close {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 34px;
-  height: 34px;
+  top: clamp(10px, 1.8vh, 14px);
+  right: clamp(10px, 2vw, 14px);
+  z-index: 2;
+  width: clamp(30px, 4.4vh, 34px);
+  height: clamp(30px, 4.4vh, 34px);
   border-radius: 10px;
   border: 1px solid rgba(148, 163, 184, 0.28);
   background: rgba(255, 255, 255, 0.06);
@@ -10120,6 +10242,7 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
@@ -10131,12 +10254,13 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 
 .mission-victory-emblem {
   position: relative;
-  width: 78px;
-  height: 78px;
-  margin: 4px auto 14px;
+  width: clamp(48px, 10vh, 78px);
+  height: clamp(48px, 10vh, 78px);
+  margin: clamp(2px, 0.5vh, 4px) auto clamp(8px, 1.6vh, 14px);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .mission-victory-emblem-ring {
@@ -10151,27 +10275,27 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 
 .mission-victory-emblem-icon {
   position: relative;
-  font-size: 38px;
+  font-size: clamp(24px, 4.8vh, 38px);
   line-height: 1;
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.55));
 }
 
 .mission-victory-badge {
   display: inline-block;
-  padding: 4px 12px;
+  padding: clamp(3px, 0.55vh, 4px) clamp(9px, 2vw, 12px);
   border-radius: 999px;
   border: 1px solid rgba(250, 204, 21, 0.45);
   background: rgba(250, 204, 21, 0.14);
   color: #fde68a;
-  font-size: 11px;
+  font-size: clamp(9px, 1.45vh, 11px);
   font-weight: 800;
   letter-spacing: 0.9px;
-  margin-bottom: 10px;
+  margin-bottom: clamp(6px, 1.2vh, 10px);
 }
 
 .mission-victory-title {
   margin: 0;
-  font-size: 34px;
+  font-size: clamp(22px, min(6.2vw, 4.5vh), 34px);
   font-weight: 900;
   letter-spacing: 2.2px;
   line-height: 1.05;
@@ -10183,8 +10307,8 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 }
 
 .mission-victory-subtitle {
-  margin-top: 6px;
-  font-size: 16px;
+  margin-top: clamp(3px, 0.8vh, 6px);
+  font-size: clamp(12.5px, 2.1vh, 16px);
   font-weight: 700;
   color: #ecfdf5;
 }
@@ -10192,42 +10316,44 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 .mission-victory-divider {
   width: 64px;
   height: 2px;
-  margin: 14px auto;
+  margin: clamp(8px, 1.7vh, 14px) auto;
   border-radius: 999px;
   background: linear-gradient(90deg, transparent, rgba(250, 204, 21, 0.75), transparent);
+  flex-shrink: 0;
 }
 
 .mission-victory-message {
-  margin: 0 0 16px;
-  font-size: 13px;
-  line-height: 1.65;
+  margin: 0 0 clamp(10px, 2vh, 16px);
+  font-size: clamp(11px, 1.75vh, 13px);
+  line-height: 1.55;
   color: #cbd5e1;
 }
 
 .mission-victory-stats {
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 18px;
+  gap: clamp(6px, 1.2vw, 8px);
+  margin-bottom: clamp(10px, 2.2vh, 18px);
 }
 
 .mission-victory-stat {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 10px 8px;
-  border-radius: 14px;
+  gap: 2px;
+  padding: clamp(6px, 1.2vh, 10px) clamp(6px, 1.2vw, 8px);
+  border-radius: 13px;
   border: 1px solid rgba(148, 163, 184, 0.2);
   background: rgba(15, 23, 42, 0.68);
 }
 
 .mission-victory-stat-label {
-  font-size: 10.5px;
+  font-size: clamp(9px, 1.4vh, 10.5px);
   color: #94a3b8;
 }
 
 .mission-victory-stat-value {
-  font-size: 12.5px;
+  font-size: clamp(10.5px, 1.65vh, 12.5px);
   font-weight: 800;
   color: #f8fafc;
 }
@@ -10241,22 +10367,25 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 }
 
 .mission-victory-actions {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: clamp(6px, 1.2vh, 9px);
 }
 
 .mission-victory-primary-btn {
   width: 100%;
-  padding: 13px 18px;
+  min-height: clamp(40px, 6vh, 48px);
+  padding: clamp(8px, 1.5vh, 13px) clamp(12px, 2.4vw, 18px);
   border-radius: 14px;
   border: 1px solid rgba(254, 240, 138, 0.65);
   background: linear-gradient(135deg, #d97706 0%, #eab308 50%, #10b981 100%);
   color: #0b1120;
   font: inherit;
-  font-size: 14.5px;
+  font-size: clamp(12px, 1.9vh, 14.5px);
   font-weight: 800;
   cursor: pointer;
+  touch-action: manipulation;
   box-shadow: 0 10px 26px rgba(234, 179, 8, 0.34);
   transition: transform 0.14s ease, filter 0.14s ease;
 }
@@ -10272,15 +10401,17 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 
 .mission-victory-secondary-btn {
   width: 100%;
-  padding: 10px 14px;
+  min-height: clamp(36px, 5.4vh, 42px);
+  padding: clamp(7px, 1.2vh, 10px) clamp(10px, 2vw, 14px);
   border-radius: 12px;
   border: 1px solid rgba(52, 211, 153, 0.45);
   background: rgba(16, 185, 129, 0.16);
   color: #a7f3d0;
   font: inherit;
-  font-size: 13px;
+  font-size: clamp(11.5px, 1.75vh, 13px);
   font-weight: 700;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background 0.14s ease, transform 0.14s ease;
 }
 
@@ -10289,10 +10420,10 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 }
 
 .mission-victory-footer-note {
-  margin-top: 12px;
-  font-size: 11px;
+  margin-top: clamp(7px, 1.4vh, 12px);
+  font-size: clamp(9.5px, 1.45vh, 11px);
   color: #94a3b8;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 @keyframes missionVictoryFadeIn {
@@ -10318,16 +10449,132 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 
 @media (max-width: 440px) {
   .mission-victory-card {
-    padding: 22px 16px 18px;
+    padding: clamp(14px, 2.8vh, 22px) 3.8vw clamp(12px, 2.2vh, 18px);
     border-radius: 20px;
   }
 
+  .mission-victory-stats {
+    gap: 5px;
+  }
+}
+
+/* Mobile Landscape / Short Viewport: single-screen 2-column vh/vw fit (all buttons visible without scrolling) */
+@media (max-height: 540px) and (min-width: 480px),
+  (orientation: landscape) and (max-height: 580px) and (min-width: 480px) {
+  .mission-victory-overlay {
+    padding: max(2vh, env(safe-area-inset-top)) max(2.4vw, env(safe-area-inset-right))
+      max(2vh, env(safe-area-inset-bottom)) max(2.4vw, env(safe-area-inset-left));
+  }
+
+  .mission-victory-card {
+    width: min(92vw, 740px);
+    max-height: 92vh;
+    max-height: 92dvh;
+    padding: 3vh 3vw;
+    border-radius: clamp(14px, 4vh, 22px);
+    display: grid;
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.38fr);
+    align-items: center;
+    column-gap: 2.6vw;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .mission-victory-close {
+    top: 2vh;
+    right: 1.8vw;
+    width: clamp(28px, 8vh, 34px);
+    height: clamp(28px, 8vh, 34px);
+    font-size: clamp(12px, 3.6vh, 15px);
+  }
+
+  .mission-victory-hero {
+    padding-right: 2.2vw;
+    border-right: 1px solid rgba(250, 204, 21, 0.22);
+  }
+
+  .mission-victory-divider {
+    display: none;
+  }
+
+  .mission-victory-body {
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .mission-victory-emblem {
+    width: clamp(40px, 15.5vh, 64px);
+    height: clamp(40px, 15.5vh, 64px);
+    margin: 0 auto 1.8vh;
+  }
+
+  .mission-victory-emblem-icon {
+    font-size: clamp(20px, 7.6vh, 32px);
+  }
+
+  .mission-victory-badge {
+    padding: 0.7vh 1.3vw;
+    font-size: clamp(8px, 2.3vh, 10px);
+    margin-bottom: 1.3vh;
+    letter-spacing: 0.5px;
+  }
+
   .mission-victory-title {
-    font-size: 28px;
+    font-size: clamp(19px, 7.6vh, 30px);
+    letter-spacing: 1.5px;
+  }
+
+  .mission-victory-subtitle {
+    margin-top: 0.9vh;
+    font-size: clamp(11px, 3.4vh, 14px);
+  }
+
+  .mission-victory-message {
+    margin: 0 0 2vh;
+    padding-right: clamp(28px, 5vw, 40px);
+    font-size: clamp(10.5px, 3vh, 12.5px);
+    line-height: 1.42;
   }
 
   .mission-victory-stats {
-    grid-template-columns: 1fr;
-    gap: 6px;
+    gap: 1.1vw;
+    margin-bottom: 2.2vh;
+  }
+
+  .mission-victory-stat {
+    padding: 1.3vh 1vw;
+    border-radius: clamp(8px, 2.4vh, 12px);
+  }
+
+  .mission-victory-stat-label {
+    font-size: clamp(8.5px, 2.3vh, 10px);
+  }
+
+  .mission-victory-stat-value {
+    font-size: clamp(10px, 2.9vh, 12px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mission-victory-actions {
+    flex-direction: row;
+    gap: 1.2vw;
+  }
+
+  .mission-victory-primary-btn,
+  .mission-victory-secondary-btn {
+    flex: 1 1 0;
+    min-height: clamp(38px, 11.5vh, 46px);
+    padding: 1.3vh 1.4vw;
+    border-radius: clamp(10px, 2.8vh, 13px);
+    font-size: clamp(11px, 3.2vh, 13px);
+    line-height: 1.25;
+  }
+
+  .mission-victory-footer-note {
+    margin-top: 1.4vh;
+    font-size: clamp(8.5px, 2.4vh, 10.5px);
+    text-align: center;
   }
 }

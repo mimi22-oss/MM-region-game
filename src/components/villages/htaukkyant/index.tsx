@@ -14,6 +14,8 @@ import { Lanes } from '../../Lane';
 import { Field } from '../../Field';
 import { EastWestCanal } from '../../Canal';
 import { House, houseFenceBounds, houseVisualRotation } from '../../House';
+import { SchoolClassroomHall } from '../../SchoolClassroomHall';
+import { WALKIN_SCHOOL_HALL_BY_ID } from '../../../game/schoolClassrooms';
 import { Tree } from '../../Tree';
 import { Block } from '../../Primitives';
 
@@ -157,6 +159,10 @@ function SchoolFlagPole({ x, z, rot }: { x: number; z: number; rot: number }) {
 
 /** အထင်ကရ အဆောက်အအုံများ (ကျောင်းတိုက်၊ စာသင်ဆောင်များ၊ တန်ဆောင်း) */
 function LandmarkBuilding({ b }: { b: HtaukKyantLandmarkBuilding }) {
+	const walkInHall = WALKIN_SCHOOL_HALL_BY_ID.get(b.id);
+	if (walkInHall) {
+		return <SchoolClassroomHall spec={walkInHall} />;
+	}
 	// အဆောက်အအုံ အလျားလိုက် အမိုးစောက် ပုံစံထုတ်ခြင်း
 	const roofSlope = (h: number) => {
 		const pitch = 2.4;

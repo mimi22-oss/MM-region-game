@@ -2,6 +2,7 @@ import { mobileQuality } from '../game/sceneBudget';
 import { useMemo } from 'react';
 import { ward, toWorld, kalayVillages } from '../data/ward';
 import { mountainHeight } from '../game/mountainTerrain';
+import { MAHA_WEIPULA_BASE_GATE_UV, buildWeipulaStairway } from '../game/weipulaClimb';
 import {houseVisualRotation,FARMHOUSE_NAME} from './House';
 
 /** Markers feed a small shared light pool, rather than one GPU light per fixture. */
@@ -22,7 +23,7 @@ function NightStars() {
 			const dist = 600 + ((i * 37) % 3600);
 			const x = Math.cos(angle) * dist;
 			const z = Math.sin(angle) * dist;
-			const y = 900 + ((i * 43) % 1800);
+			const y = 2100 + ((i * 43) % 1900);
 			const size = 3 + (i % 4) * 1.8;
 			const color = colors[i % colors.length];
 			arr.push({ x, y, z, size, color });
@@ -48,7 +49,7 @@ function NightStars() {
  */
 function NightMoon() {
 	return (
-		<group position={[280, 850, 2600]} name="night-moon">
+		<group position={[320, 1950, 4200]} name="night-moon">
 			{/* ပင်မ လမင်းလုံးကြီး */}
 			<mesh>
 				<sphereGeometry args={[65, 20, 20]} />
@@ -138,12 +139,22 @@ export function NightEnvironment({sky=true}:{sky?:boolean}) {
 		return points.map(pt => ({ ...toWorld(pt.u, pt.v), rot: pt.rot }));
 	}, []);
 
-	// မဟာဝေပုလ္လတောင်တော် စေတီတော် တည်နေရာ (တောင်ထွတ် ရွှေရောင်မီး)
+	// မဟာဝေပုလ္လတောင်တော် စေတီတော် တည်နေရာ (တောင်ထွတ် ရွှေရောင်မီး) နှင့် စောင်းတန်း ညမီးတန်း
 	const mahaWeipulaPeak = ward.weipula.peaks[2];
+	const allMountainPeaks = useMemo(() => [...ward.mountains, ...ward.weipula.peaks], []);
 	const mahaWeipulaHeight = useMemo(() => {
-		if (!mahaWeipulaPeak) return 905;
-		return mountainHeight(mahaWeipulaPeak.u, mahaWeipulaPeak.v, [...ward.mountains, ...ward.weipula.peaks]);
-	}, [mahaWeipulaPeak]);
+		if (!mahaWeipulaPeak) return 1320;
+		return mountainHeight(mahaWeipulaPeak.u, mahaWeipulaPeak.v, allMountainPeaks);
+	}, [mahaWeipulaPeak, allMountainPeaks]);
+	const weipulaTrailLights = useMemo(() => {
+		const stairway = buildWeipulaStairway(allMountainPeaks);
+		const gateWorld = toWorld(MAHA_WEIPULA_BASE_GATE_UV.u, MAHA_WEIPULA_BASE_GATE_UV.v);
+		const gateY = mountainHeight(MAHA_WEIPULA_BASE_GATE_UV.u, MAHA_WEIPULA_BASE_GATE_UV.v, allMountainPeaks);
+		return {
+			baseGate: { x: gateWorld.x, y: gateY + 6.5, z: gateWorld.z },
+			lanterns: stairway.lanterns.filter((_, idx) => idx % (mobileQuality ? 3 : 2) === 0),
+		};
+	}, [allMountainPeaks]);
 
 	// ထောက်ကြန့် စေတီတော် တည်နေရာ
 	const htaukKyantVillage = kalayVillages.find(v => v.id === 'htaukkyant');
@@ -212,16 +223,32 @@ export function NightEnvironment({sky=true}:{sky?:boolean}) {
 				<StreetLamp key={`lamp-${i}`} x={lamp.x} z={lamp.z} rot={lamp.rot} />
 			))}
 
-			{/* ၁။ မဟာဝေပုလ္လတောင်တော် ရွှေရောင်ညမီးရောင် (Golden Mountaintop Beacon) */}
+			{/* ၁။ မဟာဝေပုလ္လတောင်တော် ရွှေရောင်ညမီးရောင် (Golden Mountaintop Beacon & Glowing Stairway Spine) */}
 			{mahaWeipulaPeak && (
-				<group position={[mahaWeipulaPeak.x, mahaWeipulaHeight + 18, mahaWeipulaPeak.z]}>
-					<NightLight color="#ffd055" intensity={3.5} distance={180} decay={1.8} />
-					<mesh position={[0, 4, 0]}>
-						<sphereGeometry args={[3, 8, 8]} />
+				<group position={[mahaWeipulaPeak.x, mahaWeipulaHeight + 20, mahaWeipulaPeak.z]}>
+					<NightLight color="#ffd055" intensity={5.5} distance={420} decay={1.5} />
+					<mesh position={[0, 5, 0]}>
+						<sphereGeometry args={[4.2, 8, 8]} />
 						<meshBasicMaterial color="#ffe880" />
 					</mesh>
 				</group>
 			)}
+			<group position={[weipulaTrailLights.baseGate.x, weipulaTrailLights.baseGate.y, weipulaTrailLights.baseGate.z]}>
+				<NightLight color="#ffd37a" intensity={9} distance={34} decay={1.4} />
+				<mesh>
+					<sphereGeometry args={[0.9, 8, 8]} />
+					<meshBasicMaterial color="#ffe89e" />
+				</mesh>
+			</group>
+			{weipulaTrailLights.lanterns.map(l => (
+				<group key={l.key} position={[l.x, l.y, l.z]}>
+					<NightLight color="#ffce68" intensity={5.5} distance={26} decay={1.5} />
+					<mesh>
+						<sphereGeometry args={[0.45, 6, 6]} />
+						<meshBasicMaterial color="#ffea9c" />
+					</mesh>
+				</group>
+			))}
 
 			{/* ၂။ ထောက်ကြန့် စေတီတော်မြတ်ကြီးများ ရွှေရောင်မီးရောင် (Golden Pagoda Illumination) */}
 			{hkPagoda && (

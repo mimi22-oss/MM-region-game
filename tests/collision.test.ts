@@ -2,6 +2,7 @@ import { updateHomeAccess } from '../src/game/homeAccess.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { canStand,move } from '../src/game/collision.ts';
+import { WALKIN_SCHOOL_HALL_IDS, WALKIN_SCHOOL_HALL_BY_ID, computeClassroomLayout } from '../src/game/schoolClassrooms.ts';
 import { mangoTrees, MANGO_START_GEO, MANGO_END_GEO, orchardMangoTrees, standaloneMangoTree } from '../src/data/mangoTrees.ts';
 import { tamarindTrees } from '../src/data/tamarindTrees.ts';
 import { uShweHouse, KALAY_SIGN_HOUSE_ID, kalaySignHouse } from '../src/data/ward.ts';
@@ -585,10 +586,20 @@ test('Htauk Kyant village sits between Thar Yar Gone and Weipula with Pagoda & F
   const bridge = toWorld(0, canalV);
   assert.ok(canStand(bridge.x, bridge.z), 'AH1 bridge over canal is walkable');
 
-  // 2. Houses solid and north of Weipula
+  // 2. Houses solid (walk-in school classroom halls allow walking inside while blocking exterior/partition walls) and north of Weipula
   for (const h of htaukKyantVillage.houses) {
     assert.ok(localV(h) < weipulaNorth, 'Htauk Kyant house is north of Weipula');
-    assert.equal(canStand(h.x, h.z), false, 'Htauk Kyant house blocks walking');
+    if (WALKIN_SCHOOL_HALL_IDS.has(h.id)) {
+      const hall = WALKIN_SCHOOL_HALL_BY_ID.get(h.id)!;
+      const layout = computeClassroomLayout(hall);
+      const c = Math.cos(layout.canonicalRotation);
+      const s = Math.sin(layout.canonicalRotation);
+      const backX = hall.x + layout.zBack * s;
+      const backZ = hall.z + layout.zBack * c;
+      assert.equal(canStand(backX, backZ), false, `Walk-in school hall ${h.id} rear wall blocks walking`);
+    } else {
+      assert.equal(canStand(h.x, h.z), false, 'Htauk Kyant house blocks walking');
+    }
   }
 
   // 3. Football playground, small paddy field, and Pagoda arrangement
@@ -658,7 +669,17 @@ test('Kyar Inn village sits between Htauk Kyant and Weipula with Taphi Chaung br
   assert.ok(villageNorth > htaukKyantSouth, 'Kyar Inn is south of Htauk Kyant');
   assert.ok(villageSouth < weipulaNorth, 'Kyar Inn is north of Weipula mountain');
   for (const h of kyarInnVillage.houses) {
-    assert.equal(canStand(h.x, h.z), false, 'Kyar Inn house blocks walking');
+    if (WALKIN_SCHOOL_HALL_IDS.has(h.id)) {
+      const hall = WALKIN_SCHOOL_HALL_BY_ID.get(h.id)!;
+      const layout = computeClassroomLayout(hall);
+      const c = Math.cos(layout.canonicalRotation);
+      const s = Math.sin(layout.canonicalRotation);
+      const backX = hall.x + layout.zBack * s;
+      const backZ = hall.z + layout.zBack * c;
+      assert.equal(canStand(backX, backZ), false, `Walk-in school hall ${h.id} rear wall blocks walking`);
+    } else {
+      assert.equal(canStand(h.x, h.z), false, 'Kyar Inn house blocks walking');
+    }
   }
 
   // 4. Kyarinn Middle School on East side (u > 0)
@@ -820,8 +841,16 @@ test('Kanbale village is integrated with real OSM data, boundary, custom farmhou
   assert.ok(school, 'Kanbale School way/403030614 exists in buildings list');
   assert.equal(school?.name, 'ကံပုလဲကျောင်း');
 
-  // Main classroom hall blocks collision
-  assert.equal(canStand(school!.x, school!.z), false, 'Main classroom hall blocks collision');
+  // Main classroom hall is walk-in (classrooms separated by solid walls; rear wall blocks collision)
+  const kbMainHall = WALKIN_SCHOOL_HALL_BY_ID.get('kanbale-school-main-hall')!;
+  const kbLayout = computeClassroomLayout(kbMainHall);
+  const kbC = Math.cos(kbLayout.canonicalRotation);
+  const kbS = Math.sin(kbLayout.canonicalRotation);
+  assert.equal(
+    canStand(kbMainHall.x + kbLayout.zBack * kbS, kbMainHall.z + kbLayout.zBack * kbC),
+    false,
+    'Main classroom hall rear wall blocks collision',
+  );
 
   // School location detection
   const schoolLoc = detectLocation(433.02, -563.76);

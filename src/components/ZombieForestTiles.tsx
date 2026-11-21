@@ -1,18 +1,16 @@
 import { useLayoutEffect, useRef } from 'react';
 import {
   Color,
-  CylinderGeometry,
   Euler,
-  IcosahedronGeometry,
   InstancedMesh,
   Matrix4,
-  MeshStandardMaterial,
   Quaternion,
   Vector3,
 } from 'three';
 import { MapDataset, type MapDatasetConfig, type MapTileViewProps } from './MapDataset';
 import { projectMapPoint } from '../game/mapProjection';
 import { mobileQuality } from '../game/sceneBudget';
+import { getTreeAssetCache } from '../game/treeResourcePool';
 import {
   registerStreamedChunk,
   unregisterStreamedChunk,
@@ -23,17 +21,8 @@ import datasetConfig from '../data/tharsiZombieForestDataset.json';
 
 const BASE_Y_SCALE = 17.6 / 18.2;
 
-// Shared module-level geometries & materials matching Tree.tsx variant="large"
-// (zero per-tile GPU geometry allocations and 4 total draw calls per tile).
-const trunkGeo = new CylinderGeometry(0.55, 0.95, 11, 10);
-const branchGeo = new CylinderGeometry(0.2, 0.45, 5, 7);
-const mainCanopyGeo = new IcosahedronGeometry(6.5, mobileQuality ? 0 : 1);
-const sideCanopyGeo = new IcosahedronGeometry(3.8, mobileQuality ? 0 : 1);
-
-const barkMat = new MeshStandardMaterial({ color: '#71543b', roughness: 1 });
-const canopyMat = new MeshStandardMaterial({ color: '#ffffff', roughness: 1 });
-
 function ZombieForestTile({ tile, data, projection }: MapTileViewProps) {
+  const cache = getTreeAssetCache();
   const trunkRef = useRef<InstancedMesh>(null);
   const branchRef = useRef<InstancedMesh>(null);
   const crownRef = useRef<InstancedMesh>(null);
@@ -149,24 +138,24 @@ function ZombieForestTile({ tile, data, projection }: MapTileViewProps) {
     <group name={`tile-zombie-forest-${tile.id}`}>
       <instancedMesh
         ref={trunkRef}
-        args={[trunkGeo, barkMat, count]}
+        args={[cache.largeTrunkGeo, cache.barkLargeMat, count]}
         castShadow={!mobileQuality}
         receiveShadow
       />
       <instancedMesh
         ref={branchRef}
-        args={[branchGeo, barkMat, count * 2]}
+        args={[cache.largeBranchGeo, cache.barkLargeMat, count * 2]}
         castShadow={!mobileQuality}
       />
       <instancedMesh
         ref={crownRef}
-        args={[mainCanopyGeo, canopyMat, count]}
+        args={[cache.largeCrownMainGeo, cache.instancedCanopyStandardMat, count]}
         castShadow={!mobileQuality}
         receiveShadow
       />
       <instancedMesh
         ref={sideCrownRef}
-        args={[sideCanopyGeo, canopyMat, count * 2]}
+        args={[cache.largeCrownSideGeo, cache.instancedCanopyStandardMat, count * 2]}
         castShadow={!mobileQuality}
       />
     </group>

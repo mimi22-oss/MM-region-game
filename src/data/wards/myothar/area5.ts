@@ -53,12 +53,34 @@ export const area5={
   fields:[351,372].map((v,i)=>({...toWorld(44,v),width:60,depth:16,rotation:angle,color:i?'#879963':'#6f9257'}))
  },
  southernFields:Array.from({length:6},(_,row)=>Array.from({length:5},(_,col)=>({id:`southern-field-${row}-${col}`,u:174+col*42,v:430+row*40,...toWorld(174+col*42,430+row*40),width:36,depth:34,rotation:angle,color:['#7e9c55','#a6af68','#8ca65c'][(row+col)%3]}))).flat(),
- weipula:{name:'ဝေပုလ္လတောင်ကြီး',label:toWorld(280,4450),
-   peaks:[...[-680,-530,-380,-220,-105,105,220,380,530,680].map((u,i)=>({u,v:4450,radius:[165,160,155,120,90,90,120,155,160,165][i],height:[850,1040,940,720,480,510,780,1100,980,870][i],plateau:0.58,obstacleRadius:6.5})),
-    ...Array.from({length:34},(_,i)=>470+i*120).map((v,i)=>({u:-630,v,radius:105+(i%4)*5,height:350+i*30,plateau:0.45,obstacleRadius:6.5}))].map((m,i)=>({...m,id:`weipula-${i}`,...toWorld(m.u,m.v),color:i<10?'#526e71':'#60796a'}))},
+ weipula:{name:'ဝေပုလ္လတောင်ကြီး',label:toWorld(-900,5600),
+   peaks:[
+    // 0: Far West Chin Alpine Peak behind Maha Weipula
+    {u:-2680,v:6360,radius:920,height:1120,plateau:0.06,skirtPower:1.3,obstacleRadius:6.5},
+    // 1: West Chin Shoulder Ridge (cleanly clear of Base Archway north valley floor)
+    {u:-2140,v:5260,radius:640,height:640,plateau:0.06,skirtPower:1.25,obstacleRadius:6.5},
+    // 2: မဟာဝေပုလ္လတောင်တော် ပင်မတောင်ကြီး (10x taller: 1,320m towering climbable massif, 3.04km base south of the 10 paddy fields)
+    {u:-1560,v:6120,radius:1520,height:1320,plateau:0.045,skirtPower:1.25,obstacleRadius:6.5},
+    // 3: Northeast Foothill Ridge (hosts Weipula Terraced Village south of the 10 paddy fields)
+    {u:-380,v:4920,radius:330,height:290,plateau:0.12,skirtPower:1.25,obstacleRadius:6.5},
+    // 4: West Pass Foothill (clear of AH1 and 10 separation paddy fields)
+    {u:-135,v:4760,radius:115,height:110,plateau:0.06,skirtPower:1.3,obstacleRadius:6.5},
+    // 5: East Pass Foothill (clear of AH1 and 10 separation paddy fields)
+    {u:135,v:4760,radius:115,height:120,plateau:0.06,skirtPower:1.3,obstacleRadius:6.5},
+    // 6: East Ridge Shoulder
+    {u:320,v:4920,radius:260,height:280,plateau:0.08,skirtPower:1.25,obstacleRadius:6.5},
+    // 7: Grand East Chin Range Peak
+    {u:760,v:5480,radius:640,height:1080,plateau:0.06,skirtPower:1.3,obstacleRadius:6.5},
+    // 8: Far East Chin Peak
+    {u:1280,v:5360,radius:520,height:680,plateau:0.08,skirtPower:1.3,obstacleRadius:6.5},
+    // 9: Easternmost Foothill Spur
+    {u:1620,v:5160,radius:420,height:420,plateau:0.08,skirtPower:1.3,obstacleRadius:6.5},
+    // Western mountain spine connecting Taungphila seamlessly into Weipula massif
+    ...Array.from({length:37},(_,i)=>470+i*120).map((v,i)=>({u:-630,v,radius:125+(i%4)*8,height:175+(i%5)*26,plateau:0.08,skirtPower:1.3,obstacleRadius:6.5}))
+   ].map((m,i)=>({...m,id:`weipula-${i}`,...toWorld(m.u,m.v),color:i<10?'#486b52':'#557359'}))},
  westernFields:[270,210,330].flatMap((v,row)=>Array.from({length:5},(_,i)=>({id:`western-field-${row}-${i}`,row,u:-216-i*42,v,...toWorld(-216-i*42,v),width:38,depth:54,rotation:angle,color:['#8ba65d','#a6ad63','#719650'][(i+row)%3]}))),
  taungphila:{name:'တောင်ဖီလာတောင်',label:toWorld(-575,230)},
- mountains:[...Array.from({length:5},(_,i)=>({u:-520-(i%2)*20,v:60+i*85,radius:72,height:145+(i%3)*28})),...Array.from({length:3},(_,i)=>({u:-630,v:100+i*120,radius:65,height:210+i*18}))].map((m,i)=>({...m,id:`western-mountain-${i}`,name:'တောင်ဖီလာတောင်',...toWorld(m.u,m.v),color:i<5?'#607b62':'#718487'})),
+ mountains:[...Array.from({length:5},(_,i)=>({u:-520-(i%2)*20,v:60+i*85,radius:72,height:145+(i%3)*28,plateau:0.1,skirtPower:1.25})),...Array.from({length:3},(_,i)=>({u:-630,v:100+i*120,radius:65,height:210+i*18,plateau:0.1,skirtPower:1.25}))].map((m,i)=>({...m,id:`western-mountain-${i}`,name:'တောင်ဖီလာတောင်',...toWorld(m.u,m.v),color:i<5?'#607b62':'#718487'})),
  crossCanal:{v:282,junctionV:376,depth:3,rotation:angle,
   points:[[125,282],[0,282],[-5,284],[-9,290],[-9,334],[-9,362],[-12,372],[-24,376],[-170,376]],
   bridges:[{u:0,v:282,width:12,depth:7},{u:-9,v:310,width:7,depth:4}]},
@@ -82,7 +104,7 @@ export const area5={
    {id:'quarters',name:'ဘုန်းကြီးကျောင်းဆောင်',u:0,v:23,width:27,depth:14,color:'#bda382',roof:'#80564d'}],
   stupas:[{u:31,v:9,radius:5},{u:34,v:-10,radius:2.7},{u:23,v:-14,radius:2}],
  },
- roads:[{id:'farmhouse-access',name:'စိုက်ခင်းအိမ်ဝင်လမ်း',...toWorld(-31.5,270),width:63,depth:3,rotation:angle,main:false},{id:'ah1',name:'AH1',...toWorld(0,2566.69),width:12,depth:5266.62,rotation:angle,main:true},
+ roads:[{id:'farmhouse-access',name:'စိုက်ခင်းအိမ်ဝင်လမ်း',...toWorld(-31.5,270),width:63,depth:3,rotation:angle,main:false},{id:'ah1',name:'AH1',...toWorld(0,2666.69),width:12,depth:5466.62,rotation:angle,main:true},
  ...[-77,-99].map((u,i)=>({id:`lane${i}`,name:'ရပ်ကွက်လမ်း',...toWorld(u,0),width:5,depth:226,rotation:angle,main:false})),
  ...[-112,-47,40,112].map((v,i)=>({id:`cross${i}`,name:'လမ်းသွယ်',...toWorld(-57,v),width:114,depth:5,rotation:angle,main:false})),
  {id:'pitch-monastery-lane',name:'ကွင်းနှင့်ကျောင်းကြားလမ်း',...toWorld(150,68),width:5,depth:124,rotation:angle,main:false},

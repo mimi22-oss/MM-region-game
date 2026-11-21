@@ -16,6 +16,8 @@ import { StaticBatch } from './StaticBatch';
 import { RobotBots, prepareRobotPatrols } from './RobotBots';
 import { HouseResidentBots } from './HouseResidentBots';
 import { VillagePedestrianBots } from './VillagePedestrianBots';
+import { ChinVillageBots } from './ChinVillageBots';
+import { VillageInstitutionBots } from './VillageInstitutionBots';
 import { RegionActivity } from './RegionActivity';
 import { snapshotRegion, regionFlows, animateRegionFlows, warmRegion, disposePreparedRegion } from '../game/preparedScene';
 import { registerGroundRegion, releaseGroundRegion, releaseGroundRegions } from '../game/groundSurface';
@@ -402,6 +404,8 @@ const fallbackFocus = { x: 0, z: 0 };
       <RobotBots activeRegions={active} />
       <HouseResidentBots activeRegions={active} minute={minute} timeMode={timeMode} />
       <VillagePedestrianBots activeRegions={active} minute={minute} timeMode={timeMode} />
+      <ChinVillageBots activeRegions={active} minute={minute} timeMode={timeMode} />
+      <VillageInstitutionBots activeRegions={active} minute={minute} timeMode={timeMode} />
       <CarBots />
     </>}
     {/* F07: HauntedWarehouseAudioZone operates independently of NPC rendering / diagnostic toggles */}

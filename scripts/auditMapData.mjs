@@ -18,7 +18,12 @@ const regions = [
 }));
 
 const streamedDatasets = [];
-for (const metaPath of ['src/data/sitharFieldDataset.json', 'src/data/kanbaleDataset.json', 'src/data/tharsiZombieForestDataset.json']) {
+for (const metaPath of [
+  'src/data/sitharFieldDataset.json',
+  'src/data/kanbaleDataset.json',
+  'src/data/tharsiZombieForestDataset.json',
+  'src/data/weipulaChinVillageDataset.json',
+]) {
   try {
     const config = JSON.parse(await readFile(metaPath, 'utf8'));
     const manifestRel = String(config.manifest ?? '').replace(/^\/+/, '');

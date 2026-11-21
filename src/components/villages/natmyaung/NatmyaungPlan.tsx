@@ -7,6 +7,7 @@ import {
   natmyaungPonds,
   type NatmyaungBuildingData,
 } from '../../../data/villages/natmyaung';
+import { natmyaungWeipulaSeparationFields } from '../../../data/villages/natmyaung/separationFields';
 
 export interface NatmyaungPlanProps {
   labels?: boolean;
@@ -51,6 +52,26 @@ export function NatmyaungPlan({
         strokeDasharray="8 5"
         strokeLinejoin="round"
       />
+
+      {/* ======================================================== */}
+      {/* ၁.၅။ နတ်မြောင်း-မဟာဝေပုလ္လကြား လယ်ကွင်း ၁၀ ကွင်း (10 Separation Paddy Fields) */}
+      {/* ======================================================== */}
+      <g id="natmyaung-weipula-plan-sep-fields">
+        {natmyaungWeipulaSeparationFields.map((f) => (
+          <rect
+            key={`nm-wp-sep-${f.id}`}
+            x={f.x - f.width / 2}
+            y={f.z - f.depth / 2}
+            width={f.width}
+            height={f.depth}
+            transform={`rotate(${-(f.rotation * 180) / Math.PI} ${f.x} ${f.z})`}
+            fill={f.color}
+            stroke="#556b2f"
+            strokeWidth="1.0"
+            opacity="0.86"
+          />
+        ))}
+      </g>
 
       {/* ======================================================== */}
       {/* ၂။ OSM လမ်းကြောင်းများ (Road Polylines) */}
