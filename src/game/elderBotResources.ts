@@ -20,6 +20,7 @@ import {
   Vector3,
 } from 'three';
 import { garmentGeometry } from './characterClothing.ts';
+import { npcCroppedHairGeometry, npcTiedHairGeometry } from './npcAnatomy.ts';
 
 type Point3 = [number, number, number];
 
@@ -185,8 +186,8 @@ export interface ElderBotSharedGeometries {
   readonly kidDressSkirt: BufferGeometry;
   readonly upperSleeve: BufferGeometry;
   readonly lowerSleeve: BufferGeometry;
-  readonly hairCapUncle: SphereGeometry;
-  readonly hairCapAuntie: SphereGeometry;
+  readonly hairCapUncle: BufferGeometry;
+  readonly hairCapAuntie: BufferGeometry;
   readonly glassesLens: TorusGeometry;
 }
 
@@ -200,8 +201,6 @@ export interface ElderBotResourceCache {
   readonly skins: readonly MeshStandardMaterial[];
   readonly hairs: readonly MeshStandardMaterial[];
   readonly hairGrey: MeshStandardMaterial;
-  readonly eyeWhite: MeshStandardMaterial;
-  readonly eyeDark: MeshStandardMaterial;
   readonly mouthUncle: MeshStandardMaterial;
   readonly mouthAuntie: MeshStandardMaterial;
   readonly goldAccent: MeshStandardMaterial;
@@ -352,8 +351,8 @@ export function getElderBotResourceCache(): ElderBotResourceCache {
       ],
       14,
     ),
-    hairCapUncle: new SphereGeometry(0.132, 12, 9, 0, Math.PI * 2, 0, Math.PI * 0.58),
-    hairCapAuntie: new SphereGeometry(0.133, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.64),
+    hairCapUncle: npcCroppedHairGeometry,
+    hairCapAuntie: npcTiedHairGeometry,
     glassesLens: new TorusGeometry(0.028, 0.0032, 6, 14),
   };
 
@@ -437,8 +436,6 @@ export function getElderBotResourceCache(): ElderBotResourceCache {
       mat('#8f939c', 0.78), // silver-grey elder
     ],
     hairGrey: mat('#c2c6ce', 0.8),
-    eyeWhite: mat('#faf7f0', 0.25),
-    eyeDark: mat('#1a1618', 0.2),
     mouthUncle: mat('#7f493b', 0.75),
     mouthAuntie: mat('#9d4e4a', 0.72),
     goldAccent: mat('#d4af37', 0.34, 0.52),

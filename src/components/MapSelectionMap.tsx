@@ -1,8 +1,7 @@
 import { memo, useEffect, useState } from 'react';
 import { ward } from '../data/ward';
 import { kalayVillages } from '../data/villages';
-import { myotharCenterBuildings } from '../data/wards/myothar/center/myotharCenterBuildings';
-import { myotharCenterRoads } from '../data/wards/myothar/center/myotharCenterRoads';
+import { myotharCenterBuildings, myotharCenterRoads } from '../data/wards/myothar/center/index';
 import { kanbaleDrainSvgPath } from '../data/villages/kanbale/kanbaleDrain';
 import { natmyaungRoads } from '../data/villages/natmyaung/natmyaungRoads';
 import {

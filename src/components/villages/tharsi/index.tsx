@@ -1,4 +1,4 @@
-import { tharSiVillage, connectingCanal, tharSiCanal } from '../../../data/villages/tharsi';
+import { tharSiVillage, connectingCanal, tharSiCanal, THARSI_SCHOOL_COMPOUND } from '../../../data/villages/tharsi';
 import zombieForestMeta from '../../../data/tharsiZombieForestDataset.json';
 import { MainRoad } from '../../MainRoad';
 import { Lanes } from '../../Lane';
@@ -6,6 +6,8 @@ import { Field } from '../../Field';
 import { PolylineCanal, EastWestCanal } from '../../Canal';
 import { House, houseFenceBounds, houseVisualRotation } from '../../House';
 import { Tree } from '../../Tree';
+import { TharSiSchool } from './TharSiSchool';
+import { WALKIN_SCHOOL_HALL_BY_ID } from '../../../game/schoolClassrooms';
 
 /**
  * သာစည်ရွာ (Thar Si Village) — 3D Scene Component
@@ -24,6 +26,7 @@ export function TharSiVillage() {
 		{tharSiVillage.fields.map((f, i) => <Field key={f.id ?? `ts-f-${i}`} f={f} />)}
 		{tharSiVillage.bundedFields.map((f, i) => <Field key={f.id ?? `ts-bf-${i}`} f={f} bunded />)}
 		{tharSiVillage.houses.map(h => <House key={h.id} h={h} />)}
+		<TharSiSchool />
 		{tharSiVillage.largeTrees.map((t, i) => <Tree key={t.id} t={t} i={i} variant="large" />)}
 		{tharSiVillage.trees.map((t, i) => <Tree key={t.id} t={t} i={i} variant="canopy" />)}
 		{tharSiVillage.farmTrees.map(t => <Tree key={t.id} t={t} variant="farm" />)}
@@ -61,6 +64,73 @@ export function TharSiVillagePlan({ labels, onSelectLocation }: { labels: boolea
 			</g>;
 		})}
 		{tharSiVillage.farmTrees.map(t => <circle key={t.id} cx={t.x} cy={t.z} r="2.4" fill="#547b48" />)}
+		{/* သာစည်ကျောင်းဝင်း (2D Map Plan: Compound, 3 Halls, Flagpole & 3 Resting Pavilions) */}
+		<g id="tharsi-school-plan">
+			<rect
+				x={THARSI_SCHOOL_COMPOUND.x - THARSI_SCHOOL_COMPOUND.width / 2}
+				y={THARSI_SCHOOL_COMPOUND.z - THARSI_SCHOOL_COMPOUND.depth / 2}
+				width={THARSI_SCHOOL_COMPOUND.width}
+				height={THARSI_SCHOOL_COMPOUND.depth}
+				fill="#4c7c40"
+				fillOpacity="0.65"
+				stroke="#facc15"
+				strokeWidth="1.2"
+				transform={`rotate(${-THARSI_SCHOOL_COMPOUND.rotation * 180 / Math.PI} ${THARSI_SCHOOL_COMPOUND.x} ${THARSI_SCHOOL_COMPOUND.z})`}
+			/>
+			<rect
+				x={THARSI_SCHOOL_COMPOUND.assemblyPlaza.x - THARSI_SCHOOL_COMPOUND.assemblyPlaza.width / 2}
+				y={THARSI_SCHOOL_COMPOUND.assemblyPlaza.z - THARSI_SCHOOL_COMPOUND.assemblyPlaza.depth / 2}
+				width={THARSI_SCHOOL_COMPOUND.assemblyPlaza.width}
+				height={THARSI_SCHOOL_COMPOUND.assemblyPlaza.depth}
+				fill="#cbd5e1"
+				transform={`rotate(${-THARSI_SCHOOL_COMPOUND.assemblyPlaza.rotation * 180 / Math.PI} ${THARSI_SCHOOL_COMPOUND.assemblyPlaza.x} ${THARSI_SCHOOL_COMPOUND.assemblyPlaza.z})`}
+			/>
+			<circle cx={THARSI_SCHOOL_COMPOUND.flagpole.x} cy={THARSI_SCHOOL_COMPOUND.flagpole.z} r="2.6" fill="#dc2626" stroke="#ffffff" strokeWidth="0.9" />
+			{THARSI_SCHOOL_COMPOUND.restPavilions.map(p => (
+				<rect
+					key={p.id}
+					x={p.x - p.width / 2}
+					y={p.z - p.depth / 2}
+					width={p.width}
+					height={p.depth}
+					fill="#2f6a4f"
+					stroke="#fef9c3"
+					strokeWidth="0.6"
+					transform={`rotate(${-p.rotation * 180 / Math.PI} ${p.x} ${p.z})`}
+				/>
+			))}
+			{THARSI_SCHOOL_COMPOUND.hallIds.map(id => {
+				const h = WALKIN_SCHOOL_HALL_BY_ID.get(id);
+				if (!h) return null;
+				return (
+					<rect
+						key={h.id}
+						x={h.x - h.width / 2}
+						y={h.z - h.depth / 2}
+						width={h.width}
+						height={h.depth}
+						fill={h.roofColor}
+						stroke="#ffffff"
+						strokeWidth="0.8"
+						transform={`rotate(${-h.rotation * 180 / Math.PI} ${h.x} ${h.z})`}
+					/>
+				);
+			})}
+			{labels && (
+				<text
+					x={THARSI_SCHOOL_COMPOUND.flagpole.x}
+					y={THARSI_SCHOOL_COMPOUND.flagpole.z - 4}
+					textAnchor="middle"
+					fontSize="9.5"
+					fontWeight="bold"
+					fill="#fef08a"
+					stroke="#14532d"
+					strokeWidth="0.45"
+				>
+					🏫 သာစည်ကျောင်း
+				</text>
+			)}
+		</g>
 		{tharSiVillage.trees.map(t => <circle key={t.id} cx={t.x} cy={t.z} r="5.8" fill="#365a42" />)}
 		{tharSiVillage.largeTrees.map(t => <circle key={t.id} cx={t.x} cy={t.z} r="6.5" fill="#486e40" stroke="#739451" strokeWidth="0.6" />)}
 		{zombieForestMeta.zoneRects.map(zone => (

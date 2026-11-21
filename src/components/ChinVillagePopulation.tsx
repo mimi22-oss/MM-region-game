@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group, Mesh } from 'three';
+import { npcFaceGeometry, npcFaceMaterial, npcHandGeometry } from '../game/npcAnatomy';
 import { mobileQuality } from '../game/sceneBudget';
 import { getWeipulaVillagerCache } from '../game/weipulaVillagers';
 import {
@@ -23,6 +24,8 @@ interface PooledChinSlotRefs {
   leftArmMesh: Mesh | null;
   rightArm: Group | null;
   rightArmMesh: Mesh | null;
+  leftHandMesh: Mesh | null;
+  rightHandMesh: Mesh | null;
   leftLeg: Group | null;
   leftLegMesh: Mesh | null;
   rightLeg: Group | null;
@@ -46,6 +49,8 @@ function emptySlotRefs(): PooledChinSlotRefs {
     leftArmMesh: null,
     rightArm: null,
     rightArmMesh: null,
+    leftHandMesh: null,
+    rightHandMesh: null,
     leftLeg: null,
     leftLegMesh: null,
     rightLeg: null,
@@ -90,11 +95,12 @@ function PooledChinVillagerSlotView({
           geometry={cache.headGeo}
           material={cache.skinMats[0]}
         />
+        <mesh geometry={npcFaceGeometry} material={npcFaceMaterial} />
         <mesh
           ref={el => {
             refs.hairCapMesh = el;
           }}
-          position={[0, 0.03, -0.01]}
+          position={[0, 0, 0]}
           geometry={cache.hairCapGeo}
           material={cache.hairDarkMat}
         />
@@ -157,7 +163,7 @@ function PooledChinVillagerSlotView({
 
       {/* Left Arm */}
       <group
-        position={[-0.23, 1.3, 0]}
+        position={[-0.21, 1.3, 0]}
         ref={el => {
           refs.leftArm = el;
         }}
@@ -166,15 +172,16 @@ function PooledChinVillagerSlotView({
           ref={el => {
             refs.leftArmMesh = el;
           }}
-          position={[0, -0.22, 0]}
+          position={[0, 0, 0]}
           geometry={cache.armGeo}
           material={cache.chinTopMats[0]}
         />
+        <mesh ref={el => { refs.leftHandMesh = el; }} position={[0, -0.452, 0]} geometry={npcHandGeometry} material={cache.skinMats[0]} />
       </group>
 
       {/* Right Arm */}
       <group
-        position={[0.23, 1.3, 0]}
+        position={[0.21, 1.3, 0]}
         ref={el => {
           refs.rightArm = el;
         }}
@@ -183,10 +190,11 @@ function PooledChinVillagerSlotView({
           ref={el => {
             refs.rightArmMesh = el;
           }}
-          position={[0, -0.22, 0]}
+          position={[0, 0, 0]}
           geometry={cache.armGeo}
           material={cache.chinTopMats[0]}
         />
+        <mesh ref={el => { refs.rightHandMesh = el; }} position={[0, -0.452, 0]} scale={[-1, 1, 1]} geometry={npcHandGeometry} material={cache.skinMats[0]} />
       </group>
 
       {/* Left & Right Legs */}
@@ -204,7 +212,7 @@ function PooledChinVillagerSlotView({
           geometry={cache.legGeo}
           material={cache.skinMats[0]}
         />
-        <mesh position={[0, -0.5, 0.04]} geometry={cache.shoeGeo} material={cache.shoeDarkMat} />
+        <mesh position={[0, -0.54, 0]} geometry={cache.shoeGeo} material={cache.shoeDarkMat} />
       </group>
       <group
         position={[0.085, 0.54, 0]}
@@ -220,7 +228,7 @@ function PooledChinVillagerSlotView({
           geometry={cache.legGeo}
           material={cache.skinMats[0]}
         />
-        <mesh position={[0, -0.5, 0.04]} geometry={cache.shoeGeo} material={cache.shoeDarkMat} />
+        <mesh position={[0, -0.54, 0]} geometry={cache.shoeGeo} material={cache.shoeDarkMat} />
       </group>
     </group>
   );
@@ -311,6 +319,8 @@ export function ChinVillagePopulation({
 
         if (refs.headMesh) refs.headMesh.material = skinMat;
         if (refs.neckMesh) refs.neckMesh.material = skinMat;
+        if (refs.leftHandMesh) refs.leftHandMesh.material = skinMat;
+        if (refs.rightHandMesh) refs.rightHandMesh.material = skinMat;
         if (refs.leftLegMesh) refs.leftLegMesh.material = skinMat;
         if (refs.rightLegMesh) refs.rightLegMesh.material = skinMat;
         if (refs.hairCapMesh) refs.hairCapMesh.material = hairMat;

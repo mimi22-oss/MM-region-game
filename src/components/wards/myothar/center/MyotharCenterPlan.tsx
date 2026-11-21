@@ -8,6 +8,8 @@ import {
 	type MyotharCenterRoad,
 	type MyotharCenterPOI,
 } from '../../../../data/wards/myothar/center/index.ts';
+import { MYOTHAR_SCHOOL_COMPOUND } from '../../../../data/wards/myothar/center/myotharSchoolCampus.ts';
+import { WALKIN_SCHOOL_HALL_BY_ID } from '../../../../game/schoolClassrooms.ts';
 
 export interface MyotharCenterPlanProps {
 	labels: boolean;
@@ -100,6 +102,81 @@ export const MyotharCenterPlan = memo(function MyotharCenterPlan({
 					strokeWidth={2.2}
 					strokeLinecap="round"
 				/>
+			</g>
+
+			{/* ၁.၆။ မြို့သာ အခြေခံပညာကျောင်း (2D Map Plan: Compound, 3 Halls, Flagpole & 2 Rest Pavilions) */}
+			<g id="mc-school-plan">
+				<rect
+					x={MYOTHAR_SCHOOL_COMPOUND.x - MYOTHAR_SCHOOL_COMPOUND.width / 2}
+					y={MYOTHAR_SCHOOL_COMPOUND.z - MYOTHAR_SCHOOL_COMPOUND.depth / 2}
+					width={MYOTHAR_SCHOOL_COMPOUND.width}
+					height={MYOTHAR_SCHOOL_COMPOUND.depth}
+					fill="#4c7c40"
+					fillOpacity={0.65}
+					stroke="#facc15"
+					strokeWidth={1.2}
+					transform={`rotate(${-MYOTHAR_SCHOOL_COMPOUND.rotation * 180 / Math.PI} ${MYOTHAR_SCHOOL_COMPOUND.x} ${MYOTHAR_SCHOOL_COMPOUND.z})`}
+				/>
+				<rect
+					x={MYOTHAR_SCHOOL_COMPOUND.assemblyPlaza.x - MYOTHAR_SCHOOL_COMPOUND.assemblyPlaza.width / 2}
+					y={MYOTHAR_SCHOOL_COMPOUND.assemblyPlaza.z - MYOTHAR_SCHOOL_COMPOUND.assemblyPlaza.depth / 2}
+					width={MYOTHAR_SCHOOL_COMPOUND.assemblyPlaza.width}
+					height={MYOTHAR_SCHOOL_COMPOUND.assemblyPlaza.depth}
+					fill="#cbd5e1"
+					transform={`rotate(${-MYOTHAR_SCHOOL_COMPOUND.assemblyPlaza.rotation * 180 / Math.PI} ${MYOTHAR_SCHOOL_COMPOUND.assemblyPlaza.x} ${MYOTHAR_SCHOOL_COMPOUND.assemblyPlaza.z})`}
+				/>
+				<circle
+					cx={MYOTHAR_SCHOOL_COMPOUND.flagpole.x}
+					cy={MYOTHAR_SCHOOL_COMPOUND.flagpole.z}
+					r={2.5}
+					fill="#dc2626"
+					stroke="#ffffff"
+					strokeWidth={0.9}
+				/>
+				{MYOTHAR_SCHOOL_COMPOUND.restPavilions.map((p) => (
+					<rect
+						key={p.id}
+						x={p.x - p.width / 2}
+						y={p.z - p.depth / 2}
+						width={p.width}
+						height={p.depth}
+						fill="#2f6a4f"
+						stroke="#fef9c3"
+						strokeWidth={0.6}
+						transform={`rotate(${-p.rotation * 180 / Math.PI} ${p.x} ${p.z})`}
+					/>
+				))}
+				{MYOTHAR_SCHOOL_COMPOUND.hallIds.map((id) => {
+					const h = WALKIN_SCHOOL_HALL_BY_ID.get(id);
+					if (!h) return null;
+					return (
+						<rect
+							key={h.id}
+							x={h.x - h.width / 2}
+							y={h.z - h.depth / 2}
+							width={h.width}
+							height={h.depth}
+							fill={h.roofColor}
+							stroke="#ffffff"
+							strokeWidth={0.8}
+							transform={`rotate(${-h.rotation * 180 / Math.PI} ${h.x} ${h.z})`}
+						/>
+					);
+				})}
+				{labels && (
+					<text
+						x={MYOTHAR_SCHOOL_COMPOUND.flagpole.x}
+						y={MYOTHAR_SCHOOL_COMPOUND.flagpole.z - 4}
+						textAnchor="middle"
+						fontSize={9.5}
+						fontWeight="bold"
+						fill="#fef08a"
+						stroke="#14532d"
+						strokeWidth={0.45}
+					>
+						🏫 မြို့သာကျောင်း
+					</text>
+				)}
 			</g>
 
 			{/* ၂။ နယ်မြေ (၅) စတိုင် ခြံဝန်းများနှင့် သီးခြားအိမ်ခြေများ (Compounds & Separated Houses) */}

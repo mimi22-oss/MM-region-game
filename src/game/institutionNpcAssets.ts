@@ -1,5 +1,6 @@
-import { BoxGeometry, CylinderGeometry, MeshStandardMaterial } from 'three';
+import { BoxGeometry, CylinderGeometry, MeshStandardMaterial, type BufferGeometry } from 'three';
 import { getWeipulaVillagerCache, type WeipulaVillagerCache } from './weipulaVillagers.ts';
+import { createSchoolBackpackGeometry } from './schoolBackpack.ts';
 
 /**
  * ============================================================================
@@ -18,9 +19,12 @@ export interface InstitutionNpcAssetCache {
   readonly veilGeo: BoxGeometry;
   readonly wimpleGeo: CylinderGeometry;
   readonly bibleGeo: BoxGeometry;
-  readonly backpackGeo: BoxGeometry;
+  readonly backpackGeo: BufferGeometry;
   readonly crossVGeo: BoxGeometry;
   readonly crossHGeo: BoxGeometry;
+  readonly chalkStickGeo: CylinderGeometry;
+  readonly dusterGeo: BoxGeometry;
+  readonly chalkLineUnitGeo: BoxGeometry;
   // Christian Clergy materials (Catholic Priest/Sister & Protestant Pastor/Lady Pastor)
   readonly cassockBlackMat: MeshStandardMaterial;
   readonly cassockWhiteMat: MeshStandardMaterial;
@@ -36,6 +40,8 @@ export interface InstitutionNpcAssetCache {
   readonly schoolGreenMat: MeshStandardMaterial;
   readonly teacherBagMat: MeshStandardMaterial;
   readonly studentBackpackMats: readonly MeshStandardMaterial[];
+  readonly chalkWhiteMat: MeshStandardMaterial;
+  readonly dusterWoodMat: MeshStandardMaterial;
 }
 
 let singletonInstitutionCache: InstitutionNpcAssetCache | null = null;
@@ -54,9 +60,12 @@ export function getInstitutionNpcCache(): InstitutionNpcAssetCache {
     veilGeo: new BoxGeometry(0.32, 0.36, 0.24),
     wimpleGeo: new CylinderGeometry(0.168, 0.175, 0.09, 10),
     bibleGeo: new BoxGeometry(0.11, 0.16, 0.045),
-    backpackGeo: new BoxGeometry(0.26, 0.34, 0.14),
+    backpackGeo: createSchoolBackpackGeometry(),
     crossVGeo: new BoxGeometry(0.024, 0.14, 0.018),
     crossHGeo: new BoxGeometry(0.092, 0.024, 0.018),
+    chalkStickGeo: new CylinderGeometry(0.011, 0.011, 0.1, 6),
+    dusterGeo: new BoxGeometry(0.16, 0.06, 0.06),
+    chalkLineUnitGeo: new BoxGeometry(1, 0.055, 0.012),
 
     // Christian clergy vestments
     cassockBlackMat: new MeshStandardMaterial({ color: '#171a21', roughness: 0.78 }),
@@ -74,10 +83,12 @@ export function getInstitutionNpcCache(): InstitutionNpcAssetCache {
     schoolGreenMat: new MeshStandardMaterial({ color: '#166534', roughness: 0.78 }),
     teacherBagMat: new MeshStandardMaterial({ color: '#5c3a21', roughness: 0.75 }),
     studentBackpackMats: [
-      new MeshStandardMaterial({ color: '#1d4ed8', roughness: 0.72 }),
-      new MeshStandardMaterial({ color: '#b91c1c', roughness: 0.72 }),
-      new MeshStandardMaterial({ color: '#ca8a04', roughness: 0.72 }),
+      new MeshStandardMaterial({ color: '#1d4ed8', roughness: 0.72, vertexColors: true }),
+      new MeshStandardMaterial({ color: '#b91c1c', roughness: 0.72, vertexColors: true }),
+      new MeshStandardMaterial({ color: '#ca8a04', roughness: 0.72, vertexColors: true }),
     ],
+    chalkWhiteMat: new MeshStandardMaterial({ color: '#f7f8f2', roughness: 0.75 }),
+    dusterWoodMat: new MeshStandardMaterial({ color: '#7d502b', roughness: 0.82 }),
   });
 
   singletonInstitutionCache = created;
@@ -95,6 +106,9 @@ export function disposeInstitutionNpcCache(): void {
   c.backpackGeo.dispose();
   c.crossVGeo.dispose();
   c.crossHGeo.dispose();
+  c.chalkStickGeo.dispose();
+  c.dusterGeo.dispose();
+  c.chalkLineUnitGeo.dispose();
   c.cassockBlackMat.dispose();
   c.cassockWhiteMat.dispose();
   c.clericalCollarMat.dispose();
@@ -108,4 +122,6 @@ export function disposeInstitutionNpcCache(): void {
   c.schoolGreenMat.dispose();
   c.teacherBagMat.dispose();
   c.studentBackpackMats.forEach(m => m.dispose());
+  c.chalkWhiteMat.dispose();
+  c.dusterWoodMat.dispose();
 }

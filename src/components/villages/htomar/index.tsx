@@ -3,8 +3,7 @@ import { MainRoad } from '../../MainRoad';
 import { Lanes } from '../../Lane';
 import { Field } from '../../Field';
 import { House, houseFenceBounds, houseVisualRotation } from '../../House';
-import { SchoolClassroomHall } from '../../SchoolClassroomHall';
-import { WALKIN_SCHOOL_HALL_BY_ID } from '../../../game/schoolClassrooms';
+import { WALKIN_SCHOOL_HALL_IDS } from '../../../game/schoolClassrooms';
 import { Tree } from '../../Tree';
 import { Block } from '../../Primitives';
 
@@ -65,8 +64,8 @@ export function HtomarVillage(){
    </group>;
   })}
   {campusBuildings.map(b=>{
-   const hallSpec = WALKIN_SCHOOL_HALL_BY_ID.get(b.id);
-   if (hallSpec) return <SchoolClassroomHall key={b.id} spec={hallSpec} />;
+   // Walk-in school halls are rendered centrally via Fixed Object Pool (`<PooledSchoolHalls>`) with zero duplication!
+   if (WALKIN_SCHOOL_HALL_IDS.has(b.id)) return null;
    return <group key={b.id} position={[b.x,0,b.z]} rotation={[0,b.rotation,0]}>
     <Block y={0.25} w={b.width+1.6} h={0.5} d={b.depth+1.6} color="#cfc4a9"/>
     <Block y={4.2} w={b.width} h={7.4} d={b.depth} color={b.color}/>

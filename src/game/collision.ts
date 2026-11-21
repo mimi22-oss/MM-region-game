@@ -32,7 +32,7 @@ import {
   shweMyanmarResidential,
   shweMyanmarVacantLot,
 } from "../data/wards/myothar/shweMyanmarArea.ts";
-import { myotharCenterBuildings } from "../data/wards/myothar/center/myotharCenterBuildings.ts";
+import { myotharCenterBuildings } from "../data/wards/myothar/center/index.ts";
 import { kalayArea1Buildings } from "../data/wards/kalayArea1/kalayArea1Buildings.ts";
 import { nankaleinCreek, nankaleinBridge } from "../data/wards/kalayArea1/kalayArea1Data.ts";
 import { nankaleinTeaShopData } from "../data/wards/kalayArea1/kalayArea1TeaShop.ts";
@@ -47,6 +47,8 @@ import {
   WALKIN_SCHOOL_HALL_IDS,
   canStandWalkInSchoolHalls,
 } from "./schoolClassrooms.ts";
+import { canStandTharSiSchoolCampus } from "../data/villages/tharsi/schoolCampus.ts";
+import { canStandMyotharSchoolCampus } from "../data/wards/myothar/center/myotharSchoolCampus.ts";
 export const PLAYER_RADIUS = 0.4;
 const nearbyAreca = spatialIndex(estatePalms, (p) => ({
   x: p.x,
@@ -665,6 +667,8 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
   }
   if (!canStandMountainVillage(x, z)) return false;
   if (!canStandKanbaleSchool(x, z)) return false;
+  if (!canStandTharSiSchoolCampus(x, z, PLAYER_RADIUS)) return false;
+  if (!canStandMyotharSchoolCampus(x, z, PLAYER_RADIUS)) return false;
   if (!canStandWalkInSchoolHalls(x, z, PLAYER_RADIUS)) return false;
   if (sourceIsEdited(nankaleinTeaShopData.id)) {
     // Tea shop is edited or deleted, skip static collision

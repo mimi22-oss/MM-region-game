@@ -30,8 +30,8 @@ export class GroundSurface {
   });
   }
  }
- height(x:number,z:number){
-  this.ray.ray.origin.set(x,10000,z);
+ height(x:number,z:number,maxY?:number){
+  this.ray.ray.origin.set(x,maxY!==undefined?maxY:10000,z);
   const hits=this.hits;
   hits.length=0;
   this.ray.intersectObjects(this.cells.get(Math.floor(x/64)+','+Math.floor(z/64))||emptyMeshes,false,hits);
@@ -62,6 +62,14 @@ export function registerGroundRegion(scene:Object3D,id:string,root:Object3D){
  const previous=entry.regions.get(id);
  if(previous===root)return;
  if(previous)groundWorlds.delete(previous);
+ entry.regions.set(id,root);
+ groundWorlds.set(root,scene);
+ entry.surface.refresh(...entry.regions.values());
+}
+/** Refreshes a persistent pooled ground container (e.g. Fixed Object Pool school halls) after slot reassignment. */
+export function refreshGroundRegion(scene:Object3D,id:string,root:Object3D){
+ const entry=groundEntry(scene);
+ entry.regions??=new Map();
  entry.regions.set(id,root);
  groundWorlds.set(root,scene);
  entry.surface.refresh(...entry.regions.values());

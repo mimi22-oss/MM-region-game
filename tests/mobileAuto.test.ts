@@ -46,6 +46,41 @@ test('pinch and same-side multi-touch stop auto through all pointer releases',()
   g.up(2);g.up(3);hold(g,2000);assert.equal(input.active,false);assert.equal(input.stopRequested,true);
  }
 });
+test('a two-finger slide pans without zoom, even when the touch events arrive unevenly', () => {
+ const {input,g}=setup();
+ g.down(1,'right',280,180);g.down(2,'right',350,180);
+ g.move(1,310,180,10);g.move(2,357,180,20);
+ const initialPan=input.panX;
+ assert.equal(initialPan,8.5,'intent detection applies only movement beyond the dead zone');
+ g.move(1,328,185,30);g.move(2,377,185,40);
+ g.up(1);g.up(2);
+ assert.equal(input.panX,initialPan+19);
+ assert.equal(input.panY,5);
+ assert.equal(input.zoomFactor,1);
+ assert.equal(input.lookX,0);
+});
+test('a pinch zooms without translating its moving midpoint', () => {
+ const {input,g}=setup();
+ g.down(1,'right',260,180);g.down(2,'right',340,180);
+ g.move(1,245,186,10);g.move(2,355,186,20);
+ g.move(1,234,191,30);g.move(2,360,191,40);
+ g.up(1);g.up(2);
+ assert.ok(input.zoomFactor<1);
+ assert.equal(input.panX,0);
+ assert.equal(input.panY,0);
+});
+test('anchored pinch waits for the second finger, and a lifted look keeps its last sample', () => {
+ const {input,g}=setup();
+ g.down(1,'right',260,180);g.down(2,'right',340,180);
+ g.move(2,360,180,10);g.move(2,366,180,74);
+ assert.equal(g.pinching,false);
+ g.move(2,369,180,75);g.move(2,375,180,90);
+ assert.ok(input.zoomFactor<1);
+ g.clear();
+ g.down(3,'right',300,200);g.move(3,322,208);g.up(3);
+ assert.equal(input.lookX,22);
+ assert.equal(input.lookY,8);
+});
 test('assistive activation controls direction and speed without a pointer hold',()=>{
  const {input,g}=setup();g.activateTick('left');assert.equal(input.autoDirection,'left');assert.equal(input.moveScale,1);
  g.activateTick('left');assert.equal(input.moveScale,1.25);g.stop();assert.equal(input.active,false);

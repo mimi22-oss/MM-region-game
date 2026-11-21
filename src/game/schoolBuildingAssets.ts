@@ -35,6 +35,11 @@ export interface SchoolBuildingAssetCache {
   readonly deskTopMat: MeshStandardMaterial;
   readonly deskFrameMat: MeshStandardMaterial;
   readonly teacherDeskMat: MeshStandardMaterial;
+  readonly bookRedMat: MeshStandardMaterial;
+  readonly bookBlueMat: MeshStandardMaterial;
+  readonly bookGreenMat: MeshStandardMaterial;
+  readonly bookOchreMat: MeshStandardMaterial;
+  readonly bookPageMat: MeshStandardMaterial;
   readonly signboardBgMat: MeshStandardMaterial;
   readonly signboardGoldMat: MeshStandardMaterial;
   readonly getWallMat: (hex: string) => MeshStandardMaterial;
@@ -104,6 +109,11 @@ export function getSchoolBuildingAssetCache(): SchoolBuildingAssetCache {
     deskTopMat: new MeshStandardMaterial({ color: '#b5844c', roughness: 0.7 }),
     deskFrameMat: new MeshStandardMaterial({ color: '#4c3520', roughness: 0.8 }),
     teacherDeskMat: new MeshStandardMaterial({ color: '#7d502b', roughness: 0.68 }),
+    bookRedMat: new MeshStandardMaterial({ color: '#8f2d2d', roughness: 0.72 }),
+    bookBlueMat: new MeshStandardMaterial({ color: '#244b7a', roughness: 0.72 }),
+    bookGreenMat: new MeshStandardMaterial({ color: '#245c3c', roughness: 0.72 }),
+    bookOchreMat: new MeshStandardMaterial({ color: '#b47824', roughness: 0.72 }),
+    bookPageMat: new MeshStandardMaterial({ color: '#f3eedc', roughness: 0.85 }),
     signboardBgMat: new MeshStandardMaterial({ color: '#14532d', roughness: 0.6 }),
     signboardGoldMat: new MeshStandardMaterial({
       color: '#d97706',
@@ -163,6 +173,11 @@ export function disposeSchoolBuildingAssetCache(): void {
   c.deskTopMat.dispose();
   c.deskFrameMat.dispose();
   c.teacherDeskMat.dispose();
+  c.bookRedMat.dispose();
+  c.bookBlueMat.dispose();
+  c.bookGreenMat.dispose();
+  c.bookOchreMat.dispose();
+  c.bookPageMat.dispose();
   c.signboardBgMat.dispose();
   c.signboardGoldMat.dispose();
 

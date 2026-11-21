@@ -10,6 +10,7 @@ import {
 } from 'three';
 import { angle, toWorld } from '../data/ward.ts';
 import { WEIPULA_VILLAGE_V_OFFSET } from './weipulaClimb.ts';
+import { npcCroppedHairGeometry, npcHeadGeometry, npcLowerLegGeometry, npcShoeGeometry, npcSleeveGeometry } from './npcAnatomy.ts';
 
 /**
  * ဝေပုလ္လ လှေကားထစ်ရွာ နေထိုင်သူ သူနာပြုများနှင့် ချင်းလူမျိုးစု ရွာသူရွာသားများ
@@ -501,15 +502,15 @@ function createChinWovenTexture(
 export interface WeipulaVillagerCache {
   readonly id: string;
   // Shared body & accessory geometries
-  readonly headGeo: SphereGeometry;
-  readonly hairCapGeo: SphereGeometry;
+  readonly headGeo: typeof npcHeadGeometry;
+  readonly hairCapGeo: typeof npcCroppedHairGeometry;
   readonly hairBunGeo: SphereGeometry;
   readonly neckGeo: CylinderGeometry;
   readonly torsoGeo: CylinderGeometry;
   readonly longyiGeo: CylinderGeometry;
-  readonly armGeo: CylinderGeometry;
-  readonly legGeo: CylinderGeometry;
-  readonly shoeGeo: BoxGeometry;
+  readonly armGeo: typeof npcSleeveGeometry;
+  readonly legGeo: typeof npcLowerLegGeometry;
+  readonly shoeGeo: typeof npcShoeGeometry;
   readonly sashGeo: BoxGeometry;
   readonly nurseCapGeo: BoxGeometry;
   readonly crossHGeo: BoxGeometry;
@@ -565,15 +566,15 @@ export function getWeipulaVillagerCache(): WeipulaVillagerCache {
 
   singletonVillagerCache = Object.freeze({
     id: 'weipula-villager-singleton-cache',
-    headGeo: new SphereGeometry(0.155, 10, 8),
-    hairCapGeo: new SphereGeometry(0.162, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.58),
+    headGeo: npcHeadGeometry,
+    hairCapGeo: npcCroppedHairGeometry,
     hairBunGeo: new SphereGeometry(0.068, 8, 6),
     neckGeo: new CylinderGeometry(0.055, 0.062, 0.09, 8),
     torsoGeo: new CylinderGeometry(0.18, 0.16, 0.5, 10),
     longyiGeo: new CylinderGeometry(0.165, 0.195, 0.72, 10),
-    armGeo: new CylinderGeometry(0.048, 0.042, 0.48, 7),
-    legGeo: new CylinderGeometry(0.06, 0.052, 0.56, 7),
-    shoeGeo: new BoxGeometry(0.1, 0.065, 0.2),
+    armGeo: npcSleeveGeometry,
+    legGeo: npcLowerLegGeometry,
+    shoeGeo: npcShoeGeometry,
     sashGeo: new BoxGeometry(0.075, 0.52, 0.34),
     nurseCapGeo: new BoxGeometry(0.24, 0.095, 0.12),
     crossHGeo: new BoxGeometry(0.068, 0.02, 0.016),
@@ -603,15 +604,10 @@ export function disposeWeipulaVillagerCache(): void {
   if (!singletonVillagerCache) return;
   const c = singletonVillagerCache;
   singletonVillagerCache = null;
-  c.headGeo.dispose();
-  c.hairCapGeo.dispose();
   c.hairBunGeo.dispose();
   c.neckGeo.dispose();
   c.torsoGeo.dispose();
   c.longyiGeo.dispose();
-  c.armGeo.dispose();
-  c.legGeo.dispose();
-  c.shoeGeo.dispose();
   c.sashGeo.dispose();
   c.nurseCapGeo.dispose();
   c.crossHGeo.dispose();

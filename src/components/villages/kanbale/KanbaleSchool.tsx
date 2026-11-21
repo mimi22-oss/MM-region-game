@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Block as Box } from '../../Primitives.tsx';
 import { SchoolClassroomHall } from '../../SchoolClassroomHall.tsx';
+import { SchoolFlagpole } from '../../SchoolCampusView.tsx';
 import { WALKIN_SCHOOL_HALL_BY_ID } from '../../../game/schoolClassrooms.ts';
 import type { KanbaleBuildingData } from '../../../data/villages/kanbale';
 
@@ -8,6 +9,8 @@ export interface KanbaleSchoolProps {
   building: KanbaleBuildingData;
   selected?: boolean;
   onSelect?: (id: string) => void;
+  /** Standalone asset preview only; in the live world, classroom halls are pooled via `<PooledSchoolHalls>`. */
+  previewMode?: boolean;
 }
 
 /**
@@ -30,6 +33,7 @@ export const KanbaleSchool = memo(function KanbaleSchool({
   building,
   selected = false,
   onSelect,
+  previewMode = false,
 }: KanbaleSchoolProps) {
   const rot = building.rotation || 2.4226;
 
@@ -44,10 +48,14 @@ export const KanbaleSchool = memo(function KanbaleSchool({
 
   return (
     <group name="kanbale-custom-school-root">
-      {/* ၁–၃။ အိမ် ၂၀ စာ ကျယ်ဝန်းပြီး စာသင်ခန်း ၁၃ ခန်း ခွဲခြားပါဝင်သော Walk-In စာသင်ဆောင် ၃ ဆောင် */}
-      <SchoolClassroomHall spec={mainHallSpec} selected={selected} onClick={handleClick} />
-      <SchoolClassroomHall spec={leftWingSpec} selected={selected} onClick={handleClick} />
-      <SchoolClassroomHall spec={rightWingSpec} selected={selected} onClick={handleClick} />
+      {/* In live world, halls are rendered via Fixed Object Pool (`<PooledSchoolHalls>`); previewMode keeps Asset3DRenderer intact */}
+      {previewMode && (
+        <>
+          <SchoolClassroomHall spec={mainHallSpec} selected={selected} onClick={handleClick} />
+          <SchoolClassroomHall spec={leftWingSpec} selected={selected} onClick={handleClick} />
+          <SchoolClassroomHall spec={rightWingSpec} selected={selected} onClick={handleClick} />
+        </>
+      )}
 
       <group
         position={[building.x, 0, building.z]}
@@ -78,29 +86,8 @@ export const KanbaleSchool = memo(function KanbaleSchool({
           <Box key={`parade-line-${lineX}`} x={lineX} y={0.12} z={1.5} w={0.12} h={0.02} d={4.5} color="#ffffff" />
         ))}
 
-        {/* Stepped Flagpole Base Podium (3-Tiered Plinth) */}
-        <group position={[0, 0, -2.5]}>
-          <Box x={0} y={0.2} z={0} w={3.2} h={0.3} d={3.2} color="#dc2626" />
-          <Box x={0} y={0.42} z={0} w={2.4} h={0.25} d={2.4} color="#ffffff" />
-          <Box x={0} y={0.62} z={0} w={1.6} h={0.2} d={1.6} color="#dc2626" />
-
-          {/* Stainless Steel Flagpole Mast (11m High) */}
-          <Box x={0} y={6.2} z={0} w={0.16} h={11.0} d={0.16} color="#e2e8f0" />
-          {/* Golden Finial Sphere on Mast Peak */}
-          <Box x={0} y={11.8} z={0} w={0.45} h={0.45} d={0.45} color="#eab308" />
-
-          {/* Republic of the Union of Myanmar Flag (Yellow, Green, Red + White Star) */}
-          <group position={[1.4, 10.4, 0]}>
-            {/* Top Stripe: Yellow */}
-            <Box x={0} y={0.6} z={0} w={2.6} h={0.5} d={0.03} color="#facc15" />
-            {/* Middle Stripe: Green */}
-            <Box x={0} y={0.1} z={0} w={2.6} h={0.5} d={0.03} color="#16a34a" />
-            {/* Bottom Stripe: Red */}
-            <Box x={0} y={-0.4} z={0} w={2.6} h={0.5} d={0.03} color="#dc2626" />
-            {/* Large Centered 5-Point White Star Emissary */}
-            <Box x={0} y={0.1} z={0.03} w={0.65} h={0.65} d={0.02} color="#ffffff" />
-          </group>
-        </group>
+        {/* Shared Singleton Stepped Flagpole Base Podium & Myanmar Flag */}
+        <SchoolFlagpole name="kanbale-school-flagpole" x={0} z={-2.5} rotation={0} />
       </group>
 
       {/* ======================================================== */}

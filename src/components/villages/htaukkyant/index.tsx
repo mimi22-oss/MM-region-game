@@ -14,8 +14,8 @@ import { Lanes } from '../../Lane';
 import { Field } from '../../Field';
 import { EastWestCanal } from '../../Canal';
 import { House, houseFenceBounds, houseVisualRotation } from '../../House';
-import { SchoolClassroomHall } from '../../SchoolClassroomHall';
-import { WALKIN_SCHOOL_HALL_BY_ID } from '../../../game/schoolClassrooms';
+import { SchoolFlagpole } from '../../SchoolCampusView';
+import { WALKIN_SCHOOL_HALL_IDS } from '../../../game/schoolClassrooms';
 import { Tree } from '../../Tree';
 import { Block } from '../../Primitives';
 
@@ -132,36 +132,11 @@ function SchoolGarden({ m }: { m: (typeof htaukKyantLandmarks)[0] }) {
 	);
 }
 
-/** အထက ထောက်ကြန့် နိုင်ငံတော်အလံတိုင် (မိန်းလမ်းမကြီးဘက် မျက်နှာမူလျက်) */
-function SchoolFlagPole({ x, z, rot }: { x: number; z: number; rot: number }) {
-	return (
-		<group position={[x, 0, z]} rotation={[0, rot, 0]}>
-			<Block y={0.25} w={3.2} h={0.5} d={3.2} color="#e5ded0" />
-			<Block y={0.6} w={2} h={0.35} d={2} color="#dbd0bf" />
-			<mesh position={[0, 6, 0]} castShadow>
-				<cylinderGeometry args={[0.07, 0.09, 11.5, 10]} />
-				<meshStandardMaterial color="#c8d2d6" metalness={0.7} roughness={0.25} />
-			</mesh>
-			<mesh position={[0, 11.8, 0]} castShadow>
-				<sphereGeometry args={[0.2, 12, 12]} />
-				<meshStandardMaterial color="#f5c942" metalness={0.8} roughness={0.2} />
-			</mesh>
-			{/* မြန်မာနိုင်ငံတော်အလံ (အဝါ၊ အစိမ်း၊ အနီ နှင့် အလယ်ကြယ်ဖြူ) */}
-			<group position={[0.9, 10.8, 0]}>
-				<Block y={0.4} w={1.8} h={0.4} d={0.03} color="#fec50c" />
-				<Block y={0} w={1.8} h={0.4} d={0.03} color="#34b233" />
-				<Block y={-0.4} w={1.8} h={0.4} d={0.03} color="#ea2839" />
-				<Block z={0.025} w={0.5} h={0.5} d={0.02} color="#ffffff" />
-			</group>
-		</group>
-	);
-}
-
 /** အထင်ကရ အဆောက်အအုံများ (ကျောင်းတိုက်၊ စာသင်ဆောင်များ၊ တန်ဆောင်း) */
 function LandmarkBuilding({ b }: { b: HtaukKyantLandmarkBuilding }) {
-	const walkInHall = WALKIN_SCHOOL_HALL_BY_ID.get(b.id);
-	if (walkInHall) {
-		return <SchoolClassroomHall spec={walkInHall} />;
+	// Walk-in school halls are rendered centrally via Fixed Object Pool (`<PooledSchoolHalls>`) with zero duplication!
+	if (WALKIN_SCHOOL_HALL_IDS.has(b.id)) {
+		return null;
 	}
 	// အဆောက်အအုံ အလျားလိုက် အမိုးစောက် ပုံစံထုတ်ခြင်း
 	const roofSlope = (h: number) => {
@@ -330,8 +305,8 @@ export function HtaukKyantVillage() {
 			{/* အထက ထောက်ကြန့် ပန်းခင်း */}
 			{schoolGarden && <SchoolGarden m={schoolGarden} />}
 
-			{/* အထက ထောက်ကြန့် နိုင်ငံတော်အလံတိုင် */}
-			<SchoolFlagPole x={flagPos.x} z={flagPos.z} rot={schoolRot} />
+			{/* အထက ထောက်ကြန့် နိုင်ငံတော်အလံတိုင် (Shared Singleton Flagpole) */}
+			<SchoolFlagpole name="htaukkyant-school-flagpole" x={flagPos.x} z={flagPos.z} rotation={schoolRot} />
 
 			{/* ကျောင်းအဝင် ဂိတ်တိုင် ၂ တိုင် (AH1 ဘေး) */}
 			<Block x={gateNorth.x} y={1.6} z={gateNorth.z} w={1.1} h={3.2} d={1.1} color="#cdd7dc" />

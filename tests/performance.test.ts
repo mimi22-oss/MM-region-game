@@ -159,27 +159,30 @@ test('mobile joystick steers diagonally and pinch suppresses movement until rele
  g.up(1);g.down(3,'left',100,200);g.hold();assert.equal(input.active,true);
  g.clear();assert.deepEqual(input,{...createMobileInput(),session:input.session});
  for(const side of ['left','right'] as const){
-  g.down(1,side,100,200);g.down(2,side,150,200);g.move(2,180,200);
+  g.down(1,side,100,200);g.down(2,side,150,200);g.move(2,165,200,10);g.move(2,180,200,80);
   assert.equal(g.pinching,true);assert.ok(input.zoomFactor<1);g.clear();
  }
 });
 
 
-test('two-finger travel pans on either half or across halves and preserves pinch zoom',async()=>{
+test('two-finger travel pans on either half or across halves and a separate pinch zooms',async()=>{
  const {createMobileInput,MobileGesture}=await import('../src/game/mobileInput.ts');
  for(const sides of [['left','left'],['right','right'],['left','right']] as const){
   const input=createMobileInput(),g=new MobileGesture(input);
   g.down(1,sides[0],100,100);g.down(2,sides[1],200,100);
   g.move(1,100,130);g.move(2,200,130);
-  assert.equal(g.pinching,true);assert.equal(input.panX,0);assert.equal(input.panY,30);
+  assert.equal(g.pinching,true);assert.equal(input.panX,0);assert.equal(input.panY,20);
   assert.equal(input.zoomFactor,1,'parallel drag preserves zoom');
   assert.equal(input.active,false);assert.equal(input.sprint,false);assert.equal(input.lookY,0);
   input.panX=0;input.panY=0;
   g.move(1,80,130);g.move(2,220,130);
-  assert.ok(Math.abs(input.zoomFactor-100/140)<1e-10);assert.equal(input.panX,0);
+  assert.equal(input.zoomFactor,1);assert.equal(input.panX,0);
   g.up(1);g.move(2,250,150);g.hold();
   assert.equal(input.active,false);assert.equal(input.panX,0);assert.equal(input.panY,0);
   g.clear();assert.deepEqual({...input,session:0},createMobileInput());
+  g.down(1,sides[0],100,100);g.down(2,sides[1],200,100);
+  g.move(1,80,100);g.move(2,220,100);
+  assert.ok(Math.abs(input.zoomFactor-110/140)<1e-10);assert.equal(input.panX,0);
  }
 });
 
@@ -205,6 +208,17 @@ test('camera travel never relocates or turns the robot, including world-edge pan
  s.yaw=Math.PI/2;panCamera(s,10000,10000,500);
  assert.equal(s.camX,-500);assert.equal(s.camZ,-500);
  assert.deepEqual({x:s.x,z:s.z,bodyYaw:s.bodyYaw},{x:12,z:-18,bodyYaw:.7});
+});
+
+test('camera drag follows visible scale and caps discontinuous input', async () => {
+ const {cameraDragGain,cameraPanMetresPerPixel}=await import('../src/game/cameraNavigation.ts');
+ const near=cameraPanMetresPerPixel(6,65,800);
+ assert.ok(near*100<1,'a close-up drag should stay within the immediate scene');
+ assert.ok(Math.abs(cameraPanMetresPerPixel(60,65,800)-10*near)<1e-12);
+ assert.equal(cameraPanMetresPerPixel(6,65,400),2*near);
+ assert.equal(cameraDragGain(0,20,800),1);
+ assert.equal(cameraDragGain(0,2000,800),.1);
+ assert.equal(cameraDragGain(Infinity,0,800),0);
 });
 
 

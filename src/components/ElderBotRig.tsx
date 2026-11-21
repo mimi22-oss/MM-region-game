@@ -7,6 +7,7 @@
  * new geometries, textures, or materials.
  */
 
+import { npcCalfGeometry, npcEyesGeometry, npcFaceMaterial, npcHandGeometry, npcShoeGeometry, npcSandalFootGeometry } from '../game/npcAnatomy';
 import { useEffect, useRef, type RefObject } from 'react';
 import { Vector3, type Group } from 'three';
 import { getElderBotResourceCache } from '../game/elderBotResources';
@@ -607,25 +608,25 @@ export function ElderBotRig({
                 position={[side * 0.088, 0, 0]}
               >
                 <mesh
-                  geometry={res.geo.unitCyl}
+                  geometry={npcCalfGeometry}
                   material={skinMat}
-                  position={[0, 0.11, 0]}
-                  scale={[0.042, 0.14, 0.042]}
+                  position={[0, 0.15, 0]}
+                  scale={[0.96, 0.43, 0.96]}
                   castShadow
                   dispose={null}
                 />
                 <mesh
-                  geometry={res.geo.unitBox}
+                  geometry={npcSandalFootGeometry}
                   material={skinMat}
-                  position={[0, 0.032, 0.036]}
-                  scale={[0.076, 0.036, 0.155]}
+                  position={[0, 0.01, 0]}
+                  scale={1}
                   dispose={null}
                 />
                 <mesh
-                  geometry={res.geo.unitBox}
+                  geometry={npcShoeGeometry}
                   material={outfit.sandal}
-                  position={[0, 0.008, 0.038]}
-                  scale={[0.088, 0.016, 0.185]}
+                  position={[0, 0, 0]}
+                  scale={[0.93, 0.20, 0.97]}
                   castShadow
                   dispose={null}
                 />
@@ -684,27 +685,27 @@ export function ElderBotRig({
                     position={[0, -0.4, 0]}
                   >
                     <mesh
-                      geometry={res.geo.unitCyl}
+                      geometry={npcCalfGeometry}
                       material={res.trousersDark}
-                      position={[0, -0.19, 0]}
-                      scale={[0.056, 0.38, 0.056]}
+                      position={[0, 0, 0]}
+                      scale={[1.24, 1.46, 1.24]}
                       castShadow
                       dispose={null}
                     />
                     {/* Casual sneaker touching exact floor y = -0.44 */}
                     <mesh
-                      geometry={res.geo.unitBox}
+                      geometry={npcShoeGeometry}
                       material={res.sneakerWhite}
-                      position={[0, -0.41, 0.044]}
-                      scale={[0.092, 0.06, 0.195]}
+                      position={[0, -0.44, 0]}
+                      scale={[0.96, 1, 1.02]}
                       castShadow
                       dispose={null}
                     />
                     <mesh
-                      geometry={res.geo.unitBox}
+                      geometry={res.geo.unitSphere}
                       material={outfit.outerGarment}
-                      position={[0, -0.398, 0.055]}
-                      scale={[0.094, 0.018, 0.08]}
+                      position={[0, -0.386, 0.043]}
+                      scale={[0.038, 0.008, 0.026]}
                       dispose={null}
                     />
                   </group>
@@ -933,10 +934,10 @@ export function ElderBotRig({
                     dispose={null}
                   />
                   <mesh
-                    geometry={res.geo.unitSphere}
+                    geometry={npcHandGeometry}
                     material={skinMat}
-                    position={[0, -0.258, 0.008]}
-                    scale={[0.036, 0.046, 0.028]}
+                    position={[0, -0.237, 0.005]}
+                    scale={[side < 0 ? 0.88 : -0.88, 0.85, 0.93]}
                     dispose={null}
                   />
                 </group>
@@ -973,31 +974,7 @@ export function ElderBotRig({
                 </group>
               ))}
 
-              {[-1, 1].map((side) => (
-                <group key={`eye-${side}`} position={[side * 0.046, 0.018, 0.118]}>
-                  <mesh
-                    geometry={res.geo.unitSphere}
-                    material={res.eyeWhite}
-                    scale={[0.021, 0.016, 0.01]}
-                    dispose={null}
-                  />
-                  <mesh
-                    geometry={res.geo.unitSphere}
-                    material={res.eyeDark}
-                    position={[0, 0, 0.008]}
-                    scale={[0.01, 0.011, 0.006]}
-                    dispose={null}
-                  />
-                  <mesh
-                    geometry={res.geo.unitBox}
-                    material={isUncle && !youthful ? res.hairGrey : hairMat}
-                    position={[0, 0.03, 0.004]}
-                    rotation={[0, 0, side * -0.08]}
-                    scale={[0.042, 0.009, 0.01]}
-                    dispose={null}
-                  />
-                </group>
-              ))}
+              <mesh geometry={npcEyesGeometry} material={npcFaceMaterial} scale={0.85} position={[0, 0.005, -0.002]} dispose={null} />
 
               <mesh
                 geometry={res.geo.unitSphere}
@@ -1050,8 +1027,7 @@ export function ElderBotRig({
                   <mesh
                     geometry={res.geo.hairCapUncle}
                     material={hairMat}
-                    position={[0, 0.042, -0.012]}
-                    scale={[1.0, 0.85, 1.02]}
+                    scale={[.87, .87, .89]}
                     castShadow
                     dispose={null}
                   />
@@ -1083,8 +1059,7 @@ export function ElderBotRig({
                   <mesh
                     geometry={res.geo.hairCapAuntie}
                     material={hairMat}
-                    position={[0, 0.035, -0.014]}
-                    scale={[1.02, 0.94, 1.05]}
+                    scale={[.87, .92, .89]}
                     castShadow
                     dispose={null}
                   />
@@ -1092,7 +1067,7 @@ export function ElderBotRig({
                     <mesh
                       geometry={res.geo.unitSphere}
                       material={res.hairGrey}
-                      position={[0, 0.12, 0.02]}
+                      position={[0, 0.133, 0.035]}
                       scale={[0.072, 0.022, 0.056]}
                       dispose={null}
                     />

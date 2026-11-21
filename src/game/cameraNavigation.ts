@@ -5,6 +5,20 @@ export function panCamera(focus:CameraFocus,right:number,forward:number,edge:num
  focus.camZ=Math.max(-edge,Math.min(edge,focus.camZ-Math.cos(focus.yaw)*forward-Math.sin(focus.yaw)*right));
 }
 
+/** Bound a single update so a discontinuous pointer sample cannot move an entire viewport. */
+export function cameraDragGain(dx: number, dy: number, viewportHeight: number): number {
+ const length = Math.hypot(dx, dy);
+ if (!Number.isFinite(length) || !Number.isFinite(viewportHeight) || viewportHeight <= 0) return 0;
+ return length > 0 ? Math.min(1, viewportHeight * .25 / length) : 0;
+}
+
+export function cameraPanMetresPerPixel(distance: number, verticalFov: number, viewportHeight: number): number {
+ if (!Number.isFinite(distance) || distance <= 0 || !(verticalFov > 0 && verticalFov < 180) ||
+     !Number.isFinite(viewportHeight) || viewportHeight <= 0) return 0;
+ const visibleHeight = 2 * distance * Math.tan(verticalFov * Math.PI / 360);
+ return visibleHeight * .65 / viewportHeight;
+}
+
 /** Search only a small neighborhood; blocked destinations never move the avatar. */
 export function findTeleportSpot(x:number,z:number,canStand:(x:number,z:number)=>boolean){
  if(!Number.isFinite(x)||!Number.isFinite(z))return null;

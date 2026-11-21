@@ -2,12 +2,17 @@ import {useTrafficCollider} from './useTrafficCollider';
 import {sceneGround} from '../game/groundSurface';
 import { mobileQuality } from '../game/sceneBudget';
 import { useQualityPreset } from '../game/qualityPreset';
-import { useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group } from 'three';
 import { ward } from '../data/ward';
 import { kalayVillages } from '../data/villages';
 import { canStand } from '../game/collision';
+import {
+  applyBotAvoidanceStep,
+  removeAvoidanceActor,
+  upsertAvoidanceActor,
+} from '../game/botAvoidance';
 import { botAppearance } from '../game/robotAppearance';
 import { buildRoadGraph, nextRoadNode, type RouteNode } from '../game/robotRoutes';
 import { getBotCombatReaction, getBotFightingState } from '../game/botFighting';
@@ -31,6 +36,7 @@ function Bot({graph,start,index}:{graph:RouteNode[];start:number;index:number}){
  const initialNode=graph[start];
  const initialLink=initialNode?.links[index%Math.max(1,initialNode.links.length)]??start;
  const state=useRef({graph,x:initialNode?.x??0,y:0,z:initialNode?.z??0,from:start,to:initialLink,seed:index+1,elapsed:index*0.01,groundTimer:0,grounded:false,travel:0});
+ useEffect(() => () => removeAvoidanceActor(`village-robot-${index}`), [index]);
  useFrame(({camera,scene,clock},delta)=>{
   const s=state.current;
   if(s.graph!==graph){
@@ -46,11 +52,18 @@ function Bot({graph,start,index}:{graph:RouteNode[];start:number;index:number}){
   const reaction=getBotCombatReaction(botName);
   const inCombat=Boolean(reaction&&(reaction.engaged||reaction.hitTime>0||reaction.knockoutTime>0||reaction.attackMove!==null||reaction.celebrateTime>0));
   if(!inCombat){
+   const prevX=s.x,prevZ=s.z;
    const dx=target.x-s.x,dz=target.z-s.z,distSq=dx*dx+dz*dz,travelMax=(1.1+(index%7)*0.13)*dt;
    const distance=distSq>0.0001*0.0001?Math.sqrt(distSq):0;
    const travel=Math.min(distance,travelMax);
-   if(distance>0.0001){s.x+=dx/distance*travel;s.z+=dz/distance*travel;if(root.current)root.current.rotation.y=Math.atan2(-dx,-dz);s.travel+=travel}
-   if(distance<0.12){s.x=target.x;s.z=target.z;const previous=s.from;s.from=s.to;s.seed=(s.seed*1664525+1013904223)>>>0;s.to=nextRoadNode(graph,s.from,previous,s.seed/4294967296)}
+   let nextX=prevX,nextZ=prevZ;
+   let curYaw=root.current?root.current.rotation.y+Math.PI:0;
+   if(distance>0.0001){nextX=prevX+dx/distance*travel;nextZ=prevZ+dz/distance*travel;curYaw=Math.atan2(dx,dz);}
+   const avoided=applyBotAvoidanceStep(botName,'human',prevX,prevZ,nextX,nextZ,curYaw,0.48*appearance.size,dt,{canStand});
+   s.x=avoided.x;s.z=avoided.z;
+   const moved=Math.hypot(s.x-prevX,s.z-prevZ);
+   if(moved>0.0005){if(root.current)root.current.rotation.y=avoided.yaw+Math.PI;s.travel+=moved;}
+   if(!avoided.yieldedToCar&&Math.hypot(target.x-s.x,target.z-s.z)<0.35){const previous=s.from;s.from=s.to;s.seed=(s.seed*1664525+1013904223)>>>0;s.to=nextRoadNode(graph,s.from,previous,s.seed/4294967296)}
   }else if(root.current&&reaction){
    if(reaction.hasWorldPos){
     s.x=reaction.worldX;
@@ -86,6 +99,11 @@ function Bot({graph,start,index}:{graph:RouteNode[];start:number;index:number}){
     s.y=Math.max(left,right,g.height(s.x,s.z))+.012;
    }
    root.current.position.set(s.x,s.y,s.z);
+   if(root.current.visible){
+    upsertAvoidanceActor(botName,'human',s.x,s.z,root.current.rotation.y+Math.PI,0.48*appearance.size);
+   }else{
+    removeAvoidanceActor(botName);
+   }
   }
   if(detail&&wheels.current)wheels.current.rotation.x=-s.travel/(0.24*0.95*appearance.size);
   s.elapsed+=dt;if(s.elapsed>0.4){s.elapsed=0;const nearby=camDistSq<BOT_DETAIL_DIST_SQ;if(nearby!==detail)setDetail(nearby);if(root.current)root.current.visible=camDistSq<BOT_VISIBLE_DIST_SQ}

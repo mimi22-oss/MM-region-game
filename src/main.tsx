@@ -47,6 +47,19 @@ import {
   type CharacterKind,
 } from "./components/CharacterPicker";
 import { homeGuidance } from "./game/homeAccess";
+import {
+  clearClassroomNotice,
+  findNearestSchoolHall,
+  getClassroomNoticeSnapshot,
+  subscribeClassroomNotice,
+} from "./game/schoolClassrooms";
+import {
+  effectiveSchoolMinute,
+  formatSchoolClock12h,
+  resolveSchoolPeriod,
+  schoolPeriodLabelMy,
+} from "./game/schoolSchedule";
+import { TIME_PERIODS } from "./game/environmentTime";
 import { FrameBudget } from "./components/FrameBudget";
 import { CinematicIntroController } from "./components/CinematicIntroController";
 import { IntroOverlay } from "./components/IntroOverlay";
@@ -525,6 +538,23 @@ function App() {
   }, [loading, mapOpen, settingsOpen, guideOpen, carStatus.driving, balloonStatus.riding, rideStatus.riding]);
   const introSettings = useIntroSettings();
   const vehicleWaiting = useVehicleWaiting();
+  const classroomNotice = useSyncExternalStore(
+    subscribeClassroomNotice,
+    getClassroomNoticeSnapshot,
+    getClassroomNoticeSnapshot,
+  );
+  const nearSchoolHall = useMemo(
+    () => findNearestSchoolHall(viewPos.x, viewPos.z, 48) ?? findNearestSchoolHall(pos.x, pos.z, 48),
+    [viewPos.x, viewPos.z, pos.x, pos.z],
+  );
+  const schoolClockMinute = effectiveSchoolMinute(environment.minute, environment.preferences.mode);
+  const currentSchoolPeriod = resolveSchoolPeriod(environment.minute, environment.preferences.mode);
+  const currentPeriodMeta = TIME_PERIODS.find((p) => p.id === environment.period);
+  useEffect(() => {
+    if (!classroomNotice) return;
+    const timer = window.setTimeout(() => clearClassroomNotice(), 2800);
+    return () => window.clearTimeout(timer);
+  }, [classroomNotice?.seq]);
   const entryIntroAttemptedRef = useRef(false);
   const [navigationRequest, setNavigationRequest] = useState<{
     action: "locate" | "teleport";
@@ -844,7 +874,49 @@ function App() {
     <main className={night ? "night-mode" : ""} data-time-period={environment.period}>
       <GhostGameOver/>
       <MissionVictoryDialog />
-      {!loading && <ThreeGhostsMissionHud />}
+      {!loading && !nearSchoolHall && <ThreeGhostsMissionHud />}
+      {!loading && !intro.active && !mapOpen && !settingsOpen && nearSchoolHall && (
+        <div
+          className="school-time-hud"
+          role="status"
+          aria-live="polite"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="school-time-hud-top">
+            <span className="school-time-hud-clock">
+              🕒 {formatSchoolClock12h(schoolClockMinute)}
+            </span>
+            <span className="school-time-hud-mode">
+              {environment.preferences.mode === "auto"
+                ? `Auto · ${currentPeriodMeta?.icon ?? ""}`
+                : `${currentPeriodMeta?.icon ?? ""} ${currentPeriodMeta?.label ?? ""}`}
+            </span>
+            <button
+              type="button"
+              className="school-time-hud-btn"
+              onClick={() => environment.cycle()}
+              title="အချိန်ပြောင်းရန် (N)"
+            >
+              ⏱ ပြောင်း (N)
+            </button>
+          </div>
+          <div className="school-time-hud-meta">
+            <span className="school-time-hud-period">
+              {currentSchoolPeriod === "closed"
+                ? "ကျောင်းပိတ်ချိန် (ကျောင်းသား/ဆရာ အားလုံး hide)"
+                : schoolPeriodLabelMy(currentSchoolPeriod)}
+            </span>
+            <span className="school-time-hud-hall">
+              {nearSchoolHall.dormRole === "teacher-dorm"
+                ? "🏠 ဆရာ/ဆရာမ အဆောင် · "
+                : nearSchoolHall.dormRole === "student-dorm"
+                  ? "🏠 ကျောင်းသား/သူ အဆောင် · "
+                  : "🏫 ပုံမှန်စာသင်ဆောင် · "}
+              {nearSchoolHall.name}
+            </span>
+          </div>
+        </div>
+      )}
       <EnvironmentAudio period={environment.period} volume={environment.preferences.volume} enabled={environment.preferences.sound} active={visible&&!loading}/>
       <AudioDiagnosticsPanel />
       <GhostAiDebugOverlay />
@@ -1038,7 +1110,16 @@ function App() {
         {/* <h1>{currentLoc.title}</h1> */}
         {/* <p>{currentLoc.subtitle}</p> */}
       </header>
-      {!intro.active && arrivalToast && !mapOpen && (
+      {!intro.active && classroomNotice && !mapOpen && (
+        <div className="location-toast" role="status" aria-live="polite">
+          <span className="location-toast-icon">📚</span>
+          <div className="location-toast-body">
+            <strong>{classroomNotice.hallName}</strong>
+            <span>{classroomNotice.message}</span>
+          </div>
+        </div>
+      )}
+      {!intro.active && arrivalToast && !classroomNotice && !mapOpen && (
         <div className="location-toast" role="status" aria-live="polite">
           <span className="location-toast-icon">📍</span>
           <div className="location-toast-body">

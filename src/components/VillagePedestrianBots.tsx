@@ -10,11 +10,16 @@
  *   while strictly bounding GPU draw calls & memory (`<= 28` desktop / `<= 14` mobile).
  */
 
-import { useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { ward } from '../data/ward';
 import { kalayVillages } from '../data/villages';
 import { canStand } from '../game/collision';
+import {
+  applyBotAvoidanceStep,
+  removeAvoidanceActor,
+  upsertAvoidanceActor,
+} from '../game/botAvoidance';
 import { buildRoadGraph, type RouteNode } from '../game/robotRoutes';
 import { sceneGround } from '../game/groundSurface';
 import { mobileQuality } from '../game/sceneBudget';
@@ -171,6 +176,15 @@ export function VillagePedestrianBots({
     [],
   );
 
+  useEffect(() => {
+    return () => {
+      for (let i = 0; i < MAX_STREET_POOL_DESKTOP; i++) {
+        removeAvoidanceActor(`street-kid-${i}`);
+        removeAvoidanceActor(`street-villager-${i}`);
+      }
+    };
+  }, []);
+
   // Build / reuse connected road graphs for active non-Chin regions
   // (Chin villages use dedicated Chin ethnic villagers exclusively via `<ChinVillagePopulation>`!)
   const regionGraphs = useMemo(() => {
@@ -206,6 +220,7 @@ export function VillagePedestrianBots({
         }
         if (isKid) applyKidBotPose(kidHandles[i].current, null);
         else applyElderBotPose(elderHandles[i].current, null);
+        removeAvoidanceActor(isKid ? `street-kid-${i}` : `street-villager-${i}`);
       }
       const bf = getBotFightingState();
       if (
@@ -303,6 +318,7 @@ export function VillagePedestrianBots({
       if (!st.active || i >= targetActiveCount) {
         if (isKid) applyKidBotPose(kidHandles[i].current, null);
         else applyElderBotPose(elderHandles[i].current, null);
+        removeAvoidanceActor(isKid ? `street-kid-${i}` : `street-villager-${i}`);
         continue;
       }
 
@@ -319,8 +335,33 @@ export function VillagePedestrianBots({
         st.speed = combat?.chasing ? combat.chaseSpeed : 0;
         st.elapsed += dt;
       } else {
+        const prevX = st.x;
+        const prevZ = st.z;
         stepStreetPedestrian(st, prof, graph, dt);
+        const avoided = applyBotAvoidanceStep(
+          botName,
+          'human',
+          prevX,
+          prevZ,
+          st.x,
+          st.z,
+          st.yaw,
+          isKid ? 0.38 : 0.48,
+          dt,
+          { canStand },
+        );
+        st.x = avoided.x;
+        st.z = avoided.z;
+        st.yaw = avoided.yaw;
+        if (avoided.yieldedToCar || avoided.steered) {
+          const moved = Math.hypot(st.x - prevX, st.z - prevZ);
+          st.speed = moved / Math.max(0.001, dt);
+          st.walkDistance += moved;
+        }
       }
+      upsertAvoidanceActor(botName, 'human', st.x, st.z, st.yaw, isKid ? 0.38 : 0.48, {
+        speed: st.speed,
+      });
       if (ground) {
         st.y = ground.height(st.x, st.z);
       }

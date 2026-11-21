@@ -1,8 +1,7 @@
 import type { LayoutFeature, FeatureKind } from './worldLayout.ts';
 import { ward, farmhouse, uShweHouse, toWorld, kalayVillages, chinSaiMonasteries, zingalinMonasteries, htomarLandmarks, htomarRoadsideShops, tharYarGoneLandmarkBuildings, htaukKyantLandmarkBuildings, htaukKyantLandmarks, htaukKyantIntermediateField, kyarInnLandmarkBuildings, kyarInnLandmarks, kyarInnLakeStructures } from '../data/ward.ts';
 import type { TreePlot, VillageMeta } from '../data/types.ts';
-import { myotharCenterBuildings } from '../data/wards/myothar/center/myotharCenterBuildings.ts';
-import { myotharCenterRoads } from '../data/wards/myothar/center/myotharCenterRoads.ts';
+import { myotharCenterBuildings, myotharCenterRoads } from '../data/wards/myothar/center/index.ts';
 import { kalayArea1Buildings } from '../data/wards/kalayArea1/kalayArea1Buildings.ts';
 import { kalayArea1Roads, kalayArea1Trees, nankaleinCreek } from '../data/wards/kalayArea1/kalayArea1Data.ts';
 import { nankaleinTeaShopData } from '../data/wards/kalayArea1/kalayArea1TeaShop.ts';

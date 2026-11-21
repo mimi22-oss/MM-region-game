@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
+import { npcFaceGeometry, npcFaceMaterial, npcHandGeometry } from '../game/npcAnatomy';
 import { toWorld } from '../data/ward';
 import { mobileQuality } from '../game/sceneBudget';
 import { WEIPULA_VILLAGE_V_OFFSET } from '../game/weipulaClimb';
@@ -101,7 +102,8 @@ export function WeipulaVillagerRig({
           }}
         >
           <mesh geometry={cache.headGeo} material={skinMat} />
-          <mesh position={[0, 0.03, -0.01]} geometry={cache.hairCapGeo} material={hairMat} />
+          <mesh geometry={npcFaceGeometry} material={npcFaceMaterial} />
+          <mesh position={[0, 0, 0]} geometry={cache.hairCapGeo} material={hairMat} />
           {isWoman && (
             <mesh position={[0, 0.04, -0.16]} geometry={cache.hairBunGeo} material={hairMat} />
           )}
@@ -150,24 +152,26 @@ export function WeipulaVillagerRig({
 
         {/* Left Arm */}
         <group
-          position={[-0.23, 1.3, 0]}
+          position={[-0.21, 1.3, 0]}
           ref={el => {
             handlesRef.current.leftArm = el;
           }}
         >
-          <mesh position={[0, -0.22, 0]} geometry={cache.armGeo} material={topMat} />
+          <mesh position={[0, 0, 0]} geometry={cache.armGeo} material={topMat} />
+          <mesh position={[0, -0.452, 0]} geometry={npcHandGeometry} material={skinMat} />
         </group>
 
         {/* Right Arm (+ White Medical First-Aid Kit Bag for Nurses) */}
         <group
-          position={[0.23, 1.3, 0]}
+          position={[0.21, 1.3, 0]}
           ref={el => {
             handlesRef.current.rightArm = el;
           }}
         >
-          <mesh position={[0, -0.22, 0]} geometry={cache.armGeo} material={topMat} />
+          <mesh position={[0, 0, 0]} geometry={cache.armGeo} material={topMat} />
+          <mesh position={[0, -0.452, 0]} scale={[-1, 1, 1]} geometry={npcHandGeometry} material={skinMat} />
           {isNurse && (
-            <group position={[0.04, -0.46, 0.04]}>
+            <group position={[0.03, -0.49, 0.08]}>
               <mesh geometry={cache.medBagGeo} material={cache.medBagMat} />
               <mesh position={[0.064, 0, 0]} rotation={[0, Math.PI / 2, 0]} geometry={cache.crossHGeo} material={cache.redCrossMat} />
               <mesh position={[0.064, 0, 0]} rotation={[0, Math.PI / 2, 0]} geometry={cache.crossVGeo} material={cache.redCrossMat} />
@@ -183,7 +187,7 @@ export function WeipulaVillagerRig({
           }}
         >
           <mesh position={[0, -0.26, 0]} geometry={cache.legGeo} material={skinMat} />
-          <mesh position={[0, -0.5, 0.04]} geometry={cache.shoeGeo} material={cache.shoeDarkMat} />
+          <mesh position={[0, -0.54, 0]} geometry={cache.shoeGeo} material={cache.shoeDarkMat} />
         </group>
         <group
           position={[0.085, 0.54, 0]}
@@ -192,7 +196,7 @@ export function WeipulaVillagerRig({
           }}
         >
           <mesh position={[0, -0.26, 0]} geometry={cache.legGeo} material={skinMat} />
-          <mesh position={[0, -0.5, 0.04]} geometry={cache.shoeGeo} material={cache.shoeDarkMat} />
+          <mesh position={[0, -0.54, 0]} geometry={cache.shoeGeo} material={cache.shoeDarkMat} />
         </group>
       </group>
     </group>

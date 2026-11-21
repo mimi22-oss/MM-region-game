@@ -339,6 +339,7 @@ export const Asset3DInstance = memo(function Asset3DInstance(props: Asset3DInsta
       content = (
         <group rotation={[0, rotation, 0]}>
           <KanbaleSchool
+            previewMode
             building={
               {
                 id,

@@ -13,6 +13,7 @@ import { angle, toWorld } from '../data/ward.ts';
  */
 
 export type VerandaSide = '+z' | '-z' | '+x' | '-x';
+export type SchoolDormRole = 'teacher-dorm' | 'student-dorm';
 
 export interface SchoolHallSpec {
   readonly id: string;
@@ -29,9 +30,63 @@ export interface SchoolHallSpec {
   readonly roofColor: string;
   /** Which local side has the open veranda & classroom doorways */
   readonly verandaSide: VerandaSide;
-  /** Ordered distinct separated classroom labels (e.g. ['KG', 'G-1', 'G-2', 'G-3']) */
+  /** Ground-floor distinct separated classroom labels (e.g. ['KG', 'G-1', 'G-2', 'G-3']) */
   readonly rooms: readonly string[];
+  /** Optional 2nd-floor distinct separated classroom labels for 2-storey halls */
+  readonly upperRooms?: readonly string[];
   readonly storeys?: 1 | 2;
+  /** Optional boarding dormitory designation (used 16:00–06:29 / evening / night) */
+  readonly dormRole?: SchoolDormRole;
+}
+
+export interface ClassroomInSessionNotice {
+  readonly message: string;
+  readonly hallName: string;
+  readonly roomLabel: string;
+  readonly seq: number;
+}
+
+let schoolClassInSession = false;
+let classroomNoticeSeq = 0;
+let lastClassroomNoticeAt = 0;
+let activeClassroomNotice: ClassroomInSessionNotice | null = null;
+const classroomNoticeListeners = new Set<() => void>();
+
+export function setSchoolClassInSession(active: boolean): void {
+  schoolClassInSession = active;
+}
+
+export function isSchoolClassInSession(): boolean {
+  return schoolClassInSession;
+}
+
+export function getClassroomNoticeSnapshot(): ClassroomInSessionNotice | null {
+  return activeClassroomNotice;
+}
+
+export function clearClassroomNotice(): void {
+  if (!activeClassroomNotice) return;
+  activeClassroomNotice = null;
+  for (const fn of classroomNoticeListeners) fn();
+}
+
+export function subscribeClassroomNotice(listener: () => void): () => void {
+  classroomNoticeListeners.add(listener);
+  return () => classroomNoticeListeners.delete(listener);
+}
+
+function triggerClassroomInSessionNotice(hallName: string, roomLabel: string): void {
+  const now = Date.now();
+  if (now - lastClassroomNoticeAt < 1800) return;
+  lastClassroomNoticeAt = now;
+  classroomNoticeSeq += 1;
+  activeClassroomNotice = {
+    message: `စာသင်နေပါသည် (${roomLabel}) — နားချိန်မှသာ စာသင်ခန်းထဲ ဝင်နိုင်ပါမည်`,
+    hallName,
+    roomLabel,
+    seq: classroomNoticeSeq,
+  };
+  for (const fn of classroomNoticeListeners) fn();
 }
 
 export interface SeparatedClassroomSlot {
@@ -59,6 +114,7 @@ export interface ClassroomHallLayout {
   readonly hallDepth: number;
   readonly canonicalRotation: number;
   readonly floorY: number;
+  readonly upperFloorY: number;
   readonly wallHeight: number;
   readonly verandaDepth: number;
   readonly zBack: number;
@@ -66,7 +122,13 @@ export interface ClassroomHallLayout {
   readonly zVerandaEdge: number;
   readonly wallThickness: number;
   readonly classrooms: readonly SeparatedClassroomSlot[];
+  readonly upperClassrooms: readonly SeparatedClassroomSlot[];
   readonly wallObstacles: readonly CanonicalWallBox[];
+  /** Staircase parameters for 2-storey halls (mounted cleanly on the +X veranda side!) */
+  readonly stairStartX: number;
+  readonly stairRunLength: number;
+  readonly stairCenterZ: number;
+  readonly stairWidth: number;
 }
 
 export interface ClassroomNpcSpawnRect {
@@ -83,8 +145,112 @@ export interface ClassroomNpcSpawnRect {
   readonly facingYaw: number;
 }
 
+export interface ClassroomDeskSeat {
+  readonly hallId: string;
+  readonly schoolZoneId: string;
+  readonly regionId: string;
+  readonly storey: 0 | 1;
+  readonly roomIndex: number;
+  readonly roomLabel: string;
+  readonly roomSeed: number;
+  readonly anchorX: number;
+  readonly anchorZ: number;
+  readonly rotation: number;
+  readonly lx: number;
+  readonly lz: number;
+  readonly worldX: number;
+  readonly worldY: number;
+  readonly worldZ: number;
+  /** Facing toward the green blackboard (-Z in canonical hall coordinates) */
+  readonly facingYaw: number;
+}
+
+export interface ClassroomBlackboardAnchor {
+  readonly id: string;
+  readonly hallId: string;
+  readonly schoolZoneId: string;
+  readonly regionId: string;
+  readonly storey: 0 | 1;
+  readonly roomIndex: number;
+  readonly roomLabel: string;
+  readonly roomSeed: number;
+  readonly anchorX: number;
+  readonly anchorZ: number;
+  readonly rotation: number;
+  /** Canonical local X of the room's blackboard center */
+  readonly boardLx: number;
+  /** Canonical local Z of the writable green surface (+0.02m proud of board) */
+  readonly boardSurfaceLz: number;
+  /** World XYZ of the blackboard center */
+  readonly boardWorldX: number;
+  readonly boardWorldY: number;
+  readonly boardWorldZ: number;
+  /** Writable green surface dimensions (m) */
+  readonly boardWidth: number;
+  readonly boardHeight: number;
+  /** Teacher standing Z right in front of the blackboard (writing/erasing) */
+  readonly teacherBoardLz: number;
+  /** Teacher waiting Z facing the seated class (explaining / transitioning) */
+  readonly teacherWaitLz: number;
+  /** Teacher wooden chair canonical local X (behind teacher's desk facing students) */
+  readonly teacherChairLx: number;
+  /** Teacher wooden chair canonical local Z (behind teacher's desk facing students) */
+  readonly teacherChairLz: number;
+  readonly floorY: number;
+}
+
 export const SCHOOL_FLOOR_Y = 0.28;
+export const STUDENTS_PER_CLASSROOM = 15;
+export const STUDENT_DESK = { topY: .75, thickness: .06, depth: .46, benchOffset: .42 } as const;
 const WALL_THICKNESS = 0.22;
+
+export interface ClassroomDeskRowSpec {
+  readonly deskX: number;
+  readonly deskZ: number;
+  readonly deskW: number;
+  readonly seatFracs: readonly number[];
+}
+
+/**
+ * Single source of truth for classroom wooden desk & bench placement (`3 rows × (3 + 2) = 15 seats/room`).
+ * Shared identically by `<SchoolClassroomHall>` (3D benches) and `getHallDeskSeats` (student seat coordinates)
+ * so all 15 students per room sit cleanly on wooden benches with generous spacing and ZERO overlap.
+ */
+export function computeClassroomDeskSpecs(
+  room: Pick<SeparatedClassroomSlot, 'cx' | 'roomWidth'>,
+  roomDepth: number,
+  zBack: number,
+): ClassroomDeskRowSpec[] {
+  const desks: ClassroomDeskRowSpec[] = [];
+  const deskRows = 3;
+  const rowPitch = Math.min(1.42, Math.max(1.06, (roomDepth - 2.85) / deskRows));
+  const innerW = Math.max(3.4, room.roomWidth - 0.6);
+  const deskWLeft = Math.min(2.46, innerW * 0.53);
+  const deskWRight = Math.min(1.68, innerW * 0.36);
+  const aisle = Math.min(0.85, Math.max(0.36, innerW - deskWLeft - deskWRight));
+  const groupSpan = deskWLeft + aisle + deskWRight;
+  const leftStart = room.cx - groupSpan / 2;
+  const leftDeskX = leftStart + deskWLeft / 2;
+  const rightDeskX = leftStart + deskWLeft + aisle + deskWRight / 2;
+
+  for (let rIdx = 0; rIdx < deskRows; rIdx++) {
+    const deskZ = zBack + 2.22 + rIdx * rowPitch;
+    // Left bench: 3 students side-by-side; Right bench: 2 students side-by-side -> 5/row × 3 rows = 15/room!
+    desks.push({
+      deskX: leftDeskX,
+      deskZ,
+      deskW: deskWLeft,
+      seatFracs: [-0.33, 0, 0.33],
+    });
+    desks.push({
+      deskX: rightDeskX,
+      deskZ,
+      deskW: deskWRight,
+      seatFracs: [-0.25, 0.25],
+    });
+  }
+  return desks;
+}
 
 /**
  * Normalizes any building orientation + verandaSide into a canonical frame where:
@@ -210,11 +376,28 @@ export function computeClassroomLayout(spec: SchoolHallSpec): ClassroomHallLayou
     }
   }
 
+  const upperLabels =
+    spec.storeys === 2
+      ? (spec.upperRooms && spec.upperRooms.length === classrooms.length
+          ? spec.upperRooms
+          : spec.rooms.map(r => `2F-${r}`))
+      : [];
+  const upperClassrooms: SeparatedClassroomSlot[] = upperLabels.map((label, idx) => ({
+    ...classrooms[idx],
+    label,
+  }));
+  const upperFloorY = Number((SCHOOL_FLOOR_Y + wallHeight + 0.18).toFixed(3));
+  const stairRunLength = Math.min(7.2, Math.max(5.6, hallLength * 0.34));
+  const stairStartX = hallLength / 2 - stairRunLength - 1.2;
+  const stairWidth = 1.65;
+  const stairCenterZ = zVerandaEdge + stairWidth / 2 + 0.08;
+
   return {
     hallLength,
     hallDepth,
     canonicalRotation,
     floorY: SCHOOL_FLOOR_Y,
+    upperFloorY,
     wallHeight,
     verandaDepth,
     zBack,
@@ -222,7 +405,12 @@ export function computeClassroomLayout(spec: SchoolHallSpec): ClassroomHallLayou
     zVerandaEdge,
     wallThickness: WALL_THICKNESS,
     classrooms,
+    upperClassrooms,
     wallObstacles,
+    stairStartX,
+    stairRunLength,
+    stairCenterZ,
+    stairWidth,
   };
 }
 
@@ -285,6 +473,194 @@ export function getHallClassroomZones(spec: SchoolHallSpec): ClassroomNpcSpawnRe
   return zones;
 }
 
+function hashRoomKey(key: string): number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h % 997;
+}
+
+export interface ClassroomDormZone {
+  readonly hallId: string;
+  readonly schoolZoneId: string;
+  readonly dormRole: SchoolDormRole;
+  readonly centerX: number;
+  readonly centerZ: number;
+  readonly rotation: number;
+  readonly minX: number;
+  readonly maxX: number;
+  readonly minZ: number;
+  readonly maxZ: number;
+  readonly worldY: number;
+}
+
+/**
+ * Generates boarding dormitory hangout zones (open veranda + interior floor on 1F/2F)
+ * for halls designated as `'teacher-dorm'` or `'student-dorm'`.
+ */
+export function getHallDormitoryZones(spec: SchoolHallSpec): ClassroomDormZone[] {
+  if (!spec.dormRole) return [];
+  const layout = computeClassroomLayout(spec);
+  const zones: ClassroomDormZone[] = [];
+  const storeys: { floorY: number; rooms: readonly SeparatedClassroomSlot[] }[] = [
+    { floorY: layout.floorY, rooms: layout.classrooms },
+  ];
+  if (layout.upperClassrooms.length > 0) {
+    storeys.push({ floorY: layout.upperFloorY, rooms: layout.upperClassrooms });
+  }
+  for (const st of storeys) {
+    // Veranda lounge strip
+    zones.push({
+      hallId: spec.id,
+      schoolZoneId: spec.schoolZoneId,
+      dormRole: spec.dormRole,
+      centerX: spec.x,
+      centerZ: spec.z,
+      rotation: layout.canonicalRotation,
+      minX: -layout.hallLength / 2 + 1.0,
+      maxX: layout.hallLength / 2 - 1.0,
+      minZ: layout.zFrontWall + 0.5,
+      maxZ: layout.zVerandaEdge - 0.5,
+      worldY: st.floorY,
+    });
+    // Interior dorm rooms
+    for (const room of st.rooms) {
+      zones.push({
+        hallId: spec.id,
+        schoolZoneId: spec.schoolZoneId,
+        dormRole: spec.dormRole,
+        centerX: spec.x,
+        centerZ: spec.z,
+        rotation: layout.canonicalRotation,
+        minX: room.xMin + 0.65,
+        maxX: room.xMax - 0.65,
+        minZ: layout.zBack + 0.9,
+        maxZ: layout.zFrontWall - 0.85,
+        worldY: st.floorY,
+      });
+    }
+  }
+  return zones;
+}
+
+/**
+ * Computes exact seated student bench coordinates matching `<SchoolClassroomHall>`'s
+ * 3D wooden desk & bench rows across BOTH Ground Floor (`storey: 0`) AND 2nd Floor (`storey: 1`)
+ * so every seated student sits cleanly ON a unique bench facing the blackboard with ZERO overlap!
+ */
+export function getHallDeskSeats(spec: SchoolHallSpec): ClassroomDeskSeat[] {
+  const layout = computeClassroomLayout(spec);
+  const seats: ClassroomDeskSeat[] = [];
+  const roomDepth = layout.zFrontWall - layout.zBack;
+  const c = Math.cos(layout.canonicalRotation);
+  const s = Math.sin(layout.canonicalRotation);
+  const facingYaw = layout.canonicalRotation + Math.PI;
+
+  const floors: { storey: 0 | 1; floorY: number; rooms: readonly SeparatedClassroomSlot[] }[] = [
+    { storey: 0, floorY: layout.floorY, rooms: layout.classrooms },
+  ];
+  if (layout.upperClassrooms.length > 0) {
+    floors.push({ storey: 1, floorY: layout.upperFloorY, rooms: layout.upperClassrooms });
+  }
+
+  for (const fl of floors) {
+    for (const room of fl.rooms) {
+      const roomSeed = hashRoomKey(`${spec.id}:f${fl.storey}:${room.index}:${room.label}`);
+      const deskSpecs = computeClassroomDeskSpecs(room, roomDepth, layout.zBack);
+
+      for (const desk of deskSpecs) {
+        for (const frac of desk.seatFracs) {
+          const lx = desk.deskX + frac * desk.deskW;
+          const lz = desk.deskZ + STUDENT_DESK.benchOffset;
+          seats.push({
+            hallId: spec.id,
+            schoolZoneId: spec.schoolZoneId,
+            regionId: spec.regionId,
+            storey: fl.storey,
+            roomIndex: room.index,
+            roomLabel: room.label,
+            roomSeed,
+            anchorX: spec.x,
+            anchorZ: spec.z,
+            rotation: layout.canonicalRotation,
+            lx,
+            lz,
+            worldX: spec.x + lx * c + lz * s,
+            worldY: fl.floorY,
+            worldZ: spec.z - lx * s + lz * c,
+            facingYaw,
+          });
+        }
+      }
+    }
+  }
+
+  return seats;
+}
+
+/**
+ * Computes exact green blackboard surface anchors for live chalk writing / erasing overlays
+ * AND exact teacher standing positions for EVERY separated classroom on BOTH 1st & 2nd floors!
+ */
+export function getHallBlackboardAnchors(spec: SchoolHallSpec): ClassroomBlackboardAnchor[] {
+  const layout = computeClassroomLayout(spec);
+  const anchors: ClassroomBlackboardAnchor[] = [];
+  const c = Math.cos(layout.canonicalRotation);
+  const s = Math.sin(layout.canonicalRotation);
+  const boardSurfaceLz = layout.zBack + layout.wallThickness / 2 + 0.115;
+  const teacherBoardLz = layout.zBack + layout.wallThickness / 2 + 0.56;
+  const teacherWaitLz = layout.zBack + layout.wallThickness / 2 + 1.25;
+
+  const floors: { storey: 0 | 1; floorY: number; rooms: readonly SeparatedClassroomSlot[] }[] = [
+    { storey: 0, floorY: layout.floorY, rooms: layout.classrooms },
+  ];
+  if (layout.upperClassrooms.length > 0) {
+    floors.push({ storey: 1, floorY: layout.upperFloorY, rooms: layout.upperClassrooms });
+  }
+
+  for (const fl of floors) {
+    for (const room of fl.rooms) {
+      const roomSeed = hashRoomKey(`${spec.id}:f${fl.storey}:${room.index}:${room.label}`);
+      const boardWidth = Math.min(3.2, room.roomWidth * 0.5);
+      const boardHeight = 1.18;
+      const lx = room.cx;
+      const lz = boardSurfaceLz;
+      const teacherChairLx = room.cx - Math.min(0.9, room.roomWidth * 0.15);
+      const teacherChairLz = layout.zBack + 0.91;
+
+      anchors.push({
+        id: fl.storey === 0 ? `${spec.id}-board-${room.index}` : `${spec.id}-f2-board-${room.index}`,
+        hallId: spec.id,
+        schoolZoneId: spec.schoolZoneId,
+        regionId: spec.regionId,
+        storey: fl.storey,
+        roomIndex: room.index,
+        roomLabel: room.label,
+        roomSeed,
+        anchorX: spec.x,
+        anchorZ: spec.z,
+        rotation: layout.canonicalRotation,
+        boardLx: lx,
+        boardSurfaceLz: lz,
+        boardWorldX: spec.x + lx * c + lz * s,
+        boardWorldY: fl.floorY + 1.75,
+        boardWorldZ: spec.z - lx * s + lz * c,
+        boardWidth,
+        boardHeight,
+        teacherBoardLz,
+        teacherWaitLz,
+        teacherChairLx,
+        teacherChairLz,
+        floorY: fl.floorY,
+      });
+    }
+  }
+
+  return anchors;
+}
+
 function hallFromUV(
   spec: Omit<SchoolHallSpec, 'x' | 'z' | 'rotation'> & {
     u: number;
@@ -308,7 +684,9 @@ function hallFromUV(
     roofColor: spec.roofColor,
     verandaSide: spec.verandaSide,
     rooms: spec.rooms,
+    upperRooms: spec.upperRooms,
     storeys: spec.storeys,
+    dormRole: spec.dormRole,
   };
 }
 
@@ -348,7 +726,7 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     id: 'ki-school-office',
     regionId: 'kyarinn',
     schoolZoneId: 'school-kyarinn-bems',
-    name: 'အလက ကြာအင်း ရုံးခန်းဆောင်',
+    name: 'အလက ကြာအင်း ရုံးခန်းနှင့် ဆရာအဆောင်',
     u: 25,
     v: 3824,
     width: 14,
@@ -358,6 +736,7 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#984a3b',
     verandaSide: '+z',
     rooms: ['ရုံးခန်း', 'ဆရာခန်း'],
+    dormRole: 'teacher-dorm',
   }),
   hallFromUV({
     id: 'ki-school-north-hall-1',
@@ -408,7 +787,7 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     id: 'ki-school-east-wing',
     regionId: 'kyarinn',
     schoolZoneId: 'school-kyarinn-bems',
-    name: 'အလက ကြာအင်း အရှေ့တောင်ဆောင်',
+    name: 'အလက ကြာအင်း အရှေ့တောင် ကျောင်းသားအဆောင်',
     u: 116,
     v: 3882,
     width: 10.5,
@@ -418,12 +797,13 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#963e32',
     verandaSide: '-x',
     rooms: ['သိပ္ပံခန်း', 'ခန်းမ'],
+    dormRole: 'student-dorm',
   }),
   hallFromUV({
     id: 'ki-school-south-hall',
     regionId: 'kyarinn',
     schoolZoneId: 'school-kyarinn-bems',
-    name: 'အလက ကြာအင်း တောင်ဘက် စာသင်ဆောင်',
+    name: 'အလက ကြာအင်း တောင်ဘက် စာသင်နှင့် အိပ်ဆောင်',
     u: 62,
     v: 3876,
     width: 44,
@@ -433,16 +813,17 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#2f6a4f',
     verandaSide: '-z',
     rooms: ['G-10A', 'G-10B', 'G-11A', 'G-11B', 'ကွန်ပျူတာ'],
+    dormRole: 'student-dorm',
   }),
 
   // =========================================================================
-  // 2. ထောက်ကြန့်ရွာ — အထက ထောက်ကြန့် (6 halls, 1,979 m² ≈ 40 houses, 22 separated rooms)
+  // 2. ထောက်ကြန့်ရွာ — အထက ထောက်ကြန့် (6 halls, 2F walk-in + boarding dorms!)
   // =========================================================================
   hallFromUV({
     id: 'hk-landmark-school-main',
     regionId: 'htaukkyant',
     schoolZoneId: 'school-htaukkyant-behs',
-    name: 'အထက ထောက်ကြန့် ပင်မကျောင်းဆောင်ကြီး',
+    name: 'အထက ထောက်ကြန့် ပင်မ ၂ ထပ် ကျောင်းဆောင်ကြီး',
     u: -106,
     v: 3280,
     width: 44,
@@ -452,7 +833,8 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     wallColor: '#e2dbcc',
     roofColor: '#9e4536',
     verandaSide: '+z',
-    rooms: ['ရုံးခန်း', 'G-10A', 'G-10B', 'G-11A', 'G-11B', 'G-12'],
+    rooms: ['ရုံးခန်း', 'G-10A', 'G-10B', 'G-11A', 'G-11B', 'G-12A'],
+    upperRooms: ['2F-G10C', '2F-G11C', '2F-G12B', '2F-G12C', '2F-Bio', '2F-Eco'],
     storeys: 2,
   }),
   hallFromUV({
@@ -475,7 +857,7 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     id: 'hk-school-east-wing',
     regionId: 'htaukkyant',
     schoolZoneId: 'school-htaukkyant-behs',
-    name: 'အထက ထောက်ကြန့် တောင်ဘက် စာသင်ဆောင်',
+    name: 'အထက ထောက်ကြန့် တောင်ဘက် ကျောင်းသားအဆောင်',
     u: -78,
     v: 3307,
     width: 10,
@@ -486,12 +868,13 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#9c4939',
     verandaSide: '-x',
     rooms: ['G-5', 'G-6', 'G-7', 'G-8A', 'G-8B'],
+    dormRole: 'student-dorm',
   }),
   hallFromUV({
     id: 'hk-landmark-school-wing',
     regionId: 'htaukkyant',
     schoolZoneId: 'school-htaukkyant-behs',
-    name: 'အထက ထောက်ကြန့် စာသင်ဆောင်ရှည်',
+    name: 'အထက ထောက်ကြန့် ကျောင်းသူအဆောင်',
     u: -78,
     v: 3326,
     width: 10,
@@ -502,12 +885,13 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#7fa2b0',
     verandaSide: '-x',
     rooms: ['G-9A', 'G-9B', 'စာကြည့်တိုက်', 'ခန်းမ'],
+    dormRole: 'student-dorm',
   }),
   hallFromUV({
     id: 'hk-school-east-annex',
     regionId: 'htaukkyant',
     schoolZoneId: 'school-htaukkyant-behs',
-    name: 'အထက ထောက်ကြန့် အရှေ့ဘက် အဆောင်',
+    name: 'အထက ထောက်ကြန့် ဆရာ/ဆရာမ အဆောင်',
     u: -40,
     v: 3318,
     width: 8,
@@ -518,6 +902,7 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#9a4838',
     verandaSide: '-x',
     rooms: ['ကွန်ပျူတာ', 'အနုပညာ', 'ဆရာခန်း'],
+    dormRole: 'teacher-dorm',
   }),
   hallFromUV({
     id: 'hk-school-lab-building',
@@ -537,7 +922,7 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
   }),
 
   // =========================================================================
-  // 3. ထိုမာရွာ — အထက-ထိုမာ (4 halls, 1,360 m² ≈ 28 houses, 16 separated rooms)
+  // 3. ထိုမာရွာ — အထက-ထိုမာ (4 halls, teacher dorm + student dorm)
   // =========================================================================
   hallFromUV({
     id: 'htomar-campus-behs-main',
@@ -573,7 +958,7 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     id: 'htomar-campus-behs-south',
     regionId: 'htomar',
     schoolZoneId: 'school-htomar-behs',
-    name: 'အထက-ထိုမာ · တောင်ဘက် စာသင်ဆောင်',
+    name: 'အထက-ထိုမာ · တောင်ဘက် ကျောင်းသားအဆောင်',
     u: 361,
     v: 1852,
     width: 34,
@@ -583,12 +968,13 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#964638',
     verandaSide: '-z',
     rooms: ['G-7', 'G-8', 'G-9', 'G-10'],
+    dormRole: 'student-dorm',
   }),
   hallFromUV({
     id: 'htomar-campus-behs-lab',
     regionId: 'htomar',
     schoolZoneId: 'school-htomar-behs',
-    name: 'အထက-ထိုမာ · အရှေ့တောင် အထက်တန်းဆောင်',
+    name: 'အထက-ထိုမာ · ဆရာ/ဆရာမ အဆောင်',
     u: 403,
     v: 1852,
     width: 34,
@@ -598,16 +984,17 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#964638',
     verandaSide: '-z',
     rooms: ['G-11', 'G-12', 'သိပ္ပံခန်း', 'စာကြည့်တိုက်'],
+    dormRole: 'teacher-dorm',
   }),
 
   // =========================================================================
-  // 4. ထိုမာရွာ — GTHS (Khamtee) & Technological University, Kalay Main Classroom Halls
+  // 4. ထိုမာရွာ — GTHS (Khamtee) & Technological University, Kalay (2F walk-in + dorms)
   // =========================================================================
   hallFromUV({
     id: 'htomar-campus-gths-main',
     regionId: 'htomar',
     schoolZoneId: 'school-htomar-gths',
-    name: 'GTHS (Khamtee) · ပင်မစာသင်ဆောင်',
+    name: 'GTHS (Khamtee) · ပင်မ ၂ ထပ် စာသင်ဆောင်',
     u: -94,
     v: 1742,
     width: 26,
@@ -617,13 +1004,14 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#8b5545',
     verandaSide: '-z',
     rooms: ['Civil-1', 'EC-1', 'EP-1', 'Mech-1'],
+    upperRooms: ['2F-Civil', '2F-EC', '2F-EP', '2F-Mech'],
     storeys: 2,
   }),
   hallFromUV({
     id: 'htomar-campus-gths-west-1',
     regionId: 'htomar',
     schoolZoneId: 'school-htomar-gths',
-    name: 'GTHS (Khamtee) · အနောက်မြောက် စာသင်ဆောင်',
+    name: 'GTHS (Khamtee) · ဆရာ/ဆရာမ အဆောင်',
     u: -154,
     v: 1676,
     width: 28,
@@ -633,12 +1021,13 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#6d9178',
     verandaSide: '+z',
     rooms: ['Lab-A', 'Lab-B', 'IT-1', 'IT-2'],
+    dormRole: 'teacher-dorm',
   }),
   hallFromUV({
     id: 'htomar-campus-gths-west-2',
     regionId: 'htomar',
     schoolZoneId: 'school-htomar-gths',
-    name: 'GTHS (Khamtee) · အနောက်တောင် စာသင်ဆောင်',
+    name: 'GTHS (Khamtee) · ကျောင်းသား/ကျောင်းသူ အဆောင်',
     u: -154,
     v: 1742,
     width: 28,
@@ -648,12 +1037,13 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#6d9178',
     verandaSide: '-z',
     rooms: ['Civil-2', 'EC-2', 'EP-2', 'Mech-2'],
+    dormRole: 'student-dorm',
   }),
   hallFromUV({
     id: 'htomar-campus-tu-north-wing',
     regionId: 'htomar',
     schoolZoneId: 'school-htomar-tu-kalay',
-    name: 'Technological University, Kalay · မြောက်ဘက် ဘေးဆောင်ရှည်',
+    name: 'TU Kalay · မြောက်ဘက် ၂ ထပ် ဆရာအဆောင်နှင့် စာသင်ဆောင်',
     u: -196,
     v: 1796,
     width: 48,
@@ -663,13 +1053,15 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#bc4b3c',
     verandaSide: '+z',
     rooms: ['Civil', 'Mech', 'EP', 'EC', 'IT', 'Arch'],
+    upperRooms: ['2F-CE', '2F-ME', '2F-EP', '2F-EC', '2F-IT', '2F-Arch'],
     storeys: 2,
+    dormRole: 'teacher-dorm',
   }),
   hallFromUV({
     id: 'htomar-campus-tu-south-wing',
     regionId: 'htomar',
     schoolZoneId: 'school-htomar-tu-kalay',
-    name: 'Technological University, Kalay · တောင်ဘက် ဘေးဆောင်ရှည်',
+    name: 'TU Kalay · တောင်ဘက် ၂ ထပ် ကျောင်းသားအဆောင်နှင့် စာသင်ဆောင်',
     u: -196,
     v: 1864,
     width: 48,
@@ -679,15 +1071,17 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#bc4b3c',
     verandaSide: '-z',
     rooms: ['Math', 'Phys', 'Chem', 'Eng', 'Myan', 'Lab'],
+    upperRooms: ['2F-M2', '2F-P2', '2F-C2', '2F-E2', '2F-My2', '2F-Lab'],
     storeys: 2,
+    dormRole: 'student-dorm',
   }),
 
   // =========================================================================
-  // 5. ကံပုလဲရွာ — ကံပုလဲ အခြေခံပညာကျောင်း (3 large halls, ~992 m² ≈ 20.3 houses, 13 rooms)
+  // 5. ကံပုလဲရွာ — ကံပုလဲ အခြေခံပညာကျောင်း (2F walk-in + teacher dorm + student dorm)
   // =========================================================================
   kanbaleHallFromLocal(2.5, 1.5, {
     id: 'kanbale-school-main-hall',
-    name: 'ကံပုလဲကျောင်း · ပင်မစာသင်ဆောင်ကြီး',
+    name: 'ကံပုလဲကျောင်း · ပင်မ ၂ ထပ် စာသင်ဆောင်ကြီး',
     width: 34,
     depth: 10.5,
     height: 8.0,
@@ -695,11 +1089,12 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#1b4332',
     verandaSide: '-z',
     rooms: ['ရုံးခန်း', 'KG', 'G-1', 'G-2', 'G-3'],
+    upperRooms: ['2F-G4', '2F-G5', '2F-G6', '2F-G7', '2F-G8'],
     storeys: 2,
   }),
   kanbaleHallFromLocal(-10.5, -15.5, {
     id: 'kanbale-school-left-wing',
-    name: 'ကံပုလဲကျောင်း · လက်ဝဲဘက် စာသင်ဆောင်',
+    name: 'ကံပုလဲကျောင်း · ကျောင်းသား/ကျောင်းသူ အဆောင်',
     width: 9.5,
     depth: 24,
     height: 5.8,
@@ -707,10 +1102,11 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#1b4332',
     verandaSide: '+x',
     rooms: ['G-4', 'G-5', 'G-6', 'G-7'],
+    dormRole: 'student-dorm',
   }),
   kanbaleHallFromLocal(15.5, -15.5, {
     id: 'kanbale-school-right-wing',
-    name: 'ကံပုလဲကျောင်း · လက်ယာဘက် စာသင်ဆောင်',
+    name: 'ကံပုလဲကျောင်း · ဆရာ/ဆရာမ အဆောင်',
     width: 9.5,
     depth: 24,
     height: 5.8,
@@ -718,10 +1114,11 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#1b4332',
     verandaSide: '-x',
     rooms: ['G-8', 'G-9', 'G-10', 'သိပ္ပံခန်း'],
+    dormRole: 'teacher-dorm',
   }),
 
   // =========================================================================
-  // 6. နတ်မြောင်းရွာ — အမက နတ်မြောင်း & အထက နတ်မြောင်း (Walk-in separated classrooms)
+  // 6. နတ်မြောင်းရွာ — အမက နတ်မြောင်း & အထက နတ်မြောင်း (2F walk-in!)
   // =========================================================================
   {
     id: 'natmyaung-primary-school',
@@ -743,7 +1140,7 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     id: 'natmyaung-high-school',
     regionId: 'natmyaung',
     schoolZoneId: 'school-natmyaung-high',
-    name: 'အထက-နတ်မြောင်း (အခြေခံပညာ အထက်တန်းကျောင်း)',
+    name: 'အထက-နတ်မြောင်း (၂ ထပ် အထက်တန်းကျောင်း)',
     x: 2940.15,
     z: 2959.95,
     width: 24,
@@ -754,8 +1151,113 @@ export const WALKIN_SCHOOL_HALLS: readonly SchoolHallSpec[] = [
     roofColor: '#2d5475',
     verandaSide: '+z',
     rooms: ['G-6', 'G-7', 'G-8', 'G-9', 'G-10'],
+    upperRooms: ['2F-G11A', '2F-G11B', '2F-G12A', '2F-G12B', '2F-Lab'],
     storeys: 2,
   },
+
+  // =========================================================================
+  // 7. သာစည်ရွာ — သာစည် အခြေခံပညာကျောင်း (3 halls, 18 classrooms incl. 2F!)
+  //    Centered around Ward 6 school plot (u = -271, v = 880) facing Main Road
+  // =========================================================================
+  hallFromUV({
+    id: 'tharsi-school-main-hall',
+    regionId: 'tharsi',
+    schoolZoneId: 'school-tharsi-behs',
+    name: 'သာစည်ကျောင်း · ပင်မ ၂ ထပ် စာသင်ဆောင်ကြီး',
+    u: -271,
+    v: 906,
+    width: 38,
+    depth: 11,
+    height: 8.0,
+    wallColor: '#ece5d3',
+    roofColor: '#2f6a4f',
+    verandaSide: '-z',
+    rooms: ['ရုံးခန်း', 'G-6', 'G-7', 'G-8', 'G-9'],
+    upperRooms: ['2F-G10A', '2F-G10B', '2F-G11A', '2F-G11B', '2F-G12'],
+    storeys: 2,
+  }),
+  hallFromUV({
+    id: 'tharsi-school-west-hall',
+    regionId: 'tharsi',
+    schoolZoneId: 'school-tharsi-behs',
+    name: 'သာစည်ကျောင်း · အနောက်ဘက် မူလတန်းဆောင်',
+    u: -305,
+    v: 868,
+    width: 10.5,
+    depth: 36,
+    height: 6.2,
+    wallColor: '#ece5d3',
+    roofColor: '#984a3b',
+    verandaSide: '+x',
+    rooms: ['KG', 'G-1', 'G-2', 'G-3'],
+  }),
+  hallFromUV({
+    id: 'tharsi-school-east-hall',
+    regionId: 'tharsi',
+    schoolZoneId: 'school-tharsi-behs',
+    name: 'သာစည်ကျောင်း · အရှေ့ဘက် အလယ်တန်းဆောင်',
+    u: -237,
+    v: 868,
+    width: 10.5,
+    depth: 36,
+    height: 6.2,
+    wallColor: '#ece5d3',
+    roofColor: '#984a3b',
+    verandaSide: '-x',
+    rooms: ['G-4', 'G-5', 'သိပ္ပံခန်း', 'စာကြည့်တိုက်'],
+  }),
+
+  // =========================================================================
+  // 8. မြို့သာရပ်ကွက် အလယ် — မြို့သာ အခြေခံပညာကျောင်း (3 halls, 16 classrooms incl. 2F!)
+  //    East-facing U-quadrangle opening directly to East Gate (u=-103.25, v=-926.55) & road way/239609161
+  // =========================================================================
+  hallFromUV({
+    id: 'myothar-school-main-hall',
+    regionId: 'myothar',
+    schoolZoneId: 'school-myothar-behs',
+    name: 'မြို့သာကျောင်း · ပင်မ ၂ ထပ် စာသင်ဆောင်ကြီး',
+    u: -157,
+    v: -924,
+    width: 10.5,
+    depth: 36,
+    height: 8.0,
+    wallColor: '#ece5d3',
+    roofColor: '#2f6a4f',
+    verandaSide: '+x',
+    rooms: ['ရုံးခန်း', 'G-6', 'G-7', 'G-8', 'G-9'],
+    upperRooms: ['2F-G10A', '2F-G10B', '2F-G11A', '2F-G11B', '2F-G12'],
+    storeys: 2,
+  }),
+  hallFromUV({
+    id: 'myothar-school-west-hall',
+    regionId: 'myothar',
+    schoolZoneId: 'school-myothar-behs',
+    name: 'မြို့သာကျောင်း · မြောက်ဘက် မူလတန်းဆောင်',
+    u: -132,
+    v: -947,
+    width: 26,
+    depth: 9.5,
+    height: 6.0,
+    wallColor: '#ece5d3',
+    roofColor: '#984a3b',
+    verandaSide: '+z',
+    rooms: ['KG', 'G-1', 'G-2'],
+  }),
+  hallFromUV({
+    id: 'myothar-school-east-hall',
+    regionId: 'myothar',
+    schoolZoneId: 'school-myothar-behs',
+    name: 'မြို့သာကျောင်း · တောင်ဘက် အလယ်တန်းဆောင်',
+    u: -132,
+    v: -901,
+    width: 26,
+    depth: 9.5,
+    height: 6.0,
+    wallColor: '#ece5d3',
+    roofColor: '#984a3b',
+    verandaSide: '-z',
+    rooms: ['G-3', 'G-4', 'G-5'],
+  }),
 ];
 
 export const WALKIN_SCHOOL_HALL_BY_ID: ReadonlyMap<string, SchoolHallSpec> = new Map(
@@ -786,9 +1288,12 @@ const PREPARED_HALL_COLLIDERS: readonly PreparedHallCollider[] = WALKIN_SCHOOL_H
 });
 
 /**
- * Exact walk-in wall & doorway collision check for ALL multi-classroom school halls.
- * Allows walking up onto the open veranda and straight through every classroom's open
- * doorway (`1.8m`) into each separated classroom, while blocking exterior & partition walls.
+ * Exact walk-in wall & doorway collision check for ALL multi-classroom school halls (1F & 2F).
+ * - During **recess / break / lunch / closed**: open doorways (`1.8m`) and separated classrooms
+ *   are freely walkable on BOTH Ground Floor and 2nd Floor!
+ * - During **active class time (`schoolClassInSession === true`)**: exterior veranda & stairs
+ *   remain 100% walkable, while classroom doorways & interiors block entry and trigger a brief
+ *   Myanmar toast notice ("စာသင်နေပါသည် — နားချိန်မှသာ စာသင်ခန်းထဲ ဝင်နိုင်ပါမည်")!
  */
 export function canStandWalkInSchoolHalls(x: number, z: number, playerRadius = 0.4): boolean {
   for (let i = 0; i < PREPARED_HALL_COLLIDERS.length; i++) {
@@ -799,7 +1304,25 @@ export function canStandWalkInSchoolHalls(x: number, z: number, playerRadius = 0
 
     const lx = dx * entry.cosR - dz * entry.sinR;
     const lz = dx * entry.sinR + dz * entry.cosR;
-    const obstacles = entry.layout.wallObstacles;
+    const layout = entry.layout;
+
+    // During active class time, block entering classroom doorways/interiors (leaving veranda & stairs walkable!)
+    if (
+      schoolClassInSession &&
+      lx >= -layout.hallLength / 2 - playerRadius &&
+      lx <= layout.hallLength / 2 + playerRadius &&
+      lz >= layout.zBack - playerRadius &&
+      lz <= layout.zFrontWall + playerRadius + 0.12
+    ) {
+      // Find nearest classroom label for the transient toast message
+      const room =
+        layout.classrooms.find(r => lx >= r.xMin - 0.5 && lx <= r.xMax + 0.5) ??
+        layout.classrooms[0];
+      triggerClassroomInSessionNotice(entry.spec.name, room?.label ?? 'စာသင်ခန်း');
+      return false;
+    }
+
+    const obstacles = layout.wallObstacles;
     for (let j = 0; j < obstacles.length; j++) {
       const obs = obstacles[j];
       const nx = Math.max(obs.minX, Math.min(lx, obs.maxX));
@@ -815,7 +1338,70 @@ export function canStandWalkInSchoolHalls(x: number, z: number, playerRadius = 0
 }
 
 /**
- * Returns total walk-in classroom building area (m²) & separated classroom count for a given school zone.
+ * If the player happens to already be standing inside a classroom when the class bell rings
+ * (`schoolClassInSession === true`), gently steps them onto the open veranda right outside the door
+ * and shows the transient Burmese class-in-session toast so they can never get trapped indoors.
+ */
+export function evictFromLockedClassroom(x: number, z: number): { x: number; z: number } | null {
+  if (!schoolClassInSession) return null;
+  for (let i = 0; i < PREPARED_HALL_COLLIDERS.length; i++) {
+    const entry = PREPARED_HALL_COLLIDERS[i];
+    const dx = x - entry.spec.x;
+    const dz = z - entry.spec.z;
+    if (dx * dx + dz * dz > entry.boundR * entry.boundR) continue;
+
+    const lx = dx * entry.cosR - dz * entry.sinR;
+    const lz = dx * entry.sinR + dz * entry.cosR;
+    const layout = entry.layout;
+
+    if (
+      lx >= -layout.hallLength / 2 &&
+      lx <= layout.hallLength / 2 &&
+      lz >= layout.zBack &&
+      lz <= layout.zFrontWall + 0.3
+    ) {
+      const room =
+        layout.classrooms.find(r => lx >= r.xMin - 0.5 && lx <= r.xMax + 0.5) ??
+        layout.classrooms[0];
+      triggerClassroomInSessionNotice(entry.spec.name, room?.label ?? 'စာသင်ခန်း');
+      const exitLx = room ? room.doorX : lx;
+      const exitLz = layout.zFrontWall + Math.min(1.15, layout.verandaDepth * 0.55);
+      return {
+        x: entry.spec.x + exitLx * entry.cosR + exitLz * entry.sinR,
+        z: entry.spec.z - exitLx * entry.sinR + exitLz * entry.cosR,
+      };
+    }
+  }
+  return null;
+}
+
+/**
+ * Finds the nearest walk-in school hall if `(x, z)` is inside or looking closely at any school campus.
+ * Used by the HUD to hide `.ghost-hud-container` and show the live school clock & schedule pill instead.
+ */
+export function findNearestSchoolHall(
+  x: number,
+  z: number,
+  margin = 48,
+): SchoolHallSpec | null {
+  let best: SchoolHallSpec | null = null;
+  let bestDistSq = Infinity;
+  for (let i = 0; i < PREPARED_HALL_COLLIDERS.length; i++) {
+    const entry = PREPARED_HALL_COLLIDERS[i];
+    const dx = x - entry.spec.x;
+    const dz = z - entry.spec.z;
+    const distSq = dx * dx + dz * dz;
+    const maxR = entry.boundR + margin;
+    if (distSq <= maxR * maxR && distSq < bestDistSq) {
+      bestDistSq = distSq;
+      best = entry.spec;
+    }
+  }
+  return best;
+}
+
+/**
+ * Returns total walk-in classroom building area (m²) & separated classroom count (1F + 2F) for a given school zone.
  */
 export function getSchoolCampusMetrics(schoolZoneId: string): {
   hallCount: number;
@@ -827,7 +1413,8 @@ export function getSchoolCampusMetrics(schoolZoneId: string): {
   let roomCount = 0;
   let floorAreaSqM = 0;
   for (const h of halls) {
-    roomCount += h.rooms.length;
+    const layout = computeClassroomLayout(h);
+    roomCount += layout.classrooms.length + layout.upperClassrooms.length;
     floorAreaSqM += h.width * h.depth * (h.storeys === 2 ? 1.5 : 1);
   }
   return {

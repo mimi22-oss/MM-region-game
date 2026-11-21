@@ -47,6 +47,10 @@ import type { TimeMode } from '../game/environmentTime';
 import { isDaytimeLivingHours } from '../game/villageCrowd';
 import { isBotInCombat } from '../game/botFighting';
 import {
+  removeAvoidanceActor,
+  upsertAvoidanceActor,
+} from '../game/botAvoidance';
+import {
   isChairOccupiedByPlayer,
   localDirToBodyYaw,
   localToWorldXZ,
@@ -687,6 +691,21 @@ export function HouseResidentBots({
             `pooled-slot-${slot.slotIndex}-${m}`,
             isResidentOccupyingSeat(memberState.phase),
           );
+        }
+        // Register visible outdoor house residents in unified botAvoidance so cars & passing street bots never clip them!
+        if (memberState.visible && memberState.phase !== 'INSIDE_HOUSE') {
+          const wPos = localToWorldXZ(slot.house.x, slot.house.z, slot.house.rotation, memberState.x, memberState.z);
+          upsertAvoidanceActor(
+            botName,
+            'human',
+            wPos.x,
+            wPos.z,
+            slot.house.rotation + memberState.yaw,
+            isAdult ? 0.46 : 0.36,
+            { speed: memberState.speed, stationary: memberState.phase === 'SITTING' },
+          );
+        } else {
+          removeAvoidanceActor(botName);
         }
       }
 

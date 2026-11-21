@@ -4,6 +4,7 @@
  * with zero per-house geometry or material allocation.
  */
 
+import { npcCalfGeometry, npcEyesGeometry, npcFaceMaterial, npcHandGeometry, npcShoeGeometry } from '../game/npcAnatomy';
 import { useEffect, useRef, type RefObject } from 'react';
 import { Vector3, type Group } from 'three';
 import { getElderBotResourceCache } from '../game/elderBotResources';
@@ -482,18 +483,18 @@ export function KidBotRig({
                 position={[side * 0.082, 0, 0]}
               >
                 <mesh
-                  geometry={res.geo.unitCyl}
+                  geometry={npcCalfGeometry}
                   material={skinMat}
-                  position={[0, 0.12, 0]}
-                  scale={[0.04, 0.16, 0.04]}
+                  position={[0, 0.17, 0]}
+                  scale={[0.9, 0.56, 0.9]}
                   castShadow
                   dispose={null}
                 />
                 <mesh
-                  geometry={res.geo.unitBox}
+                  geometry={npcShoeGeometry}
                   material={outfit.shoe}
-                  position={[0, 0.025, 0.036]}
-                  scale={[0.084, 0.05, 0.165]}
+                  position={[0, 0, 0]}
+                  scale={[0.87, 0.69, 0.87]}
                   castShadow
                   dispose={null}
                 />
@@ -555,27 +556,27 @@ export function KidBotRig({
                   position={[0, -0.37, 0]}
                 >
                   <mesh
-                    geometry={res.geo.unitCyl}
+                    geometry={npcCalfGeometry}
                     material={skinMat}
-                    position={[0, -0.19, 0]}
-                    scale={[0.042, 0.38, 0.042]}
+                    position={[0, 0, 0]}
+                    scale={[0.94, 1.44, 0.94]}
                     castShadow
                     dispose={null}
                   />
                   {/* Kid sneaker touching y = -0.43 (total = 0.80 => exact floor) */}
                   <mesh
-                    geometry={res.geo.unitBox}
+                    geometry={npcShoeGeometry}
                     material={outfit.shoe}
-                    position={[0, -0.4, 0.042]}
-                    scale={[0.09, 0.06, 0.18]}
+                    position={[0, -0.43, 0]}
+                    scale={[0.93, 0.89, 0.95]}
                     castShadow
                     dispose={null}
                   />
                   <mesh
-                    geometry={res.geo.unitBox}
+                    geometry={res.geo.unitSphere}
                     material={outfit.top}
-                    position={[0, -0.39, 0.055]}
-                    scale={[0.092, 0.018, 0.07]}
+                    position={[0, -0.38, 0.044]}
+                    scale={[0.034, 0.008, 0.023]}
                     dispose={null}
                   />
                 </group>
@@ -688,10 +689,10 @@ export function KidBotRig({
                     dispose={null}
                   />
                   <mesh
-                    geometry={res.geo.unitSphere}
+                    geometry={npcHandGeometry}
                     material={skinMat}
-                    position={[0, -0.225, 0.006]}
-                    scale={[0.036, 0.042, 0.028]}
+                    position={[0, -0.208, 0.005]}
+                    scale={[side < 0 ? 0.83 : -0.83, 0.78, 0.85]}
                     dispose={null}
                   />
                 </group>
@@ -720,31 +721,7 @@ export function KidBotRig({
                 />
               ))}
 
-              {/* Bright curious eyes */}
-              {[-1, 1].map((side) => (
-                <group key={`keye-${side}`} position={[side * 0.048, 0.014, 0.116]}>
-                  <mesh
-                    geometry={res.geo.unitSphere}
-                    material={res.eyeWhite}
-                    scale={[0.023, 0.02, 0.01]}
-                    dispose={null}
-                  />
-                  <mesh
-                    geometry={res.geo.unitSphere}
-                    material={res.eyeDark}
-                    position={[0, 0, 0.008]}
-                    scale={[0.012, 0.013, 0.006]}
-                    dispose={null}
-                  />
-                  <mesh
-                    geometry={res.geo.unitBox}
-                    material={hairMat}
-                    position={[0, 0.032, 0.004]}
-                    scale={[0.038, 0.007, 0.008]}
-                    dispose={null}
-                  />
-                </group>
-              ))}
+              <mesh geometry={npcEyesGeometry} material={npcFaceMaterial} scale={0.85} position={[0, 0.005, -0.002]} dispose={null} />
 
               {/* Cute button nose & cheerful smile */}
               <mesh
@@ -768,8 +745,7 @@ export function KidBotRig({
                   <mesh
                     geometry={res.geo.hairCapUncle}
                     material={hairMat}
-                    position={[0, 0.038, -0.01]}
-                    scale={[1.03, 0.9, 1.04]}
+                    scale={[.88, .89, .88]}
                     castShadow
                     dispose={null}
                   />
@@ -787,8 +763,7 @@ export function KidBotRig({
                   <mesh
                     geometry={res.geo.hairCapAuntie}
                     material={hairMat}
-                    position={[0, 0.035, -0.012]}
-                    scale={[1.03, 0.94, 1.04]}
+                    scale={[.88, .91, .88]}
                     castShadow
                     dispose={null}
                   />

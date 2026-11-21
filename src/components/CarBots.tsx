@@ -1,6 +1,6 @@
 import {useTrafficCollider} from './useTrafficCollider';
 import {sceneGround,carGroundPose} from '../game/groundSurface';
-import { useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group } from 'three';
 import { ward } from '../data/ward';
@@ -8,6 +8,12 @@ import { kalayVillages } from '../data/villages';
 import { buildTrafficRoutes, trafficPose, carAppearance, type TrafficRoute } from '../game/carTraffic';
 import { mobileQuality } from '../game/sceneBudget';
 import { Car } from './Car';
+import {
+  evaluateCarForwardClearance,
+  removeAvoidanceActor,
+  stepCarTrafficSpeed,
+  upsertAvoidanceActor,
+} from '../game/botAvoidance';
 
 import { spatialIndex } from '../game/spatialIndex';
 import { myotharCenterRoads, myotharCenterBuildings } from '../data/wards/myothar/center/index.ts';
@@ -56,7 +62,10 @@ const staticIsBlocked = (x: number, z: number, radius: number) =>
   staticObstacleLookup(x, z).some(b => Math.hypot(x - b.x, z - b.z) < (Math.hypot(b.width / 2, b.depth / 2) + radius + 1.2));
 const staticRoutes = buildTrafficRoutes(staticRoads, staticIsBlocked);
 function TrafficCar({route,index,offset}:{route:TrafficRoute;index:number;offset:number}){
- const root=useRef<Group>(null),travel=useRef(offset),appearance=useMemo(()=>carAppearance(index),[index]);
+ const root=useRef<Group>(null),travel=useRef(offset),speedRef=useRef(8),appearance=useMemo(()=>carAppearance(index),[index]);
+ const carAvoidId = `traffic-car-${route.id}-${index}`;
+ const carHalfW = 1.02 * appearance.size;
+ const carHalfL = 1.98 * appearance.size;
  const groundCache=useRef<{
   ground:ReturnType<typeof sceneGround>|null;
   heightFn:((x:number,z:number)=>number)|null;
@@ -65,16 +74,41 @@ function TrafficCar({route,index,offset}:{route:TrafficRoute;index:number;offset
   pose:{y:number;pitch:number;roll:number};
  }>({ground:null,heightFn:null,age:0,grounded:false,pose:{y:.12,pitch:0,roll:0}});
  useTrafficCollider(root,1.9*appearance.size,3.7*appearance.size,'car');
+ useEffect(() => () => removeAvoidanceActor(carAvoidId), [carAvoidId]);
  useFrame(({scene,clock,camera},dt)=>{
   const step=Math.min(dt,.05);
-  travel.current+=step*8;
   const obj=root.current;
   if(!obj)return;
-  const p=trafficPose(route,travel.current);
+  const curPose=trafficPose(route,travel.current);
   const focus=camera.userData.viewFocus??camera.position;
-  const dx=p.x-focus.x,dz=p.z-focus.z,distSq=dx*dx+dz*dz;
-  if(distSq>550*550){obj.visible=false;return}
+  const dx=curPose.x-focus.x,dz=curPose.z-focus.z,distSq=dx*dx+dz*dz;
+  if(distSq>550*550){
+   obj.visible=false;
+   removeAvoidanceActor(carAvoidId);
+   return;
+  }
   obj.visible=true;
+
+  // Check forward driving corridor for any person (NPC/player), livestock (cow/buffalo/horse), or car ahead:
+  // Brakes smoothly to a COMPLETE STOP and waits until the lane ahead is completely clear!
+  const clearance = evaluateCarForwardClearance(
+   carAvoidId,
+   curPose.x,
+   curPose.z,
+   curPose.yaw,
+   carHalfW,
+   carHalfL,
+  );
+  speedRef.current = stepCarTrafficSpeed(speedRef.current, 8, clearance, step);
+  travel.current += step * speedRef.current;
+
+  const p=trafficPose(route,travel.current);
+  upsertAvoidanceActor(carAvoidId, 'car', p.x, p.z, p.yaw, Math.max(carHalfW, carHalfL), {
+   halfWidth: carHalfW,
+   halfLength: carHalfL,
+   speed: speedRef.current,
+  });
+
   const cache=groundCache.current;
   cache.age+=step;
   if(!cache.grounded||distSq<110*110||cache.age>=.2){
@@ -110,9 +144,15 @@ export function CarBots(){
   return [...staticRoutes, ...buildTrafficRoutes(streamedRoads, streamedBlocked)];
  }, [chunkVersion]);
  const [fleet,setFleet]=useState<{route:number;slot:number;offset:number}[]>([]),elapsed=useRef(0);
+ useEffect(() => () => removeAvoidanceActor('player-focus'), []);
  useFrame(({camera},dt)=>{
-  elapsed.current+=dt;if(elapsed.current<1)return;elapsed.current=0;
   const focus=camera.userData.viewFocus??camera.position;
+  if(camera.position.y<=500&&camera.userData.viewFocus){
+   upsertAvoidanceActor('player-focus','player',focus.x,focus.z,0,0.48);
+  }else{
+   removeAvoidanceActor('player-focus');
+  }
+  elapsed.current+=dt;if(elapsed.current<1)return;elapsed.current=0;
   if(camera.position.y>500){if(fleet.length)setFleet([]);return}
   const candidates=routes.map((r,i)=>{
    const t=Math.max(0,Math.min(r.length,(focus.x-r.x)*r.dx+(focus.z-r.z)*r.dz));

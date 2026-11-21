@@ -13,6 +13,8 @@ import { MyotharCenterBuilding } from './MyotharCenterBuilding';
 import { MyotharCenterLandmarks } from './MyotharCenterLandmarks';
 import { Cemetery } from '../../../Cemetery.tsx';
 import { Tree } from '../../../Tree.tsx';
+import { SchoolCampusView } from '../../../SchoolCampusView.tsx';
+import { MYOTHAR_SCHOOL_COMPOUND } from '../../../../data/wards/myothar/center/myotharSchoolCampus.ts';
 import { sourceIsEdited } from '../../../../game/worldEdits';
 
 export interface MyotharCenterProps {
@@ -168,6 +170,11 @@ export const MyotharCenter = memo(function MyotharCenter({
 			{/* ၃.၅။ သင်္ချိုင်း / သုသာန်ဝင်း (10,000 Multicolored Graves Reusable Cemetery) */}
 			{/* ======================================================== */}
 			<Cemetery name="သင်္ချိုင်း" township="မြို့သာရပ်ကွက်" graveCount={10000} />
+
+			{/* ======================================================== */}
+			{/* ၃.၆။ မြို့သာ အခြေခံပညာကျောင်း (Walk-In School Campus, Flagpole & Rest Pavilions) */}
+			{/* ======================================================== */}
+			<SchoolCampusView spec={MYOTHAR_SCHOOL_COMPOUND} />
 
 			{/* ======================================================== */}
 			{/* ၄။ လူနေအိမ်နှင့် အဆောက်အအုံများ (Buildings) */}

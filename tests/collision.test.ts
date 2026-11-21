@@ -762,7 +762,9 @@ test('detectLocation identifies every ward, village, sub-ward, and landmark duri
   assert.equal(detectLocation(tsW2.x, tsW2.z).subArea, 'သာစည်ရွာ · ရပ်ကွက် (၂)');
   const tsW3 = toWorld(-160, 720);
   assert.equal(detectLocation(tsW3.x, tsW3.z).subArea, 'သာစည်ရွာ · ရပ်ကွက် (၃)');
-  const tsW6 = toWorld(-270, 860);
+  const tsSchool = toWorld(-270, 860);
+  assert.equal(detectLocation(tsSchool.x, tsSchool.z).subArea, 'သာစည်ရွာ · သာစည်ကျောင်း');
+  const tsW6 = toWorld(-370, 860);
   assert.equal(detectLocation(tsW6.x, tsW6.z).subArea, 'သာစည်ရွာ · ရပ်ကွက် (၆)');
 
   // Kyar Inn vs Kyar Inn Lake

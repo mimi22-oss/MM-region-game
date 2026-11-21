@@ -1,5 +1,6 @@
 import { angle, toWorld } from '../../wards/myothar/area5.ts';
 import type { House, RoadPlot, FieldPlot, TreePlot, WindingCanalPlot, EastWestCanalPlot, VillageMeta } from '../../types.ts';
+export { THARSI_SCHOOL_COMPOUND, canStandTharSiSchoolCampus, type TharSiRestPavilion } from './schoolCampus.ts';
 
 /**
  * မြို့သာရပ်ကွက် · နယ်မြေ (၅) နှင့် သာစည်ရွာကြား ခြားထားသော လယ်ကွင်း ၆ ကွက်
@@ -63,6 +64,7 @@ export const tharSiCanal: EastWestCanalPlot = {
 export const tharSiLanes = [712, 740, 768, 796, 824, 852, 880, 908, 936];
 const THARSI_MAIN_ROAD_V = 824;
 // အနောက်ဘက်သို့ ၃ တန်းစီ (၂ ရပ်ကွက် × ၃ တန်း = ၆ ရပ်ကွက်) ခွဲခြားပေးသော မြောက်-တောင် ရွာတွင်းလမ်းများ
+// ရပ်ကွက် (၆) နေရာတွင် သာစည်ကျောင်းဝင်း (u = -224..-318, v = 828..932) ထည့်သွင်းပြီး မူလအိမ် ၄၈ လုံးကို အနောက်ဘက် 104m တိုးချဲ့ထားသည်
 export const tharSiCrossLanes = [-114, -218, -322];
 export const tharSiEastCrossLanes = [56];
 
@@ -72,14 +74,16 @@ const westSectionTiers = [
  [-128, -143, -158, -173, -188, -203],
  [-232, -247, -262, -277, -292, -307],
 ];
+// သာစည်ကျောင်းအတွက် ရပ်ကွက် (၆) မူလအိမ် ၄၈ လုံးကို မဖယ်ဘဲ အနောက်ဘက်သို့ geometry တိုးချဲ့ထားသော တန်း
+const ward6ExpandedCols = [-336, -351, -366, -381, -396, -411];
 
 const houses: House[] = [];
 
-// မိန်းလမ်းမကြီး (AH1) အနောက်ဘက်ခြမ်း — ဘေးချင်းယှဉ် ၂ ရပ်ကွက် × အနောက်ဘက် ၃ တန်း = ၆ ရပ်ကွက် (တစ်ရပ်ကွက်လျှင် ၄၈ လုံး၊ စုစုပေါင်း ၂၈၈ လုံး)
+// မိန်းလမ်းမကြီး (AH1) အနောက်ဘက်ခြမ်း — ဘေးချင်းယှဉ် ၂ ရပ်ကွက် × အနောက်ဘက် ၃ တန်း = ၆ ရပ်ကွက် (တစ်ရပ်ကွက်လျှင် ၄၈ လုံး၊ စုစုပေါင်း ၂၈၈ လုံး — အိမ်တစ်လုံးမျှ မဖယ်ပါ!)
 for (let tierIdx = 0; tierIdx < westSectionTiers.length; tierIdx++) {
- const tierCols = westSectionTiers[tierIdx];
  for (let sideIdx = 0; sideIdx < 2; sideIdx++) {
   const wardNum = tierIdx * 2 + sideIdx + 1;
+  const tierCols = wardNum === 6 ? ward6ExpandedCols : westSectionTiers[tierIdx];
   const startBlock = sideIdx * 4;
   for (let b = 0; b < 4; b++) {
    const baseV = tharSiLanes[startBlock + b];
@@ -125,12 +129,12 @@ for (let block = 0; block < tharSiLanes.length - 1; block++) {
 }
 
 const roads: RoadPlot[] = [
- // သာစည် ရွာမလမ်းမကြီး (ဘေးချင်းယှဉ် ၂ ရပ်ကွက်ကြား ဗဟိုလမ်းမကြီး v = 824)
+ // သာစည် ရွာမလမ်းမကြီး (ဗဟိုလမ်းမကြီး v = 824 — သာစည်ကျောင်းဝင်ပေါက်နှင့် တိုးချဲ့ရပ်ကွက် ၆ အထိ u = -6..-426)
  {
   id: 'tharsi-main-road',
   name: 'သာစည် ရွာမလမ်းမကြီး',
-  ...toWorld(-164, THARSI_MAIN_ROAD_V),
-  width: 316,
+  ...toWorld(-216, THARSI_MAIN_ROAD_V),
+  width: 420,
   depth: 7.5,
   rotation: angle,
   main: true,
@@ -144,8 +148,8 @@ const roads: RoadPlot[] = [
   rotation: angle,
   main: true,
  },
- // အနောက်ဘက် ၆ ရပ်ကွက်အတွင်း အရှေ့-အနောက် လမ်းသွယ်များ
- ...tharSiLanes.filter(v => v !== THARSI_MAIN_ROAD_V).map((v, i) => ({
+ // မြောက်ဘက်ရပ်ကွက် (၁/၃/၅) အရှေ့-အနောက် လမ်းသွယ်များ (v = 712, 740, 768, 796)
+ ...[712, 740, 768, 796].map((v, i) => ({
   id: `tharsi-ew-lane-${i + 1}`,
   name: `သာစည် လမ်းသွယ် ${i + 1}`,
   ...toWorld(-164, v),
@@ -154,6 +158,36 @@ const roads: RoadPlot[] = [
   rotation: angle,
   main: false,
  })),
+ // တောင်ဘက်ရပ်ကွက် (၂/၄) အရှေ့-အနောက် လမ်းသွယ်များ — သာစည်ကျောင်းအရှေ့ဘက် (u = -6..-218)
+ ...[852, 880, 908].map((v, i) => ({
+  id: `tharsi-ew-lane-${i + 5}`,
+  name: `သာစည် လမ်းသွယ် ${i + 5}`,
+  ...toWorld(-112, v),
+  width: 212,
+  depth: 4,
+  rotation: angle,
+  main: false,
+ })),
+ // တိုးချဲ့ရပ်ကွက် (၆) အတွင်း အရှေ့-အနောက် လမ်းသွယ်များ — သာစည်ကျောင်းအနောက်ဘက် (u = -322..-426)
+ ...[852, 880, 908].map((v, i) => ({
+  id: `tharsi-ward6-ew-lane-${i + 1}`,
+  name: `သာစည် ရပ်ကွက် (၆) လမ်းသွယ် ${i + 1}`,
+  ...toWorld(-374, v),
+  width: 104,
+  depth: 4,
+  rotation: angle,
+  main: false,
+ })),
+ // တောင်ဘက်အစွန်လမ်းမ (v = 936 — သာစည်ကျောင်းတောင်ဘက်နှင့် တိုးချဲ့ရပ်ကွက် ၆ အထိ u = -6..-426)
+ {
+  id: 'tharsi-ew-lane-8',
+  name: 'သာစည် တောင်ဘက်လမ်းသွယ်',
+  ...toWorld(-216, 936),
+  width: 420,
+  depth: 4,
+  rotation: angle,
+  main: false,
+ },
  // အရှေ့ဘက် အိမ် ၂ တန်းအတွင်း အရှေ့-အနောက် လမ်းသွယ်များ
  ...tharSiLanes.filter(v => v !== THARSI_MAIN_ROAD_V).map((v, i) => ({
   id: `tharsi-east-ew-lane-${i + 1}`,
@@ -174,6 +208,16 @@ const roads: RoadPlot[] = [
   rotation: angle,
   main: false,
  })),
+ // တိုးချဲ့ရပ်ကွက် (၆) အနောက်ဘက်အစွန် မြောက်-တောင် လမ်းသွယ် (u = -426)
+ {
+  id: 'tharsi-ns-lane-4',
+  name: 'သာစည် ရပ်ကွက် (၆) အနောက်လမ်း',
+  ...toWorld(-426, 880),
+  width: 4.5,
+  depth: 116,
+  rotation: angle,
+  main: false,
+ },
  // အရှေ့ဘက် အိမ် ၂ တန်းနှင့် လယ်ကွင်းကြား မြောက်-တောင် လမ်းသွယ်
  ...tharSiEastCrossLanes.map((u, i) => ({
   id: `tharsi-east-ns-lane-${i + 1}`,
@@ -186,9 +230,9 @@ const roads: RoadPlot[] = [
  })),
 ];
 
-// အနောက်ဘက် ၆ ရပ်ကွက်၏ အနောက်ဘက်နှင့် တောင်ဖီလာတောင်ကြားရှိ လယ်ကွက်များ (ကန်သင်းရိုးပါ စပါးစိုက်ခင်း ၁၈ ကွက်)
+// အနောက်ဘက် ၆ ရပ်ကွက်၏ အနောက်ဘက်နှင့် တောင်ဖီလာတောင်ကြားရှိ လယ်ကွက်များ (ကန်သင်းရိုးပါ စပါးစိုက်ခင်း ၁၈ ကွက် — တောင်ဘက်တန်းကို တိုးချဲ့ရပ်ကွက် ၆ အနောက်သို့ ညှိထားသည်)
 const bundedFields: FieldPlot[] = [732, 770, 808, 846, 884, 922].flatMap((v, row) =>
- [-354, -398, -442].map((u, col) => ({
+ (v >= 824 ? [-458, -502, -546] : [-354, -398, -442]).map((u, col) => ({
   id: `tharsi-paddy-${row}-${col}`,
   row,
   u,
@@ -303,7 +347,7 @@ const largeTrees: TreePlot[] = [
  ...sparseFieldRoadLargeTrees,
  ...preCanalGroveLargeTrees,
  ...[717, 773, 829, 885, 938].flatMap((v, i) =>
-  [-11, -118, -222, -328, 11, 60].map((u, j) => ({
+  [-11, -118, -222, v >= 824 ? -430 : -328, 11, 60].map((u, j) => ({
    id: `tharsi-shade-${i}-${j}`,
    ...toWorld(u, v),
    radius: 1.1,
@@ -317,7 +361,7 @@ const farmTrees: TreePlot[] = [
  ...preCanalGroveFarmTrees,
  ...[720, 747, 774, 801, 828, 855, 882, 909, 932].map((v, i) => ({
   id: `tharsi-farm-tree-${i}`,
-  ...toWorld(-332, v),
+  ...toWorld(v >= 824 ? -434 : -332, v),
   radius: 0.5,
  })),
 ];

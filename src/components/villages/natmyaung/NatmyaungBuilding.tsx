@@ -2,8 +2,7 @@ import { memo, useMemo } from 'react';
 import {CandleRow,PorchCandles} from '../../FestivalAnchor';
 import type { NatmyaungBuildingData } from '../../../data/villages/natmyaung';
 import { Box } from '../../Primitives';
-import { SchoolClassroomHall } from '../../SchoolClassroomHall';
-import { WALKIN_SCHOOL_HALL_BY_ID } from '../../../game/schoolClassrooms';
+import { WALKIN_SCHOOL_HALL_IDS } from '../../../game/schoolClassrooms';
 import { sourceIsEdited } from '../../../game/worldEdits';
 
 export interface NatmyaungBuildingProps {
@@ -62,15 +61,9 @@ export const NatmyaungBuilding = memo(function NatmyaungBuilding({
     onSelect?.(building.id);
   };
 
-  const walkInSchoolHall = isSchool ? WALKIN_SCHOOL_HALL_BY_ID.get(building.id) : undefined;
-  if (walkInSchoolHall) {
-    return (
-      <SchoolClassroomHall
-        spec={walkInSchoolHall}
-        selected={selected}
-        onClick={handleClick}
-      />
-    );
+  // Walk-in school halls are rendered centrally via Fixed Object Pool (`<PooledSchoolHalls>`) with zero duplication!
+  if (isSchool && WALKIN_SCHOOL_HALL_IDS.has(building.id)) {
+    return null;
   }
 
   const wallColor = selected ? '#fef08a' : building.wallColor;

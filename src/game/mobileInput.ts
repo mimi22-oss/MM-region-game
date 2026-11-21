@@ -94,6 +94,8 @@ export class MobileGesture {
   centerY = 0;
   originX = 0;
   originY = 0;
+  private cameraGesture: 'pan' | 'zoom' | null = null;
+  private cameraIntentStart: number | null = null;
   input: MobileInput;
   walkLockEnabled = false;
   private steady: {id:number;x:number;y:number;elapsed:number}|null = null;
@@ -111,6 +113,8 @@ export class MobileGesture {
     this.fingers.clear();
     this.pinching = false;
     this.blocked = false;
+    this.cameraGesture = null;
+    this.cameraIntentStart = null;
     resetMobileInput(this.input);
     if(wasAuto)this.input.stopRequested=true;
   }
@@ -180,7 +184,8 @@ export class MobileGesture {
       // A latched walk lets the other thumb orbit the camera without steering.
       if(this.walkLockEnabled&&this.input.walkLocked&&new Set([...this.fingers.values()].map(f=>f.side)).size===2)return;
       const [a, b] = [...this.fingers.values()];
-      this.baseline = this.previous = Math.hypot(a.x - b.x, a.y - b.y);
+      this.baseline = this.previous = Math.max(20, Math.hypot(a.x - b.x, a.y - b.y));
+      this.cameraIntentStart = null;
       this.originX = this.centerX = (a.x + b.x) / 2;
       this.originY = this.centerY = (a.y + b.y) / 2;
       a.startX = a.x;
@@ -205,7 +210,7 @@ export class MobileGesture {
         session: this.input.session + 1,
       });
   }
-  move(id: number, x: number, y: number) {
+  move(id: number, x: number, y: number, time = performance.now()) {
     const f = this.fingers.get(id);
     if (!f) return;
     const dx = x - f.x,
@@ -219,26 +224,42 @@ export class MobileGesture {
         distance = Math.max(20, Math.hypot(a.x - b.x, a.y - b.y));
       const cx = (a.x + b.x) / 2,
         cy = (a.y + b.y) / 2;
-      const bothMoved = [a, b].every(
-        (p) => Math.hypot(p.x - p.startX, p.y - p.startY) > 5,
-      );
+      const ax = a.x - a.startX, ay = a.y - a.startY;
+      const bx = b.x - b.startX, by = b.y - b.startY;
+      const aMoved = Math.hypot(ax, ay) > 5;
+      const bMoved = Math.hypot(bx, by) > 5;
+      const bothMoved = aMoved && bMoved;
+      if (this.cameraIntentStart === null && (aMoved || bMoved)) this.cameraIntentStart = time;
+      const spread = Math.abs(distance - this.baseline);
+      const travel = Math.hypot(cx - this.originX, cy - this.originY);
+      // Touch events may arrive separately even when two fingers move together.
+      const anchoredPinch = !bothMoved && a.side === b.side && this.cameraIntentStart !== null &&
+        time - this.cameraIntentStart >= 65 && spread > 17 && spread > travel * 1.5;
       const zoomIntent =
-        Math.abs(distance - this.baseline) > 10 &&
-        (a.side === b.side || bothMoved);
-      const panIntent =
-        bothMoved && Math.hypot(cx - this.originX, cy - this.originY) > 10;
+        (bothMoved && spread > 10 && ax * bx + ay * by <= 0) || anchoredPinch;
+      const panIntent = bothMoved && travel > 10;
       if (!this.pinching && (zoomIntent || panIntent)) {
         const wasAuto=this.input.walkLocked||!!this.input.autoDirection||this.input.stopRequested;this.tick=null;this.steady=null;
         resetMobileInput(this.input);
         if(wasAuto)this.input.stopRequested=true;
         this.pinching = true;
         this.blocked = true;
+        this.cameraGesture = zoomIntent && (!panIntent || spread > travel * 1.3) ? 'zoom' : 'pan';
+        if (this.cameraGesture === 'zoom') {
+          this.previous = this.baseline + Math.sign(distance - this.baseline) * (anchoredPinch ? 17 : 10);
+        } else {
+          const deadZone = 10 / travel;
+          this.centerX = this.originX + (cx - this.originX) * deadZone;
+          this.centerY = this.originY + (cy - this.originY) * deadZone;
+        }
       }
       if (this.pinching) {
-        this.input.zoomFactor *= Math.max(20, this.previous) / distance;
+        if (this.cameraGesture === 'zoom') this.input.zoomFactor *= this.previous / distance;
+        else {
+          this.input.panX += cx - this.centerX;
+          this.input.panY += cy - this.centerY;
+        }
         this.previous = distance;
-        this.input.panX += cx - this.centerX;
-        this.input.panY += cy - this.centerY;
         this.centerX = cx;
         this.centerY = cy;
         return;
@@ -280,9 +301,10 @@ export class MobileGesture {
     if (!f) return;
     this.fingers.delete(id);
     if (this.blocked) {
-      const stop=this.input.stopRequested;
-      resetMobileInput(this.input);this.input.stopRequested=stop;
+      const { panX, panY, zoomFactor, stopRequested } = this.input;
       if (!this.fingers.size) this.clear();
+      else resetMobileInput(this.input);
+      Object.assign(this.input, { panX, panY, zoomFactor, stopRequested });
       return;
     }
     if (f.side === "left") {
@@ -298,6 +320,6 @@ export class MobileGesture {
       if(this.input.autoDirection)Object.assign(this.input,touchDirection(this.input.autoDirection),{active:true});
       else Object.assign(this.input, { active: false, forward: 0, right: 0 });
     }
-    else {if(!this.walkLockEnabled)this.input.sprint=false;this.input.lookX=0;this.input.lookY=0;}
+    else if(!this.walkLockEnabled)this.input.sprint=false;
   }
 }

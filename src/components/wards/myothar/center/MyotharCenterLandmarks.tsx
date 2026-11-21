@@ -3,9 +3,11 @@ import { Block as Box } from '../../../Primitives.tsx';
 import {
 	myotharCenterPOIs,
 	myotharCenterBuildings,
+	toWorld,
 	type MyotharCenterPOI,
 	type MyotharCenterBuildingData,
 } from '../../../../data/wards/myothar/center/index.ts';
+import { angle } from '../../../../data/wards/myothar/area5.ts';
 import { KanbaleRiceMill } from '../../../villages/kanbale/KanbaleRiceMill.tsx';
 
 /**
@@ -104,57 +106,62 @@ export const MyotharCenterLandmarks = memo(function MyotharCenterLandmarks() {
 			)}
 
 			{/* ======================================================== */}
-			{/* ၂။ Pyae Phyo Kyaw (PPK) Petrol Station */}
+			{/* ၂။ Pyae Phyo Kyaw (PPK) Petrol Station — AH1 လမ်းမကြီးဘေး ရှေ့မျက်နှာမူလျက် (လမ်းမပေါ် မရောက်အောင် ချိန်ညှိထားသည်) */}
 			{/* ======================================================== */}
-			{ppkFuel && (
-				<group position={[ppkFuel.x, 0, ppkFuel.z]}>
-					{/* ကွန်ကရစ် အဝင်ကြမ်းခင်း (Forecourt Pavement) */}
-					<Box x={0} y={0.08} z={0} w={34} h={0.16} d={26} color="#cfd4d8" />
+			{ppkFuel && (() => {
+				const ppkPos = toWorld(-19.0, ppkFuel.v);
+				const ppkRot = angle + Math.PI / 2; // +Z front faces straight East (+u) toward AH1 (u = 0)
+				return (
+				<group position={[ppkPos.x, 0, ppkPos.z]} rotation={[0, ppkRot, 0]}>
+					{/* ကွန်ကရစ် အဝင်ကြမ်းခင်း (Forecourt Pavement: u = -30..-8, AH1 လမ်းပခုံး -6.8 မှ ရှင်းလင်း) */}
+					<Box x={0} y={0.08} z={0} w={28} h={0.16} d={22} color="#cfd4d8" walkable />
 
-					{/* ဆီဖြည့် ခုံးမကြီး (Main Canopy) */}
-					<group position={[0, 0, 0]}>
+					{/* ဆီဖြည့် ခုံးမကြီး (Main Canopy aligned parallel to AH1) */}
+					<group position={[0, 0, 1.0]}>
 						{/* တိုင် ၄ တိုင် (Canopy Columns) */}
-						<Box x={-8} y={2.8} z={-4} w={0.9} h={5.6} d={0.9} color="#f8f9fa" />
-						<Box x={8} y={2.8} z={-4} w={0.9} h={5.6} d={0.9} color="#f8f9fa" />
-						<Box x={-8} y={2.8} z={4} w={0.9} h={5.6} d={0.9} color="#f8f9fa" />
-						<Box x={8} y={2.8} z={4} w={0.9} h={5.6} d={0.9} color="#f8f9fa" />
+						<Box x={-7} y={2.8} z={-3.2} w={0.85} h={5.6} d={0.85} color="#f8f9fa" />
+						<Box x={7} y={2.8} z={-3.2} w={0.85} h={5.6} d={0.85} color="#f8f9fa" />
+						<Box x={-7} y={2.8} z={3.2} w={0.85} h={5.6} d={0.85} color="#f8f9fa" />
+						<Box x={7} y={2.8} z={3.2} w={0.85} h={5.6} d={0.85} color="#f8f9fa" />
 
 						{/* ခုံးမ အမိုးပြား (Canopy Roof Deck) */}
-						<Box x={0} y={5.8} z={0} w={24} h={0.9} d={16} color="#e03131" />
+						<Box x={0} y={5.8} z={0} w={20} h={0.9} d={13} color="#e03131" />
 						{/* အပြာရောင် ခါးပတ် (Blue Branding Band) */}
-						<Box x={0} y={5.6} z={0} w={24.2} h={0.35} d={16.2} color="#1971c2" />
+						<Box x={0} y={5.6} z={0} w={20.2} h={0.35} d={13.2} color="#1971c2" />
 
 						{/* ဆီဖြည့် ပန့်ကျွန်း ၄ ခု (Dispenser Pump Islands) */}
-						{[-8, 8].map((px) =>
-							[-3, 3].map((pz) => (
+						{[-6.5, 6.5].map((px) =>
+							[-2.6, 2.6].map((pz) => (
 								<group key={`ppk-pump-${px}-${pz}`} position={[px, 0, pz]}>
 									{/* ကွန်ကရစ်ခုံ */}
-									<Box x={0} y={0.2} z={0} w={1.6} h={0.3} d={3.0} color="#f1f3f5" />
+									<Box x={0} y={0.2} z={0} w={1.5} h={0.3} d={2.6} color="#f1f3f5" />
 									{/* ပန့်စက်အိမ် (Dispenser Unit) */}
-									<Box x={0} y={1.2} z={0} w={0.9} h={1.7} d={1.4} color="#343a40" />
+									<Box x={0} y={1.2} z={0} w={0.85} h={1.7} d={1.3} color="#343a40" />
 									{/* ဒစ်ဂျစ်တယ် မျက်နှာပြင် */}
-									<Box x={0.46} y={1.4} z={0} w={0.06} h={0.6} d={0.9} color="#74c0fc" />
-									<Box x={-0.46} y={1.4} z={0} w={0.06} h={0.6} d={0.9} color="#74c0fc" />
+									<Box x={0.44} y={1.4} z={0} w={0.06} h={0.6} d={0.85} color="#74c0fc" />
+									<Box x={-0.44} y={1.4} z={0} w={0.06} h={0.6} d={0.85} color="#74c0fc" />
 								</group>
 							))
 						)}
 					</group>
 
-					{/* စတိုးဆိုင်နှင့် ရုံးခန်း (Station Minimart & Office) */}
-					<group position={[0, 0, -10]}>
-						<Box x={0} y={1.9} z={0} w={16} h={3.8} d={6} color="#e9ecef" />
+					{/* စတိုးဆိုင်နှင့် ရုံးခန်း (Station Minimart & Office at back, glass storefront facing AH1) */}
+					<group position={[0, 0, -8.2]}>
+						<Box x={0} y={1.9} z={0} w={14} h={3.8} d={5.2} color="#e9ecef" />
 						{/* ဆိုင်မျက်နှာစာ မှန်ပြတင်း */}
-						<Box x={0} y={1.6} z={3.05} w={12} h={2.2} d={0.1} color="#4dabf7" />
+						<Box x={0} y={1.6} z={2.65} w={10.5} h={2.2} d={0.1} color="#4dabf7" />
 					</group>
 
-					{/* AH1 လမ်းဘေး ဓာတ်ဆီဆိုင် ဈေးနှုန်း တိုင်ဆိုင်းဘုတ်ကြီး (High Totem Price Sign) */}
-					<group position={[14, 0, 10]}>
+					{/* AH1 လမ်းဘေး ဓာတ်ဆီဆိုင် ဈေးနှုန်း တိုင်ဆိုင်းဘုတ်ကြီး (High Totem Price Sign clear of AH1) */}
+					<group position={[11.8, 0, 9.2]}>
 						<Box x={0} y={4.0} z={0} w={0.5} h={8.0} d={0.5} color="#495057" />
-						<Box x={0} y={6.2} z={0} w={2.8} h={3.2} d={0.6} color="#c92a2a" />
-						<Box x={0} y={6.2} z={0.35} w={2.4} h={1.0} d={0.1} color="#fcc419" />
+						<Box x={0} y={6.2} z={0} w={2.6} h={3.2} d={0.6} color="#c92a2a" />
+						<Box x={0} y={6.2} z={0.34} w={2.2} h={1.0} d={0.08} color="#fcc419" />
+						<Box x={0} y={6.2} z={-0.34} w={2.2} h={1.0} d={0.08} color="#fcc419" />
 					</group>
 				</group>
-			)}
+				);
+			})()}
 
 			{/* ======================================================== */}
 			{/* ၃။ OSO ENERGY 4 - PETROL STATION */}

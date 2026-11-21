@@ -20,8 +20,7 @@ import { EastWestCanal } from '../../Canal';
 import { House, houseVisualRotation } from '../../House';
 import { ChinTraditionalHouseBatch, type ChinHouseBatchItem } from '../../ChinTraditionalHouse';
 import { ChristianChurch } from '../../ChristianChurch';
-import { SchoolClassroomHall } from '../../SchoolClassroomHall';
-import { WALKIN_SCHOOL_HALL_BY_ID } from '../../../game/schoolClassrooms';
+import { WALKIN_SCHOOL_HALL_IDS } from '../../../game/schoolClassrooms';
 import { Tree } from '../../Tree';
 import { Block } from '../../Primitives';
 import { sourceIsEdited } from '../../../game/worldEdits';
@@ -371,15 +370,10 @@ export function KyarInnVillage() {
 				omitStaticDoorLeaves
 			/>
 
-			{/* အလက ကြာအင်း ကျောင်းဆောင်များ — စာသင်ခန်း ၂၂ ခန်း ခွဲခြားပါဝင်သော ဝင်ရောက်ကြည့်ရှုနိုင်သည့် SchoolClassroomHall */}
-			{schoolBuildings.map(b => {
-				const hallSpec = WALKIN_SCHOOL_HALL_BY_ID.get(b.id);
-				return hallSpec ? (
-					<SchoolClassroomHall key={b.id} spec={hallSpec} />
-				) : (
-					<SchoolBuilding key={b.id} b={b} />
-				);
-			})}
+			{/* အလက ကြာအင်း ကျောင်းဆောင်များ — Fixed Object Pool (`<PooledSchoolHalls>`) ဖြင့် render လုပ်သည် */}
+			{schoolBuildings.map(b =>
+				WALKIN_SCHOOL_HALL_IDS.has(b.id) ? null : <SchoolBuilding key={b.id} b={b} />
+			)}
 
 			{/* ခရစ်ယာန် ဘုရားကျောင်းများ — သီးသန့် ChristianChurch component (Baptist, IBC, CJC, St. Peter) */}
 			{churches.map(b => (

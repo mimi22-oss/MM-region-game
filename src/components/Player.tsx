@@ -69,6 +69,7 @@ import { stepBotGlbMotionPlayer } from '../game/botGlbMotionPlayer';
 import {motorcycleData} from '../data/motorcycle';
 import {resetMobileInput} from '../game/mobileInput';
 import { sceneGround,motorcycleGroundPose,carGroundPose } from '../game/groundSurface';
+import { evictFromLockedClassroom } from '../game/schoolClassrooms';
 import { carRide, carInput, currentCar, nearbyCar, enterCar, parkCar, carExitSpot, shiftCar, selectAutomaticRange, stepCar, carFootprintClear, clearCarInput, driveableCars, type CarStatus, type CarGear, type DriveableCar } from '../game/carRide';
 import { canSummonCar, getSummonParkingWorldSpot, stepCarSummon, updateSummonStand, carSummonState } from '../game/carSummon';
 import { ParkedCars } from './Car';
@@ -76,7 +77,7 @@ import { DRIVER_EYE } from '../game/carCabin';
 import { motorcycleRide,tryMount,parkMotorcycle,dismountSpot,stepMotorcycle,type RideStatus } from '../game/motorcycleRide';
 import { MotorcycleModel,ParkedMotorcycle } from './Motorcycle';
 import { updateHomeAccess } from '../game/homeAccess';
-import { panCamera, findTeleportSpot } from '../game/cameraNavigation';
+import { cameraDragGain, cameraPanMetresPerPixel, panCamera, findTeleportSpot } from '../game/cameraNavigation';
 import { createCameraObstructionQuery } from '../game/cameraObstruction';
 import { avatarHeading } from '../game/avatarHeading';
 import { RobotCharacter } from './RobotCharacter';
@@ -86,7 +87,7 @@ import { useEffect, useMemo, useRef, useState, memo, type RefObject } from 'reac
 const balloonFloorCache = new Map<string, number>();
 import type { MobileInput } from '../game/mobileInput';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Group, Vector3, Raycaster, Euler } from 'three';
+import { Group, Vector3, Raycaster, Euler, PerspectiveCamera } from 'three';
 import { ward, angle } from '../data/ward';
 import { canStand, treeBlocks, PLAYER_RADIUS } from '../game/collision';
 
@@ -167,6 +168,7 @@ export const Player = memo(function Player({
  const walkingRecoil=useRef(createWalkingRecoil(0));
  const jump=useRef(createHumanJump());
  const jumpPose=useRef(createJumpPose());
+ const playerGroundYRef=useRef(0);
  const characterMotion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0,airborne:false,jumpBend:0,jumpVelocity:0});
  const initX=initialSave?.x??ward.spawn.x;
  const initZ=initialSave?.z??ward.spawn.z;
@@ -193,6 +195,9 @@ export const Player = memo(function Player({
   topDown:initTopDown,
   dragging:false,
   shiftDrag:false,
+  dragAnchorValid:false,
+  dragX:0,
+  dragY:0,
   panning:false,
   dragMoved:0,
   jumpRequested:false,
@@ -202,25 +207,35 @@ export const Player = memo(function Player({
  });
  const panView=(dx:number,dy:number)=>{
   const s=state.current;
+  const viewportHeight=gl.domElement.clientHeight;
+  const fov=camera instanceof PerspectiveCamera?camera.getEffectiveFOV():65;
+  const panScale=cameraPanMetresPerPixel(s.distance,fov,viewportHeight)*cameraDragGain(dx,dy,viewportHeight);
+  if(!panScale)return;
   s.panning=true;
   if(s.first){s.first=false;onMode(false)}
-    const panScale=Math.max(0.55,s.distance*0.0022);
-    const panRight=-dx*panScale;
-    const panForward=dy*panScale;
-    const edge=ward.size/2-PLAYER_RADIUS;
-    panCamera(s,panRight,panForward,edge);
+  panCamera(s,-dx*panScale,dy*panScale,ward.size/2-PLAYER_RADIUS);
  };
- const applyZoom=(raw:number)=>{
+ const lookView=(dx:number,dy:number,scale:number,maxPitch?:number)=>{
+  if(!scale||!Number.isFinite(dx)||!Number.isFinite(dy))return;
+  const s=state.current;
+  s.yaw-=dx*scale;
+  if(!dy)return;
+  const ceiling=maxPitch??(!s.first&&s.targetDistance>10?-0.08:0.85);
+  s.pitch=Math.max(SKY_PITCH,Math.min(ceiling,s.pitch-dy*scale));
+  if(s.pitch<=-1.55&&!s.topDown){s.topDown=true;onTopDown(true);}
+  else if(s.pitch>-1.45&&s.topDown){s.topDown=false;onTopDown(false);}
+ };
+ const applyZoom=(raw:number,autoTilt=true)=>{
   const s=state.current,previous=s.targetDistance;
   const next=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,raw));
   if(s.first){s.first=false;onMode(false)}
    s.targetDistance=next;
    if(s.topDown){
     s.pitch=SKY_PITCH;
-   }else if(next>previous&&next>8){
+   }else if(autoTilt&&next>previous&&next>8){
     const aerialPitch=-0.12-Math.min(1,(next-8)/200)*(Math.abs(SKY_PITCH)-0.12);
     if(s.pitch>aerialPitch)s.pitch=aerialPitch;
-   }else if(next<previous&&next<80){
+   }else if(autoTilt&&next<previous&&next<80){
     const streetPitch=-0.12-Math.max(0,(next-6)/74)*(Math.abs(SKY_PITCH)-0.12);
     if(s.pitch<streetPitch)s.pitch=streetPitch;
    }
@@ -265,7 +280,7 @@ export const Player = memo(function Player({
   if(balloonRide.riding)resetBalloon();
   if(currentCar())parkCar();
   const s=state.current;
-  jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;
+  jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;playerGroundYRef.current=0;
   s.x=teleportTarget.x;
   s.z=teleportTarget.z;
   s.camX=teleportTarget.x;
@@ -334,7 +349,12 @@ export const Player = memo(function Player({
  useEffect(()=>{
   const s=state.current;
   const clear=()=>{clearBalloonInput();balloonRide.vx=0;balloonRide.vz=0;balloonRide.vy=0;if(!jump.current.airborne)jumpPose.current=createJumpPose();if(!jump.current.airborne){jump.current.vx=0;jump.current.vz=0;}s.jumpRequested=false;if(mobileInput?.current)mobileInput.current.jump=false;motorcycleRide.speed=0;const car=currentCar();if(car)car.speed=0;clearCarInput();s.keys.clear();s.dragging=false;s.shiftDrag=false;gl.domElement.style.cursor=''};
-  const lock=()=>{s.locked=document.pointerLockElement===gl.domElement;clear();onLock(s.locked)};
+  const lock=()=>{
+   s.locked=document.pointerLockElement===gl.domElement;
+   if(!s.locked&&s.dragging&&s.shiftDrag)s.dragAnchorValid=false;
+   else clear();
+   onLock(s.locked);
+  };
   const key=(e:KeyboardEvent)=>{
    if(controlsBlocked)return;
    const carKey=!!currentCar()&&['KeyC','KeyP','Space','KeyE','KeyN','Digit0','Digit1','Digit2','Digit3','Digit4','KeyV'].includes(e.code);
@@ -370,6 +390,7 @@ export const Player = memo(function Player({
      if(!balloonRide.riding&&!motorcycleRide.riding&&!currentCar()){
       const walkKeyHeld=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'].some(k=>s.keys.has(k));
       if(!walkKeyHeld&&document.pointerLockElement===gl.domElement){
+       if(s.dragging)s.shiftDrag=true;
        document.exitPointerLock();
       }
       gl.domElement.style.cursor=s.dragging?'grabbing':'grab';
@@ -413,28 +434,34 @@ export const Player = memo(function Player({
    }
   };
   const mouse=(e:MouseEvent)=>{
-   if(controlsBlocked||teleportDragging)return;
+   if(controlsBlocked||mapOpen||teleportDragging)return;
    if(!s.locked&&!s.dragging)return;
-   if(s.dragging)s.dragMoved+=Math.hypot(e.movementX,e.movementY);
    const isShiftDrag=s.dragging&&(s.shiftDrag||e.shiftKey||s.keys.has('ShiftLeft')||s.keys.has('ShiftRight'));
    if(isShiftDrag){
     s.shiftDrag=true;
-    s.panning=true;
+    s.dragMoved=Math.max(6,s.dragMoved);
     gl.domElement.style.cursor='grabbing';
-    panView(e.movementX,e.movementY);
+    if(s.locked)return;
+   }
+   if(s.locked){
+    if(s.dragging)s.dragMoved+=Math.hypot(e.movementX,e.movementY);
+    lookView(e.movementX,e.movementY,.002);
     return;
    }
-   s.yaw-=e.movementX*0.002;
-   const maxPitch=!s.first&&s.targetDistance>10?-0.08:0.85;
-   s.pitch=Math.max(SKY_PITCH,Math.min(maxPitch,s.pitch-e.movementY*0.002));
-   if(s.pitch<=-1.55&&!s.topDown){s.topDown=true;onTopDown(true);}
-   else if(s.pitch>-1.45&&s.topDown){s.topDown=false;onTopDown(false);}
+   const dx=s.dragAnchorValid?e.clientX-s.dragX:0;
+   const dy=s.dragAnchorValid?e.clientY-s.dragY:0;
+   s.dragAnchorValid=true;
+   s.dragX=e.clientX;s.dragY=e.clientY;
+   s.dragMoved+=Math.hypot(dx,dy);
+   if(isShiftDrag)panView(dx,dy);
+   else lookView(dx,dy,.002*cameraDragGain(dx,dy,gl.domElement.clientHeight));
   };
   const down=(e:MouseEvent)=>{
    if(mapOpen||controlsBlocked||teleportDragging||e.button!==0||(e.target instanceof HTMLElement&&e.target.closest('.teleport-confirm-card,.location-actions,.action-menu-popover')))return;
    s.dragging=true;
-   s.dragMoved=0;
+   s.dragX=e.clientX;s.dragY=e.clientY;s.dragAnchorValid=!s.locked;
    s.shiftDrag=e.shiftKey||s.keys.has('ShiftLeft')||s.keys.has('ShiftRight');
+   s.dragMoved=s.shiftDrag?6:0;
    if(s.shiftDrag){
     if(document.pointerLockElement===gl.domElement)document.exitPointerLock();
     gl.domElement.style.cursor='grabbing';
@@ -478,14 +505,15 @@ export const Player = memo(function Player({
   const s=state.current;const dt=loading?0:Math.min(delta,0.25);
   if(introOwnsCamera){s.keys.clear();s.panning=false;s.dragging=false;}
   const ground=sceneGround(scene,clock.elapsedTime);
-  const height=(x:number,z:number)=>ground.height(x,z);
+  const footHeightCeiling=!balloonRide.riding&&!currentCar()&&!motorcycleRide.riding?(jump.current.airborne?jump.current.y+0.5:playerGroundYRef.current+1.15):undefined;
+  const height=(x:number,z:number)=>ground.height(x,z,footHeightCeiling);
   const clear=(x:number,z:number)=>canStand(x,z)&&height(x,z)-height(motorcycleRide.riding?motorcycleRide.x:s.x,motorcycleRide.riding?motorcycleRide.z:s.z)<.5;
   const life=getPlayerDeathState();
   stepPlayerRespawnGrace(mapOpen||controlsBlocked?0:dt);
   if(life.phase==='respawning'){
    const spot=findProtectedRespawn(clear)??(clear(ward.spawn.x,ward.spawn.z)?ward.spawn:null);
    if(spot){
-    interruptVehicleWaiting();resetChairSitting();parkCar();parkMotorcycle();if(balloonRide.riding)resetBalloon();setRiding(false);
+    interruptVehicleWaiting();resetChairSitting();parkCar();parkMotorcycle();if(balloonRide.riding)resetBalloon();setRiding(false);playerGroundYRef.current=0;
     Object.assign(s,{x:spot.x,z:spot.z,camX:spot.x,camZ:spot.z,bodyYaw:ward.spawnYaw,yaw:ward.spawnYaw,panning:false,first:false,topDown:false,pitch:-.12,distance:6,targetDistance:6});
     jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;s.keys.clear();
     clearGhostEncounterInteraction();clearGhostThreat();stopSpecialAction(true);resetChairSitting();ghostFallOwned.current=null;
@@ -548,9 +576,12 @@ export const Player = memo(function Player({
   playerCombat.context(getActiveMissionWeapon()==='ghost-sword',combatAllowed,controlsBlocked||mapOpen||document.hidden,false);
   let wantsJump=!playerCombat.movementLocked&&!pickupLocked&&!enteringVehicle&&!ghostGrabbedOnFoot&&(s.jumpRequested||!!touch?.jump);s.jumpRequested=false;if(touch)touch.jump=false;
   if(touch){
-   if(touch.panX||touch.panY){panView(touch.panX,touch.panY);touch.panX=0;touch.panY=0;}
-   if(touch.zoomFactor!==1){applyZoom(s.targetDistance*touch.zoomFactor);touch.zoomFactor=1;}
-   if(touch.lookX||touch.lookY){s.yaw-=touch.lookX*0.004;s.pitch=Math.max(-1.35,Math.min(0.6,s.pitch-touch.lookY*0.004));if(s.topDown){s.topDown=false;onTopDown(false)}touch.lookX=0;touch.lookY=0;}
+   if(!controlsBlocked&&!mapOpen&&!introOwnsCamera&&!teleportDragging){
+    if(touch.panX||touch.panY)panView(touch.panX,touch.panY);
+    if(touch.zoomFactor!==1)applyZoom(s.targetDistance*Math.max(.83,Math.min(1.2,touch.zoomFactor)),false);
+    if(touch.lookX||touch.lookY)lookView(touch.lookX,touch.lookY,.0025*cameraDragGain(touch.lookX,touch.lookY,gl.domElement.clientHeight),.6);
+   }
+   touch.panX=0;touch.panY=0;touch.zoomFactor=1;touch.lookX=0;touch.lookY=0;
    if(touch.active&&!balloonRide.riding&&s.mobileSession!==touch.session){s.mobileSession=touch.session;s.first=false;s.panning=false;s.camX=s.x;s.camZ=s.z;onMode(false)}
   }
   s.distance+=(s.targetDistance-s.distance)*Math.min(1,dt*12);
@@ -819,6 +850,10 @@ export const Player = memo(function Player({
      const fix=reconcilePlayer(s.x,s.z);
      if(fix&&clear(fix.x,fix.z)){s.x=fix.x;s.z=fix.z;s.camX=fix.x;s.camZ=fix.z;}
     }
+    if(!j.airborne){
+     const evicted=evictFromLockedClassroom(s.x,s.z);
+     if(evicted){s.x=evicted.x;s.z=evicted.z;s.camX=evicted.x;s.camZ=evicted.z;}
+    }
     let engagedNewBot=false;
     let protectedBotBump=false;
     if(contact==='robot'){
@@ -964,6 +999,7 @@ export const Player = memo(function Player({
   const car=currentCar();
   carRide.interior=s.first;
   const groundY=balloon.riding?balloon.y+BALLOON_DECK:car?car.groundY:ride.riding?bikePose.y:jump.current.airborne?jump.current.y+.012:Math.max(center,left,rightHeight)+.012;
+  if(!balloon.riding&&!car&&!ride.riding&&!jump.current.airborne){playerGroundYRef.current=center;}
   characterMotion.current.leftFoot=(left-groundY+.012)/bodyScale;
   characterMotion.current.rightFoot=(rightHeight-groundY+.012)/bodyScale;
   characterMotion.current.stepLift=Math.min(.32,Math.abs(height(s.x-sn*.4,s.z-c*.4)-center)+.04);
@@ -979,7 +1015,7 @@ export const Player = memo(function Player({
    : groundY;
   if(avatar.current){avatar.current.position.set(s.x,avatarY+fall*(ride.riding?.18:.28*bodyScale),s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:fall*Math.PI/2,fall&&!ride.riding?fallYaw.current:s.bodyYaw,ride.riding?fall*1.42:0,'YXZ');avatar.current.visible=!car&&!s.first&&!isBlinking&&!introHighAlt;}
   camera.userData.playerOccupied=!!(car||balloon.riding||ride.riding);
-  target.current.set(aerial?s.camX:s.x,(aerial?height(s.camX,s.camZ):groundY)+1.65*(car||ride.riding?1:bodyScale),aerial?s.camZ:s.z);
+  target.current.set(aerial?s.camX:s.x,(aerial?ground.height(s.camX,s.camZ):groundY)+1.65*(car||ride.riding?1:bodyScale),aerial?s.camZ:s.z);
   if(car&&s.first){
    tmpEuler.current.set(car.pitch,car.yaw,car.roll,'YXZ');
    target.current.set(DRIVER_EYE[0]*car.size,DRIVER_EYE[1]*car.size,DRIVER_EYE[2]*car.size).applyEuler(tmpEuler.current).add(tmpVecA.current.set(car.x,car.groundY,car.z));

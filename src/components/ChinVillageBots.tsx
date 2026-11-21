@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group, Mesh } from 'three';
+import { npcFaceGeometry, npcFaceMaterial, npcHandGeometry } from '../game/npcAnatomy';
 import { tharYarGoneVillage } from '../data/villages/tharyargone';
 import { kyarInnVillage } from '../data/villages/kyarinn';
 import { houseVisualRotation } from './House';
@@ -9,6 +10,11 @@ import { useQualityPreset } from '../game/qualityPreset';
 import { sourceIsEdited } from '../game/worldEdits';
 import type { TimeMode } from '../game/environmentTime';
 import { canStand } from '../game/collision';
+import {
+  applyBotAvoidanceStep,
+  removeAvoidanceActor,
+  upsertAvoidanceActor,
+} from '../game/botAvoidance';
 import { buildRoadGraph, type RouteNode } from '../game/robotRoutes';
 import { trafficColliders } from '../game/trafficColliders';
 import {
@@ -86,6 +92,8 @@ interface PooledChinSlotRefs {
   leftArmMesh: Mesh | null;
   rightArm: Group | null;
   rightArmMesh: Mesh | null;
+  leftHandMesh: Mesh | null;
+  rightHandMesh: Mesh | null;
   leftLeg: Group | null;
   leftLegMesh: Mesh | null;
   rightLeg: Group | null;
@@ -116,6 +124,8 @@ function emptySlotRefs(): PooledChinSlotRefs {
     leftArmMesh: null,
     rightArm: null,
     rightArmMesh: null,
+    leftHandMesh: null,
+    rightHandMesh: null,
     leftLeg: null,
     leftLegMesh: null,
     rightLeg: null,
@@ -150,6 +160,8 @@ function bindChinVisualMaterials(
 
   if (refs.headMesh) refs.headMesh.material = skinMat;
   if (refs.neckMesh) refs.neckMesh.material = skinMat;
+  if (refs.leftHandMesh) refs.leftHandMesh.material = skinMat;
+  if (refs.rightHandMesh) refs.rightHandMesh.material = skinMat;
   if (refs.leftLegMesh) refs.leftLegMesh.material = skinMat;
   if (refs.rightLegMesh) refs.rightLegMesh.material = skinMat;
   if (refs.hairCapMesh) refs.hairCapMesh.material = hairMat;
@@ -253,7 +265,8 @@ function ChinCharacterSlotView({
           }}
         >
           <mesh ref={el => { refs.headMesh = el; }} geometry={cache.headGeo} material={cache.skinMats[0]} />
-          <mesh ref={el => { refs.hairCapMesh = el; }} position={[0, 0.03, -0.01]} geometry={cache.hairCapGeo} material={cache.hairDarkMat} />
+          <mesh geometry={npcFaceGeometry} material={npcFaceMaterial} />
+          <mesh ref={el => { refs.hairCapMesh = el; }} position={[0, 0, 0]} geometry={cache.hairCapGeo} material={cache.hairDarkMat} />
           <mesh ref={el => { refs.hairBunMesh = el; }} position={[0, 0.04, -0.16]} geometry={cache.hairBunGeo} material={cache.hairDarkMat} visible={false} />
           <mesh ref={el => { refs.headbandMesh = el; }} position={[0, 0.06, 0]} rotation={[Math.PI / 2 - 0.14, 0, 0]} geometry={cache.chinHeadbandGeo} material={cache.chinHeadbandMat} />
         </group>
@@ -261,19 +274,21 @@ function ChinCharacterSlotView({
         <mesh ref={el => { refs.torsoMesh = el; }} position={[0, 1.11, 0]} geometry={cache.torsoGeo} material={cache.chinTopMats[0]} />
         <mesh ref={el => { refs.sashMesh = el; }} position={[0, 1.12, 0]} rotation={[0, 0, 0.42]} geometry={cache.sashGeo} material={cache.chinGoldSashMat} />
         <mesh ref={el => { refs.longyiMesh = el; }} position={[0, 0.56, 0]} geometry={cache.longyiGeo} material={cache.chinWeaveMats[0]} />
-        <group position={[-0.23, 1.3, 0]} ref={el => { refs.leftArm = el; }}>
-          <mesh ref={el => { refs.leftArmMesh = el; }} position={[0, -0.22, 0]} geometry={cache.armGeo} material={cache.chinTopMats[0]} />
+        <group position={[-0.21, 1.3, 0]} ref={el => { refs.leftArm = el; }}>
+          <mesh ref={el => { refs.leftArmMesh = el; }} position={[0, 0, 0]} geometry={cache.armGeo} material={cache.chinTopMats[0]} />
+          <mesh ref={el => { refs.leftHandMesh = el; }} position={[0, -0.452, 0]} geometry={npcHandGeometry} material={cache.skinMats[0]} />
         </group>
-        <group position={[0.23, 1.3, 0]} ref={el => { refs.rightArm = el; }}>
-          <mesh ref={el => { refs.rightArmMesh = el; }} position={[0, -0.22, 0]} geometry={cache.armGeo} material={cache.chinTopMats[0]} />
+        <group position={[0.21, 1.3, 0]} ref={el => { refs.rightArm = el; }}>
+          <mesh ref={el => { refs.rightArmMesh = el; }} position={[0, 0, 0]} geometry={cache.armGeo} material={cache.chinTopMats[0]} />
+          <mesh ref={el => { refs.rightHandMesh = el; }} position={[0, -0.452, 0]} scale={[-1, 1, 1]} geometry={npcHandGeometry} material={cache.skinMats[0]} />
         </group>
         <group position={[-0.085, 0.54, 0]} ref={el => { refs.leftLeg = el; }}>
           <mesh ref={el => { refs.leftLegMesh = el; }} position={[0, -0.26, 0]} geometry={cache.legGeo} material={cache.skinMats[0]} />
-          <mesh position={[0, -0.5, 0.04]} geometry={cache.shoeGeo} material={cache.shoeDarkMat} />
+          <mesh position={[0, -0.54, 0]} geometry={cache.shoeGeo} material={cache.shoeDarkMat} />
         </group>
         <group position={[0.085, 0.54, 0]} ref={el => { refs.rightLeg = el; }}>
           <mesh ref={el => { refs.rightLegMesh = el; }} position={[0, -0.26, 0]} geometry={cache.legGeo} material={cache.skinMats[0]} />
-          <mesh position={[0, -0.5, 0.04]} geometry={cache.shoeGeo} material={cache.shoeDarkMat} />
+          <mesh position={[0, -0.54, 0]} geometry={cache.shoeGeo} material={cache.shoeDarkMat} />
         </group>
       </group>
     </group>
@@ -488,6 +503,8 @@ export function ChinVillageBots({
   useEffect(() => {
     return () => {
       householdPool.dispose();
+      for (let i = 0; i < HOUSE_POOL_DESKTOP; i++) removeAvoidanceActor(`chin-house-bot-${i}`);
+      for (let i = 0; i < STREET_POOL_DESKTOP; i++) removeAvoidanceActor(`chin-street-bot-${i}`);
     };
   }, [householdPool]);
 
@@ -498,7 +515,11 @@ export function ChinVillageBots({
     if (!root) return;
 
     root.visible = isAnyChinVillageActive;
-    if (!isAnyChinVillageActive) return;
+    if (!isAnyChinVillageActive) {
+      for (let i = 0; i < houseCapacity; i++) removeAvoidanceActor(`chin-house-bot-${i}`);
+      for (let i = 0; i < streetCapacity; i++) removeAvoidanceActor(`chin-street-bot-${i}`);
+      return;
+    }
 
     const dt = Math.min(delta, 0.05);
     const focus = (camera.userData.viewFocus as { x: number; z: number } | undefined) ?? {
@@ -525,6 +546,7 @@ export function ChinVillageBots({
 
       if (!m) {
         refs.root.visible = false;
+        removeAvoidanceActor(botId);
         continue;
       }
 
@@ -536,13 +558,34 @@ export function ChinVillageBots({
           m.worldX = combat.worldX;
           m.worldZ = combat.worldZ;
         }
+        upsertAvoidanceActor(botId, 'human', m.worldX, m.worldZ, m.yaw, 0.45);
         continue;
       }
 
       if (m.insideHouse) {
         refs.root.visible = false;
+        removeAvoidanceActor(botId);
         continue;
       }
+      const prevHX = refs.root.visible ? refs.root.position.x : m.worldX;
+      const prevHZ = refs.root.visible ? refs.root.position.z : m.worldZ;
+      const hAvoid = applyBotAvoidanceStep(
+        botId,
+        'human',
+        prevHX,
+        prevHZ,
+        m.worldX,
+        m.worldZ,
+        m.yaw,
+        m.kind === 'chin-kid' ? 0.38 : 0.46,
+        dt,
+      );
+      m.worldX = hAvoid.x;
+      m.worldZ = hAvoid.z;
+      m.yaw = hAvoid.yaw;
+      upsertAvoidanceActor(botId, 'human', m.worldX, m.worldZ, m.yaw, m.kind === 'chin-kid' ? 0.38 : 0.46, {
+        speed: m.speed,
+      });
       refs.root.visible = true;
       applyChinWalkPose(
         refs,
@@ -605,6 +648,7 @@ export function ChinVillageBots({
         streetStates[i].active = false;
         const refs = streetSlotRefs[i];
         if (refs?.root) refs.root.visible = false;
+        removeAvoidanceActor(`chin-street-bot-${i}`);
       }
       const bf = getBotFightingState();
       if (
@@ -631,6 +675,7 @@ export function ChinVillageBots({
       if (i >= targetStreetCount && !isBotInCombat(botId)) {
         st.active = false;
         refs.root.visible = false;
+        removeAvoidanceActor(botId);
         continue;
       }
 
@@ -648,6 +693,7 @@ export function ChinVillageBots({
 
       if (!st.active && !isBotInCombat(botId)) {
         refs.root.visible = false;
+        removeAvoidanceActor(botId);
         continue;
       }
 
@@ -669,10 +715,26 @@ export function ChinVillageBots({
         }
         st.speed = combat?.chasing ? combat.chaseSpeed : 0;
         st.elapsed += dt;
+        upsertAvoidanceActor(botId, 'human', st.x, st.z, st.yaw, 0.46, { speed: st.speed });
         continue;
       }
 
+      const prevSX = st.x;
+      const prevSZ = st.z;
       stepStreetPedestrian(st, prof, roadGraph, dt);
+      const sRadius = prof.chinKind === 'chin-kid' ? 0.38 : 0.46;
+      const sAvoid = applyBotAvoidanceStep(botId, 'human', prevSX, prevSZ, st.x, st.z, st.yaw, sRadius, dt, {
+        canStand,
+      });
+      st.x = sAvoid.x;
+      st.z = sAvoid.z;
+      st.yaw = sAvoid.yaw;
+      if (sAvoid.yieldedToCar || sAvoid.steered) {
+        const moved = Math.hypot(st.x - prevSX, st.z - prevSZ);
+        st.speed = moved / Math.max(0.001, dt);
+        st.walkDistance += moved;
+      }
+      upsertAvoidanceActor(botId, 'human', st.x, st.z, st.yaw, sRadius, { speed: st.speed });
       refs.root.visible = true;
       applyChinWalkPose(
         refs,
