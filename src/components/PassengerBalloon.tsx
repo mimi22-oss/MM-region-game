@@ -15,12 +15,13 @@ function Sign({text}:{text:string}){
  useEffect(()=>()=>texture.dispose(),[texture]);
  return <sprite scale={[5.6,1.17,1]} raycast={()=>{}}><spriteMaterial map={texture} depthWrite={false} transparent toneMapped={false}/></sprite>;
 }
-/** One passenger balloon, independent of decorative sky swarms and streamed regions. */
-export function PassengerBalloon(){
+/** One passenger balloon, visible only at night (hidden during daytime). */
+export function PassengerBalloon({ visible = true }: { visible?: boolean }){
  const root=useRef<Group>(null),marker=useRef<Group>(null),ring=useRef<Mesh>(null),homeArrow=useRef<Group>(null);
  const passengerLights=useRef<(PointLight|null)[]>([]),burnerLight=useRef<PointLight>(null),envelope=useRef<MeshStandardMaterial>(null);
  const profile=useMemo(()=>Array.from({length:81},(_,i)=>{const y=1.5+i/80*3.54;return new Vector2(radiusAt(y)*3.4,y*3.4);}),[]);
  useFrame(({clock,scene,camera})=>{
+  if(!visible)return;
   const b=balloonRide,t=clock.elapsedTime;
   if(root.current){root.current.position.set(b.x,b.y,b.z);root.current.rotation.y=b.yaw;}
   if(marker.current){marker.current.position.set(b.x,b.y+.04,b.z);marker.current.visible=!b.riding;}
@@ -33,6 +34,7 @@ export function PassengerBalloon(){
   if(burnerLight.current)burnerLight.current.intensity=nearby?(8+12*darkness)*flicker:0;
   if(envelope.current)envelope.current.emissiveIntensity=(.25+.55*darkness)*flicker;
  });
+ if(!visible)return null;
  return <>
   <group ref={root} name="passenger-balloon" userData={{dynamic:true,passengerBalloon:true}}>
    <mesh name="passenger-balloon-envelope" castShadow><latheGeometry args={[profile,48]}/><meshStandardMaterial ref={envelope} color="#f1a02e" emissive="#ff9e19" emissiveIntensity={.8} side={DoubleSide}/></mesh>

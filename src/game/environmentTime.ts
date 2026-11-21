@@ -12,6 +12,15 @@ export function periodAtMinute(minute: number): TimePeriod {
  const m=((minute%1440)+1440)%1440;
  return m<300||m>=1140?'night':m<660?'morning':m<990?'day':'evening';
 }
+/** Balloons (PassengerBalloon, sky BalloonShow, ground fire balloons) are hidden during daytime and appear only at night. */
+export function areBalloonsVisibleAtMinute(minute: number): boolean {
+ return periodAtMinute(minute) === 'night';
+}
+/** Football players & balls are active during morning/day (05:00 – 16:29) and hidden in evening (16:30 – 18:59) & night (19:00 – 04:59). */
+export function areFootballPlayersVisibleAtMinute(minute: number): boolean {
+ const period = periodAtMinute(minute);
+ return period === 'morning' || period === 'day';
+}
 /** Uses the device's timezone, including DST; no GPS or network permission is required. */
 export function localMinute(date = new Date()) {return date.getHours()*60+date.getMinutes()+date.getSeconds()/60;}
 export function environmentMinute(mode: TimeMode, date = new Date()) {

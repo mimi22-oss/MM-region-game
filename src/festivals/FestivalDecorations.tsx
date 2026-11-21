@@ -71,9 +71,10 @@ function getSharedDecorationAssets() {
 export interface FestivalDecorationsProps {
   zones: VillageLaunchHub[];
   night?: boolean;
+  showBalloons?: boolean;
 }
 
-export function FestivalDecorations({ zones, night = true }: FestivalDecorationsProps) {
+export function FestivalDecorations({ zones, night = true, showBalloons = night }: FestivalDecorationsProps) {
   const preset = useQualityPreset();
   const { camera } = useThree();
   const rootRef = useRef<Group>(null);
@@ -271,24 +272,26 @@ export function FestivalDecorations({ zones, night = true }: FestivalDecorations
         dispose={null}
         raycast={ignoreRaycast}
       />
-      <group name="festival-ground-display-balloons">
-        {visibleDisplayBalloons.map((b, i) => (
-          <group
-            key={`${b.zoneId}-display-${i}`}
-            ref={(el) => {
-              displayGroupRefs.current[i] = el;
-            }}
-          >
-            <MyanmarFireBalloon
-              position={[b.x, b.y, b.z]}
-              scale={b.scale}
-              floating={night}
-              showCandle={night}
-              hasLight={false}
-            />
-          </group>
-        ))}
-      </group>
+      {showBalloons && (
+        <group name="festival-ground-display-balloons">
+          {visibleDisplayBalloons.map((b, i) => (
+            <group
+              key={`${b.zoneId}-display-${i}`}
+              ref={(el) => {
+                displayGroupRefs.current[i] = el;
+              }}
+            >
+              <MyanmarFireBalloon
+                position={[b.x, b.y, b.z]}
+                scale={b.scale}
+                floating={showBalloons}
+                showCandle={showBalloons}
+                hasLight={false}
+              />
+            </group>
+          ))}
+        </group>
+      )}
     </group>
   );
 }

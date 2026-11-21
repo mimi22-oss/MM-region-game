@@ -27,7 +27,7 @@ export const Town = memo(function Town({ minute = 780, ...streaming }: { minute?
             <ZombieForestTiles/>
             <ZombieForestScene paused={streaming.paused}/>
             <Mountains />
-            <DynamicWorldObjects />
+            <DynamicWorldObjects minute={minute} />
 
 			{/* A low visual border; collision follows the ward boundary. */}
 			{[-1, 1].map(s => (

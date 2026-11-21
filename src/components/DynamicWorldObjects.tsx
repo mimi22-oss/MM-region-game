@@ -12,6 +12,7 @@ import { Asset3DInstance } from './Asset3DRenderer';
 import { setDynamicWorldObstacles, type DynamicWorldObstacle } from '../game/collision';
 import { isAuthoredFeatureModified } from '../game/worldEdits';
 import { useThadingyutFestival } from '../game/thadingyutFestival';
+import { areBalloonsVisibleAtMinute } from '../game/environmentTime';
 import { getBuiltInEdit } from '../game/builtInAssetEdits';
 
 /**
@@ -48,12 +49,18 @@ function getActiveDynamicFeatures(): LayoutFeature[] {
 /**
  * Computes collision obstacles from dynamic layout features.
  */
-function computeObstacles(features: LayoutFeature[], festivalActive: boolean): DynamicWorldObstacle[] {
+function computeObstacles(
+  features: LayoutFeature[],
+  festivalActive: boolean,
+  balloonsVisible: boolean,
+): DynamicWorldObstacle[] {
   const obstacles: DynamicWorldObstacle[] = [];
   for (const f of features) {
     if (!f.points || f.points.length === 0) continue;
-    const isFestival = f.assetId === 'cultural:candle-in-holder' || f.assetId === 'cultural:fire-balloon' || f.assetId === 'vehicle:fire-balloon';
+    const isBalloon = f.assetId === 'cultural:fire-balloon' || f.assetId === 'vehicle:fire-balloon';
+    const isFestival = f.assetId === 'cultural:candle-in-holder' || isBalloon;
     if (!festivalActive && isFestival) continue;
+    if (!balloonsVisible && isBalloon) continue;
     const pt = f.points[0];
     const def = getAssetDefinition(f.assetId);
     const edit = def?.customModel ? undefined : getBuiltInEdit(f.assetId);
@@ -167,7 +174,7 @@ function DynamicPathRibbon({ feature }: { feature: LayoutFeature }) {
  * Synchronizes immediately on 2D editor saves via the 'world-layout-updated' window event.
  * Registers dynamic solid obstacle colliders into collision.ts.
  */
-export const DynamicWorldObjects = memo(function DynamicWorldObjects() {
+export const DynamicWorldObjects = memo(function DynamicWorldObjects({ minute = 780 }: { minute?: number }) {
   const [features, setFeatures] = useState<LayoutFeature[]>(() => {
     syncAllWorldEdits();
     return getActiveDynamicFeatures();
@@ -187,21 +194,24 @@ export const DynamicWorldObjects = memo(function DynamicWorldObjects() {
   }, []);
 
   const festivalActive = useThadingyutFestival();
+  const balloonsVisible = areBalloonsVisibleAtMinute(minute);
 
   // Synchronize dynamic collision bounds into collision.ts
   useEffect(() => {
-    const obstacles = computeObstacles(features, festivalActive);
+    const obstacles = computeObstacles(features, festivalActive, balloonsVisible);
     setDynamicWorldObstacles(obstacles);
     return () => {
       setDynamicWorldObstacles([]);
     };
-  }, [features, festivalActive]);
+  }, [features, festivalActive, balloonsVisible]);
 
   return (
     <group name="dynamic-world-placed-objects">
       {features.map((feature) => {
-        const isFestival = feature.assetId === 'cultural:candle-in-holder' || feature.assetId === 'cultural:fire-balloon' || feature.assetId === 'vehicle:fire-balloon';
+        const isBalloon = feature.assetId === 'cultural:fire-balloon' || feature.assetId === 'vehicle:fire-balloon';
+        const isFestival = feature.assetId === 'cultural:candle-in-holder' || isBalloon;
         if (!festivalActive && isFestival) return null;
+        if (!balloonsVisible && isBalloon) return null;
         if (feature.points && feature.points.length >= 2) {
           return <DynamicPathRibbon key={feature.id} feature={feature} />;
         }

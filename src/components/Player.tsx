@@ -7,6 +7,7 @@ import { hasCompletedThreeGhostsMission } from '../game/missions/threeGhostsMiss
 import {getPlayerDeathState,findProtectedRespawn,completePlayerRespawn,stepPlayerRespawnGrace,killPlayerFromBotFight} from '../game/playerDeath';
 import {PLAYER_ON_FOOT_SPEED} from '../game/ghostPersonalities';
 import {PassengerBalloon} from './PassengerBalloon';
+import {areBalloonsVisibleAtMinute} from '../game/environmentTime';
 import {balloonRide,balloonInput,BALLOON_DECK,BALLOON_LAUNCH,clearBalloonInput,resetBalloon,balloonFlightFloor,balloonLanding,stepBalloon,balloonExitSpot,type BalloonStatus} from '../game/balloonRide';
 import {createJumpPose,prepareJump,stepJumpPose,jumpKneeBend} from '../game/humanJumpPose';
 import {createHumanJump,rememberJumpMomentum,startHumanJump,stepHumanJump,steerHumanJump} from '../game/humanJump';
@@ -106,6 +107,7 @@ export type TeleportTarget = {
 
 export const Player = memo(function Player({
  character='robot',
+ minute=780,
  speedLimit=20,braking=false,accelerating=false,controlsBlocked=false,loading=false,deferGlb=false,dismountRequest=0,onRideStatus,
  onCarStatus,
  onBalloonStatus,
@@ -130,6 +132,7 @@ export const Player = memo(function Player({
  reconcilePlayer,
 }:{
  character?:CharacterKind;
+ minute?:number;
  speedLimit?:number;braking?:boolean;accelerating?:boolean;controlsBlocked?:boolean;dismountRequest?:number;onRideStatus?:(s:RideStatus)=>void;
  loading?:boolean;
  deferGlb?:boolean;
@@ -277,8 +280,10 @@ export const Player = memo(function Player({
  useEffect(()=>{
   if(!teleportTarget||rideLife.crashTime>0)return;
   interruptVehicleWaiting();
+  resetChairSitting();
   if(balloonRide.riding)resetBalloon();
   if(currentCar())parkCar();
+  if(mobileInput?.current)resetMobileInput(mobileInput.current);
   const s=state.current;
   jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;playerGroundYRef.current=0;
   s.x=teleportTarget.x;
@@ -309,8 +314,9 @@ export const Player = memo(function Player({
     motorcycleRide.mustLeave=false;
    }
   }
+  onMode(false);onTopDown(false);onZoom(dist);
   onPosition(s.x,s.z,s.bodyYaw);
- },[teleportTarget,onPosition]);
+ },[teleportTarget,onPosition,onMode,onTopDown,onZoom,mobileInput]);
  useEffect(()=>{
   if(!navigationRequest||rideLife.crashTime>0)return;
   const s=state.current;
@@ -457,7 +463,7 @@ export const Player = memo(function Player({
    else lookView(dx,dy,.002*cameraDragGain(dx,dy,gl.domElement.clientHeight));
   };
   const down=(e:MouseEvent)=>{
-   if(mapOpen||controlsBlocked||teleportDragging||e.button!==0||(e.target instanceof HTMLElement&&e.target.closest('.teleport-confirm-card,.location-actions,.action-menu-popover')))return;
+   if(mapOpen||controlsBlocked||teleportDragging||e.button!==0||(e.target instanceof HTMLElement&&e.target.closest('.teleport-confirm-card,.teleport-mode-banner,.location-actions,.action-menu-popover')))return;
    s.dragging=true;
    s.dragX=e.clientX;s.dragY=e.clientY;s.dragAnchorValid=!s.locked;
    s.shiftDrag=e.shiftKey||s.keys.has('ShiftLeft')||s.keys.has('ShiftRight');
@@ -484,7 +490,7 @@ export const Player = memo(function Player({
    gl.domElement.requestPointerLock()?.catch(()=>onLock(false));
   };
   const wheel=(e:WheelEvent)=>{
-   if(mapOpen||controlsBlocked||(e.target instanceof HTMLElement&&e.target.closest('.settings-menu,.action-menu-popover,.ride-controls,.car-controls,.guide-dialog-modal,.teleport-confirm-card')))return;
+   if(mapOpen||controlsBlocked||(e.target instanceof HTMLElement&&e.target.closest('.settings-menu,.action-menu-popover,.ride-controls,.car-controls,.guide-dialog-modal,.teleport-confirm-card,.teleport-mode-banner')))return;
    e.preventDefault();
    if(s.first&&e.deltaY>0){
     s.first=false;onMode(false);
@@ -655,11 +661,18 @@ export const Player = memo(function Player({
    const car=currentCar()!,spot=carExitSpot((x,z)=>clear(x,z)&&!hitsTraffic(x,z,car.yaw,height(x,z),true,car.id));
    if(spot){parkCar();s.x=spot.x;s.z=spot.z;s.camX=s.x;s.camZ=s.z;s.first=false;s.panning=false;s.pitch=-.16;s.targetDistance=6;s.keys.clear();if(touch)resetMobileInput(touch);onMode(false);onZoom(6);}
   }
+ const balloonsVisible=areBalloonsVisibleAtMinute(minute);
   const balloon=balloonRide;
+  if(!balloonsVisible&&balloon.riding){
+   resetBalloon();
+   s.x=BALLOON_LAUNCH.x+3.6;s.z=BALLOON_LAUNCH.z;oldX=s.x;oldZ=s.z;s.camX=s.x;s.camZ=s.z;
+   s.first=false;s.topDown=false;s.panning=false;s.pitch=-.12;s.distance=6;s.targetDistance=6;s.keys.clear();
+   if(touch)resetMobileInput(touch);clearBalloonInput();onMode(false);onTopDown(false);onZoom(6);
+  }
   if(!balloon.riding){balloon.y=height(balloon.x,balloon.z);balloon.grounded=true;}
   const balloonDistance=Math.hypot(s.x-balloon.x,s.z-balloon.z);
   if(balloon.mustLeave&&balloonDistance>5)balloon.mustLeave=false;
-  const nearBalloon=hasCompletedThreeGhostsMission()&&character==='cartoon'&&!currentCar()&&!ride.riding&&!balloon.riding&&!balloon.mustLeave&&!jump.current.airborne&&jumpPose.current.prepare===0&&balloonDistance<3.6;
+  const nearBalloon=balloonsVisible&&hasCompletedThreeGhostsMission()&&character==='cartoon'&&!currentCar()&&!ride.riding&&!balloon.riding&&!balloon.mustLeave&&!jump.current.airborne&&jumpPose.current.prepare===0&&balloonDistance<3.6;
   if(nearBalloon&&!aerial&&!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0){
    balloon.nearTime+=dt;
    if(balloon.nearTime>.55){
@@ -1041,6 +1054,6 @@ export const Player = memo(function Player({
   }
   s.time+=dt;if(s.time>0.08){s.time=0;onBalloonStatus?.({riding:balloon.riding,near:nearBalloon,altitude:Math.max(0,Math.round(balloon.y-height(balloon.x,balloon.z))),kmh:Math.round(Math.hypot(balloon.vx,balloon.vz)*3.6),grounded:balloon.grounded,blocked:balloon.blocked,autoCruise:balloon.autoCruise,autoReturn:balloon.autoReturn,returnDist:balloon.returnDist});onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car||balloon.riding,ride.riding),summonStatus:carSummonState.status,lives:rideLife.lives});onRideStatus?.({riding:ride.riding,near:!balloon.riding&&!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0,impactMode:rideLife.mode,damage:rideLife.damage});onPosition(s.x,s.z,s.bodyYaw);onSaveSnapshot?.({x:s.x,z:s.z,yaw:s.bodyYaw,pitch:s.pitch,zoom:s.targetDistance,topDown:s.topDown,first:s.first});onViewPosition?.(target.current.x,target.current.z);}
  },-1);
- return <><PassengerBalloon/><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar"><HeldGhostSword avatar={avatar}/><HeldGun avatar={avatar} motion={characterMotion}/>{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter combat appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb} riding/></group></>:character==='cartoon'?<CartoonCharacter combat appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
+ return <><PassengerBalloon visible={areBalloonsVisibleAtMinute(minute)}/><ParkedCars/><ParkedMotorcycle/><group ref={avatar} name="player-avatar"><HeldGhostSword avatar={avatar}/><HeldGun avatar={avatar} motion={characterMotion}/>{riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter combat appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb} riding/></group></>:character==='cartoon'?<CartoonCharacter combat appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
 
 });

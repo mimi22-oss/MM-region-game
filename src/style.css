@@ -1330,6 +1330,20 @@ main.night-mode .map-haunt-note {
 	animation: teleportAnchorPop 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.teleport-confirm-anchor.teleport-confirm-anchor-below {
+	transform: translate(-50%, 0);
+	margin-top: 0;
+	animation: none;
+}
+
+.teleport-confirm-anchor.teleport-confirm-anchor-below .teleport-confirm-tail {
+	bottom: auto;
+	top: -9px;
+	border-top: none;
+	border-bottom: 9px solid rgba(255, 255, 255, 0.94);
+	filter: drop-shadow(0 -2px 2px rgba(15, 23, 42, 0.12));
+}
+
 @keyframes teleportAnchorPop {
 	0% {
 		opacity: 0;
@@ -1344,10 +1358,10 @@ main.night-mode .map-haunt-note {
 
 .teleport-confirm-card {
 	position: relative;
-	background: rgba(255, 255, 255, 0.122);
-	backdrop-filter: blur(2px);
+	background: rgba(255, 255, 255, 0.94);
+	backdrop-filter: blur(12px);
 	-webkit-backdrop-filter: blur(14px);
-	border: 1.5px solid rgba(14, 164, 233, 0.04);
+	border: 1.5px solid rgba(14, 165, 233, 0.28);
 	border-radius: 14px;
 	padding: 10px 12px;
 	box-shadow:
@@ -1360,6 +1374,67 @@ main.night-mode .map-haunt-note {
 	gap: 8px;
 	color: #0f172a;
 	font-family: inherit;
+}
+
+.teleport-mode-banner {
+	position: fixed;
+	left: 50%;
+	bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 12px));
+	transform: translateX(-50%);
+	z-index: 980;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	max-width: calc(100vw - 24px);
+	padding: 8px 12px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.95);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1.5px solid rgba(14, 165, 233, 0.42);
+	box-shadow: 0 10px 28px rgba(15, 23, 42, 0.24);
+	color: #0f172a;
+	pointer-events: auto;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.teleport-mode-banner-text {
+	font-size: 12.5px;
+	font-weight: 600;
+	color: #0369a1;
+	line-height: 1.25;
+}
+
+.teleport-mode-banner-actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
+}
+
+.teleport-mode-banner-go {
+	border: none;
+	border-radius: 999px;
+	padding: 6px 12px;
+	background: linear-gradient(135deg, #10b981, #059669);
+	color: #ffffff;
+	font-size: 12px;
+	font-weight: 700;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.teleport-mode-banner-close {
+	border: 1px solid #cbd5e1;
+	border-radius: 999px;
+	padding: 6px 11px;
+	background: #f1f5f9;
+	color: #334155;
+	font-size: 12px;
+	font-weight: 700;
+	cursor: pointer;
+	white-space: nowrap;
 }
 
 .teleport-confirm-tail {
@@ -2006,6 +2081,28 @@ main.night-mode .teleport-confirm-tail {
 	border-top-color: rgba(15, 23, 42, 0.95);
 }
 
+main.night-mode .teleport-confirm-anchor.teleport-confirm-anchor-below .teleport-confirm-tail {
+	border-top-color: transparent;
+	border-bottom-color: rgba(15, 23, 42, 0.95);
+}
+
+main.night-mode .teleport-mode-banner {
+	background: rgba(15, 23, 42, 0.94);
+	border-color: rgba(56, 189, 248, 0.48);
+	color: #f1f5f9;
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+
+main.night-mode .teleport-mode-banner-text {
+	color: #7dd3fc;
+}
+
+main.night-mode .teleport-mode-banner-close {
+	background: #1e293b;
+	border-color: #334155;
+	color: #cbd5e1;
+}
+
 main.night-mode .teleport-confirm-placename {
 	color: #38bdf8;
 }
@@ -2283,6 +2380,33 @@ main.night-mode .home-guidance-pill {
 	.teleport-confirm-card {
 		max-width: min(290px, 90vw);
 		padding: 10px 12px;
+	}
+
+	.teleport-btn-confirm,
+	.teleport-btn-cancel {
+		width: 48px;
+		height: 42px;
+	}
+
+	.teleport-mode-banner {
+		bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 8px));
+		padding: 7px 10px;
+		gap: 8px;
+		border-radius: 16px;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+
+	.teleport-mode-banner-text {
+		font-size: 11.5px;
+		text-align: center;
+	}
+
+	.teleport-mode-banner-go,
+	.teleport-mode-banner-close {
+		padding: 6px 11px;
+		font-size: 11.5px;
+		min-height: 32px;
 	}
 
 	.mobile-controls {
@@ -10769,5 +10893,213 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 
   .school-time-hud-hall {
     font-size: 8.5px;
+  }
+}
+
+/* ==========================================================================
+   ⚽ Live Football Match Scoreboard HUD (replaces ghost-hud near football pitches)
+   ========================================================================== */
+.football-score-hud {
+  position: fixed;
+  z-index: 14;
+  top: max(12px, calc(env(safe-area-inset-top, 0px) + 12px));
+  left: max(18px, calc(env(safe-area-inset-left, 0px) + 14px));
+  max-width: min(292px, calc(100vw - 210px));
+  padding: 7px 11px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.92) 0%, rgba(17, 45, 36, 0.9) 100%);
+  border: 1px solid rgba(74, 222, 128, 0.36);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #f8fafc;
+  pointer-events: auto;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Myanmar", sans-serif;
+}
+
+.football-score-hud-goal {
+  border-color: rgba(250, 204, 21, 0.75);
+  box-shadow: 0 0 22px rgba(250, 204, 21, 0.32), 0 8px 22px rgba(0, 0, 0, 0.48);
+}
+
+.football-score-hud-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.football-score-hud-pitch {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.football-score-hud-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.football-score-hud-live {
+  background: rgba(239, 68, 68, 0.22);
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  color: #fecaca;
+}
+
+.football-score-hud-rest {
+  background: rgba(148, 163, 184, 0.22);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  color: #cbd5e1;
+}
+
+.football-score-hud-board {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 9px;
+  border-radius: 9px;
+  background: rgba(2, 6, 23, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.football-score-team {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.football-score-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.football-score-dot-red {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.75);
+}
+
+.football-score-dot-green {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.75);
+}
+
+.football-score-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f5f9;
+  white-space: nowrap;
+}
+
+.football-score-num {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.football-score-team-red .football-score-num {
+  color: #fca5a5;
+}
+
+.football-score-team-green .football-score-num {
+  color: #6ee7b7;
+}
+
+.football-score-sep {
+  font-size: 15px;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.football-score-hud-status {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #fde68a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mobile portrait & narrow screens: keep clear of .player-life & .settings-wrap */
+@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+  .football-score-hud {
+    top: max(8px, calc(env(safe-area-inset-top, 0px) + 6px));
+    left: max(10px, calc(env(safe-area-inset-left, 0px) + 8px));
+    max-width: calc(100vw - 188px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    padding: 5px 8px;
+    border-radius: 10px;
+    gap: 4px;
+  }
+
+  .football-score-hud-pitch {
+    font-size: 9.5px;
+  }
+
+  .football-score-hud-badge {
+    font-size: 8.5px;
+    padding: 1px 5px;
+  }
+
+  .football-score-hud-board {
+    padding: 3px 7px;
+    gap: 5px;
+  }
+
+  .football-score-name {
+    font-size: 10.5px;
+  }
+
+  .football-score-num {
+    font-size: 14px;
+  }
+
+  .football-score-hud-status {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 420px) {
+  .football-score-hud {
+    max-width: calc(100vw - 178px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    padding: 4px 7px;
+  }
+
+  .football-score-dot {
+    width: 7px;
+    height: 7px;
+  }
+
+  .football-score-name {
+    font-size: 9.5px;
+  }
+
+  .football-score-num {
+    font-size: 13px;
+  }
+}
+
+@media (max-height: 460px) and (orientation: landscape) {
+  .football-score-hud {
+    top: max(6px, calc(env(safe-area-inset-top, 0px) + 4px));
+    left: max(10px, calc(env(safe-area-inset-left, 0px) + 8px));
+    max-width: min(236px, calc(100vw - 196px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+    padding: 4px 7px;
+    border-radius: 9px;
   }
 }

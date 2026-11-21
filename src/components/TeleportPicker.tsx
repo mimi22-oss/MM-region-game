@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, type RefObject } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import {
 	Vector2,
@@ -17,6 +17,13 @@ import { sceneGround } from '../game/groundSurface';
 import { canStand } from '../game/collision';
 import { findTeleportSpot } from '../game/cameraNavigation';
 import { robotLocation } from '../game/robotLocation';
+import type { MobileInput } from '../game/mobileInput';
+import {
+	TeleportTouchController,
+	clampTeleportCardPosition,
+	isTeleportTap,
+	teleportPinHitRadius,
+} from '../game/teleportTouch';
 
 export interface TeleportPin {
 	x: number;
@@ -33,6 +40,14 @@ export interface ScreenPosition {
 	visible: boolean;
 }
 
+const _rayMouse = new Vector2();
+const _raycaster = new Raycaster();
+const _groundPlane = new Plane(new Vector3(0, 1, 0), 0);
+const _planeHit = new Vector3();
+const _projVec = new Vector3();
+const UI_IGNORE_SELECTOR =
+	'.teleport-confirm-card, .teleport-mode-banner, .location-actions, .action-menu-popover, .settings-wrap, .guide-dialog-modal, .mobile-actions';
+
 /** Helper: Raycast from screen pixels (clientX, clientY) to ground surface */
 function raycastGround(
 	clientX: number,
@@ -43,16 +58,16 @@ function raycastGround(
 	time: number
 ): { x: number; y: number; z: number } | null {
 	const rect = gl.domElement.getBoundingClientRect();
-	const mouse = new Vector2(
+	if (rect.width <= 0 || rect.height <= 0) return null;
+	_rayMouse.set(
 		((clientX - rect.left) / rect.width) * 2 - 1,
 		-((clientY - rect.top) / rect.height) * 2 + 1
 	);
 
-	const raycaster = new Raycaster();
-	raycaster.setFromCamera(mouse, camera);
+	_raycaster.setFromCamera(_rayMouse, camera);
 
 	let hitPoint: Vector3 | null = null;
-	const intersects = raycaster.intersectObjects(scene.children, true);
+	const intersects = _raycaster.intersectObjects(scene.children, true);
 	for (const hit of intersects) {
 		const name = hit.object.name ?? '';
 		if (
@@ -72,10 +87,8 @@ function raycastGround(
 	}
 
 	if (!hitPoint) {
-		const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
-		const hit = new Vector3();
-		if (raycaster.ray.intersectPlane(groundPlane, hit)) {
-			hitPoint = hit;
+		if (_raycaster.ray.intersectPlane(_groundPlane, _planeHit)) {
+			hitPoint = _planeHit;
 		}
 	}
 
@@ -90,19 +103,22 @@ function raycastGround(
 
 /**
  * 3D Teleport Picker component inside <Canvas>
- * - Tapping/clicking on ground places teleport pin.
+ * - Tapping/clicking on ground places teleport pin (mouse & mobile touch).
  * - Pressing and dragging ("ဖိရွေ့") the pointer circle moves it smoothly in real time.
+ * - On touchscreens, dragging away from the pin orbits the camera, and 2-finger pinch/drag zooms/pans.
  * - Projects pin to 2D screen coordinates for the floating confirmation card.
  */
 export function TeleportPicker({
 	active,
 	pin,
+	mobileInput,
 	onPickPin,
 	onScreenPos,
 	onDraggingChange,
 }: {
 	active: boolean;
 	pin: TeleportPin | null;
+	mobileInput?: RefObject<MobileInput>;
 	onPickPin: (pin: TeleportPin) => void;
 	onScreenPos: (pos: ScreenPosition | null) => void;
 	onDraggingChange?: (dragging: boolean) => void;
@@ -113,50 +129,113 @@ export function TeleportPicker({
 
 	const [isDragging, setIsDragging] = useState(false);
 	const isDraggingRef = useRef(false);
+	const lastScreenPosRef = useRef<ScreenPosition | null>(null);
 
 	useEffect(() => {
-		if (!active) return;
-		const dom = gl.domElement;
-		dom.style.cursor = 'crosshair';
+		if (!active) {
+			if (lastScreenPosRef.current !== null) {
+				lastScreenPosRef.current = null;
+				onScreenPos(null);
+			}
+			return;
+		}
 
+		const dom = gl.domElement;
+		const prevCursor = dom.style.cursor;
+		const prevTouchAction = dom.style.touchAction;
+		dom.style.cursor = 'crosshair';
+		dom.style.touchAction = 'none';
+
+		const touchController = new TeleportTouchController();
 		let downX = 0;
 		let downY = 0;
+		let dragPointerId: number | null = null;
+		let lastDragRaycastAt = 0;
 
-		const isNearCircle = (clientX: number, clientY: number): boolean => {
+		const isNearCircle = (clientX: number, clientY: number, pointerType: string): boolean => {
 			if (!pinRef.current) return false;
-			// 1. Check 3D distance to pin
+			const rect = dom.getBoundingClientRect();
+			if (rect.width <= 0 || rect.height <= 0) return false;
+
+			// 1. Fast 2D projected screen distance check first (avoids expensive raycast on touch)
+			_projVec.set(pinRef.current.x, pinRef.current.y + 0.1, pinRef.current.z);
+			_projVec.project(camera);
+			if (_projVec.z < 1) {
+				const sx = rect.left + (_projVec.x * 0.5 + 0.5) * rect.width;
+				const sy = rect.top + (-(_projVec.y * 0.5) + 0.5) * rect.height;
+				const dist2D = Math.hypot(clientX - sx, clientY - sy);
+				if (dist2D < teleportPinHitRadius(pointerType)) return true;
+			}
+
+			// 2. Fallback 3D distance to pin on ground
 			const hit = raycastGround(clientX, clientY, camera, scene, gl, clock.elapsedTime);
 			if (hit) {
 				const dist3D = Math.hypot(hit.x - pinRef.current.x, hit.z - pinRef.current.z);
-				if (dist3D < 3.2) return true;
-			}
-			// 2. Check 2D projected screen distance
-			const vec = new Vector3(pinRef.current.x, pinRef.current.y + 0.1, pinRef.current.z);
-			vec.project(camera);
-			if (vec.z < 1) {
-				const sx = (vec.x * 0.5 + 0.5) * window.innerWidth;
-				const sy = (-(vec.y * 0.5) + 0.5) * window.innerHeight;
-				const dist2D = Math.hypot(clientX - sx, clientY - sy);
-				if (dist2D < 75) return true;
+				if (dist3D < (pointerType === 'touch' ? 3.8 : 3.2)) return true;
 			}
 			return false;
 		};
 
+		const stopPinDragging = (pointerId?: number) => {
+			if (!isDraggingRef.current) return;
+			isDraggingRef.current = false;
+			setIsDragging(false);
+			onDraggingChange?.(false);
+			dom.style.cursor = 'crosshair';
+			const releaseId = pointerId ?? dragPointerId;
+			dragPointerId = null;
+			if (releaseId !== null) {
+				try {
+					dom.releasePointerCapture(releaseId);
+				} catch {}
+			}
+		};
+
+		const placeSnappedPinAt = (clientX: number, clientY: number) => {
+			const hit = raycastGround(clientX, clientY, camera, scene, gl, clock.elapsedTime);
+			if (!hit) return;
+			const safe = findTeleportSpot(hit.x, hit.z, canStand);
+			const safeX = safe ? safe.x : hit.x;
+			const safeZ = safe ? safe.z : hit.z;
+			const isAdjusted = safe ? Math.hypot(safe.x - hit.x, safe.z - hit.z) > 0.3 : false;
+			onPickPin({
+				x: hit.x,
+				y: hit.y,
+				z: hit.z,
+				safeX,
+				safeZ,
+				isAdjusted,
+			});
+		};
+
 		const onPointerDown = (e: PointerEvent) => {
 			const target = e.target;
-			if (
-				target instanceof HTMLElement &&
-				target.closest('.teleport-confirm-card, .location-actions, .action-menu-popover, .settings-wrap, .guide-dialog-modal, .mobile-actions')
-			) {
+			if (target instanceof HTMLElement && target.closest(UI_IGNORE_SELECTOR)) {
 				return;
+			}
+			if (e.pointerType !== 'touch' && e.button !== 0) return;
+
+			if (e.pointerType === 'touch') {
+				e.preventDefault();
+				const { multiTouchStarted } = touchController.down(e.pointerId, e.clientX, e.clientY);
+				try {
+					dom.setPointerCapture(e.pointerId);
+				} catch {}
+				if (multiTouchStarted) {
+					// 2nd finger touched down: switch cleanly from pin dragging to 2-finger pan/zoom
+					stopPinDragging();
+					return;
+				}
 			}
 
 			downX = e.clientX;
 			downY = e.clientY;
 
 			// If pin already exists and user touched on/near the circle, initiate circle dragging ("ဖိရွေ့")!
-			if (pinRef.current && isNearCircle(e.clientX, e.clientY)) {
+			if (pinRef.current && isNearCircle(e.clientX, e.clientY, e.pointerType)) {
 				isDraggingRef.current = true;
+				dragPointerId = e.pointerId;
+				lastDragRaycastAt = 0;
 				setIsDragging(true);
 				onDraggingChange?.(true);
 				dom.style.cursor = 'grabbing';
@@ -168,8 +247,37 @@ export function TeleportPicker({
 		};
 
 		const onPointerMove = (e: PointerEvent) => {
-			if (isDraggingRef.current) {
-				// While dragging the circle: raycast ground and update pin position smoothly in real time!
+			if (e.pointerType === 'touch') {
+				e.preventDefault();
+				if (isDraggingRef.current && dragPointerId === e.pointerId && !touchController.isMultiTouch) {
+					const now = performance.now();
+					if (now - lastDragRaycastAt < 32) return;
+					lastDragRaycastAt = now;
+					const hit = raycastGround(e.clientX, e.clientY, camera, scene, gl, clock.elapsedTime);
+					if (hit) {
+						onPickPin({
+							x: hit.x,
+							y: hit.y,
+							z: hit.z,
+							safeX: hit.x,
+							safeZ: hit.z,
+							isAdjusted: false,
+						});
+					}
+					return;
+				}
+				touchController.move(
+					e.pointerId,
+					e.clientX,
+					e.clientY,
+					mobileInput?.current,
+					isDraggingRef.current,
+				);
+				return;
+			}
+
+			if (isDraggingRef.current && dragPointerId === e.pointerId) {
+				// While dragging the circle with mouse: raycast ground and update pin position smoothly!
 				const hit = raycastGround(e.clientX, e.clientY, camera, scene, gl, clock.elapsedTime);
 				if (hit) {
 					onPickPin({
@@ -184,8 +292,8 @@ export function TeleportPicker({
 				return;
 			}
 
-			// Hover feedback over the circle
-			if (pinRef.current && isNearCircle(e.clientX, e.clientY)) {
+			// Hover feedback over the circle (mouse/pen only)
+			if (pinRef.current && isNearCircle(e.clientX, e.clientY, e.pointerType)) {
 				dom.style.cursor = 'grab';
 			} else {
 				dom.style.cursor = 'crosshair';
@@ -194,23 +302,21 @@ export function TeleportPicker({
 
 		const onPointerUp = (e: PointerEvent) => {
 			const target = e.target;
-			if (
-				target instanceof HTMLElement &&
-				target.closest('.teleport-confirm-card, .location-actions, .action-menu-popover, .settings-wrap, .guide-dialog-modal, .mobile-actions')
-			) {
+			if (target instanceof HTMLElement && target.closest(UI_IGNORE_SELECTOR)) {
+				if (e.pointerType === 'touch') touchController.cancel(e.pointerId);
 				return;
 			}
 
-			if (isDraggingRef.current) {
-				isDraggingRef.current = false;
-				setIsDragging(false);
-				onDraggingChange?.(false);
-				dom.style.cursor = 'crosshair';
-				try {
-					dom.releasePointerCapture(e.pointerId);
-				} catch {}
-
-				// Snap to nearest walkable spot upon release
+			const wasDraggingThisPointer = isDraggingRef.current && dragPointerId === e.pointerId;
+			if (wasDraggingThisPointer) {
+				stopPinDragging(e.pointerId);
+				if (e.pointerType === 'touch') {
+					touchController.up(e.pointerId, e.clientX, e.clientY, true);
+					// Final exact ground sample at release point on touch
+					placeSnappedPinAt(e.clientX, e.clientY);
+					return;
+				}
+				// Snap to nearest walkable spot upon mouse release
 				if (pinRef.current) {
 					const safe = findTeleportSpot(pinRef.current.x, pinRef.current.z, canStand);
 					const safeX = safe ? safe.x : pinRef.current.x;
@@ -226,59 +332,85 @@ export function TeleportPicker({
 				return;
 			}
 
-			// If not dragging circle, check if user tapped ground (dist <= 7px)
-			const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
-			if (dist <= 7) {
-				const hit = raycastGround(e.clientX, e.clientY, camera, scene, gl, clock.elapsedTime);
-				if (hit) {
-					const safe = findTeleportSpot(hit.x, hit.z, canStand);
-					const safeX = safe ? safe.x : hit.x;
-					const safeZ = safe ? safe.z : hit.z;
-					const isAdjusted = safe ? Math.hypot(safe.x - hit.x, safe.z - hit.z) > 0.3 : false;
-					onPickPin({
-						x: hit.x,
-						y: hit.y,
-						z: hit.z,
-						safeX,
-						safeZ,
-						isAdjusted,
-					});
+			if (e.pointerType === 'touch') {
+				try {
+					dom.releasePointerCapture(e.pointerId);
+				} catch {}
+				const { shouldPlacePin } = touchController.up(e.pointerId, e.clientX, e.clientY, false);
+				if (shouldPlacePin) {
+					placeSnappedPinAt(e.clientX, e.clientY);
 				}
+				return;
+			}
+
+			// Mouse tap check (dist <= 7px)
+			if (isTeleportTap(e.clientX - downX, e.clientY - downY, e.pointerType)) {
+				placeSnappedPinAt(e.clientX, e.clientY);
 			}
 		};
 
-		dom.addEventListener('pointerdown', onPointerDown);
-		dom.addEventListener('pointermove', onPointerMove);
+		const onPointerCancel = (e: PointerEvent) => {
+			if (dragPointerId === e.pointerId) {
+				stopPinDragging(e.pointerId);
+			}
+			if (e.pointerType === 'touch') {
+				touchController.cancel(e.pointerId);
+				try {
+					dom.releasePointerCapture(e.pointerId);
+				} catch {}
+			}
+		};
+
+		dom.addEventListener('pointerdown', onPointerDown, { passive: false });
+		dom.addEventListener('pointermove', onPointerMove, { passive: false });
 		dom.addEventListener('pointerup', onPointerUp);
+		dom.addEventListener('pointercancel', onPointerCancel);
 
 		return () => {
-			dom.style.cursor = '';
+			dom.style.cursor = prevCursor;
+			dom.style.touchAction = prevTouchAction;
 			dom.removeEventListener('pointerdown', onPointerDown);
 			dom.removeEventListener('pointermove', onPointerMove);
 			dom.removeEventListener('pointerup', onPointerUp);
+			dom.removeEventListener('pointercancel', onPointerCancel);
+			touchController.reset();
+			isDraggingRef.current = false;
+			setIsDragging(false);
 			onDraggingChange?.(false);
 		};
-	}, [active, camera, scene, gl, clock, onPickPin, onDraggingChange]);
+	}, [active, camera, scene, gl, clock, mobileInput, onPickPin, onScreenPos, onDraggingChange]);
 
-	// Project 3D pin position to 2D screen coordinates in real-time
+	// Project 3D pin position to 2D screen coordinates, only updating React state on real movement
 	useFrame(() => {
 		if (!pin || !active) {
-			onScreenPos(null);
+			if (lastScreenPosRef.current !== null) {
+				lastScreenPosRef.current = null;
+				onScreenPos(null);
+			}
 			return;
 		}
 
-		const vec = new Vector3(pin.x, pin.y + 1.8, pin.z);
-		vec.project(camera);
+		const rect = gl.domElement.getBoundingClientRect();
+		if (rect.width <= 0 || rect.height <= 0) return;
 
-		const inFront = vec.z < 1;
-		const screenX = (vec.x * 0.5 + 0.5) * window.innerWidth;
-		const screenY = (-(vec.y * 0.5) + 0.5) * window.innerHeight;
+		_projVec.set(pin.x, pin.y + 1.8, pin.z);
+		_projVec.project(camera);
 
-		onScreenPos({
-			x: screenX,
-			y: screenY,
-			visible: inFront,
-		});
+		const inFront = _projVec.z < 1;
+		const screenX = rect.left + (_projVec.x * 0.5 + 0.5) * rect.width;
+		const screenY = rect.top + (-(_projVec.y * 0.5) + 0.5) * rect.height;
+
+		const prev = lastScreenPosRef.current;
+		if (
+			!prev ||
+			prev.visible !== inFront ||
+			Math.abs(prev.x - screenX) > 0.75 ||
+			Math.abs(prev.y - screenY) > 0.75
+		) {
+			const next = { x: screenX, y: screenY, visible: inFront };
+			lastScreenPosRef.current = next;
+			onScreenPos(next);
+		}
 	});
 
 	if (!active || !pin) return null;
@@ -413,12 +545,8 @@ function Teleport3DMarker({
 }
 
 /**
- * Floating Confirmation Overlay anchored in screen-space directly above the 3D circle marker.
- * Displays:
- * - Checkmark icon button (✓ အတည်ပြုမည် / Confirm Teleport)
- * - Cross icon button (✕ ပယ်ဖျက် / Cancel)
- * - Location info & Geolocation coordinates (Place name, Lat, Lng, Distance)
- * - Direct drag hint indicator
+ * Floating Confirmation Overlay anchored in screen-space directly above (or below near top edge)
+ * the 3D circle marker, clamped inside the viewport so buttons remain tappable on mobile screens.
  */
 export function TeleportConfirmOverlay({
 	screenX,
@@ -450,14 +578,30 @@ export function TeleportConfirmOverlay({
 	const distance = Math.hypot(targetX - playerX, targetZ - playerZ);
 	const placeName = geo.place.subArea ?? geo.place.label;
 
+	const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1024;
+	const viewportH = typeof window !== 'undefined' ? window.innerHeight : 768;
+	const clamped = clampTeleportCardPosition(
+		screenX,
+		screenY,
+		viewportW,
+		viewportH,
+		Math.min(250, viewportW * 0.86),
+		pin.isAdjusted ? 148 : 118,
+	);
+
 	return (
 		<div
-			className="teleport-confirm-anchor"
+			className={
+				clamped.placement === 'below'
+					? 'teleport-confirm-anchor teleport-confirm-anchor-below'
+					: 'teleport-confirm-anchor'
+			}
 			style={{
-				left: `${screenX}px`,
-				top: `${screenY}px`,
+				left: `${clamped.left}px`,
+				top: `${clamped.top}px`,
 			}}
 			onPointerDown={(e) => e.stopPropagation()}
+			onTouchStart={(e) => e.stopPropagation()}
 		>
 			<div className="teleport-confirm-card" role="dialog" aria-label="Teleport အတည်ပြုခြင်း">
 				{/* Header info */}
@@ -529,8 +673,57 @@ export function TeleportConfirmOverlay({
 					</button>
 				</div>
 
-				{/* Speech arrow pointing down to 3D marker */}
+				{/* Speech arrow pointing toward 3D marker */}
 				<div className="teleport-confirm-tail" aria-hidden="true" />
+			</div>
+		</div>
+	);
+}
+
+/**
+ * Compact bottom-center Teleport Mode bar so mobile & desktop users always see
+ * clear Burmese guidance and have one-tap Confirm / Exit buttons clear of top HUDs.
+ */
+export function TeleportModeBanner({
+	pin,
+	onConfirm,
+	onCancel,
+}: {
+	pin: TeleportPin | null;
+	onConfirm: (pin: TeleportPin) => void;
+	onCancel: () => void;
+}) {
+	return (
+		<div
+			className="teleport-mode-banner"
+			role="status"
+			aria-live="polite"
+			onPointerDown={(e) => e.stopPropagation()}
+			onTouchStart={(e) => e.stopPropagation()}
+		>
+			<span className="teleport-mode-banner-text">
+				{pin
+					? '📍 စက်ဝိုင်းကို ဖိရွှေ့နိုင်သည် · ✓ နှိပ်၍ သွားပါ'
+					: '🎯 မြေပြင်ကို ထောက်၍ Teleport နေရာရွေးပါ'}
+			</span>
+			<div className="teleport-mode-banner-actions">
+				{pin && (
+					<button
+						type="button"
+						className="teleport-mode-banner-go"
+						onClick={() => onConfirm(pin)}
+					>
+						✓ သွားမည်
+					</button>
+				)}
+				<button
+					type="button"
+					className="teleport-mode-banner-close"
+					onClick={onCancel}
+					aria-label="Teleport ရွေးချယ်မှု ပိတ်မည်"
+				>
+					✕ ပိတ်
+				</button>
 			</div>
 		</div>
 	);

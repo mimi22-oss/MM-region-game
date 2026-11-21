@@ -59,7 +59,15 @@ import {
   resolveSchoolPeriod,
   schoolPeriodLabelMy,
 } from "./game/schoolSchedule";
-import { TIME_PERIODS } from "./game/environmentTime";
+import {
+  TIME_PERIODS,
+  areFootballPlayersVisibleAtMinute,
+} from "./game/environmentTime";
+import {
+  findNearestFootballPitch,
+  getFootballScoreboardSnapshot,
+  subscribeFootballScoreboard,
+} from "./game/footballMatch";
 import { FrameBudget } from "./components/FrameBudget";
 import { CinematicIntroController } from "./components/CinematicIntroController";
 import { IntroOverlay } from "./components/IntroOverlay";
@@ -115,6 +123,7 @@ import {
 import {
   TeleportPicker,
   TeleportConfirmOverlay,
+  TeleportModeBanner,
   type TeleportPin,
   type ScreenPosition,
 } from "./components/TeleportPicker";
@@ -547,6 +556,17 @@ function App() {
     () => findNearestSchoolHall(viewPos.x, viewPos.z, 48) ?? findNearestSchoolHall(pos.x, pos.z, 48),
     [viewPos.x, viewPos.z, pos.x, pos.z],
   );
+  const nearFootballPitch = useMemo(
+    () => findNearestFootballPitch(viewPos.x, viewPos.z) ?? findNearestFootballPitch(pos.x, pos.z),
+    [viewPos.x, viewPos.z, pos.x, pos.z],
+  );
+  const footballScoreboard = useSyncExternalStore(
+    subscribeFootballScoreboard,
+    getFootballScoreboardSnapshot,
+    getFootballScoreboardSnapshot,
+  );
+  const footballMatchActive = areFootballPlayersVisibleAtMinute(environment.minute);
+  const activeFootballScore = nearFootballPitch ? footballScoreboard[nearFootballPitch.id] : null;
   const schoolClockMinute = effectiveSchoolMinute(environment.minute, environment.preferences.mode);
   const currentSchoolPeriod = resolveSchoolPeriod(environment.minute, environment.preferences.mode);
   const currentPeriodMeta = TIME_PERIODS.find((p) => p.id === environment.period);
@@ -591,9 +611,14 @@ function App() {
     if (document.pointerLockElement) document.exitPointerLock();
     setTeleportMode((prev) => {
       const next = !prev;
-      if (!next) {
+      if (next) {
+        setHudMenuOpen(false);
+        setActionMenuOpen(false);
+        resetMobileInput(mobileInput.current);
+      } else {
         setTeleportPin(null);
         setTeleportScreenPos(null);
+        setTeleportDragging(false);
       }
       return next;
     });
@@ -874,8 +899,59 @@ function App() {
     <main className={night ? "night-mode" : ""} data-time-period={environment.period}>
       <GhostGameOver/>
       <MissionVictoryDialog />
-      {!loading && !nearSchoolHall && <ThreeGhostsMissionHud />}
-      {!loading && !intro.active && !mapOpen && !settingsOpen && nearSchoolHall && (
+      {!loading && !nearSchoolHall && !nearFootballPitch && <ThreeGhostsMissionHud />}
+      {!loading && !intro.active && !mapOpen && !settingsOpen && nearFootballPitch && (
+        <div
+          className={
+            activeFootballScore?.phase === "goal-celebration" && footballMatchActive
+              ? "football-score-hud football-score-hud-goal"
+              : "football-score-hud"
+          }
+          role="status"
+          aria-live="polite"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="football-score-hud-head">
+            <span className="football-score-hud-pitch">⚽ {nearFootballPitch.name}</span>
+            <span
+              className={
+                footballMatchActive
+                  ? "football-score-hud-badge football-score-hud-live"
+                  : "football-score-hud-badge football-score-hud-rest"
+              }
+            >
+              {footballMatchActive ? "● LIVE" : "🌙 ပွဲနား"}
+            </span>
+          </div>
+          <div className="football-score-hud-board" aria-label="ဘောလုံးပွဲ ရမှတ်">
+            <div className="football-score-team football-score-team-red">
+              <span className="football-score-dot football-score-dot-red" aria-hidden="true" />
+              <span className="football-score-name">အနီ</span>
+              <strong className="football-score-num">{activeFootballScore?.goalsRed ?? 0}</strong>
+            </div>
+            <span className="football-score-sep" aria-hidden="true">:</span>
+            <div className="football-score-team football-score-team-green">
+              <strong className="football-score-num">{activeFootballScore?.goalsGreen ?? 0}</strong>
+              <span className="football-score-name">အစိမ်း</span>
+              <span className="football-score-dot football-score-dot-green" aria-hidden="true" />
+            </div>
+          </div>
+          <div className="football-score-hud-status">
+            {!footballMatchActive
+              ? "ညနေ/ည ပွဲနားချိန် (မနက် 05:00 – နေ့ 04:29 ကစားသည်)"
+              : activeFootballScore?.phase === "goal-celebration"
+                ? `🎉 ဂိုးဝင်ပြီ! (${activeFootballScore.lastScorer === "red" ? "အနီအသင်း" : "အစိမ်းအသင်း"})`
+                : activeFootballScore?.phase === "throw-in-pickup" || activeFootballScore?.phase === "throw-in"
+                  ? "🙌 ဘောလုံးကောက် · ဘေးစည်းပစ်သွင်းနေသည်"
+                  : activeFootballScore?.phase === "gk-pickup" ||
+                      activeFootballScore?.phase === "gk-hold" ||
+                      activeFootballScore?.phase === "gk-throw"
+                    ? "🧤 ဂိုးသမား ဖမ်းပြီး ပစ်ပေးနေသည်"
+                    : "⚽ ပွဲစဉ်ကစားနေသည် · အနီ vs အစိမ်း"}
+          </div>
+        </div>
+      )}
+      {!loading && !intro.active && !mapOpen && !settingsOpen && !nearFootballPitch && nearSchoolHall && (
         <div
           className="school-time-hud"
           role="status"
@@ -977,12 +1053,14 @@ function App() {
             <TeleportPicker
               active={teleportMode}
               pin={teleportPin}
+              mobileInput={mobileInput}
               onPickPin={setTeleportPin}
               onScreenPos={setTeleportScreenPos}
               onDraggingChange={setTeleportDragging}
             />
             <CinematicIntroController />
             <Player
+              minute={environment.minute}
               speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || intro.active || subscriptionShop.isOpen || !visible} loading={loading}
               deferGlb={(loading && shouldPlayIntro("entry", introSettings, { diagnosticDisabled: diagnosticConfig.enabled }) && !(introSettings.respectReducedMotion && isReducedMotionPreferred())) || (intro.active && isIntroHighAltitude(intro))}
               onCarStatus={carUpdate}
@@ -1043,7 +1121,7 @@ function App() {
         flying={balloonStatus.riding}
         onFoot={!rideStatus.riding&&!carStatus.driving&&!rideStatus.crashed}
         canJump={!balloonStatus.riding && character === "cartoon" && !rideStatus.riding && !carStatus.driving && !rideStatus.crashed}
-        disabled={mapOpen || settingsOpen || loading || carStatus.driving || subscriptionShop.isOpen || !visible}
+        disabled={mapOpen || settingsOpen || loading || carStatus.driving || subscriptionShop.isOpen || teleportMode || !visible}
         onInteract={activateMobile}
       />}
       {!intro.active && (
@@ -1056,6 +1134,7 @@ function App() {
             rideStatus.riding ||
             balloonStatus.riding ||
             subscriptionShop.isOpen ||
+            teleportMode ||
             !visible
           }
           onInteract={activateMobile}
@@ -1077,6 +1156,14 @@ function App() {
           playerX={pos.x}
           playerZ={pos.z}
           playerYaw={robotYaw}
+          onConfirm={handleConfirmTeleport}
+          onCancel={handleCancelTeleport}
+        />
+      )}
+
+      {teleportMode && !mapOpen && !settingsOpen && !loading && !intro.active && (
+        <TeleportModeBanner
+          pin={teleportPin}
           onConfirm={handleConfirmTeleport}
           onCancel={handleCancelTeleport}
         />

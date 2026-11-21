@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import { FestivalLighting } from '../components/FestivalLighting.tsx';
+import { areBalloonsVisibleAtMinute } from '../game/environmentTime.ts';
 import { resolveActiveFestivalZones } from './FestivalConfiguration.ts';
 import type { FestivalPluginSceneProps } from './FestivalRegistry.ts';
 import { BalloonShow } from './BalloonShow.tsx';
@@ -23,10 +24,11 @@ function setFestivalCandleGroupsVisible(scene: { children: { name: string; visib
   }
 }
 
-export function TazaungdaingScene({ config, night }: FestivalPluginSceneProps) {
+export function TazaungdaingScene({ config, minute, night }: FestivalPluginSceneProps) {
   const { scene } = useThree();
   const zones = useMemo(() => resolveActiveFestivalZones(config), [config]);
-  const showBalloons = night || config.allowDaytimePreview;
+  // Balloons stay hidden during daytime and appear strictly at night.
+  const showBalloons = areBalloonsVisibleAtMinute(minute);
 
   // Ensure regional fence/porch candle batches update immediately on mount & unmount without deep traversal
   useEffect(() => {
@@ -46,7 +48,7 @@ export function TazaungdaingScene({ config, night }: FestivalPluginSceneProps) {
         seed={config.seed}
       />
       {config.decorationsEnabled && (
-        <FestivalDecorations zones={zones} night={showBalloons} />
+        <FestivalDecorations zones={zones} night={night} showBalloons={showBalloons} />
       )}
     </group>
   );
