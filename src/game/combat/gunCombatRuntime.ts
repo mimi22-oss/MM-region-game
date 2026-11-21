@@ -22,8 +22,61 @@ import { playSpecialAction } from '../specialActions.ts';
 export const GUN_DAMAGE = SWORD_DAMAGE;
 export const GUN_RANGE_M = 32;
 export const GUN_COOLDOWN_SEC = 0.25;
-export const GUN_AIM_CONE_COS = 0.42;
+/** Strict PUBG-style ray-to-body hit radii (no off-aim magic cone hits). */
+export const GUN_ZOMBIE_HIT_RADIUS_M = 0.65;
+export const GUN_GHOST_BASE_HIT_RADIUS_M = 0.78;
+export const GUN_AIM_CONE_COS = 0.96;
 export const GUN_SHOOTING_MOTION_ID = 'shooting';
+
+export interface GunAimTarget {
+  readonly id: string;
+  readonly kind: 'zombie' | 'ghost';
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly distance: number;
+}
+
+export interface GunAimPreview {
+  readonly active: boolean;
+  readonly locked: boolean;
+  readonly target: GunAimTarget | null;
+  readonly fromX: number;
+  readonly fromY: number;
+  readonly fromZ: number;
+  readonly pointX: number;
+  readonly pointY: number;
+  readonly pointZ: number;
+}
+
+export interface GunAimHudSnapshot {
+  readonly locked: boolean;
+  readonly kind: 'zombie' | 'ghost' | null;
+}
+
+const gunAimHudListeners = new Set<() => void>();
+let gunAimHudSnapshot: GunAimHudSnapshot = Object.freeze({ locked: false, kind: null });
+
+export function getGunAimHudSnapshot(): GunAimHudSnapshot {
+  return gunAimHudSnapshot;
+}
+
+export function subscribeGunAimHud(listener: () => void): () => void {
+  gunAimHudListeners.add(listener);
+  return () => {
+    gunAimHudListeners.delete(listener);
+  };
+}
+
+function publishGunAimHud(locked: boolean, kind: 'zombie' | 'ghost' | null): void {
+  if (gunAimHudSnapshot.locked === locked && gunAimHudSnapshot.kind === kind) return;
+  gunAimHudSnapshot = Object.freeze({ locked, kind });
+  for (const fn of gunAimHudListeners) fn();
+}
+
+export function clearGunAimHud(): void {
+  publishGunAimHud(false, null);
+}
 
 let heldGun: {
   root: Object3D;
@@ -105,6 +158,136 @@ export function traceGunObstacleImpact(
     }
   }
   return null;
+}
+
+/**
+ * Strictly checks whether the forward gun barrel ray `(px, pz) + t*(fx, fz)` directly
+ * intersects a live Zombie or active Ghost (PUBG-style pointer lock, zero off-aim auto-hit).
+ */
+export function resolveGunAimTarget(
+  px: number,
+  pz: number,
+  rawFx: number,
+  rawFz: number,
+  maxDistM = GUN_RANGE_M,
+  obstacleDistM?: number | null,
+): GunAimTarget | null {
+  const fLen = Math.hypot(rawFx, rawFz) || 1;
+  const fx = rawFx / fLen;
+  const fz = rawFz / fLen;
+  const limitDist =
+    typeof obstacleDistM === 'number' && Number.isFinite(obstacleDistM)
+      ? Math.min(maxDistM, obstacleDistM)
+      : maxDistM;
+
+  let bestTarget: GunAimTarget | null = null;
+
+  // 1. Check live Zombies along exact forward ray
+  const zombieState = getZombieForestProgress();
+  for (const z of zombieState.zombies) {
+    if (!z.alive || z.hitsRemaining <= 0) continue;
+    const dx = z.x - px;
+    const dz = z.z - pz;
+    const along = dx * fx + dz * fz;
+    if (along < 0.15 || along > limitDist) continue;
+    const perp = Math.abs(dx * -fz + dz * fx);
+    if (perp > GUN_ZOMBIE_HIT_RADIUS_M) continue;
+    if (!combatLineClear(px, pz, z.x, z.z)) continue;
+    if (!bestTarget || along < bestTarget.distance) {
+      bestTarget = {
+        id: z.id,
+        kind: 'zombie',
+        x: z.x,
+        y: z.clip === 'crawl' ? 0.45 : 1.15,
+        z: z.z,
+        distance: along,
+      };
+    }
+  }
+
+  // 2. Check active Ghosts along exact forward ray
+  for (const id of GHOST_IDS) {
+    if (isGhostDefeated(id)) continue;
+    const g = getGhostRuntime(id);
+    if (!g || !g.active) continue;
+    const dx = g.x - px;
+    const dz = g.z - pz;
+    const along = dx * fx + dz * fz;
+    if (along < 0.15 || along > limitDist) continue;
+    const perp = Math.abs(dx * -fz + dz * fx);
+    if (perp > GUN_GHOST_BASE_HIT_RADIUS_M) continue;
+    if (!combatLineClear(px, pz, g.x, g.z)) continue;
+    if (!bestTarget || along < bestTarget.distance) {
+      bestTarget = {
+        id,
+        kind: 'ghost',
+        x: g.x,
+        y: 1.3,
+        z: g.z,
+        distance: along,
+      };
+    }
+  }
+
+  return bestTarget;
+}
+
+/**
+ * Evaluates the live 3D PUBG-style aim point from the currently registered held gun
+ * and publishes lock-on state for the UI fire button.
+ */
+export function evaluateHeldGunAimPreview(): GunAimPreview | null {
+  if (!heldGun || getActiveMissionWeapon() !== 'zombie-gun') {
+    clearGunAimHud();
+    return null;
+  }
+  heldGun.avatar.updateWorldMatrix(true, false);
+  heldGun.root.updateWorldMatrix(true, false);
+  heldGun.avatar.getWorldPosition(scratchPlayer);
+  heldGun.muzzle.getWorldPosition(scratchMuzzle);
+  scratchForward.set(0, 0, -1).transformDirection(heldGun.avatar.matrixWorld);
+  const fLen = Math.hypot(scratchForward.x, scratchForward.z) || 1;
+  const fx = scratchForward.x / fLen;
+  const fz = scratchForward.z / fLen;
+
+  const obstacle = traceGunObstacleImpact(scratchPlayer.x, scratchPlayer.z, fx, fz, GUN_RANGE_M);
+  const target = resolveGunAimTarget(
+    scratchPlayer.x,
+    scratchPlayer.z,
+    fx,
+    fz,
+    GUN_RANGE_M,
+    obstacle?.distance ?? null,
+  );
+
+  publishGunAimHud(Boolean(target), target?.kind ?? null);
+
+  if (target) {
+    return {
+      active: true,
+      locked: true,
+      target,
+      fromX: scratchMuzzle.x,
+      fromY: scratchMuzzle.y,
+      fromZ: scratchMuzzle.z,
+      pointX: target.x,
+      pointY: target.y,
+      pointZ: target.z,
+    };
+  }
+
+  const fallbackDist = obstacle ? obstacle.distance : 15;
+  return {
+    active: true,
+    locked: false,
+    target: null,
+    fromX: scratchMuzzle.x,
+    fromY: scratchMuzzle.y,
+    fromZ: scratchMuzzle.z,
+    pointX: scratchMuzzle.x + fx * fallbackDist,
+    pointY: scratchMuzzle.y,
+    pointZ: scratchMuzzle.z + fz * fallbackDist,
+  };
 }
 
 function playSynthesizedGunshot() {
@@ -241,65 +424,16 @@ export function requestGunShot(options: GunShotOptions = {}): GunShotResult {
   });
   playSynthesizedGunshot();
 
-  // Find best target (Zombies + active Ghosts) inside forward aiming cone
-  let bestTarget: {
-    id: string;
-    kind: 'zombie' | 'ghost';
-    x: number;
-    y: number;
-    z: number;
-    score: number;
-  } | null = null;
-
-  // 1. Check live Zombies
-  const zombieState = getZombieForestProgress();
-  for (const z of zombieState.zombies) {
-    if (!z.alive || z.hitsRemaining <= 0) continue;
-    const dx = z.x - px;
-    const dz = z.z - pz;
-    const dist = Math.hypot(dx, dz);
-    if (dist > GUN_RANGE_M) continue;
-    const cos = dist < 0.25 ? 1 : (dx * fx + dz * fz) / dist;
-    if (cos < GUN_AIM_CONE_COS) continue;
-    if (!combatLineClear(px, pz, z.x, z.z)) continue;
-    // Prefer closest & most centered target
-    const score = dist / Math.max(0.25, cos);
-    if (!bestTarget || score < bestTarget.score) {
-      bestTarget = {
-        id: z.id,
-        kind: 'zombie',
-        x: z.x,
-        y: z.clip === 'crawl' ? 0.45 : 1.15,
-        z: z.z,
-        score,
-      };
-    }
-  }
-
-  // 2. Check active Ghosts
-  for (const id of GHOST_IDS) {
-    if (isGhostDefeated(id)) continue;
-    const g = getGhostRuntime(id);
-    if (!g || !g.active) continue;
-    const dx = g.x - px;
-    const dz = g.z - pz;
-    const dist = Math.hypot(dx, dz);
-    if (dist > GUN_RANGE_M) continue;
-    const cos = dist < 0.25 ? 1 : (dx * fx + dz * fz) / dist;
-    if (cos < GUN_AIM_CONE_COS) continue;
-    if (!combatLineClear(px, pz, g.x, g.z)) continue;
-    const score = dist / Math.max(0.25, cos);
-    if (!bestTarget || score < bestTarget.score) {
-      bestTarget = {
-        id,
-        kind: 'ghost',
-        x: g.x,
-        y: 1.3,
-        z: g.z,
-        score,
-      };
-    }
-  }
+  // Strict PUBG-style aim check: hit Zombie or Ghost ONLY when the pointer ray is directly on target
+  const obstacleHit = traceGunObstacleImpact(px, pz, fx, fz, GUN_RANGE_M);
+  const bestTarget = resolveGunAimTarget(
+    px,
+    pz,
+    fx,
+    fz,
+    GUN_RANGE_M,
+    obstacleHit?.distance ?? null,
+  );
 
   const tracer = gunEffects.tracers[gunEffects.tracerHead++ % gunEffects.tracers.length];
   if (heldGun) {
@@ -312,13 +446,6 @@ export function requestGunShot(options: GunShotOptions = {}): GunShotResult {
 
   if (!bestTarget) {
     // Check if the straight forward shot hits a Tree or Building
-    const obstacleHit = traceGunObstacleImpact(
-      px,
-      pz,
-      fx,
-      fz,
-      GUN_RANGE_M,
-    );
     if (obstacleHit) {
       tracer.to.set(obstacleHit.x, tracer.from.y, obstacleHit.z);
       tracer.hit = true;

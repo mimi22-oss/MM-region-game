@@ -831,10 +831,24 @@ export const Player = memo(function Player({
    const dirX=-Math.sin(yaw)*forward+Math.cos(yaw)*right,dirZ=-Math.cos(yaw)*forward-Math.sin(yaw)*right;
    const dodge=playerCombat.phase==='DODGE'&&playerCombat.normalized>=.15&&playerCombat.normalized<=.75;
    const dodgeSide=playerCombat.clip==='Dodge_Left'?-1:1;
-   const vx=dodge?Math.cos(s.bodyYaw)*dodgeSide*5:dirX*speed,vz=dodge?-Math.sin(s.bodyYaw)*dodgeSide*5:dirZ*speed;
+   // When holding the gun, mobile joystick rotates the body + gun 360 degrees in place to aim;
+   // when empty-handed (or holding sword), joystick uses default 4-way/360 walking movement.
+   const gunJoystickAiming=Boolean(
+    touch?.active&&
+    getActiveMissionWeapon()==='zombie-gun'&&
+    !dodge&&
+    !jump.current.airborne&&
+    jumpPose.current.prepare===0
+   );
+   if(gunJoystickAiming&&Math.hypot(dirX,dirZ)>0.05){
+    const targetGunYaw=Math.atan2(-dirX,-dirZ);
+    const yawDiff=Math.atan2(Math.sin(targetGunYaw-s.bodyYaw),Math.cos(targetGunYaw-s.bodyYaw));
+    s.bodyYaw+=yawDiff*Math.min(1,dt*16);
+   }
+   const vx=gunJoystickAiming?0:dodge?Math.cos(s.bodyYaw)*dodgeSide*5:dirX*speed,vz=gunJoystickAiming?0:dodge?-Math.sin(s.bodyYaw)*dodgeSide*5:dirZ*speed;
    const mx=vx*dt,mz=vz*dt;
    if(!mapOpen&&!controlsBlocked&&!loading&&rideLife.crashTime<=0){
-    const hasMove=forward!==0||right!==0;
+    const hasMove=!gunJoystickAiming&&(forward!==0||right!==0);
     if(onMoveIntent)onMoveIntent(hasMove?dirX:0,hasMove?dirZ:0,s.bodyYaw,fast,dt*1000);
     const j=jump.current;
     const pose=jumpPose.current;

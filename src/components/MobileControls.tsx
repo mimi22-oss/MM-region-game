@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useRef, useState, type RefObject, type PointerEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type RefObject, type PointerEvent } from 'react';
 import { MobileGesture, type MobileInput, type MobileDirection } from '../game/mobileInput';
-import {getActiveMissionWeapon,useThreeGhostsMission} from '../game/missions/threeGhostsMission';
+import {
+  getActiveMissionWeapon,
+  getQuickToggleWeapon,
+  toggleQuickWeapon,
+  useThreeGhostsMission,
+} from '../game/missions/threeGhostsMission';
+import { useZombieForestMission } from '../game/missions/zombieForestMission';
+import { getGunAimHudSnapshot, subscribeGunAimHud } from '../game/combat/gunCombatRuntime';
 import {requestSwordAttack} from '../game/combat/combatInput';
 import type {CombatCommand} from '../game/combat/AttackDefinitions';
 import { tryTapSubscriptionBillboard } from '../game/subscriptionShop';
@@ -20,8 +27,13 @@ export function MobileControls({
 	onFoot?: boolean;
 	onInteract: () => void;
 }) {
-  const mission=useThreeGhostsMission();
-  const walkMode=onFoot&&!flying;
+  useThreeGhostsMission();
+  useZombieForestMission();
+  const gunAim = useSyncExternalStore(subscribeGunAimHud, getGunAimHudSnapshot, getGunAimHudSnapshot);
+  const activeWeapon = getActiveMissionWeapon();
+  const quickWeapon = getQuickToggleWeapon();
+  const isHoldingGun = activeWeapon === 'zombie-gun';
+  const walkMode=onFoot&&!flying&&!isHoldingGun;
   const [walkLocked,setWalkLocked]=useState(false);
   const [lockProgress,setLockProgress]=useState(0);
   const prevWalkLocked=useRef(false);
@@ -343,17 +355,123 @@ export function MobileControls({
 				onPointerCancel={release}
 				onLostPointerCapture={release}
 			/>
-      {canJump&&getActiveMissionWeapon()==='ghost-sword'&&<div className="mobile-fight-buttons" aria-label="တိုက်ခိုက်ရေး">
-        {([['combo','⚔','ခုတ်'],['Heavy_Slash','✦','အားပြင်း'],['Sword_Block','🛡','ကာ']] as const).map(([command,icon,label])=>
-          <button key={command} type="button" aria-label={label} onPointerDown={e=>{
-            e.preventDefault();e.stopPropagation();fight(command);
-          }} onClick={e=>{if(e.detail===0)fight(command);}}><span aria-hidden="true">{icon}</span>{label}</button>)}
-      </div>}
-      {canJump&&getActiveMissionWeapon()==='zombie-gun'&&<div className="mobile-fight-buttons" aria-label="သေနတ်ပစ်ခတ်ရေး">
-        <button type="button" aria-label="ပစ်" onPointerDown={e=>{
-          e.preventDefault();e.stopPropagation();fight('combo');
-        }} onClick={e=>{if(e.detail===0)fight('combo');}}><span aria-hidden="true">🔫</span>ပစ်</button>
-      </div>}
+      {canJump && quickWeapon === 'ghost-sword' && (
+        <div className="mobile-fight-buttons" aria-label="ဓားတိုက်ခိုက်ရေး">
+          <button
+            type="button"
+            className={
+              activeWeapon === 'ghost-sword'
+                ? 'mobile-weapon-toggle-btn is-equipped'
+                : 'mobile-weapon-toggle-btn'
+            }
+            aria-label={activeWeapon === 'ghost-sword' ? 'ဓားသိမ်းမည် (လက်ဗလာ)' : 'ဓားကိုင်မည်'}
+            aria-pressed={activeWeapon === 'ghost-sword'}
+            title={activeWeapon === 'ghost-sword' ? 'ဓားသိမ်းမည် (လက်ဗလာ)' : 'ဓားပြန်ကိုင်မည်'}
+            onPointerDown={e => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleQuickWeapon('ghost-sword');
+              onInteract();
+            }}
+            onClick={e => {
+              if (e.detail === 0) {
+                toggleQuickWeapon('ghost-sword');
+                onInteract();
+              }
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M19.5 4.5 14 10l-4 4-3.5-3.5L12 5l7.5-.5Z" />
+              <path d="M8.5 12.5 5 16" />
+              <path d="M6.5 10.5 13.5 17.5" />
+              <path d="M4.5 19.5 7 17" />
+            </svg>
+          </button>
+          {activeWeapon === 'ghost-sword' &&
+            ([['combo', '⚔', 'ခုတ်'], ['Heavy_Slash', '✦', 'အားပြင်း'], ['Sword_Block', '🛡', 'ကာ']] as const).map(
+              ([command, icon, label]) => (
+                <button
+                  key={command}
+                  type="button"
+                  aria-label={label}
+                  onPointerDown={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    fight(command);
+                  }}
+                  onClick={e => {
+                    if (e.detail === 0) fight(command);
+                  }}
+                >
+                  <span aria-hidden="true">{icon}</span>
+                  {label}
+                </button>
+              ),
+            )}
+        </div>
+      )}
+      {canJump && quickWeapon === 'zombie-gun' && (
+        <div className="mobile-fight-buttons" aria-label="သေနတ်ပစ်ခတ်ရေး">
+          <button
+            type="button"
+            className={
+              activeWeapon === 'zombie-gun'
+                ? 'mobile-weapon-toggle-btn is-equipped'
+                : 'mobile-weapon-toggle-btn'
+            }
+            aria-label={activeWeapon === 'zombie-gun' ? 'သေနတ်သိမ်းမည် (လက်ဗလာ)' : 'သေနတ်ကိုင်မည်'}
+            aria-pressed={activeWeapon === 'zombie-gun'}
+            title={activeWeapon === 'zombie-gun' ? 'သေနတ်သိမ်းမည် (လက်ဗလာ)' : 'သေနတ်ပြန်ကိုင်မည်'}
+            onPointerDown={e => {
+              e.preventDefault();
+              e.stopPropagation();
+              clear();
+              toggleQuickWeapon('zombie-gun');
+              onInteract();
+            }}
+            onClick={e => {
+              if (e.detail === 0) {
+                clear();
+                toggleQuickWeapon('zombie-gun');
+                onInteract();
+              }
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 8h15l2 2v2.5h-5l-1.4 2H10l-1.4 5.5H4.8L6 14.5H3V8Z" fill="currentColor" fillOpacity="0.22" />
+              <path d="M18 10h3" />
+            </svg>
+          </button>
+          {activeWeapon === 'zombie-gun' && (
+            <button
+              type="button"
+              className={gunAim.locked ? 'mobile-bullet-fire-btn is-locked' : 'mobile-bullet-fire-btn'}
+              aria-label="သေနတ်ပစ်မည်"
+              title={gunAim.locked ? 'ပစ်မှတ်ချိန်မိပြီ · ပစ်မည်' : 'ပစ်မည်'}
+              onPointerDown={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                fight('combo');
+              }}
+              onClick={e => {
+                if (e.detail === 0) fight('combo');
+              }}
+            >
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M12 2.5C14.1 4.6 15.2 7.2 15.2 10.2V18.2H8.8V10.2C8.8 7.2 9.9 4.6 12 2.5Z"
+                  fill="#fbbf24"
+                  stroke="#fef3c7"
+                  strokeWidth="1.4"
+                  strokeLinejoin="round"
+                />
+                <path d="M8.8 11.2H15.2" stroke="#92400e" strokeWidth="1.5" />
+                <rect x="8.2" y="18.2" width="7.6" height="3.2" rx="1" fill="#d97706" stroke="#fef3c7" strokeWidth="1.2" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
 			{canJump && <button type="button" className="mobile-sprint-btn mobile-jump-btn"
                 aria-label="ခုန်ရန် (Space)" title="ခုန်ရန် · Space"
                 onPointerDown={e => {e.preventDefault();e.stopPropagation();input.current.jump=true;onInteract();}}

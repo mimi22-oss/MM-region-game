@@ -72,8 +72,9 @@ export const ZOMBIE_ATTACK_RANGE_M = 2.15;
 export const ZOMBIE_ALERT_RANGE_M = 16.0;
 export const ZOMBIE_CRAWL_SPEED_MPS = 1.25;
 export const ZOMBIE_CHASE_SPEED_MPS = 1.75;
-export const ZOMBIE_STAND_ATTACK_DELAY_MIN_SEC = 3.0;
-export const ZOMBIE_STAND_ATTACK_DELAY_MAX_SEC = 6.0;
+/** Random delay (2..5s) after a zombie stands up near the player before launching attack.glb. */
+export const ZOMBIE_STAND_ATTACK_DELAY_MIN_SEC = 2.0;
+export const ZOMBIE_STAND_ATTACK_DELAY_MAX_SEC = 5.0;
 export const ZOMBIE_ATTACK_CLIP_DURATION_SEC = 2.667;
 export const ZOMBIE_ATTACK_STRIKE_TIME_SEC = 1.05;
 

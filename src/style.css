@@ -5660,7 +5660,7 @@ main.night-mode .appearance-saved {
 
 .player-life {
 	position: fixed;
-	top: 5%;
+	top: max(24px, calc(env(safe-area-inset-top, 0px) + 16px));
     right: 73px;
 	/* transform: translateX(100px); */
 	z-index: 12;
@@ -5710,7 +5710,7 @@ body:has(.balloon-controls-layer) .player-life {
 
 @media(max-width:600px) {
 	.player-life {
-		top: 2.5%;
+		top: max(14px, calc(env(safe-area-inset-top, 0px) + 8px));
     	right: 60px;
 		/* padding: 4px 8px */
 	}
@@ -9411,6 +9411,33 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 .mobile-fight-buttons button span { font-size: 20px; line-height: 22px; }
 .mobile-fight-buttons button:active { background: #8d482c; }
 .mobile-fight-buttons button:focus-visible { outline: 3px solid #ffe0a5; }
+.mobile-fight-buttons button.mobile-weapon-toggle-btn {
+  width: 52px;
+  min-height: 44px;
+  border-radius: 13px;
+  background: rgba(30, 41, 59, 0.88);
+  border: 1.5px solid rgba(148, 163, 184, 0.6);
+  color: #cbd5e1;
+}
+.mobile-fight-buttons button.mobile-weapon-toggle-btn.is-equipped {
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.92), rgba(6, 95, 70, 0.94));
+  border-color: #86efac;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.45);
+}
+.mobile-fight-buttons button.mobile-bullet-fire-btn {
+  width: 56px;
+  min-height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, rgba(55, 65, 81, 0.94), rgba(17, 24, 39, 0.95));
+  border: 2px solid #f59e0b;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+.mobile-fight-buttons button.mobile-bullet-fire-btn.is-locked {
+  background: linear-gradient(145deg, rgba(220, 38, 38, 0.96), rgba(127, 29, 29, 0.96));
+  border-color: #fde047;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.72), 0 6px 18px rgba(0, 0, 0, 0.45);
+}
 
 /* ================================================================
    Bot Bump-to-Fight Controls (Box 01/02 & Kick 01/02 + Long Press)

@@ -52,6 +52,9 @@ function load(): ThreeGhostsProgress {
 let progress: ThreeGhostsProgress = load();
 let zombieGunUnlocked = progress.completed && progress.equippedWeapon === 'zombie-gun';
 let zombieForestSwordActive = false;
+let swordQuickHolstered = false;
+let quickToggleWeapon: 'ghost-sword' | 'zombie-gun' | null =
+  progress.equippedWeapon ?? (progress.swordCollected ? 'ghost-sword' : null);
 const subscribers = new Set<() => void>();
 function publish(next: ThreeGhostsProgress) {
   progress = next;
@@ -65,17 +68,22 @@ export function hasCompletedThreeGhostsMission() { return progress.completed; }
 export function resetThreeGhostsMission() {
   zombieGunUnlocked = false;
   zombieForestSwordActive = false;
+  swordQuickHolstered = false;
+  quickToggleWeapon = null;
   publish(initial());
 }
 export function setZombieGunUnlockedState(unlocked: boolean, autoEquip = false) {
   const allowed = Boolean(unlocked && progress.completed && progress.swordCollected);
   zombieGunUnlocked = allowed;
   if (!allowed && progress.equippedWeapon === 'zombie-gun') {
+    if (quickToggleWeapon === 'zombie-gun') quickToggleWeapon = progress.swordCollected ? 'ghost-sword' : null;
     publish({ ...progress, equippedWeapon: null });
     return;
   }
   if (allowed && autoEquip) {
     zombieForestSwordActive = false;
+    swordQuickHolstered = false;
+    quickToggleWeapon = 'zombie-gun';
     if (progress.equippedWeapon !== 'zombie-gun') {
       publish({ ...progress, equippedWeapon: 'zombie-gun' });
       return;
@@ -86,6 +94,10 @@ export function setZombieGunUnlockedState(unlocked: boolean, autoEquip = false) 
 export function isZombieGunUnlockedState() { return Boolean(zombieGunUnlocked && progress.completed && progress.swordCollected); }
 export function setZombieForestSwordActive(active: boolean) {
   const allowed = Boolean(active && progress.completed && progress.swordCollected);
+  if (allowed) {
+    swordQuickHolstered = false;
+    quickToggleWeapon = 'ghost-sword';
+  }
   if (zombieForestSwordActive !== allowed) {
     zombieForestSwordActive = allowed;
     subscribers.forEach(fn => fn());
@@ -97,6 +109,7 @@ export function getActiveMissionWeapon(): MissionWeaponId {
     return progress.completed && progress.swordCollected && zombieGunUnlocked ? 'zombie-gun' : null;
   }
   if (progress.equippedWeapon === 'ghost-sword') {
+    if (swordQuickHolstered) return null;
     return progress.swordCollected ? 'ghost-sword' : null;
   }
   if (zombieForestSwordActive && progress.completed && progress.swordCollected) {
@@ -104,16 +117,66 @@ export function getActiveMissionWeapon(): MissionWeaponId {
   }
   return null;
 }
+export function getQuickToggleWeapon(): 'ghost-sword' | 'zombie-gun' | null {
+  const active = getActiveMissionWeapon();
+  if (active) return active;
+  if (quickToggleWeapon === 'zombie-gun' && isZombieGunUnlockedState()) return 'zombie-gun';
+  if (quickToggleWeapon === 'ghost-sword' && progress.swordCollected) return 'ghost-sword';
+  if (isZombieGunUnlockedState()) return 'zombie-gun';
+  if (progress.swordCollected) return 'ghost-sword';
+  return null;
+}
+export function toggleQuickWeapon(target?: 'ghost-sword' | 'zombie-gun'): MissionWeaponId {
+  const slot = target ?? getQuickToggleWeapon();
+  if (!slot) return null;
+  const active = getActiveMissionWeapon();
+  if (slot === 'zombie-gun') {
+    if (!isZombieGunUnlockedState()) return active;
+    quickToggleWeapon = 'zombie-gun';
+    if (active === 'zombie-gun') {
+      selectMissionWeapon(null);
+      return null;
+    }
+    selectMissionWeapon('zombie-gun');
+    return getActiveMissionWeapon();
+  }
+  if (!progress.swordCollected) return active;
+  quickToggleWeapon = 'ghost-sword';
+  if (active === 'ghost-sword') {
+    if (progress.completed) {
+      selectMissionWeapon(null);
+    } else {
+      swordQuickHolstered = true;
+      subscribers.forEach(fn => fn());
+    }
+    return null;
+  }
+  swordQuickHolstered = false;
+  if (progress.completed) {
+    selectMissionWeapon('ghost-sword');
+  } else {
+    subscribers.forEach(fn => fn());
+  }
+  return getActiveMissionWeapon();
+}
 export function selectMissionWeapon(weapon: ThreeGhostsProgress['equippedWeapon']) {
   if (!progress.completed || !progress.swordCollected) return false;
   if (weapon === 'zombie-gun') {
     if (!zombieGunUnlocked) return false;
     zombieForestSwordActive = false;
+    swordQuickHolstered = false;
+    quickToggleWeapon = 'zombie-gun';
     if (progress.equippedWeapon !== 'zombie-gun') publish({ ...progress, equippedWeapon: 'zombie-gun' });
     return true;
   }
   if (weapon !== null && weapon !== 'ghost-sword') return false;
-  if (weapon === null) zombieForestSwordActive = false;
+  if (weapon === null) {
+    zombieForestSwordActive = false;
+    swordQuickHolstered = false;
+  } else {
+    swordQuickHolstered = false;
+    quickToggleWeapon = 'ghost-sword';
+  }
   if (progress.equippedWeapon !== weapon) publish({ ...progress, equippedWeapon: weapon });
   return true;
 }
@@ -125,6 +188,8 @@ export function markGhostEncounter(id: string) {
 }
 export function collectGhostSword() {
   if (progress.swordCollected || progress.encountered.length !== 3) return false;
+  swordQuickHolstered = false;
+  quickToggleWeapon = 'ghost-sword';
   publish({ ...progress, swordCollected: true, equippedWeapon: 'ghost-sword' });
   return true;
 }

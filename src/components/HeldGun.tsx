@@ -41,6 +41,8 @@ import {
 import { GunModel } from './GunModel';
 import {
   GUN_SHOOTING_MOTION_ID,
+  clearGunAimHud,
+  evaluateHeldGunAimPreview,
   gunEffects,
   registerCombatGun,
   requestGunShot,
@@ -70,6 +72,7 @@ export function HeldGun({
 
   useEffect(() => {
     if (!equipped) {
+      clearGunAimHud();
       if (isGunMotionId(getSpecialActionState().activeActionId)) {
         stopSpecialAction();
       }
@@ -309,17 +312,91 @@ function GunCombatVFX() {
     () => new LineSegments(lineGeometry, lineMaterial),
     [lineGeometry, lineMaterial],
   );
+  // PUBG-style live laser sight beam + 3D aim pointer reticle on Zombies / Ghosts
+  const aimBeamGeometry = useMemo(() => {
+    const geom = new BufferGeometry();
+    geom.setAttribute('position', new BufferAttribute(new Float32Array(6), 3));
+    return geom;
+  }, []);
+  const aimBeamMaterial = useMemo(
+    () =>
+      new LineBasicMaterial({
+        color: '#e2e8f0',
+        transparent: true,
+        opacity: 0.42,
+        blending: AdditiveBlending,
+        depthWrite: false,
+      }),
+    [],
+  );
+  const aimBeamObj = useMemo(
+    () => new LineSegments(aimBeamGeometry, aimBeamMaterial),
+    [aimBeamGeometry, aimBeamMaterial],
+  );
+  const reticleRef = useRef<Group>(null);
+  const reticleRingMatRef = useRef<import('three').MeshBasicMaterial>(null);
+  const reticleDotMatRef = useRef<import('three').MeshBasicMaterial>(null);
+  const reticleTickRefs = useRef<Array<import('three').MeshBasicMaterial | null>>([]);
   const impactRefs = useRef<Array<Group | null>>([]);
 
   useEffect(() => {
     return () => {
       lineGeometry.dispose();
       lineMaterial.dispose();
+      aimBeamGeometry.dispose();
+      aimBeamMaterial.dispose();
+      clearGunAimHud();
     };
-  }, [lineGeometry, lineMaterial]);
+  }, [lineGeometry, lineMaterial, aimBeamGeometry, aimBeamMaterial]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ camera, clock }) => {
     gunEffects.time = clock.elapsedTime;
+
+    // Update PUBG-style Aim Pointer & Laser Sight
+    const onFootAlive =
+      !currentCar() &&
+      !balloonRide.riding &&
+      !motorcycleRide.riding &&
+      getPlayerDeathState().phase === 'alive';
+    const preview = onFootAlive ? evaluateHeldGunAimPreview() : null;
+    if (preview && reticleRef.current) {
+      aimBeamObj.visible = true;
+      const beamPos = aimBeamGeometry.getAttribute('position') as BufferAttribute;
+      const bArr = beamPos.array as Float32Array;
+      bArr[0] = preview.fromX;
+      bArr[1] = preview.fromY;
+      bArr[2] = preview.fromZ;
+      bArr[3] = preview.pointX;
+      bArr[4] = preview.pointY;
+      bArr[5] = preview.pointZ;
+      beamPos.needsUpdate = true;
+
+      const locked = preview.locked;
+      aimBeamMaterial.color.set(locked ? '#ef4444' : '#e2e8f0');
+      aimBeamMaterial.opacity = locked ? 0.72 : 0.3;
+
+      reticleRef.current.visible = true;
+      reticleRef.current.position.set(preview.pointX, preview.pointY, preview.pointZ);
+      reticleRef.current.quaternion.copy(camera.quaternion);
+      const pulse = locked ? 1.0 + Math.sin(clock.elapsedTime * 14) * 0.14 : 0.78;
+      reticleRef.current.scale.setScalar(pulse);
+      if (reticleRingMatRef.current) {
+        reticleRingMatRef.current.color.set(locked ? '#ef4444' : '#f8fafc');
+        reticleRingMatRef.current.opacity = locked ? 0.96 : 0.65;
+      }
+      if (reticleDotMatRef.current) {
+        reticleDotMatRef.current.color.set(locked ? '#ff2a2a' : '#38bdf8');
+      }
+      for (const tickMat of reticleTickRefs.current) {
+        if (!tickMat) continue;
+        tickMat.color.set(locked ? '#fca5a5' : '#e2e8f0');
+        tickMat.opacity = locked ? 0.95 : 0.6;
+      }
+    } else {
+      aimBeamObj.visible = false;
+      if (reticleRef.current) reticleRef.current.visible = false;
+      if (!onFootAlive) clearGunAimHud();
+    }
     const pos = lineGeometry.getAttribute('position') as BufferAttribute;
     const arr = pos.array as Float32Array;
     let activeCount = 0;
@@ -377,6 +454,53 @@ function GunCombatVFX() {
   return (
     <group name="gun-combat-vfx-root">
       <primitive object={lineObj} />
+      <primitive object={aimBeamObj} />
+      {/* PUBG-style 3D Billboard Aim Pointer Reticle (highlights red when on Zombie/Ghost) */}
+      <group ref={reticleRef} name="gun-aim-reticle" visible={false}>
+        <mesh renderOrder={20}>
+          <ringGeometry args={[0.22, 0.27, 28]} />
+          <meshBasicMaterial
+            ref={reticleRingMatRef}
+            color="#f8fafc"
+            transparent
+            opacity={0.7}
+            depthTest={false}
+            depthWrite={false}
+          />
+        </mesh>
+        <mesh renderOrder={21}>
+          <circleGeometry args={[0.065, 16]} />
+          <meshBasicMaterial
+            ref={reticleDotMatRef}
+            color="#38bdf8"
+            transparent
+            opacity={0.96}
+            depthTest={false}
+            depthWrite={false}
+          />
+        </mesh>
+        {/* 4 PUBG-style crosshair ticks */}
+        {[
+          [0, 0.34, 0.035, 0.14],
+          [0, -0.34, 0.035, 0.14],
+          [0.34, 0, 0.14, 0.035],
+          [-0.34, 0, 0.14, 0.035],
+        ].map(([x, y, w, h], idx) => (
+          <mesh key={idx} position={[x, y, 0]} renderOrder={20}>
+            <planeGeometry args={[w, h]} />
+            <meshBasicMaterial
+              ref={el => {
+                reticleTickRefs.current[idx] = el;
+              }}
+              color="#e2e8f0"
+              transparent
+              opacity={0.7}
+              depthTest={false}
+              depthWrite={false}
+            />
+          </mesh>
+        ))}
+      </group>
       {gunEffects.impacts.map((_, i) => (
         <group
           key={i}

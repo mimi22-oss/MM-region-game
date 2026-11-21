@@ -46,6 +46,7 @@ import {
   collectGhostSword,
   damageMissionGhost,
   getActiveMissionWeapon,
+  getQuickToggleWeapon,
   getThreeGhostsProgress,
   hasCompletedThreeGhostsMission,
   markGhostEncounter,
@@ -53,6 +54,7 @@ import {
   selectMissionWeapon,
   setZombieForestSwordActive,
   setZombieGunUnlockedState,
+  toggleQuickWeapon,
 } from '../src/game/missions/threeGhostsMission.ts';
 import {
   createProceduralGunModel,
@@ -65,6 +67,7 @@ import {
   gunEffects,
   registerCombatGun,
   requestGunShot,
+  resolveGunAimTarget,
 } from '../src/game/combat/gunCombatRuntime.ts';
 import { getMotion } from '../src/animation/core/MotionRegistry.ts';
 import {
@@ -264,14 +267,16 @@ test('AI waits 3 to 6 random seconds after crawling up and rising before playing
   );
   assert.equal(firstStep.activeAttacks.includes(z0.id), false);
   assert.equal(firstStep.strikeZombieId, null);
+  assert.equal(ZOMBIE_STAND_ATTACK_DELAY_MIN_SEC, 2.0);
+  assert.equal(ZOMBIE_STAND_ATTACK_DELAY_MAX_SEC, 5.0);
   assert.ok(
     z0.standAttackDelay >= ZOMBIE_STAND_ATTACK_DELAY_MIN_SEC - 0.1 &&
       z0.standAttackDelay <= ZOMBIE_STAND_ATTACK_DELAY_MAX_SEC,
-    `standAttackDelay (${z0.standAttackDelay}s) must be in 3..6s range`,
+    `standAttackDelay (${z0.standAttackDelay}s) must be in 2..5s range`,
   );
 
-  // Even after 2.5 seconds of standing near the player (< 3.0s minimum), still no attack!
-  for (let i = 0; i < 10; i++) {
+  // Even after ~1.7 seconds of standing near the player (< 2.0s minimum), still no attack!
+  for (let i = 0; i < 7; i++) {
     const waitStep = stepZombieForestAi(
       0.24,
       z0.x + 1.1,
@@ -285,7 +290,7 @@ test('AI waits 3 to 6 random seconds after crawling up and rising before playing
     assert.equal(waitStep.strikeZombieId, null);
   }
 
-  // Advance remaining time up to 6s + 1.2s strike window -> transitions to attack.glb and strikes once
+  // Advance remaining time up to 5s + 1.2s strike window -> transitions to attack.glb and strikes once
   let sawAttackClip = false;
   let struckBy: string | null = null;
   for (let i = 0; i < 24; i++) {
@@ -301,7 +306,7 @@ test('AI waits 3 to 6 random seconds after crawling up and rising before playing
     if (z0.clip === 'attack') sawAttackClip = true;
     if (strikeStep.strikeZombieId) struckBy = strikeStep.strikeZombieId;
   }
-  assert.equal(sawAttackClip, true, 'zombie plays attack.glb after 3..6s stand-up delay expires');
+  assert.equal(sawAttackClip, true, 'zombie plays attack.glb after 2..5s stand-up delay expires');
   assert.equal(struckBy, z0.id);
 
   // 2. Move player far away -> zombie returns to cycling ambient clips ('idle' | 'crawl' | 'scream')
@@ -489,6 +494,32 @@ test('procedural 3D Gun model attaches to character hand and shoots enemies to d
   const releaseGun = registerCombatGun(gun, avatar);
   const prevShots = gunEffects.shotsFired;
 
+  // Shot 0 (Off-target PUBG aim test): aiming 35° away from targetZombie MUST NOT hit it!
+  const offAngle = (35 * Math.PI) / 180;
+  const offAimTarget = resolveGunAimTarget(
+    targetZombie.x,
+    targetZombie.z + 6,
+    Math.sin(offAngle),
+    -Math.cos(offAngle),
+  );
+  assert.equal(offAimTarget, null, 'PUBG aim pointer does not lock when aiming off-target');
+  const offShot = requestGunShot({
+    playerX: targetZombie.x,
+    playerZ: targetZombie.z + 6,
+    forwardX: Math.sin(offAngle),
+    forwardZ: -Math.cos(offAngle),
+    nowSec: 9,
+    ignoreCooldown: true,
+  });
+  assert.equal(offShot.fired, true);
+  assert.equal(offShot.hitId, null, 'shooting off-target must not magically hit zombie');
+  assert.equal(targetZombie.hitsRemaining, 2);
+
+  // On-target aim pointer locks directly onto targetZombie
+  const onAimTarget = resolveGunAimTarget(targetZombie.x, targetZombie.z + 6, 0, -1);
+  assert.equal(onAimTarget?.id, targetZombie.id);
+  assert.equal(onAimTarget?.kind, 'zombie');
+
   // Shot 1 -> hits targetZombie, 1 hit remaining, and triggers shooting.glb motion
   const shot1 = requestGunShot({ nowSec: 10, ignoreCooldown: true });
   assert.equal(shot1.fired, true);
@@ -515,7 +546,7 @@ test('procedural 3D Gun model attaches to character hand and shoots enemies to d
   assert.equal(shot2.hitId, targetZombie.id);
   assert.equal(shot2.defeated, true);
   assert.equal(targetZombie.alive, false);
-  assert.equal(gunEffects.shotsFired, prevShots + 2);
+  assert.equal(gunEffects.shotsFired, prevShots + 3);
   assert.equal(gunEffects.impactHead, prevImpacts + 1);
   const zombieImpact =
     gunEffects.impacts[(gunEffects.impactHead - 1) % gunEffects.impacts.length];
@@ -540,6 +571,22 @@ test('procedural 3D Gun model attaches to character hand and shoots enemies to d
 
   stopSpecialAction(true);
   releaseGun();
+
+  // Verify Gun & Knife quick toggle buttons switch cleanly between equipped <-> empty hands while retaining slot
+  selectMissionWeapon('zombie-gun');
+  assert.equal(getQuickToggleWeapon(), 'zombie-gun');
+  assert.equal(toggleQuickWeapon('zombie-gun'), null, 'gun toggle holsters gun to empty hands');
+  assert.equal(getActiveMissionWeapon(), null);
+  assert.equal(getQuickToggleWeapon(), 'zombie-gun', 'gun toggle button stays available while holstered');
+  assert.equal(toggleQuickWeapon('zombie-gun'), 'zombie-gun', 'gun toggle re-draws gun');
+
+  selectMissionWeapon('ghost-sword');
+  assert.equal(getQuickToggleWeapon(), 'ghost-sword');
+  assert.equal(toggleQuickWeapon('ghost-sword'), null, 'knife toggle holsters sword to empty hands');
+  assert.equal(getActiveMissionWeapon(), null);
+  assert.equal(getQuickToggleWeapon(), 'ghost-sword', 'knife toggle button stays available while holstered');
+  assert.equal(toggleQuickWeapon('ghost-sword'), 'ghost-sword', 'knife toggle re-draws sword');
+
   selectMissionWeapon(null);
 });
 
