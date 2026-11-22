@@ -11,7 +11,9 @@ import {
   canOpenMapTool,
   createMapAccessContext,
   filterPermittedLayoutChanges,
+  getActiveAuthoritySession,
   isOwnHomeFeature,
+  setActiveAuthoritySession,
 } from '../src/game/mapPermissions.ts';
 import type { LayoutFeature, WorldLayout } from '../src/game/worldLayout.ts';
 
@@ -152,4 +154,24 @@ test('filterPermittedLayoutChanges allows own-home updates for users and blocks 
   const adminResult = filterPermittedLayoutChanges(maliciousUserNext, prevLayout, adminCtx);
   assert.equal(adminResult.blockedCount, 0);
   assert.equal(adminResult.layout.name, 'Hijacked Region');
+});
+
+test('getActiveAuthoritySession returns a cached referentially-stable snapshot for useSyncExternalStore', () => {
+  setActiveAuthoritySession('local-offline');
+  const first = getActiveAuthoritySession();
+  const second = getActiveAuthoritySession();
+  assert.strictEqual(first, second, 'Repeated reads without state change must return identical reference');
+  assert.equal(first.mode, 'local-offline');
+  assert.equal(first.serverRole, undefined);
+
+  setActiveAuthoritySession('server-authoritative', 'admin');
+  const third = getActiveAuthoritySession();
+  const fourth = getActiveAuthoritySession();
+  assert.notStrictEqual(third, first, 'State change produces a new frozen snapshot');
+  assert.strictEqual(third, fourth, 'Subsequent reads stay cached');
+  assert.equal(third.mode, 'server-authoritative');
+  assert.equal(third.serverRole, 'admin');
+
+  // Restore default local-offline state
+  setActiveAuthoritySession('local-offline');
 });

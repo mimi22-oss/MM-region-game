@@ -204,25 +204,36 @@ export function resolveEffectiveMapRole(
   return serverClaimRole === 'admin' ? 'admin' : 'user';
 }
 
+export type ActiveAuthoritySession = Readonly<{
+  mode: Extract<AuthorityOwner, 'local-offline' | 'server-authoritative'>;
+  serverRole?: 'player' | 'moderator' | 'admin';
+}>;
+
 let activeAuthorityMode: Extract<AuthorityOwner, 'local-offline' | 'server-authoritative'> = 'local-offline';
 let activeServerClaimRole: 'player' | 'moderator' | 'admin' | undefined;
+let activeAuthoritySnapshot: ActiveAuthoritySession = Object.freeze({
+  mode: activeAuthorityMode,
+  serverRole: activeServerClaimRole,
+});
 const authorityListeners = new Set<() => void>();
 
 export function setActiveAuthoritySession(
   mode: Extract<AuthorityOwner, 'local-offline' | 'server-authoritative'>,
   serverRole?: 'player' | 'moderator' | 'admin',
 ): void {
-  if (activeAuthorityMode === mode && activeServerClaimRole === serverRole) return;
+  const nextRole = mode === 'server-authoritative' ? serverRole : undefined;
+  if (activeAuthorityMode === mode && activeServerClaimRole === nextRole) return;
   activeAuthorityMode = mode;
-  activeServerClaimRole = mode === 'server-authoritative' ? serverRole : undefined;
+  activeServerClaimRole = nextRole;
+  activeAuthoritySnapshot = Object.freeze({
+    mode: activeAuthorityMode,
+    serverRole: activeServerClaimRole,
+  });
   authorityListeners.forEach((fn) => fn());
 }
 
-export function getActiveAuthoritySession(): {
-  mode: Extract<AuthorityOwner, 'local-offline' | 'server-authoritative'>;
-  serverRole?: 'player' | 'moderator' | 'admin';
-} {
-  return { mode: activeAuthorityMode, serverRole: activeServerClaimRole };
+export function getActiveAuthoritySession(): ActiveAuthoritySession {
+  return activeAuthoritySnapshot;
 }
 
 export function subscribeAuthoritySession(listener: () => void): () => void {

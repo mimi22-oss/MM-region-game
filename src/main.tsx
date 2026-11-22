@@ -140,7 +140,6 @@ import {
 import {
   TeleportPicker,
   TeleportConfirmOverlay,
-  TeleportModeBanner,
   type TeleportPin,
   type ScreenPosition,
 } from "./components/TeleportPicker";
@@ -1293,14 +1292,6 @@ function App() {
           playerX={pos.x}
           playerZ={pos.z}
           playerYaw={robotYaw}
-          onConfirm={handleConfirmTeleport}
-          onCancel={handleCancelTeleport}
-        />
-      )}
-
-      {teleportMode && !mapOpen && !settingsOpen && !loading && !intro.active && (
-        <TeleportModeBanner
-          pin={teleportPin}
           onConfirm={handleConfirmTeleport}
           onCancel={handleCancelTeleport}
         />

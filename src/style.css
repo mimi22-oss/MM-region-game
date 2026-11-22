@@ -1386,67 +1386,6 @@ main.night-mode .map-haunt-note {
 	font-family: inherit;
 }
 
-.teleport-mode-banner {
-	position: fixed;
-	left: 50%;
-	bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 12px));
-	transform: translateX(-50%);
-	z-index: 980;
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	max-width: calc(100vw - 24px);
-	padding: 8px 12px;
-	border-radius: 999px;
-	background: rgba(255, 255, 255, 0.95);
-	backdrop-filter: blur(12px);
-	-webkit-backdrop-filter: blur(12px);
-	border: 1.5px solid rgba(14, 165, 233, 0.42);
-	box-shadow: 0 10px 28px rgba(15, 23, 42, 0.24);
-	color: #0f172a;
-	pointer-events: auto;
-	user-select: none;
-	-webkit-user-select: none;
-}
-
-.teleport-mode-banner-text {
-	font-size: 12.5px;
-	font-weight: 600;
-	color: #0369a1;
-	line-height: 1.25;
-}
-
-.teleport-mode-banner-actions {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	flex-shrink: 0;
-}
-
-.teleport-mode-banner-go {
-	border: none;
-	border-radius: 999px;
-	padding: 6px 12px;
-	background: linear-gradient(135deg, #10b981, #059669);
-	color: #ffffff;
-	font-size: 12px;
-	font-weight: 700;
-	cursor: pointer;
-	white-space: nowrap;
-}
-
-.teleport-mode-banner-close {
-	border: 1px solid #cbd5e1;
-	border-radius: 999px;
-	padding: 6px 11px;
-	background: #f1f5f9;
-	color: #334155;
-	font-size: 12px;
-	font-weight: 700;
-	cursor: pointer;
-	white-space: nowrap;
-}
-
 .teleport-confirm-tail {
 	position: absolute;
 	bottom: -9px;
@@ -2096,23 +2035,6 @@ main.night-mode .teleport-confirm-anchor.teleport-confirm-anchor-below .teleport
 	border-bottom-color: rgba(15, 23, 42, 0.95);
 }
 
-main.night-mode .teleport-mode-banner {
-	background: rgba(15, 23, 42, 0.94);
-	border-color: rgba(56, 189, 248, 0.48);
-	color: #f1f5f9;
-	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
-}
-
-main.night-mode .teleport-mode-banner-text {
-	color: #7dd3fc;
-}
-
-main.night-mode .teleport-mode-banner-close {
-	background: #1e293b;
-	border-color: #334155;
-	color: #cbd5e1;
-}
-
 main.night-mode .teleport-confirm-placename {
 	color: #38bdf8;
 }
@@ -2408,27 +2330,6 @@ main.night-mode .home-guidance-pill {
 	.teleport-btn-cancel {
 		width: 48px;
 		height: 42px;
-	}
-
-	.teleport-mode-banner {
-		bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 8px));
-		padding: 7px 10px;
-		gap: 8px;
-		border-radius: 16px;
-		flex-wrap: wrap;
-		justify-content: center;
-	}
-
-	.teleport-mode-banner-text {
-		font-size: 11.5px;
-		text-align: center;
-	}
-
-	.teleport-mode-banner-go,
-	.teleport-mode-banner-close {
-		padding: 6px 11px;
-		font-size: 11.5px;
-		min-height: 32px;
 	}
 
 	.mobile-controls {
@@ -9864,6 +9765,14 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
   --go-accent-border: rgba(216, 180, 254, 0.52);
   --go-btn-from: #a855f7;
   --go-btn-to: #7e22ce;
+}
+
+.game-over-overlay--bridge-fall {
+  --go-accent: #ef4444;
+  --go-accent-soft: rgba(239, 68, 68, 0.22);
+  --go-accent-border: rgba(248, 113, 113, 0.58);
+  --go-btn-from: #ef4444;
+  --go-btn-to: #b91c1c;
 }
 
 .game-over-vignette {

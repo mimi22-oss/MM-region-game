@@ -1,16 +1,24 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ward } from '../src/data/ward.ts';
+import { toWorld, ward } from '../src/data/ward.ts';
 import { canStand } from '../src/game/collision.ts';
+import { horseFootprintClear } from '../src/game/horseRide.ts';
 import { mountainHeight } from '../src/game/mountainTerrain.ts';
 import { rideFootprintClear } from '../src/game/motorcycleRide.ts';
+import { walkWithContacts } from '../src/game/walkingCollision.ts';
 import {
   TAUNGPHILA_MOUNTAIN_WORLD,
   WEIPULA_JUNCTION_UV,
   buildTaungphilaRoadSegments,
   buildTaungphilaSlopeFlora,
+  isOnTaungphilaRoad,
 } from '../src/game/taungphilaWorld.ts';
-import { buildWeipulaRoadSegments } from '../src/game/weipulaClimb.ts';
+import {
+  MAHA_WEIPULA_BASE_GATE_UV,
+  MAHA_WEIPULA_PLAZA_UV,
+  buildWeipulaRoadSegments,
+  buildWeipulaStairway,
+} from '../src/game/weipulaClimb.ts';
 
 const allPeaks = [...ward.mountains, ...ward.weipula.peaks];
 
@@ -111,4 +119,62 @@ test('Full Taungphila -> Weipula Mountain Range includes lakes, forest belts, za
   assert.ok(mobileFlora.trees.length >= 850, 'Bounded forest trees blanket Taungphila -> Weipula for mobile');
   assert.ok(desktopFlora.trees.some((t) => t.v > 4200), 'Forest reaches right up to Maha Weipula');
   assert.ok(desktopFlora.grassTufts.length >= 800, 'Mountain meadow shrubs span the range');
+});
+
+test('End-to-end Taungphila -> Maha Weipula Summit works via ALL 3 modes: Walking, Horse Riding & Motorcycle', () => {
+  const tSegs = buildTaungphilaRoadSegments(allPeaks);
+  const wSegs = buildWeipulaRoadSegments(allPeaks);
+  const stairs = buildWeipulaStairway(allPeaks);
+
+  // 1. Taungphila Road (start -> Weipula Junction): Walking, Horse & Motorcycle all clear
+  for (const seg of tSegs) {
+    assert.ok(isOnTaungphilaRoad(seg.x, seg.z), `${seg.key} is recognized by isOnTaungphilaRoad`);
+    assert.ok(canStand(seg.x, seg.z), `${seg.key} is walkable on foot`);
+    assert.ok(
+      horseFootprintClear(seg.x, seg.z, seg.yaw, (x, z) => canStand(x, z)),
+      `${seg.key} full horse footprint is clear`,
+    );
+    assert.ok(
+      rideFootprintClear(seg.x, seg.z, seg.yaw, (x, z) => canStand(x, z)),
+      `${seg.key} full motorcycle footprint is clear`,
+    );
+  }
+
+  // 2. Maha Weipula Highway (Junction -> Base Gate -> 1,320m Summit Plaza): Walking, Horse & Motorcycle all clear
+  for (const seg of wSegs) {
+    assert.ok(canStand(seg.x, seg.z), `${seg.key} is walkable on foot`);
+    assert.ok(
+      horseFootprintClear(seg.x, seg.z, seg.yaw, (x, z) => canStand(x, z)),
+      `${seg.key} full horse footprint is clear`,
+    );
+    assert.ok(
+      rideFootprintClear(seg.x, seg.z, seg.yaw, (x, z) => canStand(x, z)),
+      `${seg.key} full motorcycle footprint is clear`,
+    );
+  }
+
+  // 3. Maha Weipula Pilgrim Stone Stairway (Base Gate -> 1,320m Summit): Walkable & Horse-rideable
+  for (const fl of stairs.flights) {
+    assert.ok(canStand(fl.x, fl.z), `${fl.key} stairway flight is walkable on foot`);
+    assert.ok(
+      horseFootprintClear(fl.x, fl.z, 0, (x, z) => canStand(x, z)),
+      `${fl.key} stairway flight clears horse footprint`,
+    );
+  }
+
+  // 4. Simulated walkWithContacts step along sample segments across Taungphila, Junction, Base Gate & Summit Plaza
+  const baseGate = toWorld(MAHA_WEIPULA_BASE_GATE_UV.u, MAHA_WEIPULA_BASE_GATE_UV.v);
+  const summitPlaza = toWorld(MAHA_WEIPULA_PLAZA_UV.u, MAHA_WEIPULA_PLAZA_UV.v);
+  for (const [label, pt] of [
+    ['Taungphila Start', toWorld(tSegs[0].u1, tSegs[0].v1)],
+    ['Taungphila User Spot', { x: -143.906, z: 576.112 }],
+    ['Weipula Junction', toWorld(WEIPULA_JUNCTION_UV.u, WEIPULA_JUNCTION_UV.v)],
+    ['Maha Weipula Base Gate', baseGate],
+    ['Maha Weipula Summit Plaza', summitPlaza],
+  ] as const) {
+    const pos = { x: pt.x, z: pt.z };
+    const contact = walkWithContacts(pos, 0.5, 0.5, (x, z) => canStand(x, z), () => null);
+    assert.equal(contact, null, `Walking freely at ${label} has zero obstacle contact`);
+    assert.ok(Math.hypot(pos.x - pt.x, pos.z - pt.z) > 0.65, `Player advances smoothly on foot at ${label}`);
+  }
 });

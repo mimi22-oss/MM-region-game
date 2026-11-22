@@ -165,6 +165,27 @@ function generateTaungphilaToWeipulaWaypoints(): RoadControlPoint[] {
 export const TAUNGPHILA_ROAD_CONTROL_POINTS: readonly RoadControlPoint[] =
   generateTaungphilaToWeipulaWaypoints();
 
+/** True when world (x, z) lies on the Taungphila -> Western Mountain Spine -> Weipula highway deck. */
+export function isOnTaungphilaRoad(x: number, z: number, margin = 0): boolean {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  const u = x * c - z * s;
+  const v = x * s + z * c;
+  if (u < -810 || u > -400 || v < -35 || v > 4570) return false;
+  for (let i = 1; i < TAUNGPHILA_ROAD_CONTROL_POINTS.length; i++) {
+    const a = TAUNGPHILA_ROAD_CONTROL_POINTS[i - 1];
+    const b = TAUNGPHILA_ROAD_CONTROL_POINTS[i];
+    const du = b.u - a.u;
+    const dv = b.v - a.v;
+    const t = Math.max(0, Math.min(1, ((u - a.u) * du + (v - a.v) * dv) / Math.max(0.001, du * du + dv * dv)));
+    const halfWidth = (a.w + (b.w - a.w) * t) / 2 - margin;
+    if (halfWidth > 0 && (u - a.u - du * t) ** 2 + (v - a.v - dv * t) ** 2 < halfWidth ** 2) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function taungphilaMinVisibleElevation(u: number, v: number, peaks: readonly TerrainPeak[]): number {
   let maxH = mountainHeight(u, v, peaks);
   const dirs = [

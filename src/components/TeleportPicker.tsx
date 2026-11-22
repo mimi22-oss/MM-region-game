@@ -46,7 +46,7 @@ const _groundPlane = new Plane(new Vector3(0, 1, 0), 0);
 const _planeHit = new Vector3();
 const _projVec = new Vector3();
 const UI_IGNORE_SELECTOR =
-	'.teleport-confirm-card, .teleport-mode-banner, .location-actions, .action-menu-popover, .settings-wrap, .guide-dialog-modal, .mobile-actions';
+	'.teleport-confirm-card, .location-actions, .action-menu-popover, .settings-wrap, .guide-dialog-modal, .mobile-actions';
 
 /** Helper: Raycast from screen pixels (clientX, clientY) to ground surface */
 function raycastGround(
@@ -675,55 +675,6 @@ export function TeleportConfirmOverlay({
 
 				{/* Speech arrow pointing toward 3D marker */}
 				<div className="teleport-confirm-tail" aria-hidden="true" />
-			</div>
-		</div>
-	);
-}
-
-/**
- * Compact bottom-center Teleport Mode bar so mobile & desktop users always see
- * clear Burmese guidance and have one-tap Confirm / Exit buttons clear of top HUDs.
- */
-export function TeleportModeBanner({
-	pin,
-	onConfirm,
-	onCancel,
-}: {
-	pin: TeleportPin | null;
-	onConfirm: (pin: TeleportPin) => void;
-	onCancel: () => void;
-}) {
-	return (
-		<div
-			className="teleport-mode-banner"
-			role="status"
-			aria-live="polite"
-			onPointerDown={(e) => e.stopPropagation()}
-			onTouchStart={(e) => e.stopPropagation()}
-		>
-			<span className="teleport-mode-banner-text">
-				{pin
-					? '📍 စက်ဝိုင်းကို ဖိရွှေ့နိုင်သည် · ✓ နှိပ်၍ သွားပါ'
-					: '🎯 မြေပြင်ကို ထောက်၍ Teleport နေရာရွေးပါ'}
-			</span>
-			<div className="teleport-mode-banner-actions">
-				{pin && (
-					<button
-						type="button"
-						className="teleport-mode-banner-go"
-						onClick={() => onConfirm(pin)}
-					>
-						✓ သွားမည်
-					</button>
-				)}
-				<button
-					type="button"
-					className="teleport-mode-banner-close"
-					onClick={onCancel}
-					aria-label="Teleport ရွေးချယ်မှု ပိတ်မည်"
-				>
-					✕ ပိတ်
-				</button>
 			</div>
 		</div>
 	);

@@ -1,8 +1,10 @@
 import {useSyncExternalStore} from 'react';
 import {isPlayerHomeProtected,getPlayerHomeBoundary} from './playerHomeProtection.ts';
 import {rideLife} from './rideLife.ts';
-export interface PlayerDeathState {phase:'alive'|'dead'|'respawning';ghostId:string|null;generation:number}
-let state:PlayerDeathState={phase:'alive',ghostId:null,generation:0},grace=0,lastToken='';
+import type {BridgeFallMode} from './bridgeFall.ts';
+export interface PlayerDeathFallMeta {dropMeters:number;mode:BridgeFallMode}
+export interface PlayerDeathState {phase:'alive'|'dead'|'respawning';ghostId:string|null;fallMeta?:PlayerDeathFallMeta|null;generation:number}
+let state:PlayerDeathState={phase:'alive',ghostId:null,fallMeta:null,generation:0},grace=0,lastToken='';
 const listeners=new Set<()=>void>();
 function emit(){for(const fn of listeners)fn();}
 export function getPlayerDeathState(){return state;}
@@ -11,12 +13,17 @@ export function playerUnavailableForGhost(){return state.phase!=='alive'||grace>
 export function killPlayerFromGhost(ghostId:string,seq:number,x:number,z:number){
  const token=`${ghostId}:${seq}`;
  if(playerUnavailableForGhost()||isPlayerHomeProtected(x,z)||lastToken===token)return false;
- lastToken=token;state={phase:'dead',ghostId,generation:state.generation+1};emit();return true;
+ lastToken=token;state={phase:'dead',ghostId,fallMeta:null,generation:state.generation+1};emit();return true;
 }
 export function killPlayerFromBotFight(botId:string,seq:number){
  const token=`bot-fight:${botId}:${seq}`;
  if(state.phase!=='alive'||lastToken===token)return false;
- lastToken=token;state={phase:'dead',ghostId:`bot-fight:${botId}`,generation:state.generation+1};emit();return true;
+ lastToken=token;state={phase:'dead',ghostId:`bot-fight:${botId}`,fallMeta:null,generation:state.generation+1};emit();return true;
+}
+export function killPlayerFromBridgeFall(dropMeters:number,mode:BridgeFallMode,seq:number){
+ const token=`bridge-fall:${mode}:${seq}`;
+ if(state.phase!=='alive'||lastToken===token)return false;
+ lastToken=token;state={phase:'dead',ghostId:`bridge-fall:${mode}`,fallMeta:{dropMeters:Math.max(1,Math.round(dropMeters)),mode},generation:state.generation+1};emit();return true;
 }
 export function requestPlayerRespawn(){
  if(state.phase==='dead'){
@@ -27,7 +34,7 @@ export function requestPlayerRespawn(){
 export function completePlayerRespawn(){
  if(state.phase==='respawning'){
   rideLife.lives=3;rideLife.crashTime=0;rideLife.invulnerable=0;rideLife.contact=false;rideLife.damage=0;
-  state={...state,phase:'alive',ghostId:null};grace=5;emit();
+  state={...state,phase:'alive',ghostId:null,fallMeta:null};grace=5;emit();
  }
 }
 export function stepPlayerRespawnGrace(dt:number){grace=Math.max(0,grace-Math.max(0,dt));}

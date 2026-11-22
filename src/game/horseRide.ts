@@ -524,7 +524,7 @@ export function stepHorseRide(
     const fz = -Math.cos(horseRide.yaw) * 0.85;
     const frontH = height(horseRide.x + fx, horseRide.z + fz);
     const rearH = height(horseRide.x - fx, horseRide.z - fz);
-    const slopePitch = Math.atan2(frontH - rearH, 1.7);
+    const slopePitch = Math.max(-0.55, Math.min(0.55, Math.atan2(frontH - rearH, 1.7)));
     horseRide.pitch += (slopePitch - horseRide.pitch) * Math.min(1, dt * 10);
   }
 

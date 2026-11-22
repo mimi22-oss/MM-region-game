@@ -38,7 +38,7 @@ export class GroundSurface {
   if (hits.length > 0) return Math.max(0, hits[0].point.y);
   const u = x * cosA - z * sinA;
   const v = x * sinA + z * cosA;
-  if (v > 4100 || u < -450) {
+  if (v > 4100 || u < -410) {
     const mh = mountainHeight(u, v, mountainPeaks);
     if (mh > 0) return mh;
   }

@@ -48,7 +48,7 @@ import {
   canStandWalkInSchoolHalls,
 } from "./schoolClassrooms.ts";
 import { canStandMonasteryBuildings } from "./monasteryLayout.ts";
-import { canStandTaungphilaFeatures } from "./taungphilaWorld.ts";
+import { canStandTaungphilaFeatures, isOnTaungphilaRoad } from "./taungphilaWorld.ts";
 import { canStandTharSiSchoolCampus } from "../data/villages/tharsi/schoolCampus.ts";
 import { canStandMyotharSchoolCampus } from "../data/wards/myothar/center/myotharSchoolCampus.ts";
 import { cemeteryTombBlocks, MYOTHAR_CEMETERY_LAYOUT } from './cemeteryLayout.ts';
@@ -594,7 +594,7 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
   if (!canStandTaungphilaFeatures(x, z, PLAYER_RADIUS, airborne)) return false;
   for (const mt of MOUNTAIN_LIMITS) {
     const mx = x - mt.x, mz = z - mt.z;
-    if (mx * mx + mz * mz < mt.limitSq && !isOnWeipulaRoad(x, z, PLAYER_RADIUS)) return false;
+    if (mx * mx + mz * mz < mt.limitSq && !isOnWeipulaRoad(x, z, PLAYER_RADIUS) && !isOnTaungphilaRoad(x, z, PLAYER_RADIUS)) return false;
   }
   for (const car of driveableCars) {
     if (car.id === carRide.carId) continue;

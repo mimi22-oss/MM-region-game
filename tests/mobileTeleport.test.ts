@@ -123,7 +123,8 @@ test('mobile Teleport Mode disables MobileControls overlay and wires touch gestu
 		/<TeleportPicker[\s\S]*?mobileInput=\{mobileInput\}/,
 		'TeleportPicker receives mobileInput for touch camera orbit/pan/zoom during teleport mode',
 	);
-	assert.ok(mainSource.includes('<TeleportModeBanner'), 'TeleportModeBanner renders for mobile guidance & exit');
+	assert.ok(mainSource.includes('<TeleportConfirmOverlay'), 'TeleportConfirmOverlay renders teleport-confirm-anchor for confirmation & cancel');
+	assert.equal(mainSource.includes('<TeleportModeBanner'), false, 'Redundant TeleportModeBanner is removed');
 	assert.ok(pickerSource.includes("dom.style.touchAction = 'none'"), 'Canvas disables browser touch scroll while picking');
 	assert.ok(pickerSource.includes('pointercancel'), 'TeleportPicker handles pointercancel cleanly on mobile');
 });

@@ -16,32 +16,54 @@ export function GhostGameOver() {
 
   const isZombie = Boolean(state.ghostId?.startsWith('zombie-'));
   const isBotFight = Boolean(state.ghostId?.startsWith('bot-fight:'));
+  const isBridgeFall = Boolean(state.ghostId?.startsWith('bridge-fall:'));
   const isRespawning = state.phase === 'respawning';
   const fight = isBotFight ? getBotFightingState() : null;
+  const fallMeta = isBridgeFall ? state.fallMeta : null;
+  const fallModeLabel =
+    fallMeta?.mode === 'motorcycle'
+      ? '🏍️ ဆိုင်ကယ်'
+      : fallMeta?.mode === 'horse'
+        ? '🐎 မြင်းစီး'
+        : fallMeta?.mode === 'car'
+          ? '🚗 ကား'
+          : '🚶 လမ်းလျှောက်';
 
-  const variant = isBotFight ? 'bot-fight' : isZombie ? 'zombie' : 'ghost';
+  const variant = isBridgeFall
+    ? 'bridge-fall'
+    : isBotFight
+      ? 'bot-fight'
+      : isZombie
+        ? 'zombie'
+        : 'ghost';
 
-  const badgeText = isBotFight
-    ? 'KNOCKOUT · HP 0 / 100'
-    : isZombie
-      ? 'ZOMBIE OVERRUN'
-      : 'GHOST CAPTURED';
+  const badgeText = isBridgeFall
+    ? 'BRIDGE FALL · တံတားပေါ်မှ ပြုတ်ကျခြင်း'
+    : isBotFight
+      ? 'KNOCKOUT · HP 0 / 100'
+      : isZombie
+        ? 'ZOMBIE OVERRUN'
+        : 'GHOST CAPTURED';
 
-  const subtitle = isBotFight
-    ? 'တိုက်ပွဲ ရှုံးနိမ့်သွားပါပြီ'
-    : isZombie
-      ? 'Zombie တိုက်ခိုက်ခံရပါပြီ'
-      : 'သရဲဖမ်းမိသွားပါပြီ';
+  const subtitle = isBridgeFall
+    ? 'တံတားကနေ တောင်အောက်သို့ ပြုတ်ကျသွားပါပြီ'
+    : isBotFight
+      ? 'တိုက်ပွဲ ရှုံးနိမ့်သွားပါပြီ'
+      : isZombie
+        ? 'Zombie တိုက်ခိုက်ခံရပါပြီ'
+        : 'သရဲဖမ်းမိသွားပါပြီ';
 
-  const message = isBotFight
-    ? 'Bot နှင့် တိုက်ခိုက်ရာတွင် HP 100 မှ 0 သို့ ကုန်သွားပြီး လဲကျသွားပါပြီ။ အိမ် Safe Zone မှ ပြန်လည်စတင်နိုင်ပါသည်။'
-    : isZombie
-      ? 'Zombie တိုက်ခိုက်ခံရသဖြင့် Heart Life ၃ ခုလုံး ကုန်သွားပါပြီ။ အိမ် Safe Zone တွင် မူလကနေ ပြန်စနိုင်ပါတယ်။'
-      : 'သရဲဖမ်းမိသွားပါပြီ။ အိမ် Safe Zone တွင် ပြန်လည်စတင်နိုင်ပါသည်။';
+  const message = isBridgeFall
+    ? 'တောင်တက်တံတားပေါ်မှ တောင်အောက်သို့ ပြုတ်ကျသွားသဖြင့် ဂိမ်းပြီးဆုံးသွားပါပြီ။ အိမ် Safe Zone မှ ပြန်လည်စတင်နိုင်ပါသည်။'
+    : isBotFight
+      ? 'Bot နှင့် တိုက်ခိုက်ရာတွင် HP 100 မှ 0 သို့ ကုန်သွားပြီး လဲကျသွားပါပြီ။ အိမ် Safe Zone မှ ပြန်လည်စတင်နိုင်ပါသည်။'
+      : isZombie
+        ? 'Zombie တိုက်ခိုက်ခံရသဖြင့် Heart Life ၃ ခုလုံး ကုန်သွားပါပြီ။ အိမ် Safe Zone တွင် မူလကနေ ပြန်စနိုင်ပါတယ်။'
+        : 'သရဲဖမ်းမိသွားပါပြီ။ အိမ် Safe Zone တွင် ပြန်လည်စတင်နိုင်ပါသည်။';
 
   const btnLabel = isRespawning
     ? 'ပြန်လည်စတင်နေသည်…'
-    : isBotFight
+    : isBotFight || isBridgeFall
       ? 'အစမှ ပြန်စမည် · Restart'
       : 'အိမ်တွင် ပြန်စမည် · Respawn';
 
@@ -63,7 +85,7 @@ export function GhostGameOver() {
           <div className="game-over-emblem" aria-hidden="true">
             <div className="game-over-emblem-ring" />
             <span className="game-over-emblem-icon">
-              {isBotFight ? '🥊' : isZombie ? '☣️' : '👻'}
+              {isBridgeFall ? '⛰️' : isBotFight ? '🥊' : isZombie ? '☣️' : '👻'}
             </span>
           </div>
 
@@ -83,7 +105,24 @@ export function GhostGameOver() {
 
           {/* Contextual Summary Stats */}
           <div className="game-over-stats" aria-label="Battle Summary">
-            {isBotFight && fight ? (
+            {isBridgeFall ? (
+              <>
+                <div className="game-over-stat">
+                  <span className="game-over-stat-label">ပြုတ်ကျအမြင့်</span>
+                  <strong className="game-over-stat-value is-danger">
+                    {fallMeta ? `${fallMeta.dropMeters} m` : 'တောင်အောက်'}
+                  </strong>
+                </div>
+                <div className="game-over-stat">
+                  <span className="game-over-stat-label">သွားလာမှု</span>
+                  <strong className="game-over-stat-value">{fallModeLabel}</strong>
+                </div>
+                <div className="game-over-stat">
+                  <span className="game-over-stat-label">ပြန်စမည့်နေရာ</span>
+                  <strong className="game-over-stat-value">🏡 အိမ် Safe Zone</strong>
+                </div>
+              </>
+            ) : isBotFight && fight ? (
               <>
                 <div className="game-over-stat">
                   <span className="game-over-stat-label">ပြိုင်ဘက်</span>
