@@ -239,6 +239,16 @@ export function horseFootprintClear(
   return clear(x, z) && clear(x + dx, z + dz) && clear(x - dx, z - dz);
 }
 
+const parkedHorseCandidate = {
+  id: DEFAULT_RIDING_HORSE.id as string,
+  x: DEFAULT_RIDING_HORSE.x as number,
+  z: DEFAULT_RIDING_HORSE.z as number,
+  worldYaw: 0,
+  coatIndex: DEFAULT_RIDING_HORSE.coatIndex as number,
+  scale: DEFAULT_RIDING_HORSE.scale as number,
+  isFieldHorse: false as const,
+};
+
 export function updateHorseProximity(
   playerX: number,
   playerZ: number,
@@ -255,19 +265,16 @@ export function updateHorseProximity(
   let best: HorseCandidate | null = null;
   let bestDist = HORSE_INTERACT_RADIUS_M;
 
-  // 1. Check the parked saddled riding horse
+  // 1. Check the parked saddled riding horse (reuse candidate object to avoid 60 Hz allocations)
   const dParked = Math.hypot(playerX - horseRide.x, playerZ - horseRide.z);
   if (dParked <= bestDist) {
     bestDist = dParked;
-    best = {
-      id: DEFAULT_RIDING_HORSE.id,
-      x: horseRide.x,
-      z: horseRide.z,
-      worldYaw: normalizeAngle(horseRide.yaw + Math.PI),
-      coatIndex: horseRide.coatIndex,
-      scale: horseRide.scale,
-      isFieldHorse: false,
-    };
+    parkedHorseCandidate.x = horseRide.x;
+    parkedHorseCandidate.z = horseRide.z;
+    parkedHorseCandidate.worldYaw = normalizeAngle(horseRide.yaw + Math.PI);
+    parkedHorseCandidate.coatIndex = horseRide.coatIndex;
+    parkedHorseCandidate.scale = horseRide.scale;
+    best = parkedHorseCandidate;
   }
 
   // 2. Check all nearby paddy-field horses

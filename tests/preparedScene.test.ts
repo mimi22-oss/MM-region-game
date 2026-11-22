@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Raycaster, Vector3 } from 'three';
+import { BoxGeometry, DataTexture, Group, Mesh, MeshStandardMaterial, Raycaster, Vector3 } from 'three';
 import { batchStaticMeshes } from '../src/game/staticBatch.ts';
 import { snapshotRegion, regionFlows, disposePreparedRegion } from '../src/game/preparedScene.ts';
 
@@ -31,14 +31,23 @@ test('batched region snapshots keep bounds and animation markers after releasing
  disposePreparedRegion(snapshot);
 });
 
-test('cached region disposal leaves shared primitive resources alive', () => {
+test('cached region disposal leaves shared primitive resources alive and disposes unshared textures', () => {
  const geometry = new BoxGeometry(), material = new MeshStandardMaterial(), root = new Group();
  geometry.userData.shared = material.userData.shared = true;
  let disposed = 0;
  geometry.addEventListener('dispose', () => { disposed++; });
  material.addEventListener('dispose', () => { disposed++; });
  root.add(new Mesh(geometry, material));
+
+ const tex = new DataTexture(new Uint8Array(4), 1, 1);
+ const unsharedGeo = new BoxGeometry();
+ const unsharedMat = new MeshStandardMaterial({ map: tex });
+ let texDisposed = 0;
+ tex.addEventListener('dispose', () => { texDisposed++; });
+ root.add(new Mesh(unsharedGeo, unsharedMat));
+
  disposePreparedRegion(root);
  assert.equal(disposed, 0);
+ assert.equal(texDisposed, 1, 'unshared material textures must be disposed on region eviction');
  geometry.dispose(); material.dispose();
 });

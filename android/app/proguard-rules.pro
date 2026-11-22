@@ -11,6 +11,7 @@
 }
 
 # Keep Capacitor plugins & annotated plugin methods invoked via reflection
+-keep class com.capacitorjs.plugins.** { *; }
 -keep @com.getcapacitor.annotation.CapacitorPlugin public class * {
     *;
 }
@@ -21,9 +22,22 @@
     @com.getcapacitor.annotation.ActivityCallback <methods>;
     @com.getcapacitor.annotation.PermissionCallback <methods>;
 }
+-keep class * implements com.getcapacitor.PluginHandle {
+    public void invoke(java.lang.String, com.getcapacitor.PluginCall);
+}
 
-# Keep Capgo CapacitorUpdater plugin
+# Keep Capgo CapacitorUpdater plugin and all classes it invokes via reflection or WorkManager
 -keep class ee.forgr.capacitor_updater.** { *; }
+-keep class androidx.webkit.WebViewCompat { *; }
+-keep class androidx.webkit.WebViewFeature { *; }
+-keep class androidx.work.** { *; }
+-keep class androidx.room.** { *; }
+-keep class androidx.lifecycle.ProcessLifecycleOwner { *; }
+-keep class androidx.lifecycle.ProcessLifecycleInitializer { *; }
+-keep class androidx.lifecycle.DefaultLifecycleObserver { *; }
+-keep class org.brotli.** { *; }
+-keep class okhttp3.** { *; }
+-keep class okio.** { *; }
 
 # Keep AndroidX core SplashScreen classes
 -keep class androidx.core.splashscreen.** { *; }

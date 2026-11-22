@@ -355,6 +355,8 @@ export const Player = memo(function Player({
  const tmpEuler=useRef(new Euler(0,0,0,'YXZ'));
  const tmpVecA=useRef(new Vector3());
  const tmpVecB=useRef(new Vector3());
+ const carPoseScratch=useRef({y:0,pitch:0,roll:0});
+ const saveTimerRef=useRef(0);
  const viewFocusScratch=useRef({x:ward.spawn.x,z:ward.spawn.z});
  const cameraObstruction=useMemo(createCameraObstructionQuery,[]);
  useEffect(()=>{
@@ -801,7 +803,7 @@ export const Player = memo(function Player({
     if(!impact.blocked&&!actorContact)rideLife.contact=false;
     if((actorContact||(impact.blocked&&impact.speed>.05))&&hitActor('car')){car.speed=0;clearCarInput();s.keys.clear();if(touch)resetMobileInput(touch);}
    }
-   const pose=carGroundPose(car.x,car.z,car.yaw,car.size,height);car.groundY=pose.y;car.pitch=pose.pitch;car.roll=pose.roll;
+   const pose=carGroundPose(car.x,car.z,car.yaw,car.size,height,carPoseScratch.current);car.groundY=pose.y;car.pitch=pose.pitch;car.roll=pose.roll;
    s.x=car.x;s.z=car.z;s.bodyYaw=car.yaw;s.camX=s.x;s.camZ=s.z;
    if(!paused&&Math.abs(car.speed)>.1)s.yaw+=Math.atan2(Math.sin(car.yaw-s.yaw),Math.cos(car.yaw-s.yaw))*Math.min(1,dt*5);
   }else if(isRidingOrMountingHorse()){
@@ -1136,7 +1138,7 @@ export const Player = memo(function Player({
     camera.position.copy(desired.current);camera.lookAt(target.current);
    }
   }
-  s.time+=dt;if(s.time>0.08){s.time=0;onBalloonStatus?.({riding:balloon.riding,near:nearBalloon,altitude:Math.max(0,Math.round(balloon.y-height(balloon.x,balloon.z))),kmh:Math.round(Math.hypot(balloon.vx,balloon.vz)*3.6),grounded:balloon.grounded,blocked:balloon.blocked,autoCruise:balloon.autoCruise,autoReturn:balloon.autoReturn,returnDist:balloon.returnDist});onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car||balloon.riding,ride.riding),summonStatus:carSummonState.status,lives:rideLife.lives});onRideStatus?.({riding:ride.riding,near:!balloon.riding&&!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0,impactMode:rideLife.mode,damage:rideLife.damage});onPosition(s.x,s.z,s.bodyYaw);onSaveSnapshot?.({x:s.x,z:s.z,yaw:s.bodyYaw,pitch:s.pitch,zoom:s.targetDistance,topDown:s.topDown,first:s.first});onViewPosition?.(target.current.x,target.current.z);}
+  s.time+=dt;saveTimerRef.current+=dt;if(s.time>0.08){s.time=0;onBalloonStatus?.({riding:balloon.riding,near:nearBalloon,altitude:Math.max(0,Math.round(balloon.y-height(balloon.x,balloon.z))),kmh:Math.round(Math.hypot(balloon.vx,balloon.vz)*3.6),grounded:balloon.grounded,blocked:balloon.blocked,autoCruise:balloon.autoCruise,autoReturn:balloon.autoReturn,returnDist:balloon.returnDist});onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car||balloon.riding,ride.riding),summonStatus:carSummonState.status,lives:rideLife.lives});onRideStatus?.({riding:ride.riding,near:!balloon.riding&&!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0,impactMode:rideLife.mode,damage:rideLife.damage});onPosition(s.x,s.z,s.bodyYaw);if(saveTimerRef.current>=1){saveTimerRef.current=0;onSaveSnapshot?.({x:s.x,z:s.z,yaw:s.bodyYaw,pitch:s.pitch,zoom:s.targetDistance,topDown:s.topDown,first:s.first});}onViewPosition?.(target.current.x,target.current.z);}
  },-1);
  return <><PassengerBalloon visible={areBalloonsVisibleAtMinute(minute)}/><ParkedCars/><ParkedMotorcycle/><ParkedRidingHorse riderScale={bodyScale}/><group ref={avatar} name="player-avatar"><HeldGhostSword avatar={avatar}/><HeldGun avatar={avatar} motion={characterMotion}/>{onHorse?<><group rotation={[0,Math.PI,0]}><HorseModel riderScale={bodyScale} riderPose={horsePoseRef} coatIndex={horseRide.coatIndex} scale={horseRide.scale}/></group><CartoonCharacter appearance={appearance.human} motion={characterMotion} horsePose={horsePoseRef} deferGlb={deferGlb}/></>:riding?<><group rotation={[0,Math.PI,0]}><MotorcycleModel riding/></group><group position={[0,.10,.26]}><CartoonCharacter combat appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb} riding/></group></>:character==='cartoon'?<CartoonCharacter combat appearance={appearance.human} motion={characterMotion} deferGlb={deferGlb}/>:<RobotCharacter wheels={wheels} appearance={appearance.robot} motion={characterMotion}/>}</group></>;
 

@@ -17,13 +17,18 @@ export function frontWheelAngle(steering:number,side:number,size=1){
  const wheelbase=2.08*size,radius=wheelbase/Math.tan(Math.abs(steering));
  return -Math.sign(steering)*Math.atan(wheelbase/(radius-side*Math.sign(steering)*.79*size));
 }
-export function wheelStepDistances(distance:number,steering:number,size=1){
- if(Math.abs(steering)<1e-6)return [distance,distance,distance,distance];
+const _wheelTravelScratch: [number, number, number, number] = [0, 0, 0, 0];
+export function wheelStepDistances(distance:number,steering:number,size=1,out?:[number,number,number,number]){
+ const res=out??[0,0,0,0];
+ if(Math.abs(steering)<1e-6){res[0]=distance;res[1]=distance;res[2]=distance;res[3]=distance;return res;}
  const wheelbase=2.08*size,radius=wheelbase/Math.tan(Math.abs(steering)),centerRadius=Math.hypot(radius,wheelbase/2);
- return [-1,1].flatMap(side=>{
-  const rearRadius=radius-side*Math.sign(steering)*.79*size;
-  return [Math.hypot(rearRadius,wheelbase),rearRadius].map(r=>distance*r/centerRadius);
- });
+ const sign=Math.sign(steering);
+ const rLeft=radius+sign*.79*size,rRight=radius-sign*.79*size;
+ res[0]=distance*Math.hypot(rLeft,wheelbase)/centerRadius;
+ res[1]=distance*rLeft/centerRadius;
+ res[2]=distance*Math.hypot(rRight,wheelbase)/centerRadius;
+ res[3]=distance*rRight/centerRadius;
+ return res;
 }
 export const currentCar = () => driveableCars.find(car => car.id === carRide.carId) ?? null;
 export const gearLabel = (gear: CarGear) => gear === -1 ? 'R' : gear === 0 ? 'N' : String(gear);
@@ -131,7 +136,11 @@ export function stepCar(dt: number, throttle: number, steer: number, brake: bool
   const x = car.x - Math.sin(heading) * d, z = car.z - Math.cos(heading) * d;
   if (!carFootprintClear(car, x, z, yaw, clear)) { impact.blocked=true;impact.speed=Math.abs(car.speed);car.speed = 0; carRide.notice = 'ရှေ့တွင် အတားအဆီးရှိပါသည်'; break; }
   car.x = x; car.z = z; car.yaw = yaw; car.distance += d;
-  wheelStepDistances(d,car.steering,car.size).forEach((travel,i)=>{car.wheelTravel[i]+=travel;});
+  const wt = wheelStepDistances(d, car.steering, car.size, _wheelTravelScratch);
+  car.wheelTravel[0] += wt[0];
+  car.wheelTravel[1] += wt[1];
+  car.wheelTravel[2] += wt[2];
+  car.wheelTravel[3] += wt[3];
  }
  const rpm = clutch || gear === 0 ? 850 + gas * 5000 : 850 + Math.abs(car.speed) / Math.max(1, limit) * 5000;
  carRide.rpm += (rpm - carRide.rpm) * Math.min(1, dt * 8);

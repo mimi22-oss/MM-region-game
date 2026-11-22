@@ -43,10 +43,26 @@ android {
                 storePassword releaseStorePass
                 keyAlias releaseKeyAlias
                 keyPassword releaseKeyPass
-                enableV1Signing = true
+                // minSdk is 24 (Android 7.0+), which natively verifies APK Signature Scheme v2.
+                // Disabling legacy v1 JAR signing avoids unsigned META-INF metadata warnings and
+                // matches app-debug.apk's clean v2 signing layout across OEM PackageInstallers.
+                enableV1Signing = false
                 enableV2Signing = true
-                enableV3Signing = true
+                enableV3Signing = false
             }
+        }
+    }
+    packaging {
+        resources {
+            excludes += [
+                'META-INF/*.version',
+                'META-INF/androidx/**',
+                'META-INF/com/android/build/gradle/**',
+                'META-INF/version-control-info.textproto',
+                'META-INF/LICENSE*',
+                'META-INF/AL2.0',
+                'META-INF/LGPL2.1',
+            ]
         }
     }
     buildTypes {

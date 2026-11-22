@@ -548,7 +548,11 @@ export class OtaCoordinator {
       if (typeof window !== 'undefined') {
         try {
           const url = '/ota/asset-manifest.json';
-          const response = await this.fetcher(url, AbortSignal.timeout(3000));
+          const timeoutSignal =
+            typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+              ? AbortSignal.timeout(3000)
+              : undefined;
+          const response = await this.fetcher(url, timeoutSignal);
           this.bundledManifest = validateAssetManifest(await parseOtaJsonResponse(response, url, 'Bundled asset manifest'));
         } catch {
           // Older APKs can still load their bundled assets without a local catalog.

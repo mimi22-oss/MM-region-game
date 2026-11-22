@@ -403,7 +403,12 @@ function App() {
       setViewPos((p) => {
         const dx = p.x - x;
         const dz = p.z - z;
-        if (dx * dx + dz * dz > 1.44) {
+        const thresholdSq = settingsOpenRef.current || mapOpenRef.current
+          ? 1.44
+          : mobileQuality
+            ? 25
+            : 6.25;
+        if (dx * dx + dz * dz > thresholdSq) {
           return { x, z };
         }
         return p;
@@ -439,23 +444,45 @@ function App() {
     }
   }, [subscriptionShop.isOpen, flushSaveNow]);
 
+  const otaBootCheckedRef = useRef(false);
+
   useEffect(() => {
     const removeInterceptor = installOfflineAssetInterceptor(otaCoordinator.assetCache, () => otaCoordinator.getState().currentVersion);
-    let disposed = false;
-    void otaCoordinator.initialize().then((state) => {
-      if (disposed || !state.online) return;
-      void otaCoordinator.checkForUpdate().then((checked) => {
-        if (!disposed && checked.phase === "update_available" && checked.safety.safeToDownloadInBackground) {
-          void otaCoordinator.downloadAvailableUpdate();
-        }
-      });
-    });
+    void otaCoordinator.initialize();
     return () => {
-      disposed = true;
       removeInterceptor();
       otaCoordinator.dispose();
     };
   }, []);
+
+  // Defer background update check until after initial 3D scene load completes, and never
+  // auto-download large full-asset bundles (30+ MB) silently during Android WebGL startup.
+  useEffect(() => {
+    if (loading || otaBootCheckedRef.current) return;
+    otaBootCheckedRef.current = true;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (cancelled || !otaCoordinator.getState().online) return;
+      void otaCoordinator.checkForUpdate().then((checked) => {
+        const isSmallCodeDelta =
+          checked.availableRelease?.bundleIncludesAssets !== true &&
+          checked.totalDownloadBytes > 0 &&
+          checked.totalDownloadBytes <= 5 * 1024 * 1024;
+        if (
+          !cancelled &&
+          checked.phase === "update_available" &&
+          checked.safety.safeToDownloadInBackground &&
+          isSmallCodeDelta
+        ) {
+          void otaCoordinator.downloadAvailableUpdate();
+        }
+      });
+    }, 1500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [loading]);
 
   useEffect(() => {
     otaCoordinator.setSafetyContext(
@@ -874,7 +901,12 @@ function App() {
     if (yaw !== undefined) {
       const prevYaw = robotYawRef.current;
       robotYawRef.current = yaw;
-      if (settingsOpenRef.current || mapOpenRef.current || Math.abs(prevYaw - yaw) > 0.035) {
+      const yawThreshold = settingsOpenRef.current || mapOpenRef.current
+        ? 0.035
+        : mobileQuality
+          ? 0.22
+          : 0.1;
+      if (settingsOpenRef.current || mapOpenRef.current || Math.abs(prevYaw - yaw) > yawThreshold) {
         setRobotYaw(yaw);
       }
     }
@@ -884,12 +916,22 @@ function App() {
       }
       const dx = previous.x - x;
       const dz = previous.z - z;
-      if (dx * dx + dz * dz > 0.36) {
+      const thresholdSq = mobileQuality ? 20.25 : 6.25;
+      if (dx * dx + dz * dz > thresholdSq) {
         return { x, z };
       }
       return previous;
     });
   }, []);
+  const handleMoveIntent = useCallback(
+    (dx: number, dz: number, yaw: number, sprinting: boolean, dtMs: number) =>
+      multiplayer.sendMoveIntent(dx, dz, yaw, sprinting, dtMs),
+    [multiplayer],
+  );
+  const handleReconcilePlayer = useCallback(
+    (x: number, z: number) => multiplayer.reconcileLocalPosition(x, z),
+    [multiplayer],
+  );
   const handleLock = useCallback((isLocked: boolean) => {
     setLocked(isLocked);
     setSceneActive(isLocked);
@@ -1178,10 +1220,8 @@ function App() {
               onViewPosition={viewPosition}
               initialSave={initialSave}
               onSaveSnapshot={handleSaveSnapshot}
-              onMoveIntent={(dx, dz, yaw, sprinting, dtMs) =>
-                multiplayer.sendMoveIntent(dx, dz, yaw, sprinting, dtMs)
-              }
-              reconcilePlayer={(x, z) => multiplayer.reconcileLocalPosition(x, z)}
+              onMoveIntent={handleMoveIntent}
+              reconcilePlayer={handleReconcilePlayer}
             />
             <MapLabelsProjection host={mapLabelsHost} enabled={!loading && !mapOpen && !first && !intro.active} />
           </Canvas>

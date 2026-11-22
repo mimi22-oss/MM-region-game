@@ -61,9 +61,11 @@ const staticObstacleLookup = spatialIndex(
 const staticIsBlocked = (x: number, z: number, radius: number) =>
   staticObstacleLookup(x, z).some(b => Math.hypot(x - b.x, z - b.z) < (Math.hypot(b.width / 2, b.depth / 2) + radius + 1.2));
 const staticRoutes = buildTrafficRoutes(staticRoads, staticIsBlocked);
-function TrafficCar({route,index,offset}:{route:TrafficRoute;index:number;offset:number}){
- const root=useRef<Group>(null),travel=useRef(offset),speedRef=useRef(8),appearance=useMemo(()=>carAppearance(index),[index]);
- const carAvoidId = `traffic-car-${route.id}-${index}`;
+function TrafficCar({route,slotIndex,offset}:{route:TrafficRoute|null;slotIndex:number;offset:number}){
+ const root=useRef<Group>(null),travel=useRef(offset),speedRef=useRef(8),appearance=useMemo(()=>carAppearance(slotIndex),[slotIndex]);
+ const lastRouteIdRef=useRef<string|null>(route?.id??null);
+ const lastOffsetRef=useRef(offset);
+ const carAvoidId = `traffic-car-slot-${slotIndex}`;
  const carHalfW = 1.02 * appearance.size;
  const carHalfL = 1.98 * appearance.size;
  const groundCache=useRef<{
@@ -75,10 +77,25 @@ function TrafficCar({route,index,offset}:{route:TrafficRoute;index:number;offset
  }>({ground:null,heightFn:null,age:0,grounded:false,pose:{y:.12,pitch:0,roll:0}});
  useTrafficCollider(root,1.9*appearance.size,3.7*appearance.size,'car');
  useEffect(() => () => removeAvoidanceActor(carAvoidId), [carAvoidId]);
+ useEffect(() => {
+  const nextId = route?.id ?? null;
+  if (nextId !== lastRouteIdRef.current || Math.abs(offset - lastOffsetRef.current) >= 450) {
+   lastRouteIdRef.current = nextId;
+   lastOffsetRef.current = offset;
+   travel.current = offset;
+   speedRef.current = 8;
+   groundCache.current.grounded = false;
+  }
+ }, [route, offset]);
  useFrame(({scene,clock,camera},dt)=>{
   const step=Math.min(dt,.05);
   const obj=root.current;
   if(!obj)return;
+  if(!route){
+   obj.visible=false;
+   removeAvoidanceActor(carAvoidId);
+   return;
+  }
   const curPose=trafficPose(route,travel.current);
   const focus=camera.userData.viewFocus??camera.position;
   const dx=curPose.x-focus.x,dz=curPose.z-focus.z,distSq=dx*dx+dz*dz;
@@ -125,10 +142,11 @@ function TrafficCar({route,index,offset}:{route:TrafficRoute;index:number;offset
   obj.position.set(p.x,g.y,p.z);
   obj.rotation.set(g.pitch,p.yaw,g.roll,'YXZ');
  });
- const p=trafficPose(route,offset);
- return <group ref={root} position={[p.x,.12,p.z]} rotation={[0,p.yaw,0]} userData={{dynamic:true}}><Car {...appearance}/></group>;
+ const initial=route?trafficPose(route,offset):{x:0,z:0,yaw:0};
+ return <group ref={root} visible={Boolean(route)} position={[initial.x,.12,initial.z]} rotation={[0,initial.yaw,0]} userData={{dynamic:true}}><Car {...appearance}/></group>;
 }
-/** Bound car meshes independently of the number of villages. Spawn only near the view. */
+/** Bound car meshes independently of the number of villages. Spawn only near the view with fixed pooled slots. */
+const TRAFFIC_POOL_SIZE = mobileQuality ? 4 : 8;
 export function CarBots(){
  const chunkVersion = useSyncExternalStore(subscribeStreamedChunks, getStreamedChunkVersion);
  const routes = useMemo(() => {
@@ -166,5 +184,13 @@ export function CarBots(){
   const same=next.length===fleet.length&&next.every((v,i)=>v.route===fleet[i].route)&&next.every((v,i)=>Math.abs(v.offset-fleet[i].offset)<450);
   if(!same)setFleet(next);
  });
- return <group name="main-road-car-traffic">{fleet.map(c=>routes[c.route]?<TrafficCar key={`${routes[c.route].id}-${c.slot}-${c.offset}`} route={routes[c.route]} index={c.route*4+c.slot} offset={c.offset}/>:null)}</group>;
+ return (
+  <group name="main-road-car-traffic">
+   {Array.from({ length: TRAFFIC_POOL_SIZE }, (_, slotIdx) => {
+    const entry = fleet[slotIdx];
+    const activeRoute = entry ? (routes[entry.route] ?? null) : null;
+    return <TrafficCar key={`traffic-pool-${slotIdx}`} route={activeRoute} slotIndex={slotIdx} offset={entry?.offset ?? 0} />;
+   })}
+  </group>
+ );
 }

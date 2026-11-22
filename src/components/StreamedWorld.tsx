@@ -183,23 +183,42 @@ export function StreamedWorld({
     return undefined;
   }, [active, introTargetRegions, prepared, started, downloads, warming]);
 
+  const evictOverflowRegions = useCallback(
+    (maxRemaining: number) => {
+      const evictedIds: string[] = [];
+      for (const [cachedId, cached] of cache.current.entries()) {
+        if (cache.current.size <= maxRemaining) break;
+        if (cachedId === 'myothar' || active.includes(cachedId) || introTargetRegions.includes(cachedId)) continue;
+        cached.root.removeFromParent();
+        cached.festivalOverview.removeFromParent();
+        releaseGroundRegion(scene, cachedId);
+        disposePreparedRegion(cached.root);
+        disposePreparedRegion(cached.festivalOverview);
+        cache.current.delete(cachedId);
+        evictedIds.push(cachedId);
+      }
+      if (evictedIds.length > 0) {
+        setPrepared(prev => prev.filter(p => !evictedIds.includes(p)));
+      }
+    },
+    [active, introTargetRegions, scene],
+  );
+
+  // Evict inactive non-pinned regions BEFORE mounting a new RegionBuilder so mobile GPUs
+  // never hold old + unbatched new + snapshot + pinned Myothar simultaneously during travel.
+  useLayoutEffect(() => {
+    if (!started || !building || building === 'myothar') return;
+    if (cache.current.size >= MAX_CACHED_REGIONS) {
+      evictOverflowRegions(MAX_CACHED_REGIONS - 1);
+    }
+  }, [started, building, evictOverflowRegions]);
+
   const onBuilt = useCallback((id: string, root: Group) => {
     if (cache.current.has(id)) return;
 
     // Bounded caching on mobile: evict least recently used non-spawn, non-active, non-intro region
     if (cache.current.size >= MAX_CACHED_REGIONS) {
-      for (const [cachedId, cached] of cache.current.entries()) {
-        if (cachedId !== 'myothar' && !active.includes(cachedId) && !introTargetRegions.includes(cachedId)) {
-          cached.root.removeFromParent();
-          cached.festivalOverview.removeFromParent();
-          releaseGroundRegion(scene,cachedId);
-          disposePreparedRegion(cached.root);
-          disposePreparedRegion(cached.festivalOverview);
-          cache.current.delete(cachedId);
-          setPrepared(prev => prev.filter(p => p !== cachedId));
-          break;
-        }
-      }
+      evictOverflowRegions(MAX_CACHED_REGIONS - 1);
     }
 
     cache.current.set(id, {
@@ -209,7 +228,7 @@ export function StreamedWorld({
       details:staticDetails(root),
     });
     setWarming({ id, root });
-  }, [active, introTargetRegions, scene]);
+  }, [evictOverflowRegions]);
 
   // Request spawn regions immediately; load distant regions on-demand or idle
   useEffect(() => {

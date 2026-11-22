@@ -5,13 +5,95 @@ import {useTrafficCollider} from './useTrafficCollider';
 import { windshieldGeometry, windshieldFrameGeometry, roofBoxRibbonGeometry } from '../game/carWindshield';
 import { useMemo,useRef,useState } from 'react';
 import { useRegionFrame as useFrame } from './RegionActivity';
-import {Group} from 'three';
-import {sceneGround,carGroundPose} from '../game/groundSurface';
-import { Shape, Path, DoubleSide } from 'three';
+import { Group, Shape, Path, DoubleSide, type BufferGeometry } from 'three';
+import { sceneGround, carGroundPose } from '../game/groundSurface';
 import { driveableCars, carRide, carInput, frontWheelAngle, STEERING_RATIO, type DriveableCar } from '../game/carRide';
 import { CartoonCharacter, type DrivingPose } from './CartoonCharacter';
 import { CarInterior } from './CarInterior';
 import { carBodyShellGeometry, DRIVER_POSITION, DRIVER_SCALE, STEERING_POSITION, STEERING_RADIUS, STEERING_TILT } from '../game/carCabin';
+
+interface SharedCarGeometries {
+	readonly lowerBodyByModel: Map<CarModel, BufferGeometry>;
+	readonly roofCap: BufferGeometry;
+	readonly aPillarLeft: BufferGeometry;
+	readonly aPillarRight: BufferGeometry;
+	readonly cPillarLeft: BufferGeometry;
+	readonly cPillarRight: BufferGeometry;
+	readonly windshieldSeal: BufferGeometry;
+	readonly windshieldGlass: BufferGeometry;
+	readonly windshieldGlareLeft: BufferGeometry;
+	readonly windshieldGlareRight: BufferGeometry;
+	readonly rearSeal: BufferGeometry;
+	readonly rearGlass: BufferGeometry;
+	readonly sideWindows: readonly Shape[];
+	readonly sideFrames: readonly Shape[];
+}
+
+let sharedCarGeometries: SharedCarGeometries | null = null;
+
+function markSharedGeo<T extends BufferGeometry>(geo: T): T {
+	geo.userData.shared = true;
+	return geo;
+}
+
+function getSharedCarGeometries(): SharedCarGeometries {
+	if (sharedCarGeometries) return sharedCarGeometries;
+
+	const rear = new Shape();
+	rear.moveTo(-1.08, 1.24);
+	rear.quadraticCurveTo(-1.03, 1.87, -0.28, 2.02);
+	rear.quadraticCurveTo(-0.16, 2.04, -0.16, 1.90);
+	rear.lineTo(-0.16, 1.20);
+	rear.quadraticCurveTo(-0.16, 1.16, -0.31, 1.16);
+	rear.lineTo(-0.91, 1.16);
+	rear.quadraticCurveTo(-1.08, 1.16, -1.08, 1.24);
+
+	const front = new Shape();
+	front.moveTo(0.02, 1.20);
+	front.lineTo(0.02, 1.93);
+	front.quadraticCurveTo(0.02, 2.07, 0.17, 2.01);
+	front.quadraticCurveTo(0.68, 1.85, 0.77, 1.24);
+	front.quadraticCurveTo(0.79, 1.16, 0.65, 1.16);
+	front.lineTo(0.13, 1.16);
+	front.quadraticCurveTo(0.02, 1.16, 0.02, 1.20);
+	const sideWindows = [rear, front];
+	const sideFrames = sideWindows.map((shape) => {
+		const points = shape.getPoints(24);
+		const frame = shape.clone();
+		const cx = (Math.min(...points.map((p) => p.x)) + Math.max(...points.map((p) => p.x))) / 2;
+		const cy = (Math.min(...points.map((p) => p.y)) + Math.max(...points.map((p) => p.y))) / 2;
+		frame.holes.push(new Path(points.map((p) => p.clone().set(cx + (p.x - cx) * 0.94, cy + (p.y - cy) * 0.94))));
+		return frame;
+	});
+
+	sharedCarGeometries = {
+		lowerBodyByModel: new Map<CarModel, BufferGeometry>(),
+		roofCap: markSharedGeo(roofBoxRibbonGeometry(-0.70, 0.70, 0.27, 0.69, -0.015, 0.075, 16)),
+		aPillarLeft: markSharedGeo(roofBoxRibbonGeometry(-0.71, -0.57, 0.01, 0.28, -0.015, 0.075, 10)),
+		aPillarRight: markSharedGeo(roofBoxRibbonGeometry(0.57, 0.71, 0.01, 0.28, -0.015, 0.075, 10)),
+		cPillarLeft: markSharedGeo(roofBoxRibbonGeometry(-0.71, -0.56, 0.68, 0.89, -0.015, 0.075, 10)),
+		cPillarRight: markSharedGeo(roofBoxRibbonGeometry(0.56, 0.71, 0.68, 0.89, -0.015, 0.075, 10)),
+		windshieldSeal: markSharedGeo(windshieldFrameGeometry()),
+		windshieldGlass: markSharedGeo(windshieldGeometry(0.54, 0.02, 0.272, 0.046)),
+		windshieldGlareLeft: markSharedGeo(windshieldGeometry(0.08, 0.045, 0.25, 0.049, -0.26)),
+		windshieldGlareRight: markSharedGeo(windshieldGeometry(0.04, 0.065, 0.23, 0.049, -0.10)),
+		rearSeal: markSharedGeo(windshieldFrameGeometry(0.57, 0.68, 0.89, 0.038)),
+		rearGlass: markSharedGeo(windshieldGeometry(0.54, 0.695, 0.875, 0.046)),
+		sideWindows,
+		sideFrames,
+	};
+	return sharedCarGeometries;
+}
+
+function getSharedCarLowerBody(model: CarModel): BufferGeometry {
+	const cache = getSharedCarGeometries();
+	let geo = cache.lowerBodyByModel.get(model);
+	if (!geo) {
+		geo = markSharedGeo(carBodyShellGeometry(model));
+		cache.lowerBodyByModel.set(model, geo);
+	}
+	return geo;
+}
 
 /** Rounded reference-inspired compact car with crystal-clear windshield & detailed cabin interior; front is -Z. */
 export function Car({ color = '#277fbd', size = 1, model='compact', motion }: { color?: string; size?: number; model?:CarModel; motion?: { distance: number; steering: number; wheelTravel: number[]; speed?: number } }) {
@@ -26,57 +108,23 @@ export function Car({ color = '#277fbd', size = 1, model='compact', motion }: { 
 		});
 		if(steeringWheel.current)steeringWheel.current.rotation.z=-motion.steering*STEERING_RATIO;
 	});
-	const lowerBody = useMemo(()=>carBodyShellGeometry(model), [model]);
-
-	// Upper cabin arched roof cap (covers cabin top from t=0.27 to t=0.69)
-	const roofCap = useMemo(() => roofBoxRibbonGeometry(-0.70, 0.70, 0.27, 0.69, -0.015, 0.075, 16), []);
-
-	// Left & Right A-Pillars (connecting cowl to roof cap)
-	const aPillarLeft = useMemo(() => roofBoxRibbonGeometry(-0.71, -0.57, 0.01, 0.28, -0.015, 0.075, 10), []);
-	const aPillarRight = useMemo(() => roofBoxRibbonGeometry(0.57, 0.71, 0.01, 0.28, -0.015, 0.075, 10), []);
-
-	// Left & Right C-Pillars (connecting roof cap to rear quarter)
-	const cPillarLeft = useMemo(() => roofBoxRibbonGeometry(-0.71, -0.56, 0.68, 0.89, -0.015, 0.075, 10), []);
-	const cPillarRight = useMemo(() => roofBoxRibbonGeometry(0.56, 0.71, 0.68, 0.89, -0.015, 0.075, 10), []);
-
-	// Front Windshield Assemblies:
-	// 1. Black rubber weatherstrip frame around the front opening
-	const windshieldSeal = useMemo(() => windshieldFrameGeometry(), []);
-	// 2. Crystal-clear front windshield glass pane
-	const windshieldGlass = useMemo(() => windshieldGeometry(0.54, 0.02, 0.272, 0.046), []);
-	// 3. Specular reflection highlight streaks (gives tangible glossy glass sheen)
-	const windshieldGlareLeft = useMemo(() => windshieldGeometry(0.08, 0.045, 0.25, 0.049, -0.26), []);
-	const windshieldGlareRight = useMemo(() => windshieldGeometry(0.04, 0.065, 0.23, 0.049, -0.10), []);
-
-	// Rear Windshield Assemblies:
-	const rearSeal = useMemo(() => windshieldFrameGeometry(0.57, 0.68, 0.89, 0.038), []);
-	const rearGlass = useMemo(() => windshieldGeometry(0.54, 0.695, 0.875, 0.046), []);
-
-	// Side Windows:
-	const sideWindows = useMemo(() => {
-		const rear = new Shape();
-		rear.moveTo(-1.08, 1.24);
-		rear.quadraticCurveTo(-1.03, 1.87, -0.28, 2.02);
-		rear.quadraticCurveTo(-0.16, 2.04, -0.16, 1.90);
-		rear.lineTo(-0.16, 1.20);
-		rear.quadraticCurveTo(-0.16, 1.16, -0.31, 1.16);
-		rear.lineTo(-0.91, 1.16);
-		rear.quadraticCurveTo(-1.08, 1.16, -1.08, 1.24);
-
-		const front = new Shape();
-		front.moveTo(0.02, 1.20);
-		front.lineTo(0.02, 1.93);
-		front.quadraticCurveTo(0.02, 2.07, 0.17, 2.01);
-		front.quadraticCurveTo(0.68, 1.85, 0.77, 1.24);
-		front.quadraticCurveTo(0.79, 1.16, 0.65, 1.16);
-		front.lineTo(0.13, 1.16);
-		front.quadraticCurveTo(0.02, 1.16, 0.02, 1.20);
-		return [rear, front];
-	}, []);
-	const sideFrames=useMemo(()=>sideWindows.map(shape=>{
-	 const points=shape.getPoints(24),frame=shape.clone(),cx=(Math.min(...points.map(p=>p.x))+Math.max(...points.map(p=>p.x)))/2,cy=(Math.min(...points.map(p=>p.y))+Math.max(...points.map(p=>p.y)))/2;
-	 frame.holes.push(new Path(points.map(p=>p.clone().set(cx+(p.x-cx)*.94,cy+(p.y-cy)*.94))));return frame;
-	}),[sideWindows]);
+	const sharedGeos = useMemo(() => getSharedCarGeometries(), []);
+	const lowerBody = useMemo(() => getSharedCarLowerBody(model), [model]);
+	const {
+		roofCap,
+		aPillarLeft,
+		aPillarRight,
+		cPillarLeft,
+		cPillarRight,
+		windshieldSeal,
+		windshieldGlass,
+		windshieldGlareLeft,
+		windshieldGlareRight,
+		rearSeal,
+		rearGlass,
+		sideWindows,
+		sideFrames,
+	} = sharedGeos;
 
 	return (
 		<group scale={size} name="cartoon-compact-car" userData={{model}}>
@@ -362,16 +410,38 @@ function GroundedCar({car}:{car:DriveableCar}){
  const driving=useRef<DrivingPose>({active:false,wheelAngle:0,interior:true,clutch:false,brake:false,throttle:false});
  const [driverMounted,setDriverMounted]=useState(()=>carRide.carId===car.id);
  const lastDriverActive=useRef(carRide.carId===car.id);
+ const groundCache=useRef<{
+  ground:ReturnType<typeof sceneGround>|null;
+  heightFn:((x:number,z:number)=>number)|null;
+  pose:{y:number;pitch:number;roll:number};
+  lastX:number;
+  lastZ:number;
+  lastYaw:number;
+  age:number;
+  grounded:boolean;
+ }>({ground:null,heightFn:null,pose:{y:0,pitch:0,roll:0},lastX:NaN,lastZ:NaN,lastYaw:NaN,age:0,grounded:false});
  useTrafficCollider(root,car.width*car.size,car.depth*car.size,'car');
- useFrame(({scene,clock})=>{
+ useFrame(({scene,clock},delta)=>{
    if(!root.current)return;
-   const ground=sceneGround(scene,clock.elapsedTime),p=carGroundPose(car.x,car.z,car.yaw,car.size,(x,z)=>ground.height(x,z));
+   const isActive=carRide.carId===car.id;
+   const gc=groundCache.current;
+   gc.age+=Math.min(delta,0.1);
+   const moved=!gc.grounded||Math.abs(car.x-gc.lastX)>0.01||Math.abs(car.z-gc.lastZ)>0.01||Math.abs(car.yaw-gc.lastYaw)>0.005;
+   if(isActive||moved||gc.age>=0.5){
+    const ground=sceneGround(scene,clock.elapsedTime);
+    if(gc.ground!==ground||!gc.heightFn){
+     gc.ground=ground;
+     gc.heightFn=(x:number,z:number)=>ground.height(x,z);
+    }
+    carGroundPose(car.x,car.z,car.yaw,car.size,gc.heightFn,gc.pose);
+    gc.lastX=car.x;gc.lastZ=car.z;gc.lastYaw=car.yaw;gc.age=0;gc.grounded=true;
+   }
+   const p=gc.pose;
    car.groundY=p.y;car.pitch=p.pitch;car.roll=p.roll;
    root.current.position.set(car.x,p.y,car.z);
    root.current.rotation.set(p.pitch,car.yaw,p.roll,'YXZ');
    motion.current.speed=car.speed;
    motion.current.distance=car.distance;
-   const isActive=carRide.carId===car.id;
    Object.assign(driving.current,{active:isActive,wheelAngle:-car.steering*STEERING_RATIO,interior:carRide.interior,clutch:carInput.clutch,brake:carInput.brake,throttle:carInput.throttle});
    if(isActive!==lastDriverActive.current){lastDriverActive.current=isActive;setDriverMounted(isActive);}
    if(driver.current)driver.current.visible=isActive;

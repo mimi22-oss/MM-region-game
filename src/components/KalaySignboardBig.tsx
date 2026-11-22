@@ -44,26 +44,29 @@ function usePlaqueTexture(): Texture | null {
 	return useMemo(() => {
 		if (typeof document === 'undefined') return null;
 		const canvas = document.createElement('canvas');
-		canvas.width = 2048;
-		canvas.height = 512;
+		canvas.width = mobileQuality ? 1024 : 2048;
+		canvas.height = mobileQuality ? 256 : 512;
 		const ctx = canvas.getContext('2d');
 		if (!ctx) return null;
+		if (mobileQuality) ctx.scale(0.5, 0.5);
+		const logicalW = 2048;
+		const logicalH = 512;
 
 		// အောက်ခံ အနီရင့်ရောင် (Base maroon-red fill)
-		const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+		const bg = ctx.createLinearGradient(0, 0, 0, logicalH);
 		bg.addColorStop(0, RED_MAIN);
 		bg.addColorStop(1, RED_DARK);
 		ctx.fillStyle = bg;
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		ctx.fillRect(0, 0, logicalW, logicalH);
 
 		// အနားသတ် ရွှေရောင်လိုင်းများ (Gold outer border trim)
 		ctx.strokeStyle = GOLD_BRIGHT;
 		ctx.lineWidth = 8;
-		ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+		ctx.strokeRect(10, 10, logicalW - 20, logicalH - 20);
 
 		// ဘယ်ဘက် မြန်မာ့ခြင်္သေ့ လေးထောင့်ဘောင် (Left Burmese Lion emblem box from image-big.png & burmese lion.png)
 		const boxSize = 340;
-		const boxY = (canvas.height - boxSize) / 2;
+		const boxY = (logicalH - boxSize) / 2;
 		const boxX = 90;
 
 		ctx.fillStyle = RED_DEEP_MAROON;
@@ -133,8 +136,8 @@ function usePlaqueTexture(): Texture | null {
 		// ညာဘက် မြန်မာနိုင်ငံအလံ လေးထောင့်ဘောင် (Right Myanmar flag square)
 		const flagW = 400;
 		const flagH = 280;
-		const flagX = canvas.width - 90 - flagW;
-		const flagY = (canvas.height - flagH) / 2;
+		const flagX = logicalW - 90 - flagW;
+		const flagY = (logicalH - flagH) / 2;
 
 		ctx.fillStyle = '#ffffff';
 		ctx.fillRect(flagX - 8, flagY - 8, flagW + 16, flagH + 16);
@@ -176,21 +179,21 @@ function usePlaqueTexture(): Texture | null {
 		// Drop shadow for 3D depth
 		ctx.lineWidth = 12;
 		ctx.strokeStyle = '#3a040a';
-		ctx.strokeText(KALAY_SIGN_BIG_TITLE, canvas.width / 2 + 3, canvas.height / 2 + 4);
+		ctx.strokeText(KALAY_SIGN_BIG_TITLE, logicalW / 2 + 3, logicalH / 2 + 4);
 
 		// Deep gold outline
 		ctx.lineWidth = 8;
 		ctx.strokeStyle = GOLD_DEEP;
-		ctx.strokeText(KALAY_SIGN_BIG_TITLE, canvas.width / 2, canvas.height / 2);
+		ctx.strokeText(KALAY_SIGN_BIG_TITLE, logicalW / 2, logicalH / 2);
 
 		// Gold gradient text fill
-		const textGrad = ctx.createLinearGradient(0, canvas.height / 2 - 50, 0, canvas.height / 2 + 50);
+		const textGrad = ctx.createLinearGradient(0, logicalH / 2 - 50, 0, logicalH / 2 + 50);
 		textGrad.addColorStop(0, '#fff4b3');
 		textGrad.addColorStop(0.3, GOLD_BRIGHT);
 		textGrad.addColorStop(0.8, GOLD_RICH);
 		textGrad.addColorStop(1, GOLD_DEEP);
 		ctx.fillStyle = textGrad;
-		ctx.fillText(KALAY_SIGN_BIG_TITLE, canvas.width / 2, canvas.height / 2);
+		ctx.fillText(KALAY_SIGN_BIG_TITLE, logicalW / 2, logicalH / 2);
 
 		return tex;
 	}, []);

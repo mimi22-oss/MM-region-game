@@ -1,4 +1,4 @@
-import { Group, InstancedMesh, Mesh, OrthographicCamera, Scene, WebGLRenderTarget, type WebGLRenderer, type BufferGeometry, type Material, type Object3D, Light } from 'three';
+import { Group, InstancedMesh, Line, Mesh, OrthographicCamera, Points, Scene, Sprite, Texture, WebGLRenderTarget, type WebGLRenderer, type BufferGeometry, type Material, type Object3D, Light } from 'three';
 import { mobileQuality, type RegionBounds } from './sceneBudget.ts';
 
 /** Keep the batched render objects, allowing the much larger React source tree to be released. */
@@ -77,15 +77,35 @@ export async function warmRegion(renderer: WebGLRenderer, world: Scene, root: Gr
  }
 }
 
+const MATERIAL_TEXTURE_SLOTS = [
+ 'map', 'alphaMap', 'aoMap', 'bumpMap', 'displacementMap',
+ 'emissiveMap', 'envMap', 'lightMap', 'metalnessMap', 'normalMap',
+ 'roughnessMap', 'specularMap',
+] as const;
+
 export function disposePreparedRegion(root: Group) {
  root.removeFromParent();
- const geometries = new Set<BufferGeometry>(), materials = new Set<Material>();
+ const geometries = new Set<BufferGeometry>(), materials = new Set<Material>(), textures = new Set<Texture>();
  root.traverse(object => {
-  if (!(object instanceof Mesh)) return;
-  if (object instanceof InstancedMesh) object.dispose();
-  geometries.add(object.geometry);
-  (Array.isArray(object.material) ? object.material : [object.material]).forEach(material => materials.add(material));
+  if (object instanceof Mesh || object instanceof Line || object instanceof Points || object instanceof Sprite) {
+   if (object instanceof InstancedMesh) object.dispose();
+   if ('geometry' in object && object.geometry) geometries.add(object.geometry);
+   const mats = Array.isArray(object.material) ? object.material : [object.material];
+   for (const material of mats) {
+    if (!material) continue;
+    materials.add(material);
+   }
+  }
  });
- for (const geometry of geometries) if (!geometry.userData.shared) geometry.dispose();
- for (const material of materials) if (!material.userData.shared) material.dispose();
+ for (const geometry of geometries) if (!geometry.userData?.shared) geometry.dispose();
+ for (const material of materials) {
+  if (material.userData?.shared) continue;
+  const record = material as unknown as Record<string, unknown>;
+  for (const slot of MATERIAL_TEXTURE_SLOTS) {
+   const tex = record[slot];
+   if (tex instanceof Texture && !tex.userData?.shared) textures.add(tex);
+  }
+  material.dispose();
+ }
+ for (const texture of textures) texture.dispose();
 }

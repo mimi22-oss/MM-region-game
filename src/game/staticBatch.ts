@@ -11,12 +11,17 @@ import {
   type Object3D,
 } from "three";
 
+const sharedUnitBox = new BoxGeometry(1, 1, 1);
+sharedUnitBox.userData.shared = true;
+const sharedUnitPlane = new PlaneGeometry(1, 1);
+sharedUnitPlane.userData.shared = true;
+
 /** Batch opaque, immobile primitives by material and 128 m tile for culling. */
 export function batchStaticMeshes(root: Group) {
   root.updateWorldMatrix(true, true);
   const inverse = root.matrixWorld.clone().invert(),
-    unitBox = new BoxGeometry(1, 1, 1),
-    unitPlane = new PlaneGeometry(1, 1);
+    unitBox = sharedUnitBox,
+    unitPlane = sharedUnitPlane;
   const groups = new Map<
     string,
     {
@@ -163,8 +168,6 @@ export function batchStaticMeshes(root: Group) {
       }
       for (const { group, parent } of [...emptyGroups].reverse()) parent.add(group);
       for (const { mesh, parent } of removed) parent.add(mesh);
-      unitBox.dispose();
-      unitPlane.dispose();
     },
   };
 }
