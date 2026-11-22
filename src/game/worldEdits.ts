@@ -6,6 +6,7 @@ export function featureContent(f: LayoutFeature) {
     kind: f.kind,
     points: f.points,
     rotation: f.rotation ?? 0,
+    elevationY: f.elevationY ?? 0,
     dimensions: f.dimensions,
     width: f.width,
     assetId: f.assetId,
@@ -35,6 +36,8 @@ export function isAuthoredFeatureModified(f: LayoutFeature): boolean {
 
   const rot = (snapshot.rotation as number) ?? 0;
   if (Math.abs((f.rotation ?? 0) - rot) > 0.001) return true;
+  const elev = (snapshot.elevationY as number) ?? 0;
+  if (Math.abs((f.elevationY ?? 0) - elev) > 0.01) return true;
   if (f.assetId !== snapshot.assetId) return true;
   if (f.color !== snapshot.color) return true;
   if (f.roofColor !== snapshot.roofColor) return true;

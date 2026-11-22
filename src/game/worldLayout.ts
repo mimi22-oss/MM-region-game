@@ -20,6 +20,7 @@ export type LayoutFeature = {
   blockId?: string;
   width?: number;
   rotation?: number;
+  elevationY?: number;
   size?: number;
   assetId?: string;
   dimensions?: { width: number; depth: number; height?: number };

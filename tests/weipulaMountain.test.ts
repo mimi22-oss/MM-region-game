@@ -1,14 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { Group, Mesh } from 'three';
 import { ward, toWorld } from '../src/data/ward.ts';
 import { mountainHeight } from '../src/game/mountainTerrain.ts';
 import { canStand } from '../src/game/collision.ts';
+import { GroundSurface } from '../src/game/groundSurface.ts';
+import { buildTaungphilaRoadSegments } from '../src/game/taungphilaWorld.ts';
+import { buildWeipulaRoadSurface, WEIPULA_ASPHALT_TOP } from '../src/game/weipulaRoadSurface.ts';
 import { detectLocation, MAP_DESTINATIONS } from '../src/game/locationDetect.ts';
 import { natmyaungWeipulaSeparationFields } from '../src/data/villages/natmyaung/separationFields.ts';
 import {
   MAHA_WEIPULA_BASE_GATE_UV,
   MAHA_WEIPULA_PLAZA_UV,
   MAHA_WEIPULA_SUMMIT_UV,
+  WEIPULA_JUNCTION_UV,
   buildWeipulaRoadSegments,
   buildWeipulaSlopeFlora,
   buildWeipulaStairway,
@@ -39,6 +44,45 @@ test('Maha Weipula Mountain is 10x taller (~1,320m) with broad natural climbable
   for (let v = 4600; v < 6120; v += 10) {
     const dh = mountainHeight(summit.u, v + 0.15, foregroundPeaks) - mountainHeight(summit.u, v, foregroundPeaks);
     assert.ok(dh < 0.45, `Direct slope step dh=${dh.toFixed(3)}m at v=${v} is smoothly climbable (< 0.5m)`);
+  }
+});
+
+test('Rendered road supports continuous ground samples through the switchbacks and meets Taungphila', () => {
+  const segments = buildWeipulaRoadSegments(foregroundPeaks);
+  const junction = segments.find(s => s.u1 === WEIPULA_JUNCTION_UV.u && s.v1 === WEIPULA_JUNCTION_UV.v);
+  assert.ok(junction);
+  const approach = buildTaungphilaRoadSegments(foregroundPeaks).at(-1)!;
+  assert.equal(approach.u2, junction.u1);
+  assert.equal(approach.v2, junction.v1);
+  assert.ok(Math.abs(approach.y2 - junction.y1) < .01);
+  const trailhead = segments.find(s => s.u1 === MAHA_WEIPULA_BASE_GATE_UV.u && s.v1 === MAHA_WEIPULA_BASE_GATE_UV.v);
+  assert.ok(trailhead && trailhead.y1 + WEIPULA_ASPHALT_TOP < .5, 'The base gate enters the climb at ground level');
+
+  const road = new Group();
+  const chunks = buildWeipulaRoadSurface(segments, foregroundPeaks);
+  for (const chunk of chunks) {
+    const deck = new Mesh(chunk.asphalt);
+    deck.position.set(chunk.x, 0, chunk.z);
+    deck.userData.walkable = true;
+    road.add(deck);
+  }
+  const ground = new GroundSurface();
+  ground.refresh(road);
+  let previous: number | undefined;
+  for (const segment of segments) {
+    const samples = Math.ceil(segment.length / .14);
+    for (let i = 0; i < samples; i++) {
+      const t = (i + .5) / samples;
+      const world = toWorld(segment.u1 + (segment.u2 - segment.u1) * t, segment.v1 + (segment.v2 - segment.v1) * t);
+      const height = ground.height(world.x, world.z);
+      const expected = segment.y1 + (segment.y2 - segment.y1) * t + WEIPULA_ASPHALT_TOP;
+      assert.ok(Math.abs(height - expected) < .15, `${segment.key} maintains its deck at t=${t.toFixed(3)}`);
+      assert.ok(previous === undefined || Math.abs(height - previous) < .45, `${segment.key} has continuous bike footing`);
+      previous = height;
+    }
+  }
+  for (const { asphalt, earth, edge, center, guard } of chunks) {
+    for (const geometry of [asphalt, earth, edge, center, guard]) geometry.dispose();
   }
 });
 

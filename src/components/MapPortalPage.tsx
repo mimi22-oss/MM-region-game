@@ -13,6 +13,7 @@ import {
 import { PLAYER_OWNER } from '../game/homeAccess';
 import './MapPortalPage.css';
 
+const WorldScene3DEditor = lazy(() => import('./WorldScene3DEditor'));
 const WardVillageEditor = lazy(() => import('./WardVillageEditor'));
 const MapSelectionTool = lazy(() => import('./MapSelectionTool'));
 
@@ -29,6 +30,7 @@ function readInitialTool(): MapPortalTool | null {
 export default function MapPortalPage() {
   const [role, setRole] = useState<MapRole>(() => getStoredMapRole());
   const [activeTool, setActiveTool] = useState<MapPortalTool | null>(() => readInitialTool());
+  const [editorView, setEditorView] = useState<'3d' | '2d'>('3d');
   const authority = useSyncExternalStore(
     subscribeAuthoritySession,
     getActiveAuthoritySession,
@@ -104,9 +106,9 @@ export default function MapPortalPage() {
           <button
             type="button"
             className={`map-portal-nav-btn ${activeTool === 'editor' ? 'active' : ''}`}
-            onClick={() => selectTool('editor')}
+            onClick={() => { setEditorView('3d'); selectTool('editor'); }}
           >
-            🗺️ 2D Map &amp; 3D Editor
+            🏗️ 3D Live World Editor
           </button>
           <button
             type="button"
@@ -189,20 +191,20 @@ export default function MapPortalPage() {
                       {isAdmin ? 'Admin: Full Edit' : 'User: Own Home Only'}
                     </span>
                   </div>
-                  <h3>2D Map &amp; 3D Asset Editor</h3>
+                  <h3>3D Live World Studio (WYSIWYG Editor)</h3>
                   <p>
-                    ရပ်ကွက်၊ ကျေးရွာမြေပုံများနှင့် 3D အဆောက်အဦများကို 2D မြေပုံပေါ်တွင်
-                    စစ်ဆေးပြုပြင်နိုင်သော စနစ်ဖြစ်ပါသည်။
+                    တကယ့် Site 3D မြင်ကွင်းအတိုင်း ဘုန်းကြီးကျောင်း၊ စေတီ၊ တံတား၊ အိမ်၊ သစ်ပင်၊ တောင် နှင့်
+                    ပစ္စည်းအားလုံးကို Realtime Drag &amp; Drop / Draw / Rotate (N·E·S·W) / Delete ပြုပြင်နိုင်ပါသည်။
                   </p>
                   <ul className="map-portal-card-list">
                     {isAdmin ? (
                       <>
-                        <li>ရပ်ကွက်/ရွာ အားလုံး၏ အိမ်၊ လမ်း၊ သစ်ပင်များကို ပြင်ဆင်နိုင်သည်</li>
-                        <li>3D Asset အသစ်ထည့်ခြင်း၊ ဖျက်ခြင်း၊ Import/Export ပြုလုပ်နိုင်သည်</li>
+                        <li>တကယ့် 3D မြင်ကွင်းပေါ်တွင် Drag &amp; Drop / Draw ဖြင့် အသစ်ထည့်/ရွှေ့/လှည့်/ဖျက်နိုင်သည်</li>
+                        <li>ဘုန်းကြီးကျောင်းတွင်း ပစ္စည်းများ (1F/2F)၊ တံတား၊ အိမ်၊ သစ်ပင်၊ တောင် အားလုံး Realtime မြင်ရသည်</li>
                       </>
                     ) : (
                       <>
-                        <li>မြို့/ရွာ မြေပုံတစ်ခုလုံးကို ကြည့်ရှုစစ်ဆေးနိုင်သည် (Read-Only)</li>
+                        <li>3D မြို့/ရွာ မြင်ကွင်းတစ်ခုလုံးကို Realtime လှည့်ပတ်ကြည့်ရှုနိုင်သည် (Read-Only)</li>
                         <li>မိမိပိုင်အိမ် (Own Home) ကိုသာ နေရာ/ထောင့်/အရောင် ပြင်ဆင်နိုင်သည်</li>
                       </>
                     )}
@@ -211,9 +213,9 @@ export default function MapPortalPage() {
                 <button
                   type="button"
                   className="map-portal-card-cta"
-                  onClick={() => selectTool('editor')}
+                  onClick={() => { setEditorView('3d'); selectTool('editor'); }}
                 >
-                  🗺️ 2D Map &amp; 3D Asset Editor ဖွင့်ရန် →
+                  🏗️ 3D Live World Editor ဖွင့်ရန် →
                 </button>
               </article>
 
@@ -253,12 +255,22 @@ export default function MapPortalPage() {
 
       {activeTool === 'editor' && (
         <div className="map-portal-workspace">
-          <Suspense fallback={<div className="map-portal-loading" role="status">2D Map Editor ဖွင့်နေသည်…</div>}>
-            <WardVillageEditor
-              initialCenter={{ x: 0, z: 0 }}
-              accessContext={accessContext}
-            />
-          </Suspense>
+          {editorView === '3d' ? (
+            <Suspense fallback={<div className="map-portal-loading" role="status">3D Live World Editor ဖွင့်နေသည်…</div>}>
+              <WorldScene3DEditor
+                accessContext={accessContext}
+                onSwitchTo2D={() => setEditorView('2d')}
+              />
+            </Suspense>
+          ) : (
+            <Suspense fallback={<div className="map-portal-loading" role="status">2D Blueprint ဖွင့်နေသည်…</div>}>
+              <WardVillageEditor
+                initialCenter={{ x: 0, z: 0 }}
+                accessContext={accessContext}
+                onClose={() => setEditorView('3d')}
+              />
+            </Suspense>
+          )}
         </div>
       )}
 

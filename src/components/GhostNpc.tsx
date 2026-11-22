@@ -10,6 +10,7 @@ import {killPlayerFromGhost,playerUnavailableForGhost} from '../game/playerDeath
 import {rideLife} from '../game/rideLife';
 import {playSpecialAction} from '../game/specialActions';
 import {triggerPlayerKnockback} from '../game/combat/playerKnockback';
+import {playEnemyHitPlayerSound,preloadSwordAudio} from '../game/combat/swordAudio';
 import {createGhostGrabPose} from '../game/ghostGrabPose';
 import {createGhostPersonalityConfig,ghostPersonalityForId} from '../game/ghostPersonalities';
 import {rememberGhostMaterial,applyGhostOpacity} from '../game/ghostVisuals';
@@ -1114,8 +1115,9 @@ function LoadedGhostNpc({
       const interaction=rig.guardMelee.step({dt,x:guard.x,z:guard.z,distance:distanceToPlayer,protected:isPlayerHomeProtected(px,pz),
         valid:distanceToPlayer<=2.45&&guard.mode==='chase'&&combatLineClear(guard.x,guard.z,px,pz)&&!playerUnavailableForGhost()&&!camera.userData.playerOccupied&&(!rig.reactionClip||rig.reactionClip==='Ghost_Attack')&&isGhostSegmentWalkable(guard.x,guard.z,px,pz,.25),
         attackNormalized,defence,swordEquipped,playerAttacking});
-      if(rig.guardMelee.started)rig.playCombat('Ghost_Attack');
+      if(rig.guardMelee.started){rig.playCombat('Ghost_Attack');preloadSwordAudio();}
       if(rig.guardMelee.hitLanded&&rideLife.invulnerable<=0&&!isPlayerHomeProtected(px,pz)){
+        playEnemyHitPlayerSound();
         rideLife.mode='walking';
         rideLife.damage=1;
         rideLife.lives=Math.max(0,Math.round((rideLife.lives-1)*10)/10);
@@ -1131,7 +1133,7 @@ function LoadedGhostNpc({
           playerCombat.message=`💥 ${ghostId} ရိုက်ခံရ၍ ${kb.distance}m လွင့်သွားသည်! (Life: ${rideLife.lives}/3)`;
         }
       }
-      if(interaction.active&&interaction.phase==='neck-grab'&&rig.playerReactionSeq!==interaction.seq){rig.playerReactionSeq=interaction.seq;playerCombat.interrupt(ghostId==='ghost-3'?'Knockback':'Hit_React');}
+      if(interaction.active&&interaction.phase==='neck-grab'&&rig.playerReactionSeq!==interaction.seq){rig.playerReactionSeq=interaction.seq;playEnemyHitPlayerSound();playerCombat.interrupt(ghostId==='ghost-3'?'Knockback':'Hit_React');}
       if(rig.guardMelee.parried)requestGhostReaction(ghostId,'Ghost_Stagger');
       setGhostCombatEngaged(ghostId,rig.guardMelee.engaged);
       setGhostEncounterInteraction(interaction,ghostId);

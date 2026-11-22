@@ -65,36 +65,38 @@ export const area5={
  southernFields:Array.from({length:6},(_,row)=>Array.from({length:5},(_,col)=>({id:`southern-field-${row}-${col}`,u:174+col*42,v:430+row*40,...toWorld(174+col*42,430+row*40),width:36,depth:34,rotation:angle,color:['#7e9c55','#a6af68','#8ca65c'][(row+col)%3]}))).flat(),
  weipula:{name:'ဝေပုလ္လတောင်ကြီး',label:toWorld(-900,5600),
    peaks:[
-    // 0: Far West Chin Alpine Peak behind Maha Weipula
-    {u:-2680,v:6360,radius:920,height:1120,plateau:0.06,skirtPower:1.3,obstacleRadius:6.5},
-    // 1: West Chin Shoulder Ridge (cleanly clear of Base Archway north valley floor)
-    {u:-2140,v:5260,radius:640,height:640,plateau:0.06,skirtPower:1.25,obstacleRadius:6.5},
-    // 2: မဟာဝေပုလ္လတောင်တော် ပင်မတောင်ကြီး (10x taller: 1,320m towering climbable massif, 3.04km base south of the 10 paddy fields)
-    {u:-1560,v:6120,radius:1520,height:1320,plateau:0.045,skirtPower:1.25,obstacleRadius:6.5},
+    // 0: Far West Chin Alpine Peak behind Maha Weipula (wide walkable plateau top)
+    {u:-2680,v:6360,radius:920,height:1120,plateau:0.42,skirtPower:1.2,obstacleRadius:6.5},
+    // 1: West Chin Shoulder Ridge (wide flat highland plateau)
+    {u:-2140,v:5260,radius:640,height:640,plateau:0.46,skirtPower:1.18,obstacleRadius:6.5},
+    // 2: မဟာဝေပုလ္လတောင်တော် ပင်မတောင်ကြီး (1,320m climbable massif with broadened summit crown & protected Chin terraces)
+    {u:-1560,v:6120,radius:1520,height:1320,plateau:0.085,skirtPower:1.25,obstacleRadius:6.5},
     // 3: Northeast Foothill Ridge (hosts Weipula Terraced Village south of the 10 paddy fields)
-    {u:-380,v:4920,radius:330,height:290,plateau:0.12,skirtPower:1.25,obstacleRadius:6.5},
+    {u:-380,v:4920,radius:330,height:290,plateau:0.38,skirtPower:1.2,obstacleRadius:6.5},
     // 4: West Pass Foothill (clear of AH1 and 10 separation paddy fields)
-    {u:-135,v:4760,radius:115,height:110,plateau:0.06,skirtPower:1.3,obstacleRadius:6.5},
+    {u:-135,v:4760,radius:115,height:110,plateau:0.44,skirtPower:1.18,obstacleRadius:6.5},
     // 5: East Pass Foothill (clear of AH1 and 10 separation paddy fields)
-    {u:135,v:4760,radius:115,height:120,plateau:0.06,skirtPower:1.3,obstacleRadius:6.5},
-    // 6: East Ridge Shoulder
-    {u:320,v:4920,radius:260,height:280,plateau:0.08,skirtPower:1.25,obstacleRadius:6.5},
+    {u:135,v:4760,radius:115,height:120,plateau:0.44,skirtPower:1.18,obstacleRadius:6.5},
+    // 6: East Ridge Shoulder (broad walkable plateau)
+    {u:320,v:4920,radius:260,height:280,plateau:0.46,skirtPower:1.18,obstacleRadius:6.5},
     // 7: Grand East Chin Range Peak
-    {u:760,v:5480,radius:640,height:1080,plateau:0.06,skirtPower:1.3,obstacleRadius:6.5},
+    {u:760,v:5480,radius:640,height:1080,plateau:0.42,skirtPower:1.2,obstacleRadius:6.5},
     // 8: Far East Chin Peak
-    {u:1280,v:5360,radius:520,height:680,plateau:0.08,skirtPower:1.3,obstacleRadius:6.5},
+    {u:1280,v:5360,radius:520,height:680,plateau:0.44,skirtPower:1.2,obstacleRadius:6.5},
     // 9: Easternmost Foothill Spur
-    {u:1620,v:5160,radius:420,height:420,plateau:0.08,skirtPower:1.3,obstacleRadius:6.5},
-    // Western mountain spine connecting Taungphila seamlessly into Weipula massif
-    ...Array.from({length:37},(_,i)=>470+i*120).map((v,i)=>({u:-630,v,radius:125+(i%4)*8,height:175+(i%5)*26,plateau:0.08,skirtPower:1.3,obstacleRadius:6.5}))
+    {u:1620,v:5160,radius:420,height:420,plateau:0.46,skirtPower:1.18,obstacleRadius:6.5},
+    // Western mountain spine connecting Taungphila seamlessly into Weipula massif (broad flat highland plateaus, not pointy cones!)
+    ...Array.from({length:37},(_,i)=>470+i*120).map((v,i)=>({u:-630,v,radius:135+(i%4)*8,height:168+(i%5)*16,plateau:0.54,skirtPower:1.15,obstacleRadius:6.5})),
+    // Broad flat walkable Western Highland Tableland Mesas (u = -920..-1180, v = 180..4380) for 100+ mountain villages, camps, lakes & forests!
+    ...Array.from({length:12},(_,i)=>220+i*375).map((v,i)=>({u:-980-(i%2)*110,v,radius:310,height:132+(i%3)*12,plateau:0.68,skirtPower:1.12,obstacleRadius:1.5}))
    ].map((m,i)=>({...m,id:`weipula-${i}`,...toWorld(m.u,m.v),color:i<10?'#486b52':'#557359',
     ridgeAxis: i === 2 ? .28 : i < 10 ? .35 + i * .29 : Math.PI / 2 + Math.sin(i * .48) * .32,
-    ridgeRelief: i === 2 ? .048 : i < 10 ? .12 : .075,
-    protectedTerraces: i === 2,
+    ridgeRelief: i === 2 ? .048 : i < 10 ? .09 : i >= 47 ? .015 : .045,
+    protectedTerraces: i === 2 ? { plateau: .045 } : undefined,
    }))},
  westernFields:[270,210,330].flatMap((v,row)=>Array.from({length:5},(_,i)=>({id:`western-field-${row}-${i}`,row,u:-216-i*42,v,...toWorld(-216-i*42,v),width:38,depth:54,rotation:angle,color:['#8ba65d','#a6ad63','#719650'][(i+row)%3]}))),
  taungphila:{name:'တောင်ဖီလာတောင်',label:toWorld(-575,230)},
- mountains:[...Array.from({length:5},(_,i)=>({u:-520-(i%2)*20,v:60+i*85,radius:72,height:145+(i%3)*28,plateau:0.1,skirtPower:1.25,obstacleRadius:6.5})),...Array.from({length:3},(_,i)=>({u:-630,v:100+i*120,radius:65,height:210+i*18,plateau:0.1,skirtPower:1.25,obstacleRadius:6.5}))].map((m,i)=>({...m,id:`western-mountain-${i}`,name:'တောင်ဖီလာတောင်',...toWorld(m.u,m.v),color:i<5?'#607b62':'#718487'})),
+ mountains:[...Array.from({length:5},(_,i)=>({u:-520-(i%2)*20,v:60+i*85,radius:78,height:132+(i%3)*18,plateau:0.56,skirtPower:1.14,obstacleRadius:6.5})),...Array.from({length:3},(_,i)=>({u:-630,v:100+i*120,radius:82,height:162+i*12,plateau:0.58,skirtPower:1.14,obstacleRadius:6.5}))].map((m,i)=>({...m,id:`western-mountain-${i}`,name:'တောင်ဖီလာတောင်',...toWorld(m.u,m.v),color:i<5?'#607b62':'#718487'})),
  crossCanal:{v:282,junctionV:376,depth:3,rotation:angle,
   points:[[125,282],[0,282],[-5,284],[-9,290],[-9,334],[-9,362],[-12,372],[-24,376],[-170,376]],
   bridges:[{u:0,v:282,width:12,depth:7},{u:-9,v:310,width:7,depth:4}]},

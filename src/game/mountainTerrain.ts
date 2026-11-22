@@ -11,7 +11,7 @@ export type TerrainPeak = {
   ridgeAxis?: number;
   ridgeRelief?: number;
   /** Existing houses are surveyed to this sector's original ground profile. */
-  protectedTerraces?: boolean;
+  protectedTerraces?: { plateau: number };
 };
 const smooth = (t: number) => t * t * (3 - 2 * t);
 function hash(x: number, z: number) {
@@ -81,8 +81,12 @@ export function mountainHeight(
       const metres = r * p.radius;
       const protection = smooth(Math.max(0, Math.min(1, (metres - 675) / 62, (1090 - metres) / 46,
         (azimuth + 1.32) / .08, (-.73 - azimuth) / .10)));
-      const oldRoll = (roll1 + roll2) * topFactor * Math.min(1, (r - plateauRatio * .5) / .18) * heightScale;
-      const oldShape = (p.height * topFactor + oldRoll) * (1 + (.075 * spurPrimary + .035 * spurSecondary) * flankMask);
+      const originalPlateau = p.protectedTerraces.plateau;
+      const originalT = (r - originalPlateau) / (1 - originalPlateau);
+      const originalHeight = Math.pow(1 - smooth(originalT), skirtPower);
+      const oldRoll = (roll1 + roll2) * originalHeight * Math.min(1, (r - originalPlateau * .5) / .18) * heightScale;
+      const oldShape = (p.height * originalHeight + oldRoll) *
+        (1 + (.075 * spurPrimary + .035 * spurSecondary) * Math.sin(originalT * Math.PI));
       shape += (oldShape - shape) * protection;
     }
     const peakH = Math.max(0, shape);

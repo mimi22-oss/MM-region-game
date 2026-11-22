@@ -84,7 +84,8 @@ import { stepBotGlbMotionPlayer } from '../game/botGlbMotionPlayer';
 import {motorcycleData} from '../data/motorcycle';
 import {resetMobileInput} from '../game/mobileInput';
 import { sceneGround,motorcycleGroundPose,carGroundPose } from '../game/groundSurface';
-import { evictFromLockedClassroom } from '../game/schoolClassrooms';
+import { evictFromLockedClassroom, notifyBlockedClassroomAt } from '../game/schoolClassrooms';
+import { highlandPlateauSurfaceHeight } from '../game/highlandPlateauWorld';
 import { carRide, carInput, currentCar, nearbyCar, enterCar, parkCar, carExitSpot, shiftCar, selectAutomaticRange, stepCar, carFootprintClear, clearCarInput, driveableCars, type CarStatus, type CarGear, type DriveableCar } from '../game/carRide';
 import { canSummonCar, getSummonParkingWorldSpot, stepCarSummon, updateSummonStand, carSummonState } from '../game/carSummon';
 import { ParkedCars } from './Car';
@@ -189,6 +190,8 @@ export const Player = memo(function Player({
  const jump=useRef(createHumanJump());
  const jumpPose=useRef(createJumpPose());
  const playerGroundYRef=useRef(0);
+ const smoothedAvatarYRef=useRef<number|null>(null);
+ const smoothedCamYRef=useRef<number|null>(null);
  const pendingGroundSyncRef=useRef(true);
  const bridgeFallRef=useRef(createBridgeFallState());
  const characterMotion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0,airborne:false,jumpBend:0,jumpVelocity:0});
@@ -562,13 +565,25 @@ export const Player = memo(function Player({
    const syncZ=isRidingOrMountingHorse()?horseRide.z:motorcycleRide.riding?motorcycleRide.z:s.z;
    const syncY=worldHeight(syncX,syncZ);
    playerGroundYRef.current=syncY;
+   playerGroundYRef.current=syncY;
+   smoothedAvatarYRef.current=syncY;
+   smoothedCamYRef.current=syncY;
    if(isRidingOrMountingHorse()){horseRide.groundY=syncY;}
    syncBridgeFallAnchor(bf,syncX,syncY,syncZ);
    pendingGroundSyncRef.current=false;
   }
   const footHeightCeiling=!balloonRide.riding&&!currentCar()&&!motorcycleRide.riding&&!isRidingOrMountingHorse()?(jump.current.airborne?jump.current.y+0.5:playerGroundYRef.current+2.2):undefined;
   const height=(x:number,z:number)=>ground.height(x,z,footHeightCeiling);
-  const clear=(x:number,z:number)=>canStand(x,z)&&height(x,z)-height(motorcycleRide.riding?motorcycleRide.x:s.x,motorcycleRide.riding?motorcycleRide.z:s.z)<(isMountainBridgeZone(x,z)?0.65:0.5);
+  const clear=(x:number,z:number)=>{
+   if(!canStand(x,z)){
+    if(!balloonRide.riding&&!currentCar()&&!motorcycleRide.riding&&!isRidingOrMountingHorse()){
+     notifyBlockedClassroomAt(x,z);
+    }
+    return false;
+   }
+   const maxStep=isMountainBridgeZone(x,z)||highlandPlateauSurfaceHeight(x,z)!==null?0.78:0.5;
+   return height(x,z)-height(motorcycleRide.riding?motorcycleRide.x:s.x,motorcycleRide.riding?motorcycleRide.z:s.z)<maxStep;
+  };
   const life=getPlayerDeathState();
   stepPlayerRespawnGrace(mapOpen||controlsBlocked?0:dt);
   if(life.phase==='respawning'){
@@ -1166,11 +1181,37 @@ export const Player = memo(function Player({
     jump.current=createHumanJump();jumpPose.current=createJumpPose();
    }
   }
-  const groundY=bf.active?bf.y:balloon.riding?balloon.y+BALLOON_DECK:isRidingOrMountingHorse()?horseRide.groundY+horseRide.jumpY:car?car.groundY:ride.riding?bikePose.y:jump.current.airborne?jump.current.y+.012:Math.max(center,left,rightHeight)+.012;
-  if(!bf.active&&!balloon.riding&&!car&&!ride.riding&&!jump.current.airborne){playerGroundYRef.current=center;}
-  characterMotion.current.leftFoot=(left-groundY+.012)/bodyScale;
-  characterMotion.current.rightFoot=(rightHeight-groundY+.012)/bodyScale;
-  characterMotion.current.stepLift=Math.min(.32,Math.abs(height(s.x-sn*.4,s.z-c*.4)-center)+.04);
+  const footEdgeBump=Math.max(0,Math.max(left,rightHeight)-center);
+  const onFootRawGroundY=center+(footEdgeBump<=0.12?footEdgeBump:0)+.012;
+  const rawGroundY=bf.active?bf.y:balloon.riding?balloon.y+BALLOON_DECK:isRidingOrMountingHorse()?horseRide.groundY+horseRide.jumpY:car?car.groundY:ride.riding?bikePose.y:jump.current.airborne?jump.current.y+.012:onFootRawGroundY;
+  const isGroundedOnFoot=!bf.active&&!balloon.riding&&!isRidingOrMountingHorse()&&!car&&!ride.riding&&!jump.current.airborne;
+  let groundY=rawGroundY;
+  let camGroundY=rawGroundY;
+  if(isGroundedOnFoot){
+   playerGroundYRef.current=center;
+   if(smoothedAvatarYRef.current===null||Math.abs(rawGroundY-smoothedAvatarYRef.current)>2.5){
+    smoothedAvatarYRef.current=rawGroundY;
+    smoothedCamYRef.current=rawGroundY;
+   }else{
+    const avatarAlpha=1-Math.exp(-dt*24);
+    const nextAvatarY=smoothedAvatarYRef.current+(rawGroundY-smoothedAvatarYRef.current)*avatarAlpha;
+    smoothedAvatarYRef.current=Math.abs(rawGroundY-nextAvatarY)>0.28?rawGroundY-Math.sign(rawGroundY-nextAvatarY)*0.28:nextAvatarY;
+    const camAlpha=1-Math.exp(-dt*12);
+    const nextCamY=(smoothedCamYRef.current??rawGroundY)+(rawGroundY-(smoothedCamYRef.current??rawGroundY))*camAlpha;
+    smoothedCamYRef.current=Math.abs(rawGroundY-nextCamY)>0.45?rawGroundY-Math.sign(rawGroundY-nextCamY)*0.45:nextCamY;
+   }
+   groundY=smoothedAvatarYRef.current;
+   camGroundY=smoothedCamYRef.current??groundY;
+  }else{
+   smoothedAvatarYRef.current=rawGroundY;
+   smoothedCamYRef.current=rawGroundY;
+  }
+  const footDeltaLeft=Math.max(-0.14,Math.min(0.14,left-groundY+.012));
+  const footDeltaRight=Math.max(-0.14,Math.min(0.14,rightHeight-groundY+.012));
+  characterMotion.current.leftFoot=footDeltaLeft/bodyScale;
+  characterMotion.current.rightFoot=footDeltaRight/bodyScale;
+  const rawAheadDiff=Math.abs(height(s.x-sn*.4,s.z-c*.4)-center);
+  characterMotion.current.stepLift=rawAheadDiff>0.18?Math.min(.26,rawAheadDiff+.04):Math.min(.09,rawAheadDiff*.4+.04);
   if(bf.active||jump.current.airborne||balloon.riding){characterMotion.current.leftFoot=0;characterMotion.current.rightFoot=0;characterMotion.current.stepLift=0;}
   const ghostProceduralFall=ghostGrabbedOnFoot&&ghostInteraction.phase==='player-fall'&&(!glbCapable||character!=='cartoon')?ghostInteraction.fallProgress:0;
   const fall=!car?Math.max(actorFallProgress(),ghostProceduralFall,bf.active?bf.tumbleProgress:0):0;
@@ -1184,7 +1225,7 @@ export const Player = memo(function Player({
   if(avatar.current){avatar.current.position.set(bf.active?bf.x:isRidingOrMountingHorse()?horseRide.x:s.x,avatarY+fall*(ride.riding?.18:.28*bodyScale),bf.active?bf.z:isRidingOrMountingHorse()?horseRide.z:s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:fall*Math.PI/2,isRidingOrMountingHorse()?horseRide.yaw:fall&&!ride.riding?fallYaw.current:s.bodyYaw,ride.riding?fall*1.42:bf.active?bf.tumbleProgress*0.85:0,'YXZ');avatar.current.visible=!car&&!s.first&&!isBlinking&&!introHighAlt;}
   camera.userData.playerOccupied=!!(car||balloon.riding||ride.riding||isRidingOrMountingHorse());
   const focusHeight=isRidingOrMountingHorse()?horsePoseRef.current.hip.y+.76*bodyScale:1.65*(car||ride.riding?1:bodyScale);
-  target.current.set(aerial?s.camX:s.x,(aerial?ground.height(s.camX,s.camZ):groundY)+focusHeight,aerial?s.camZ:s.z);
+  target.current.set(aerial?s.camX:s.x,(aerial?ground.height(s.camX,s.camZ):camGroundY)+focusHeight,aerial?s.camZ:s.z);
   if(car&&s.first){
    tmpEuler.current.set(car.pitch,car.yaw,car.roll,'YXZ');
    target.current.set(DRIVER_EYE[0]*car.size,DRIVER_EYE[1]*car.size,DRIVER_EYE[2]*car.size).applyEuler(tmpEuler.current).add(tmpVecA.current.set(car.x,car.groundY,car.z));

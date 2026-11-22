@@ -41,7 +41,10 @@ export interface SchoolHallSpec {
 
 export interface ClassroomInSessionNotice {
   readonly message: string;
+  readonly hallId: string;
   readonly hallName: string;
+  readonly hallX: number;
+  readonly hallZ: number;
   readonly roomLabel: string;
   readonly seq: number;
 }
@@ -75,14 +78,17 @@ export function subscribeClassroomNotice(listener: () => void): () => void {
   return () => classroomNoticeListeners.delete(listener);
 }
 
-function triggerClassroomInSessionNotice(hallName: string, roomLabel: string): void {
+function triggerClassroomInSessionNotice(spec: SchoolHallSpec, roomLabel: string): void {
   const now = Date.now();
   if (now - lastClassroomNoticeAt < 1800) return;
   lastClassroomNoticeAt = now;
   classroomNoticeSeq += 1;
   activeClassroomNotice = {
     message: `စာသင်နေပါသည် (${roomLabel}) — နားချိန်မှသာ စာသင်ခန်းထဲ ဝင်နိုင်ပါမည်`,
-    hallName,
+    hallId: spec.id,
+    hallName: spec.name,
+    hallX: spec.x,
+    hallZ: spec.z,
     roomLabel,
     seq: classroomNoticeSeq,
   };
@@ -1295,7 +1301,12 @@ const PREPARED_HALL_COLLIDERS: readonly PreparedHallCollider[] = WALKIN_SCHOOL_H
  *   remain 100% walkable, while classroom doorways & interiors block entry and trigger a brief
  *   Myanmar toast notice ("စာသင်နေပါသည် — နားချိန်မှသာ စာသင်ခန်းထဲ ဝင်နိုင်ပါမည်")!
  */
-export function canStandWalkInSchoolHalls(x: number, z: number, playerRadius = 0.4): boolean {
+export function canStandWalkInSchoolHalls(
+  x: number,
+  z: number,
+  playerRadius = 0.4,
+  emitNotice = true,
+): boolean {
   for (let i = 0; i < PREPARED_HALL_COLLIDERS.length; i++) {
     const entry = PREPARED_HALL_COLLIDERS[i];
     const dx = x - entry.spec.x;
@@ -1314,11 +1325,13 @@ export function canStandWalkInSchoolHalls(x: number, z: number, playerRadius = 0
       lz >= layout.zBack - playerRadius &&
       lz <= layout.zFrontWall + playerRadius + 0.12
     ) {
-      // Find nearest classroom label for the transient toast message
-      const room =
-        layout.classrooms.find(r => lx >= r.xMin - 0.5 && lx <= r.xMax + 0.5) ??
-        layout.classrooms[0];
-      triggerClassroomInSessionNotice(entry.spec.name, room?.label ?? 'စာသင်ခန်း');
+      if (emitNotice) {
+        // Find nearest classroom label for the transient toast message
+        const room =
+          layout.classrooms.find(r => lx >= r.xMin - 0.5 && lx <= r.xMax + 0.5) ??
+          layout.classrooms[0];
+        triggerClassroomInSessionNotice(entry.spec, room?.label ?? 'စာသင်ခန်း');
+      }
       return false;
     }
 
@@ -1335,6 +1348,37 @@ export function canStandWalkInSchoolHalls(x: number, z: number, playerRadius = 0
     }
   }
   return true;
+}
+
+/**
+ * Checks whether the player's own movement target `(x, z)` is blocked by a locked
+ * classroom during active class time and emits the transient notice ONLY for the player.
+ */
+export function notifyBlockedClassroomAt(x: number, z: number, playerRadius = 0.4): boolean {
+  if (!schoolClassInSession) return false;
+  for (let i = 0; i < PREPARED_HALL_COLLIDERS.length; i++) {
+    const entry = PREPARED_HALL_COLLIDERS[i];
+    const dx = x - entry.spec.x;
+    const dz = z - entry.spec.z;
+    if (dx * dx + dz * dz > entry.boundR * entry.boundR) continue;
+
+    const lx = dx * entry.cosR - dz * entry.sinR;
+    const lz = dx * entry.sinR + dz * entry.cosR;
+    const layout = entry.layout;
+    if (
+      lx >= -layout.hallLength / 2 - playerRadius &&
+      lx <= layout.hallLength / 2 + playerRadius &&
+      lz >= layout.zBack - playerRadius &&
+      lz <= layout.zFrontWall + playerRadius + 0.12
+    ) {
+      const room =
+        layout.classrooms.find(r => lx >= r.xMin - 0.5 && lx <= r.xMax + 0.5) ??
+        layout.classrooms[0];
+      triggerClassroomInSessionNotice(entry.spec, room?.label ?? 'စာသင်ခန်း');
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -1363,7 +1407,7 @@ export function evictFromLockedClassroom(x: number, z: number): { x: number; z: 
       const room =
         layout.classrooms.find(r => lx >= r.xMin - 0.5 && lx <= r.xMax + 0.5) ??
         layout.classrooms[0];
-      triggerClassroomInSessionNotice(entry.spec.name, room?.label ?? 'စာသင်ခန်း');
+      triggerClassroomInSessionNotice(entry.spec, room?.label ?? 'စာသင်ခန်း');
       const exitLx = room ? room.doorX : lx;
       const exitLz = layout.zFrontWall + Math.min(1.15, layout.verandaDepth * 0.55);
       return {

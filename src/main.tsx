@@ -643,11 +643,23 @@ function App() {
   const schoolClockMinute = effectiveSchoolMinute(environment.minute, environment.preferences.mode);
   const currentSchoolPeriod = resolveSchoolPeriod(environment.minute, environment.preferences.mode);
   const currentPeriodMeta = TIME_PERIODS.find((p) => p.id === environment.period);
+  const classroomNoticeNearPlayer = useMemo(
+    () =>
+      Boolean(
+        classroomNotice &&
+          Math.hypot(pos.x - classroomNotice.hallX, pos.z - classroomNotice.hallZ) <= 36,
+      ),
+    [classroomNotice, pos.x, pos.z],
+  );
   useEffect(() => {
     if (!classroomNotice) return;
+    if (!classroomNoticeNearPlayer) {
+      clearClassroomNotice();
+      return;
+    }
     const timer = window.setTimeout(() => clearClassroomNotice(), 2800);
     return () => window.clearTimeout(timer);
-  }, [classroomNotice?.seq]);
+  }, [classroomNotice?.seq, classroomNoticeNearPlayer]);
   const entryIntroAttemptedRef = useRef(false);
   const [navigationRequest, setNavigationRequest] = useState<{
     action: "locate" | "teleport";
@@ -1332,7 +1344,7 @@ function App() {
           <div
             className={[
               "horse-ride-speed",
-              classroomNotice || arrivalToast
+              (classroomNotice && classroomNoticeNearPlayer) || arrivalToast
                 ? "horse-ride-speed-below-location"
                 : "horse-ride-speed-below-ghost",
               nearFootballPitch
@@ -1489,7 +1501,7 @@ function App() {
         {/* <h1>{currentLoc.title}</h1> */}
         {/* <p>{currentLoc.subtitle}</p> */}
       </header>
-      {!intro.active && classroomNotice && !mapOpen && (
+      {!intro.active && classroomNotice && classroomNoticeNearPlayer && !mapOpen && (
         <div
           className={
             nearFootballPitch
@@ -1508,7 +1520,7 @@ function App() {
           </div>
         </div>
       )}
-      {!intro.active && arrivalToast && !classroomNotice && !mapOpen && (
+      {!intro.active && arrivalToast && !(classroomNotice && classroomNoticeNearPlayer) && !mapOpen && (
         <div
           className={
             nearFootballPitch

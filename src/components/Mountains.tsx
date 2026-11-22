@@ -20,6 +20,15 @@ import {
 } from '../game/weipulaClimb';
 import { WeipulaRoad } from './WeipulaRoad';
 import { TaungphilaMountainFeatures } from './TaungphilaMountainFeatures';
+import { HighlandPlateauWorld } from './HighlandPlateauWorld';
+import { MountainRabbits } from './MountainRabbits';
+import { MountainDeer } from './MountainDeer';
+import { MountainTigers } from './MountainTigers';
+import { MountainWildlifeAudio } from './MountainWildlifeAudio';
+import { buildMountainRabbitSpawns } from '../game/mountainRabbitPool';
+import { buildMountainDeerSpawns } from '../game/mountainDeerPool';
+import { buildMountainTigerSpawns } from '../game/mountainTigerPool';
+import { getHighlandPlateauCatalog } from '../game/highlandPlateauWorld';
 import {
 	TAUNGPHILA_MOUNTAIN_WORLD,
 	TAUNGPHILA_ROAD_CONTROL_POINTS,
@@ -34,9 +43,9 @@ import weipulaChinVillageMeta from '../data/weipulaChinVillageDataset.json';
 const distantMountainTiers = [
 	// ဒုတိယဆင့် တောင်တန်းများ (Inner Chin Hills behind 1,320m Maha Weipula: v = 7400 ~ 7900)
 	...[-2800, -2100, -1400, -700, 0, 700, 1400, 2100].map((u, i) => {
-		const v = 7450 + (i % 3) * 180;
-		const height = 1480 + (i % 4) * 140;
-		const radius = 560 + (i % 3) * 60;
+		const v = 7920 + (i % 3) * 210;
+		const height = 850 + (i % 4) * 110;
+		const radius = 970 + (i % 3) * 125;
 		return {
 			id: `distant-chin-tier2-${i}`,
 			u,
@@ -53,9 +62,9 @@ const distantMountainTiers = [
 	}),
 	// တတိယဆင့် အဝေး မိုးကုတ်စက်ဝိုင်း ချင်းတောင်တန်းကြီးများ (High Chin Horizon Ridges: v = 8300 ~ 8800)
 	...[-3200, -2200, -1200, -200, 800, 1800, 2800].map((u, i) => {
-		const v = 8450 + (i % 2) * 260;
-		const height = 1780 + (i % 3) * 180;
-		const radius = 720 + (i % 3) * 70;
+		const v = 9190 + (i % 2) * 310;
+		const height = 1120 + (i % 3) * 170;
+		const radius = 1330 + (i % 3) * 155;
 		return {
 			id: `distant-chin-tier3-${i}`,
 			u,
@@ -819,15 +828,23 @@ export function Mountains() {
 	// ၂။ မြောက်ဘက် တောင်တက် စောင်းတန်း ကျောက်လှေကားနှင့် နားနေဇရပ်များ
 	const stairway = useMemo(() => buildWeipulaStairway(foreground), []);
 
-	// ၃။ တောင်တစ်ခုလုံး (မဟာဝေပုလ္လ + တောင်ဖီလာ + အနောက်တောင်တန်း) စိမ်းစိုနေစေမည့် ထင်းရှူးပင်၊ သစ်ပင်နှင့် မြက်ခင်းချုံပုတ်များ
+	// ၃။ တောင်တစ်ခုလုံး (မဟာဝေပုလ္လ + တောင်ဖီလာ + အနောက်တောင်တန်း လွင်ပြင်) စိမ်းစိုနေစေမည့် ထင်းရှူးပင်၊ သစ်ပင်ထောင်ပေါင်းများစွာနှင့် မြက်ခင်းချုံပုတ်များ
+	const highlandCatalog = useMemo(() => getHighlandPlateauCatalog(), []);
+	// Build wildlife spawns once and share between render pools & spatial mountain audio (zero duplicate generation)
+	const wildlifeSpawns = useMemo(() => {
+		const rabbits = buildMountainRabbitSpawns(foreground);
+		const deer = buildMountainDeerSpawns(foreground);
+		const tigers = buildMountainTigerSpawns(foreground, rabbits, deer);
+		return { rabbits, deer, tigers };
+	}, []);
 	const slopeFlora = useMemo(() => {
 		const weipula = buildWeipulaSlopeFlora(foreground, mobileQuality);
 		const taungphila = buildTaungphilaSlopeFlora(foreground, mobileQuality);
 		return {
-			trees: [...weipula.trees, ...taungphila.trees],
+			trees: [...weipula.trees, ...taungphila.trees, ...highlandCatalog.trees],
 			grassTufts: [...weipula.grassTufts, ...taungphila.grassTufts],
 		};
-	}, []);
+	}, [highlandCatalog]);
 
 	// တောင်ခြေ မုခ်ဦး တည်နေရာ (Base Foothill Archway, y ≈ 0m)
 	const baseGatePos = useMemo(() => {
@@ -855,6 +872,25 @@ export function Mountains() {
 
 			{/* ၃.၅။ တောင်ဖီလာတောင် ဆိုင်ကယ်တောင်တက်လမ်း၊ ရေကန်၊ ဇရပ်၊ တောရဘုန်းကြီးကျောင်းနှင့် စေတီတော်များ */}
 			<TaungphilaMountainFeatures peaks={foreground} />
+
+			{/* ၃.၆။ တောင်ပေါ် မြေပြန့်လွင်ပြင် စခန်းများ၊ ရွာ ၁၀၀+ နှင့် ကျောက်တုံး/ခြုံပုတ်များ (Singleton Cache + Fixed Object Pool) */}
+			<HighlandPlateauWorld catalog={highlandCatalog} />
+
+			{/* ၃.၇။ တောင်ပေါ် ယုန်ကလေးများ (နေရာအလိုက် random ခုန်ပေါက်သွားလာနေသော ယုန် ၃၀၀ — Singleton Cache + Fixed Object Pool) */}
+			<MountainRabbits peaks={foreground} spawns={wildlifeSpawns.rabbits} />
+
+			{/* ၃.၈။ တောင်ပေါ် သမင်အုပ်များ (နေရာအလိုက် random မြက်စားသွားလာနေသော သမင် ၁၈၀ — Singleton Cache + Fixed Object Pool) */}
+			<MountainDeer peaks={foreground} spawns={wildlifeSpawns.deer} />
+
+			{/* ၃.၉။ တောင်ပေါ် ကျားကြီးများ (၂ ကောင် တစ်နေရာ / ၁ ကောင် တစ်နေရာ — ယုန်နှင့် သမင်အုပ်များမှ >= 20m ဝေးကွာ — Singleton Cache + Fixed Object Pool) */}
+			<MountainTigers peaks={foreground} spawns={wildlifeSpawns.tigers} />
+
+			{/* ၃.၁၀။ တောင်ပေါ် ကျားဟိန်းသံ နှင့် သမင်/ဒရယ် ဟောက်သံများ (Mountain Wildlife Spatial Audio) */}
+			<MountainWildlifeAudio
+				peaks={foreground}
+				tigers={wildlifeSpawns.tigers}
+				deer={wildlifeSpawns.deer}
+			/>
 
 			{/* ၄။ မဟာဝေပုလ္လ တောင်တက် ကျောက်လှေကား စောင်းတန်း (Clearly Visible Pilgrim Stone Stairway from Base to 1,320m Summit) */}
 			<group name="weipula-pilgrim-stairway">

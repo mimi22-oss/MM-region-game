@@ -22,6 +22,7 @@ import { isInsideWeipulaChinVillageUV } from './weipulaChinVillageLayout.ts';
 export const MAHA_WEIPULA_SUMMIT_UV = { u: -1560, v: 6120 } as const;
 export const MAHA_WEIPULA_PLAZA_UV = { u: -1560, v: 6068 } as const;
 export const MAHA_WEIPULA_BASE_GATE_UV = { u: -1560, v: 4610 } as const;
+export const WEIPULA_JUNCTION_UV = { u: -772.322, v: 4552.174 } as const;
 export const WEIPULA_VILLAGE_V_OFFSET = 420;
 const routePeaks = [...ward.mountains, ...ward.weipula.peaks];
 
@@ -41,17 +42,19 @@ function generateSwitchbackWaypoints(): RoadControlPoint[] {
   const pts: RoadControlPoint[] = [
     // 1. Flat valley approach from AH1 (south of the 10 Nat Myaung separation paddy fields)
     { u: -6, v: 4580, w: 10.5 },
-    { u: -180, v: 4582, w: 10.2 },
-    { u: -360, v: 4584, w: 10.2 },
-    { u: -445, v: 4588, w: 10.2 },
+    { u: -101, v: 4580, w: 10.2 },
+    { u: -192, v: 4470, w: 10.2 },
+    { u: -253, v: 4382, w: 10.2 },
+    { u: -348, v: 4355, w: 10.2 },
+    { u: -462, v: 4407, w: 10.2 },
 
     // 2. Scenic Winding Mountain Pass OVER the western ridge crest at (-635, 4665)
     //    (Instead of tunneling under the ridge, the road switchbacks smoothly up the east flank,
     //     crosses right over the mountain top around (-635, 4665), and winds gently down the west flank!)
     // East flank climb — Leg A (South-West along lower east slope)
-    { u: -485, v: 4635, w: 10.0 },
-    { u: -515, v: 4720, w: 10.0 },
-    { u: -505, v: 4800, w: 10.0 },
+    { u: -477, v: 4520, w: 10.0 },
+    { u: -470, v: 4630, w: 10.0 },
+    { u: -495, v: 4730, w: 10.0 },
     // East Hairpin 1
     { u: -545, v: 4830, w: 10.4 },
     // East flank climb — Leg B (North-West sweeping up mid-slope)
@@ -71,17 +74,20 @@ function generateSwitchbackWaypoints(): RoadControlPoint[] {
     // West flank descent — Leg B (sweeping north-west down lower west slope)
     { u: -735, v: 4660, w: 10.0 },
     { u: -735, v: 4580, w: 10.0 },
-    { u: -775, v: 4550, w: 10.0 },
+    { ...WEIPULA_JUNCTION_UV, w: 10.0 },
     // Valley floor west of the ridge pass -> Base Welcome Archway
     { u: -840, v: 4580, w: 10.2 },
-    { u: -1020, v: 4592, w: 10.2 },
-    { u: -1280, v: 4602, w: 10.2 },
+    { u: -895, v: 4630, w: 10.2 },
+    { u: -1020, v: 4656, w: 10.2 },
+    { u: -1280, v: 4661, w: 10.2 },
+    { u: -1450, v: 4640, w: 10.2 },
     // Base Welcome Archway & Stairway Trailhead (y ≈ 0m)
     { u: MAHA_WEIPULA_BASE_GATE_UV.u, v: MAHA_WEIPULA_BASE_GATE_UV.v, w: 11.0 },
   ];
 
   const traverses = 29;
   const divisions = 14;
+  const climbStart = pts.length;
   const summitHeight = mountainHeight(cu, cv, routePeaks);
   for (let leg = 0; leg < traverses; leg++) {
     for (let i = leg === 0 ? 1 : 0; i < divisions; i++) {
@@ -112,6 +118,19 @@ function generateSwitchbackWaypoints(): RoadControlPoint[] {
     }
   }
 
+  // Smooth the plotted contours through short bends where the terrace sector changes profile.
+  for (let pass = 0; pass < 3; pass++) {
+    const plotted = pts.slice();
+    for (let i = climbStart + 1; i < pts.length - 1; i++) {
+      const before = plotted[i - 1], point = plotted[i], after = plotted[i + 1];
+      pts[i] = {
+        ...point,
+        u: .64 * point.u + .18 * (before.u + after.u),
+        v: .64 * point.v + .18 * (before.v + after.v),
+      };
+    }
+  }
+
   // Final tie-in directly onto the Summit Parking Plaza
   pts.push({ u: MAHA_WEIPULA_PLAZA_UV.u, v: MAHA_WEIPULA_PLAZA_UV.v, w: 11.5 });
   return pts;
@@ -123,7 +142,7 @@ export const WEIPULA_ROAD_CONTROL_POINTS: readonly RoadControlPoint[] =
 export function isOnWeipulaRoad(x: number, z: number, margin = 0) {
   const c = Math.cos(angle), s = Math.sin(angle);
   const u = x * c - z * s, v = x * s + z * c;
-  if (u < -1590 || u > 3 || v < 4520 || v > 6080) return false;
+  if (u < -1590 || u > 3 || v < 4340 || v > 6080) return false;
   for (let i = 1; i < WEIPULA_ROAD_CONTROL_POINTS.length; i++) {
     const a = WEIPULA_ROAD_CONTROL_POINTS[i - 1], b = WEIPULA_ROAD_CONTROL_POINTS[i];
     const du = b.u - a.u, dv = b.v - a.v;
@@ -223,20 +242,21 @@ export function buildWeipulaRoadSegments(peaks: readonly TerrainPeak[]): Pitched
   // Taper final 3 samples smoothly into the flat Summit Parking Plaza while staying strictly above terrain
   for (let i = Math.max(1, endIdx - 3); i <= endIdx; i++) {
     const rawH = mountainHeight(samples[i].u, samples[i].v, peaks);
-    samples[i].minY = Math.max(rawH + 0.2, lastSummitY + 0.12);
+    samples[i].minY = Math.max(rawH + 0.2, lastSummitY + 0.2);
     samples[i].y = samples[i].minY;
   }
 
   // Identify main Maha Weipula climb start (Base Welcome Archway at -1560, 4610)
   const baseGateIdx = samples.findIndex(
-    s => s.u <= MAHA_WEIPULA_BASE_GATE_UV.u + 4 && s.v >= MAHA_WEIPULA_BASE_GATE_UV.v - 4,
+    s => Math.hypot(s.u - MAHA_WEIPULA_BASE_GATE_UV.u, s.v - MAHA_WEIPULA_BASE_GATE_UV.v) < .01,
   );
 
   // Upward-only Lipschitz grade envelope across the ENTIRE road (AH1 -> Ridge Pass -> Base Gate -> 1,320m Summit):
   // Smooths bumps and guarantees |dy/ds| <= 0.27 everywhere while NEVER lowering any point below terrain!
-  for (let pass = 0; pass < 48; pass++) {
+  for (let pass = 0; pass < 6; pass++) {
     // Gentle upward-only smoothing of concave dips
     for (let i = 1; i < endIdx; i++) {
+      if (i === baseGateIdx) continue;
       const avg = samples[i - 1].y * 0.26 + samples[i].y * 0.48 + samples[i + 1].y * 0.26;
       const floorY =
         baseGateIdx > 0 && i > baseGateIdx && i < endIdx - 12
@@ -516,7 +536,7 @@ export function buildWeipulaSlopeFlora(
         Math.abs(mountainHeight(u + 5, v, peaks) - mountainHeight(u - 5, v, peaks)),
         Math.abs(mountainHeight(u, v + 5, peaks) - mountainHeight(u, v - 5, peaks)),
       ) / 10;
-      if (slope > 1.65) continue;
+      if (slope > 1.95) continue;
 
       const variation = terrainNoise(u / 37, v / 47);
       const pos = toWorld(u, v);
@@ -524,7 +544,7 @@ export function buildWeipulaSlopeFlora(
         id: `weipula-${id}-row-${row}-${i}`,
         u, v, ...pos,
         y: h - .84,
-        scale: .8 + variation * .78 + Math.min(.42, peak.radius / 3200),
+        scale: .86 + variation * .83 + Math.min(.38, peak.radius / 3400),
         kind: h > 620 ? (i % 5 < 4 ? 'pine' : 'broad') : (i % 5 === 0 ? 'pine' : 'broad'),
         tintIndex: (i + row * 3) % 5,
       });
@@ -533,8 +553,8 @@ export function buildWeipulaSlopeFlora(
 
   const main = peaks.find(p => p.u === cu && p.v === cv);
   if (main) {
-    const beltRadii = [1460, 1370, 1270, 1170, 1070, 970, 870, 770, 670, 570, 470, 378, 290, 205, 125];
-    beltRadii.forEach((r, row) => addRow('main', main, r, Math.max(32, Math.round(r * .078)), row));
+    const beltRadii = Array.from({ length: 27 }, (_, i) => 1460 - 51 * i);
+    beltRadii.forEach((r, row) => addRow('main', main, r, Math.max(32, Math.round(r * .1)), row));
   }
   // Smaller, separate bands follow the contours of adjoining peaks and ridge shoulders.
   const shoulders = peaks.filter(p => p !== main && p.v >= 4510);

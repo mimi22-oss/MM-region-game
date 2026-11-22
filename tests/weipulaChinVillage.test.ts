@@ -152,6 +152,8 @@ test('Weipula Chin village streamed JSON tiles, projection round-trip, location 
     assert.equal(payload.features.length, tile.featureCount);
     for (const f of payload.features) {
       decodedCount++;
+      const { u, v, baseY } = f.properties;
+      assert.ok(baseY >= mountainHeight(u, v, peaks) + .3, `Baked house ${f.id} clears the new terrain`);
       const [lon, lat] = f.properties.anchorGeo;
       const world = projectMapPoint(WEIPULA_CHIN_VILLAGE_PROJECTION, lon, lat);
       const back = unprojectMapPoint(WEIPULA_CHIN_VILLAGE_PROJECTION, world.x, world.z);

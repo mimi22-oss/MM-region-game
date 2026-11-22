@@ -2,14 +2,14 @@ import { angle, toWorld, ward } from '../data/ward.ts';
 import { mountainHeight, terrainNoise, type TerrainPeak } from './mountainTerrain.ts';
 import {
   buildWeipulaRoadSegments,
+  WEIPULA_JUNCTION_UV,
   type MountainGrassTuftPlot,
   type MountainTreePlot,
   type PitchedRoadSegment,
   type RoadControlPoint,
 } from './weipulaClimb.ts';
 
-/** Exact junction on the Maha Weipula Mountain Highway (`Scene X=2672.759, Z=3764.988`) */
-export const WEIPULA_JUNCTION_UV = { u: -772.322, v: 4552.174 } as const;
+export { WEIPULA_JUNCTION_UV } from './weipulaClimb.ts';
 
 /**
  * ============================================================================
@@ -110,6 +110,8 @@ function createRng(seed: number): () => number {
 function generateTaungphilaToWeipulaWaypoints(): RoadControlPoint[] {
   const pts: RoadControlPoint[] = [
     // 1. Flat valley approach (`y = 0m`) staying cleanly east of all foothill skirts (`u >= -438`)
+    { u: -406, v: -210, w: 9.0 },
+    { u: -409, v: -115, w: 8.8 },
     { u: -412, v: -20, w: 8.8 },
     { u: -420, v: 85, w: 8.6 },
     { u: -428, v: 190, w: 8.4 },
@@ -143,19 +145,20 @@ function generateTaungphilaToWeipulaWaypoints(): RoadControlPoint[] {
     { u: -692, v: 445, w: 8.0 },
   ];
 
-  // 7. Continuous 4.1 km Scenic Western Mountain Spine Highway (`v = 540 .. 4460`)
+  // 7. Continuous 4.1 km Scenic Western Mountain Spine Highway (`v = 540 .. 4380`)
   //    Weaves smoothly along the western ridge flank (`u ≈ -692..-722`), staying clear
   //    of all eastern villages (`u <= -680`) AND all `u = -630` ridge peak centers!
-  for (let v = 540; v <= 4460; v += 140) {
+  for (let v = 540; v <= 4380; v += 140) {
     const wave = Math.sin(v * 0.0045) * 16 + Math.cos(v * 0.009) * 8;
     const u = -704 + wave;
     pts.push({ u, v, w: 8.0 });
   }
 
   // 8. Seamless mountain junction directly into Maha Weipula Highway at user's exact point
-  //    `Local U/V = (-772.322, 4552.174)` (`Scene X/Z = 2672.759, 3764.988`, `y ≈ 134.8m`)!
+  //    `Local U/V = (-772.322, 4552.174)` (`Scene X/Z = 2672.759, 3764.988`)!
   pts.push(
-    { u: -734, v: 4508, w: 9.0 },
+    { u: -746, v: 4445, w: 8.6 },
+    { u: -764, v: 4502, w: 9.2 },
     { u: WEIPULA_JUNCTION_UV.u, v: WEIPULA_JUNCTION_UV.v, w: 10.0 },
   );
 
@@ -171,7 +174,7 @@ export function isOnTaungphilaRoad(x: number, z: number, margin = 0): boolean {
   const s = Math.sin(angle);
   const u = x * c - z * s;
   const v = x * s + z * c;
-  if (u < -810 || u > -400 || v < -35 || v > 4570) return false;
+  if (u < -810 || u > -400 || v < -225 || v > 4570) return false;
   for (let i = 1; i < TAUNGPHILA_ROAD_CONTROL_POINTS.length; i++) {
     const a = TAUNGPHILA_ROAD_CONTROL_POINTS[i - 1];
     const b = TAUNGPHILA_ROAD_CONTROL_POINTS[i];
@@ -221,7 +224,7 @@ export function buildTaungphilaRoadSegments(
     const a = TAUNGPHILA_ROAD_CONTROL_POINTS[i];
     const b = TAUNGPHILA_ROAD_CONTROL_POINTS[i + 1];
     const dist = Math.hypot(b.u - a.u, b.v - a.v);
-    const stepLen = Math.min(a.v, b.v) > 500 ? 28 : 16;
+    const stepLen = 16;
     const subs = Math.max(2, Math.round(dist / stepLen));
     for (let s = 0; s < subs; s++) {
       const t = s / subs;

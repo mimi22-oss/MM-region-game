@@ -1,5 +1,6 @@
 import { Box3, Euler, Mesh, Object3D, Raycaster, Vector3, type Intersection } from 'three';
 import { mountainHeight } from './mountainTerrain.ts';
+import { highlandPlateauSurfaceHeight } from './highlandPlateauWorld.ts';
 import { ward, angle } from '../data/ward.ts';
 
 const mountainPeaks = [...ward.mountains, ...ward.weipula.peaks];
@@ -35,14 +36,22 @@ export class GroundSurface {
   const hits=this.hits;
   hits.length=0;
   this.ray.intersectObjects(this.cells.get(Math.floor(x/64)+','+Math.floor(z/64))||emptyMeshes,false,hits);
-  if (hits.length > 0) return Math.max(0, hits[0].point.y);
-  const u = x * cosA - z * sinA;
-  const v = x * sinA + z * cosA;
-  if (v > 4100 || u < -410) {
-    const mh = mountainHeight(u, v, mountainPeaks);
-    if (mh > 0) return mh;
+  let y = 0;
+  if (hits.length > 0) {
+    y = Math.max(0, hits[0].point.y);
+  } else {
+    const u = x * cosA - z * sinA;
+    const v = x * sinA + z * cosA;
+    if (v > 4100 || u < -410) {
+      const mh = mountainHeight(u, v, mountainPeaks);
+      if (mh > 0) y = mh;
+    }
   }
-  return 0;
+  const plateauSurfaceY = highlandPlateauSurfaceHeight(x, z);
+  if (plateauSurfaceY !== null && (maxY === undefined || plateauSurfaceY <= maxY)) {
+    y = Math.max(y, plateauSurfaceY);
+  }
+  return y;
  }
 }
 

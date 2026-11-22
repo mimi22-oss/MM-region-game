@@ -8,9 +8,12 @@ import {getGhostRuntime} from '../missions/ghostRuntimeRegistry.ts';
 import {requestGhostReaction} from './GhostCombatReactions.ts';
 import {clearGhostEncounterInteraction} from '../ghostConfig.ts';
 import {canStand} from '../collision.ts';
+import {playHeavySlashGroundSound,playKnifeHitSound,playKnifeSliceSound,preloadSwordAudio} from './swordAudio.ts';
 
 export const playerCombat=new CombatController();
 playerCombat.weaponReady=false;
+playerCombat.onAttackStart=()=>{playKnifeSliceSound();};
+playerCombat.onHeavySlashImpact=()=>{playHeavySlashGroundSound();};
 /**
  * Temporarily disabled so players can slash and defeat ghosts even when 2+ ghosts
  * are near each other (e.g. right after picking up the sword at the football pitch).
@@ -25,6 +28,7 @@ export function registerCombatWeapon(root:Object3D,avatar:Object3D){
  const base=root.getObjectByName('sword-blade-base'),tip=root.getObjectByName('sword-blade-tip');
  if(!base||!tip)return()=>{};
  const entry={root,avatar,base,tip};weapon=entry;playerCombat.weaponReady=true;
+ preloadSwordAudio();
  return()=>{if(weapon===entry){weapon=null;previousValid=false;playerCombat.weaponReady=false;playerCombat.cancel();}};
 }
 export const combatEffects={time:0,trailHead:0,impactHead:0,damagePopupHead:0,
@@ -73,6 +77,7 @@ export function sampleCombatBlade(active:boolean){
     const res=damageZombie(id,1,'sword');
     if(!res)continue;
     playerCombat.hits.add(id);
+    playKnifeHitSound();
     const impact=combatEffects.impacts[combatEffects.impactHead++%combatEffects.impacts.length];
     impact.position.copy(base).lerp(tip,.5);impact.at=combatEffects.time;impact.seed=playerCombat.sequence*17+combatEffects.impactHead;
     emitDamagePopup(targetPos.x,targetPos.y+target.height*.85,targetPos.z,res.defeated?'-1 · KO!':'-1 HP',res.defeated,impact.seed);
@@ -92,6 +97,7 @@ export function sampleCombatBlade(active:boolean){
    if(!combatLineClear(player.x,player.z,targetPos.x,targetPos.z))continue;
    if(!damageMissionGhost(id,SWORD_DAMAGE))continue;
    playerCombat.hits.add(id);
+   playKnifeHitSound();
    const dead=isGhostDefeated(id);
    requestGhostReaction(id,dead?'Ghost_Death':playerCombat.clip==='Heavy_Slash'||playerCombat.clip==='Combo_Finisher'?'Ghost_Stagger':'Ghost_Hit');
    clearGhostEncounterInteraction(id);

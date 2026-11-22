@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {AnimationClip,AnimationMixer,Group,Quaternion,QuaternionKeyframeTrack,Raycaster,Sprite,SpriteMaterial,Vector3,PropertyBinding} from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {createCameraObstructionQuery} from '../src/game/cameraObstruction.ts';
-import {CombatController} from '../src/game/combat/CombatController.ts';
+import {CombatController,HEAVY_SLASH_LANDING_NORMALIZED} from '../src/game/combat/CombatController.ts';
 import {CombatAnimationDriver} from '../src/game/combat/CombatAnimationDriver.ts';
 import {ATTACKS,COMBAT_CLIPS,COMBO} from '../src/game/combat/AttackDefinitions.ts';
 import {SwordHitDetection} from '../src/game/combat/SwordHitDetection.ts';
@@ -26,6 +26,10 @@ function synthetic(){
  return {root,state,mixer,driver,samples};
 }
 test('buffered six-hit combo advances once in its window; timeout, early input and recovery are enforced',()=>{
+ const comboList: readonly string[] = COMBO;
+ assert.equal(comboList.includes('Heavy_Slash'),false,'Slash button combo must not include Heavy_Slash');
+ assert.equal(comboList.includes('Slash_Overhead'),false,'Slash button combo must not share Heavy_Slash overhead move');
+ assert.equal(comboList.includes('Jump_Slash'),false,'Slash button combo must not share Heavy_Slash jump move');
  const s=ready();assert.equal(s.request('combo'),true);assert.equal(s.clip,COMBO[0]);assert.equal(s.request('combo'),false);
  for(let i=0;i<COMBO.length-1;i++){
   s.sample(.6);assert.equal(s.request('combo'),true);assert.equal(s.request('combo'),false);
@@ -34,6 +38,20 @@ test('buffered six-hit combo advances once in its window; timeout, early input a
  s.finish(s.sequence);assert.equal(s.actionActive,false);assert.equal(s.movementLocked,false);
  s.idleStep(.71);s.request('combo');assert.equal(s.clip,'Slash_Left');
  s.sample(.99);assert.equal(s.request('combo'),false);
+
+ // Heavy_Slash must stay silent at start/windup and fire ground-slam cue ONCE at landing!
+ const hs=ready();
+ let startCalls=0,heavyImpactCalls=0;
+ hs.onAttackStart=()=>{startCalls++;};
+ hs.onHeavySlashImpact=()=>{heavyImpactCalls++;};
+ assert.equal(hs.request('Heavy_Slash'),true);
+ assert.equal(startCalls,0,'Heavy_Slash must NOT play slash audio at animation start');
+ hs.sample(0.2);hs.sample(0.45);
+ assert.equal(heavyImpactCalls,0,'Heavy_Slash must stay silent during leap/windup before ground landing');
+ hs.sample(HEAVY_SLASH_LANDING_NORMALIZED);
+ assert.equal(heavyImpactCalls,1,'Heavy_Slash plays ground impact audio right upon landing');
+ hs.sample(0.65);hs.sample(0.9);
+ assert.equal(heavyImpactCalls,1,'Heavy_Slash ground impact audio fires exactly once per swing');
 });
 test('death, incapacitation, pause and unequip suppress attacks; defensive windows are bounded',()=>{
  const s=ready();s.request('Sword_Parry');s.sample(.3);assert.equal(s.defend(),'parry');s.sample(.9);assert.equal(s.defend(),'none');

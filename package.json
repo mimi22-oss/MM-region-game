@@ -18,6 +18,7 @@
     "dance:extract": "node scripts/extractDanceAnimations.mjs",
     "wait:extract": "node scripts/extractWaitingAnimation.mjs",
     "map:audit": "node --experimental-strip-types scripts/auditMapData.mjs",
+    "audio:pack": "node scripts/packGameAudio.mjs",
     "map:tiles": "node scripts/mapTiles.mjs",
     "map:fields": "node --experimental-strip-types scripts/buildSeparationTiles.mjs",
     "map:zombie-forest": "node --experimental-strip-types scripts/buildZombieForestTiles.mjs",

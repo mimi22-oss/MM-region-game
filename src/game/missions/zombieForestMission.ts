@@ -12,6 +12,7 @@ import { getPlayerDeathState, killPlayerFromGhost } from '../playerDeath.ts';
 import { isPlayerHomeProtected } from '../playerHomeProtection.ts';
 import { rideLife } from '../rideLife.ts';
 import { playSpecialAction } from '../specialActions.ts';
+import { playEnemyHitPlayerSound } from '../combat/swordAudio.ts';
 import {
   getActiveMissionWeapon,
   hasCompletedThreeGhostsMission,
@@ -987,6 +988,7 @@ export function applyZombieAttackToPlayer(
     };
   }
 
+  playEnemyHitPlayerSound();
   rideLife.mode = 'walking';
   rideLife.damage = 1;
   rideLife.lives = Math.max(0, Math.round((rideLife.lives - 1) * 10) / 10);

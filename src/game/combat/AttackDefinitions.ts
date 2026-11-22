@@ -1,6 +1,6 @@
 export const COMBAT_CLIPS = ['Combat_Idle','Sword_Walk','Sword_Run','Combat_Strafe_Left','Combat_Strafe_Right','Slash_Left','Slash_Right','Slash_Diagonal_Left','Slash_Diagonal_Right','Slash_Overhead','Slash_Rising','Slash_Middle','Sword_Thrust','Sword_Block','Sword_Parry','Dodge_Left','Dodge_Right','Hit_React','Knockback','Spin_Slash','Jump_Slash','Heavy_Slash','Combo_Finisher'] as const;
 export type CombatClip = typeof COMBAT_CLIPS[number];
-export const COMBO = ['Slash_Left','Slash_Right','Slash_Diagonal_Left','Slash_Overhead','Slash_Rising','Combo_Finisher'] as const;
+export const COMBO = ['Slash_Left','Slash_Right','Slash_Diagonal_Left','Slash_Diagonal_Right','Slash_Rising','Combo_Finisher'] as const;
 export type CombatCommand = CombatClip | 'combo';
 export type AttackDefinition = {activeStart:number;activeEnd:number;bufferStart:number;direction:string;damaging:boolean};
 const attack=(direction:string,start=.24,end=.72):AttackDefinition=>({activeStart:start,activeEnd:end,bufferStart:.5,direction,damaging:true});

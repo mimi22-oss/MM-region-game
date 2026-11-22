@@ -1,4 +1,4 @@
-import { BufferGeometry, Float32BufferAttribute } from 'three';
+import { BufferGeometry, Color, Float32BufferAttribute } from 'three';
 import { toWorld } from '../data/ward.ts';
 import { mountainHeight, type TerrainPeak } from './mountainTerrain.ts';
 import type { PitchedRoadSegment } from './weipulaClimb.ts';
@@ -28,6 +28,8 @@ export function buildWeipulaRoadSections(segments: readonly PitchedRoadSegment[]
 }
 
 type Section = ReturnType<typeof buildWeipulaRoadSections>[number];
+const gravel = new Color('#857866');
+const soil = new Color('#657653');
 
 function point(s: Section, offset: number, dy = 0): Point {
   return [s.u + offset * s.nx, s.y + dy, s.v + offset * s.nz];
@@ -36,19 +38,26 @@ function point(s: Section, offset: number, dy = 0): Point {
 class Ribbon {
   private readonly positions: number[] = [];
   private readonly indices: number[] = [];
+  private readonly colors: number[] = [];
   private readonly origin: { x: number; z: number };
   constructor(origin: { x: number; z: number }) { this.origin = origin; }
-  append(a: Point, b: Point, c: Point, d: Point) {
+  append(a: Point, b: Point, c: Point, d: Point, shoulder?: 'left' | 'right') {
     const index = this.positions.length / 3;
     for (const [u, y, v] of [a, b, c, d]) {
       const w = toWorld(u, v);
       this.positions.push(w.x - this.origin.x, y, w.z - this.origin.z);
+    }
+    if (shoulder) {
+      const [first, second] = shoulder === 'left' ? [soil, gravel] : [gravel, soil];
+      this.colors.push(first.r, first.g, first.b, first.r, first.g, first.b,
+        second.r, second.g, second.b, second.r, second.g, second.b);
     }
     this.indices.push(index, index + 1, index + 2, index + 1, index + 3, index + 2);
   }
   make() {
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', new Float32BufferAttribute(this.positions, 3));
+    if (this.colors.length) geometry.setAttribute('color', new Float32BufferAttribute(this.colors, 3));
     geometry.setIndex(this.indices);
     geometry.computeVertexNormals();
     geometry.computeBoundingSphere();
@@ -64,6 +73,16 @@ function strip(ribbon: Ribbon, a: Section, b: Section, aMin: number, aMax: numbe
 export function buildWeipulaRoadSurface(segments: readonly PitchedRoadSegment[], peaks: readonly TerrainPeak[]) {
   if (segments.length === 0) return [];
   const sections = buildWeipulaRoadSections(segments);
+  const shoulders = sections.map(s => [-1, 1].map(side => {
+    const edge = point(s, side * (s.halfWidth + 2.4));
+    const drop = Math.max(0, s.y - mountainHeight(edge[0], edge[2], peaks));
+    const fill = Math.max(0, Math.min(1, (31 - drop) / 10));
+    const width = .48 + (1.9 + Math.min(14, drop * .48)) * fill;
+    const outer = point(s, side * (s.halfWidth + width));
+    const ground = mountainHeight(outer[0], outer[2], peaks);
+    outer[1] = s.y - (1 - fill) - fill * Math.max(.14, s.y - ground + .16);
+    return outer;
+  }));
   const take = 28;
   // Use a common origin so adjacent chunks round their identical join vertices the same way.
   const origin = toWorld(sections[0].u, sections[0].v);
@@ -76,7 +95,8 @@ export function buildWeipulaRoadSurface(segments: readonly PitchedRoadSegment[],
     for (let i = first; i < last; i++) {
       const a = sections[i], b = sections[i + 1];
       const wa = a.halfWidth, wb = b.halfWidth;
-      strip(asphalt, a, b, -wa, wa, -wb, wb);
+      strip(asphalt, a, b, -wa, 0, -wb, 0);
+      strip(asphalt, a, b, 0, wa, 0, wb);
       strip(edge, a, b, -wa + .32, -wa + .47, -wb + .32, -wb + .47, .022);
       strip(edge, a, b, wa - .47, wa - .32, wb - .47, wb - .32, .022);
       const count = Math.max(1, Math.ceil(segments[i].length / 12));
@@ -91,17 +111,12 @@ export function buildWeipulaRoadSurface(segments: readonly PitchedRoadSegment[],
       }
       const baseU = (a.u + b.u) / 2, baseV = (a.v + b.v) / 2;
       const midHeight = (a.y + b.y) / 2, baseY = mountainHeight(baseU, baseV, peaks);
-      const bridge = midHeight - baseY > 12;
-      for (const side of [-1, 1]) {
+      const bridge = midHeight - baseY > 26;
+      for (const [sideIndex, side] of [-1, 1].entries()) {
         const innerA = point(a, side * wa, -.025), innerB = point(b, side * wb, -.025);
-        const shoulder = (s: Section): Point => {
-          const outer = point(s, side * (s.halfWidth + (bridge ? .38 : 2.1)));
-          outer[1] = bridge ? s.y - 1.0 : Math.min(s.y, mountainHeight(outer[0], outer[2], peaks) - .18);
-          return outer;
-        };
-        const outerA = shoulder(a), outerB = shoulder(b);
-        if (side < 0) earth.append(outerA, outerB, innerA, innerB);
-        else earth.append(innerA, innerB, outerA, outerB);
+        const outerA = shoulders[i][sideIndex], outerB = shoulders[i + 1][sideIndex];
+        if (side < 0) earth.append(outerA, outerB, innerA, innerB, 'left');
+        else earth.append(innerA, innerB, outerA, outerB, 'right');
         if (bridge || (midHeight > 25 && mountainHeight(outerA[0], outerA[2], peaks) < a.y - 1.9)) {
           const upperA = point(a, side * wa, .62), upperB = point(b, side * wb, .62);
           const lowerA = point(a, side * wa, .21), lowerB = point(b, side * wb, .21);

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { playKnifeDrawSound, preloadSwordAudio } from '../combat/swordAudio.ts';
 
 /** Single-player mission progress. No mission-specific logic is embedded in vehicles. */
 export const THREE_GHOSTS_MISSION_ID = 'three-ghosts-v1';
@@ -55,10 +56,23 @@ let zombieForestSwordActive = false;
 let swordQuickHolstered = false;
 let quickToggleWeapon: 'ghost-sword' | 'zombie-gun' | null =
   progress.equippedWeapon ?? (progress.swordCollected ? 'ghost-sword' : null);
+let prevActiveMissionWeapon: MissionWeaponId =
+  progress.equippedWeapon === 'ghost-sword' && progress.swordCollected ? 'ghost-sword' : null;
 const subscribers = new Set<() => void>();
+function syncWeaponTransitionAudio() {
+  const next = getActiveMissionWeapon();
+  if (prevActiveMissionWeapon === null && next === 'ghost-sword') {
+    playKnifeDrawSound();
+  }
+  if (progress.swordCollected) {
+    preloadSwordAudio();
+  }
+  prevActiveMissionWeapon = next;
+}
 function publish(next: ThreeGhostsProgress) {
   progress = next;
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch { /* storage disabled */ }
+  syncWeaponTransitionAudio();
   subscribers.forEach(fn => fn());
 }
 export function getThreeGhostsProgress() { return progress; }
@@ -70,6 +84,7 @@ export function resetThreeGhostsMission() {
   zombieForestSwordActive = false;
   swordQuickHolstered = false;
   quickToggleWeapon = null;
+  prevActiveMissionWeapon = null;
   publish(initial());
 }
 export function setZombieGunUnlockedState(unlocked: boolean, autoEquip = false) {
@@ -100,6 +115,7 @@ export function setZombieForestSwordActive(active: boolean) {
   }
   if (zombieForestSwordActive !== allowed) {
     zombieForestSwordActive = allowed;
+    syncWeaponTransitionAudio();
     subscribers.forEach(fn => fn());
   }
 }
@@ -147,6 +163,7 @@ export function toggleQuickWeapon(target?: 'ghost-sword' | 'zombie-gun'): Missio
       selectMissionWeapon(null);
     } else {
       swordQuickHolstered = true;
+      syncWeaponTransitionAudio();
       subscribers.forEach(fn => fn());
     }
     return null;
@@ -155,6 +172,7 @@ export function toggleQuickWeapon(target?: 'ghost-sword' | 'zombie-gun'): Missio
   if (progress.completed) {
     selectMissionWeapon('ghost-sword');
   } else {
+    syncWeaponTransitionAudio();
     subscribers.forEach(fn => fn());
   }
   return getActiveMissionWeapon();

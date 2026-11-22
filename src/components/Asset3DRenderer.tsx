@@ -35,6 +35,29 @@ import { Box } from './Primitives';
 import { CustomAssetModel } from './CustomAssetModel';
 import { getBuiltInEdit } from '../game/builtInAssetEdits';
 import type { AssetEdit } from '../game/assetAiEdit';
+import {
+  AlmsBowl,
+  AlmsShelfRack,
+  BuddhaShrineAltar,
+  CeramicJar,
+  DhammaHallBuilding,
+  GoldenStupa,
+  MeditationMat,
+  MonksKyaungBuilding,
+  OfferingBowl,
+  RefectoryAlmsBuilding,
+  RiceCauldron,
+  RiceSack,
+  RoundDiningTable,
+  ScriptureShelf,
+  TiffinCarrier,
+  WovenMat,
+} from './monastery';
+import { BurmeseTomb } from './cemetery/BurmeseTomb';
+import { ForestMonasteryCompound, MountainLake, MountainZayat } from './TaungphilaMountainFeatures';
+import { MountainRabbitModel } from './MountainRabbits';
+import { MountainDeerModel } from './MountainDeer';
+import { MountainTigerModel } from './MountainTigers';
 
 export function FootballGoalModel({ width = 7.44, height = 2.44, depth = 2.44 }: { width?: number; height?: number; depth?: number }) {
   const halfW = width / 2;
@@ -171,13 +194,108 @@ function SingleWarehouseModel({
 }
 
 /**
+ * Walkable 3D Bridge Span (`တံတား`) with asphalt deck, guardrails, lane paint, and concrete piers.
+ */
+function BridgeSpanModel({
+  width = 8,
+  depth = 24,
+  height = 4,
+  color = '#52585c',
+  railColor = '#cbd5e1',
+}: {
+  width?: number;
+  depth?: number;
+  height?: number;
+  color?: string;
+  railColor?: string;
+}) {
+  const halfW = width / 2;
+  const deckY = Math.max(0.4, height * 0.65);
+  const pierCount = Math.max(2, Math.round(depth / 10) + 1);
+  return (
+    <group name="bridge-span-model">
+      <mesh position={[0, deckY, 0]} userData={{ walkable: true }} castShadow receiveShadow>
+        <boxGeometry args={[width, 0.36, depth]} />
+        <meshStandardMaterial color={color} roughness={0.86} />
+      </mesh>
+      <mesh position={[0, deckY + 0.19, 0]}>
+        <boxGeometry args={[0.18, 0.02, depth * 0.92]} />
+        <meshBasicMaterial color="#e4bd51" />
+      </mesh>
+      {[-1, 1].map((side) => (
+        <group key={side}>
+          <mesh position={[side * (halfW - 0.12), deckY + 0.62, 0]} castShadow>
+            <boxGeometry args={[0.2, 0.95, depth]} />
+            <meshStandardMaterial color={railColor} roughness={0.72} />
+          </mesh>
+          <mesh position={[side * (halfW - 0.12), deckY + 1.12, 0]}>
+            <boxGeometry args={[0.26, 0.1, depth + 0.1]} />
+            <meshStandardMaterial color="#94a3b8" roughness={0.65} />
+          </mesh>
+        </group>
+      ))}
+      {Array.from({ length: pierCount }, (_, i) => {
+        const z = -depth / 2 + 1.5 + (i / Math.max(1, pierCount - 1)) * Math.max(1, depth - 3);
+        return (
+          <mesh key={i} position={[0, deckY / 2 - 0.2, z]} castShadow receiveShadow>
+            <boxGeometry args={[Math.min(width * 0.72, 5.2), deckY + 0.4, 1.3]} />
+            <meshStandardMaterial color="#7d786d" roughness={0.92} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+/**
+ * Sculpted Green Mountain Massif (`တောင်`) with tiered ridge body and walkable slope.
+ */
+function MountainPeakModel({
+  width = 60,
+  depth = 60,
+  height = 38,
+  color = '#4c7351',
+  ridgeColor = '#667b63',
+}: {
+  width?: number;
+  depth?: number;
+  height?: number;
+  color?: string;
+  ridgeColor?: string;
+}) {
+  const rx = Math.max(6, width / 2);
+  const rz = Math.max(6, depth / 2);
+  const h = Math.max(5, height);
+  return (
+    <group name="mountain-peak-model">
+      <mesh position={[0, h * 0.46, 0]} scale={[rx, h, rz]} userData={{ walkable: true }} castShadow receiveShadow>
+        <coneGeometry args={[1, 1, 14]} />
+        <meshStandardMaterial color={color} roughness={0.94} flatShading />
+      </mesh>
+      <mesh position={[rx * 0.28, h * 0.32, rz * 0.18]} scale={[rx * 0.62, h * 0.68, rz * 0.62]} userData={{ walkable: true }} receiveShadow>
+        <coneGeometry args={[1, 1, 12]} />
+        <meshStandardMaterial color={ridgeColor} roughness={0.95} flatShading />
+      </mesh>
+      <mesh position={[-rx * 0.26, h * 0.27, -rz * 0.22]} scale={[rx * 0.56, h * 0.58, rz * 0.56]} userData={{ walkable: true }} receiveShadow>
+        <coneGeometry args={[1, 1, 12]} />
+        <meshStandardMaterial color={color} roughness={0.95} flatShading />
+      </mesh>
+    </group>
+  );
+}
+
+/**
  * Universal 3D Asset Instance component.
  * Selects the exact authoritative TSX mesh corresponding to assetId.
  */
 export const Asset3DInstance = memo(function Asset3DInstance(props: Asset3DInstanceProps) {
   const {
     assetId = props.feature?.assetId,
-    position = [props.feature?.points[0]?.x ?? 0, 0, props.feature?.points[0]?.z ?? 0],
+    position = [
+      props.feature?.points[0]?.x ?? 0,
+      props.feature?.elevationY ?? 0,
+      props.feature?.points[0]?.z ?? 0,
+    ],
     rotation = props.feature?.rotation ?? 0,
     scale = props.feature?.scale ?? 1,
     dimensions = props.feature?.dimensions,
@@ -590,6 +708,315 @@ export const Asset3DInstance = memo(function Asset3DInstance(props: Asset3DInsta
       content = (
         <group rotation={[0, rotation, 0]}>
           <TeaTable table={{ id, du: 0, dv: 0, isOutdoor: true, seats: 4 } as any} />
+        </group>
+      );
+      break;
+    }
+
+    case 'building:monastery-hall': {
+      content = (
+        <DhammaHallBuilding
+          spec={{
+            id,
+            kind: 'dhamma',
+            name: name || 'ဓမ္မာရုံ',
+            subtitle: 'Monastery Hall',
+            x: 0,
+            z: 0,
+            u: 0,
+            v: 0,
+            width: effectiveWidth,
+            depth: effectiveDepth,
+            rotation,
+            roofColor: effectiveRoof,
+          }}
+        />
+      );
+      break;
+    }
+
+    case 'building:monastery-kyaung': {
+      content = (
+        <MonksKyaungBuilding
+          spec={{
+            id,
+            kind: 'quarters',
+            name: name || 'ဘုန်းကြီးကျောင်းဆောင်',
+            subtitle: 'Monks Residence',
+            x: 0,
+            z: 0,
+            u: 0,
+            v: 0,
+            width: effectiveWidth,
+            depth: effectiveDepth,
+            rotation,
+            roofColor: effectiveRoof,
+          }}
+        />
+      );
+      break;
+    }
+
+    case 'building:monastery-refectory': {
+      content = (
+        <RefectoryAlmsBuilding
+          spec={{
+            id,
+            kind: 'refectory',
+            name: name || 'ဆွမ်းစားဆောင်',
+            subtitle: 'Refectory & Alms Storage',
+            x: 0,
+            z: 0,
+            u: 0,
+            v: 0,
+            width: effectiveWidth,
+            depth: effectiveDepth,
+            rotation,
+            roofColor: effectiveRoof,
+          }}
+        />
+      );
+      break;
+    }
+
+    case 'building:forest-monastery': {
+      content = (
+        <ForestMonasteryCompound
+          monastery={{
+            id,
+            name,
+            u: 0,
+            v: 0,
+            x: 0,
+            y: 0,
+            z: 0,
+            rotation,
+            scale: 1,
+          }}
+        />
+      );
+      break;
+    }
+
+    case 'building:mountain-zayat': {
+      content = (
+        <MountainZayat
+          zayat={{
+            id,
+            name,
+            u: 0,
+            v: 0,
+            x: 0,
+            y: 0,
+            z: 0,
+            rotation,
+            roofColor: effectiveRoof,
+          }}
+        />
+      );
+      break;
+    }
+
+    case 'cultural:golden-stupa': {
+      const r = Math.max(1.4, Math.min(effectiveWidth, effectiveDepth) * 0.34);
+      content = (
+        <GoldenStupa
+          x={0}
+          z={0}
+          radius={r}
+          yaw={rotation}
+          northYaw={rotation}
+          weekdayShrines
+        />
+      );
+      break;
+    }
+
+    case 'cultural:burmese-tomb': {
+      content = <BurmeseTomb x={0} y={0} z={0} rotation={rotation} bodyColor={effectiveColor} />;
+      break;
+    }
+
+    case 'infrastructure:bridge': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <BridgeSpanModel
+            width={effectiveWidth}
+            depth={effectiveDepth}
+            height={dimensions?.height ?? def?.defaultDimensions.height ?? 4}
+            color={effectiveColor}
+            railColor={effectiveRoof}
+          />
+        </group>
+      );
+      break;
+    }
+
+    case 'nature:mountain-peak': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <MountainPeakModel
+            width={effectiveWidth}
+            depth={effectiveDepth}
+            height={dimensions?.height ?? def?.defaultDimensions.height ?? 38}
+            color={effectiveColor}
+            ridgeColor={effectiveRoof}
+          />
+        </group>
+      );
+      break;
+    }
+
+    case 'nature:mountain-lake': {
+      content = (
+        <MountainLake
+          lake={{
+            id,
+            name,
+            u: 0,
+            v: 0,
+            x: 0,
+            y: 0,
+            z: 0,
+            radiusX: Math.max(3, effectiveWidth / 2),
+            radiusZ: Math.max(3, effectiveDepth / 2),
+            rotation,
+          }}
+        />
+      );
+      break;
+    }
+
+    case 'nature:mountain-rabbit': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <MountainRabbitModel coatColor={effectiveColor} scale={1} />
+        </group>
+      );
+      break;
+    }
+
+    case 'nature:mountain-deer': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <MountainDeerModel coatColor={effectiveColor} hasAntlers scale={1} />
+        </group>
+      );
+      break;
+    }
+
+    case 'nature:mountain-tiger': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <MountainTigerModel scale={1} />
+        </group>
+      );
+      break;
+    }
+
+    case 'furniture:buddha-shrine': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <BuddhaShrineAltar x={0} y={0} z={0} scale={1} />
+        </group>
+      );
+      break;
+    }
+
+    case 'furniture:round-dining-table': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <RoundDiningTable x={0} y={0} z={0} />
+        </group>
+      );
+      break;
+    }
+
+    case 'furniture:woven-mat': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <WovenMat x={0} y={0} z={0} w={effectiveWidth} d={effectiveDepth} />
+        </group>
+      );
+      break;
+    }
+
+    case 'furniture:meditation-mat': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <MeditationMat x={0} y={0} z={0} w={effectiveWidth} d={effectiveDepth} />
+        </group>
+      );
+      break;
+    }
+
+    case 'furniture:alms-bowl': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <AlmsBowl x={0} y={0} z={0} scale={1} />
+        </group>
+      );
+      break;
+    }
+
+    case 'furniture:offering-bowl': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <OfferingBowl x={0} y={0} z={0} scale={1} />
+        </group>
+      );
+      break;
+    }
+
+    case 'furniture:tiffin-carrier': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <TiffinCarrier x={0} y={0} z={0} brass />
+        </group>
+      );
+      break;
+    }
+
+    case 'furniture:rice-sack': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <RiceSack x={0} y={0} z={0} />
+        </group>
+      );
+      break;
+    }
+
+    case 'furniture:ceramic-jar': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <CeramicJar x={0} y={0} z={0} />
+        </group>
+      );
+      break;
+    }
+
+    case 'furniture:rice-cauldron': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <RiceCauldron x={0} y={0} z={0} />
+        </group>
+      );
+      break;
+    }
+
+    case 'furniture:scripture-shelf': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <ScriptureShelf x={0} y={0} z={0} length={Math.max(1.2, effectiveDepth)} levels={3} />
+        </group>
+      );
+      break;
+    }
+
+    case 'furniture:alms-shelf': {
+      content = (
+        <group rotation={[0, rotation, 0]}>
+          <AlmsShelfRack x={0} y={0} z={0} length={Math.max(1.8, effectiveDepth)} />
         </group>
       );
       break;

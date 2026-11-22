@@ -49,6 +49,7 @@ import {
 } from "./schoolClassrooms.ts";
 import { canStandMonasteryBuildings } from "./monasteryLayout.ts";
 import { canStandTaungphilaFeatures, isOnTaungphilaRoad } from "./taungphilaWorld.ts";
+import { canStandHighlandPlateau, highlandTreeBlocks } from "./highlandPlateauWorld.ts";
 import { canStandTharSiSchoolCampus } from "../data/villages/tharsi/schoolCampus.ts";
 import { canStandMyotharSchoolCampus } from "../data/wards/myothar/center/myotharSchoolCampus.ts";
 import { cemeteryTombBlocks, MYOTHAR_CEMETERY_LAYOUT } from './cemeteryLayout.ts';
@@ -135,11 +136,13 @@ const nearbyTrees = spatialIndex(
   (t) => ({ id: (t as { id?: string }).id, x: t.x, z: t.z, radius: t.radius + PLAYER_RADIUS }),
 );
 const mountainObstacles = [...ward.mountains, ...ward.weipula.peaks];
-const MOUNTAIN_LIMITS = mountainObstacles.map((m) => {
-  const obstacleRadius = (m as { obstacleRadius?: number }).obstacleRadius ?? m.radius;
-  const r = obstacleRadius + PLAYER_RADIUS;
-  return { x: m.x, z: m.z, limitSq: r * r };
-});
+const MOUNTAIN_LIMITS = mountainObstacles
+  .filter((m) => ((m as { obstacleRadius?: number }).obstacleRadius ?? m.radius) > 0)
+  .map((m) => {
+    const obstacleRadius = (m as { obstacleRadius?: number }).obstacleRadius ?? m.radius;
+    const r = obstacleRadius + PLAYER_RADIUS;
+    return { x: m.x, z: m.z, limitSq: r * r };
+  });
 const polylineCanals = [
   ward.crossCanal,
   ...kalayVillages.flatMap((vl) =>
@@ -452,7 +455,8 @@ export function treeBlocks(x: number, z: number): boolean {
     (!t.id || !sourceIsEdited(t.id)) && Math.hypot(x - t.x, z - t.z) < t.radius + PLAYER_RADIUS;
   return nearbyAreca(x, z).some((p) => Math.hypot(x - p.x, z - p.z) < 0.62) ||
     nearbyTrees(x, z).some(trunkHits) ||
-    queryStreamedTrees(x, z).some(trunkHits);
+    queryStreamedTrees(x, z).some(trunkHits) ||
+    highlandTreeBlocks(x, z, PLAYER_RADIUS);
 }
 
 function pointBlockedByBuilding(
@@ -592,6 +596,7 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
   }
   if (!canStandMonasteryBuildings(x, z, PLAYER_RADIUS)) return false;
   if (!canStandTaungphilaFeatures(x, z, PLAYER_RADIUS, airborne)) return false;
+  if (!canStandHighlandPlateau(x, z, PLAYER_RADIUS, airborne)) return false;
   for (const mt of MOUNTAIN_LIMITS) {
     const mx = x - mt.x, mz = z - mt.z;
     if (mx * mx + mz * mz < mt.limitSq && !isOnWeipulaRoad(x, z, PLAYER_RADIUS) && !isOnTaungphilaRoad(x, z, PLAYER_RADIUS)) return false;
@@ -631,7 +636,7 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
   if (!canStandKanbaleSchool(x, z)) return false;
   if (!canStandTharSiSchoolCampus(x, z, PLAYER_RADIUS)) return false;
   if (!canStandMyotharSchoolCampus(x, z, PLAYER_RADIUS)) return false;
-  if (!canStandWalkInSchoolHalls(x, z, PLAYER_RADIUS)) return false;
+  if (!canStandWalkInSchoolHalls(x, z, PLAYER_RADIUS, false)) return false;
   if (sourceIsEdited(nankaleinTeaShopData.id)) {
     // Tea shop is edited or deleted, skip static collision
   } else if (!canStandNankaleinTeaShop(x, z)) {

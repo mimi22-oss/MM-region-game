@@ -18,6 +18,12 @@ import { clearGhostEncounterInteraction } from '../ghostConfig.ts';
 import { canStand, treeBlocks } from '../collision.ts';
 import { combatEffects, combatLineClear, playerCombat } from './combatRuntime.ts';
 import { playSpecialAction } from '../specialActions.ts';
+import { gameAudio } from '../gameAudio.ts';
+import {
+  WEAPON_GUNSHOT_AUDIO_FILES,
+  pickCachedSfxBuffer,
+  preloadSfxBuffers,
+} from '../audio/sfxBufferCache.ts';
 
 export const GUN_DAMAGE = SWORD_DAMAGE;
 export const GUN_RANGE_M = 32;
@@ -88,6 +94,8 @@ export function registerCombatGun(root: Object3D, avatar: Object3D): () => void 
   const muzzle = root.getObjectByName('gun-muzzle-tip') ?? root;
   const entry = { root, avatar, muzzle };
   heldGun = entry;
+  // Preload real gunshot MP3 buffers so the very first shot plays crisp sampled audio
+  preloadSfxBuffers(gameAudio.context, WEAPON_GUNSHOT_AUDIO_FILES);
   return () => {
     if (heldGun === entry) {
       heldGun = null;
@@ -290,17 +298,50 @@ export function evaluateHeldGunAimPreview(): GunAimPreview | null {
   };
 }
 
-function playSynthesizedGunshot() {
+function playGunshotSound() {
   if (typeof window === 'undefined') return;
+  if (!gameAudio.isActive()) return;
+
+  // Prefer shared gameAudio graph + cached real gunshot MP3 samples
+  const sharedCtx = gameAudio.context;
+  const sharedOut = gameAudio.master;
+  if (sharedCtx && sharedOut && sharedCtx.state === 'running') {
+    const buffer = pickCachedSfxBuffer(sharedCtx, WEAPON_GUNSHOT_AUDIO_FILES);
+    if (buffer) {
+      try {
+        const now = sharedCtx.currentTime;
+        const src = sharedCtx.createBufferSource();
+        src.buffer = buffer;
+        src.playbackRate.value = 0.96 + Math.random() * 0.09;
+        const gain = sharedCtx.createGain();
+        gain.gain.setValueAtTime(0.85, now);
+        src.connect(gain).connect(sharedOut);
+        src.onended = () => {
+          try {
+            src.disconnect();
+            gain.disconnect();
+          } catch {}
+        };
+        src.start(now);
+        return;
+      } catch {
+        // Fall through to short percussive synth fallback
+      }
+    }
+  } else {
+    preloadSfxBuffers(sharedCtx, WEAPON_GUNSHOT_AUDIO_FILES);
+  }
+
   try {
     const AudioCtx =
       window.AudioContext ||
       (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = sharedCtx && sharedCtx.state === 'running' ? sharedCtx : new AudioCtx();
+    const shouldClose = ctx !== sharedCtx;
     const now = ctx.currentTime;
 
-    // Short percussive noise burst + low punch oscillator
+    // Short percussive noise burst fallback while MP3 buffers are still decoding
     const bufferSize = Math.floor(ctx.sampleRate * 0.11);
     const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = noiseBuffer.getChannelData(0);
@@ -321,12 +362,14 @@ function playSynthesizedGunshot() {
 
     noise.connect(filter);
     filter.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(sharedOut && !shouldClose ? sharedOut : ctx.destination);
     noise.start(now);
     noise.stop(now + 0.11);
-    setTimeout(() => {
-      void ctx.close().catch(() => {});
-    }, 220);
+    if (shouldClose) {
+      setTimeout(() => {
+        void ctx.close().catch(() => {});
+      }, 220);
+    }
   } catch {
     // ignore audio restrictions
   }
@@ -422,7 +465,7 @@ export function requestGunShot(options: GunShotOptions = {}): GunShotResult {
     force: true,
     restart: true,
   });
-  playSynthesizedGunshot();
+  playGunshotSound();
 
   // Strict PUBG-style aim check: hit Zombie or Ghost ONLY when the pointer ray is directly on target
   const obstacleHit = traceGunObstacleImpact(px, pz, fx, fz, GUN_RANGE_M);

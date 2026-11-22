@@ -74,11 +74,24 @@ function mapRouteSpaPlugin(): Plugin {
 			req.url = `/index.html${search ? `?${search}` : ''}`;
 		}
 	};
+	const setGameAudioHeaders = (
+		req: { url?: string },
+		res: { setHeader: (k: string, v: string) => void },
+	) => {
+		if (!req.url) return;
+		const [pathname] = req.url.split('?');
+		if (pathname.endsWith('.mta')) {
+			res.setHeader('Content-Type', 'application/x-mmregion-sfx');
+			res.setHeader('Content-Disposition', 'inline');
+			res.setHeader('X-Content-Type-Options', 'nosniff');
+		}
+	};
 	return {
 		name: 'map-route-spa-fallback',
 		configureServer(server) {
 			server.middlewares.use((req, res, next) => {
 				if (handleOtaJsonRequest(req, res)) return;
+				setGameAudioHeaders(req, res);
 				rewriteMapRoute(req);
 				next();
 			});
@@ -86,6 +99,7 @@ function mapRouteSpaPlugin(): Plugin {
 		configurePreviewServer(server) {
 			server.middlewares.use((req, res, next) => {
 				if (handleOtaJsonRequest(req, res)) return;
+				setGameAudioHeaders(req, res);
 				rewriteMapRoute(req);
 				next();
 			});

@@ -5,7 +5,7 @@ import { buildWeipulaRoadSurface } from '../game/weipulaRoadSurface';
 import type { PitchedRoadSegment } from '../game/weipulaClimb';
 
 const asphalt = new MeshStandardMaterial({ color: '#4c5050', roughness: .91 });
-const roadbed = new MeshStandardMaterial({ color: '#8c765f', roughness: .95, side: DoubleSide });
+const roadbed = new MeshStandardMaterial({ vertexColors: true, roughness: .95, side: DoubleSide });
 const roadEdge = new MeshBasicMaterial({ color: '#dfded3' });
 const lanePaint = new MeshBasicMaterial({ color: '#e4bd51' });
 const guardrail = new MeshStandardMaterial({ color: '#acb0a8', roughness: .78, side: DoubleSide });

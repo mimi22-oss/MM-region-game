@@ -1,12 +1,17 @@
 import {ATTACKS,COMBO,type CombatClip,type CombatCommand} from './AttackDefinitions.ts';
 export type CombatPhase='UNARMED'|'IDLE'|'MOVE'|'STARTUP'|'ACTIVE'|'RECOVERY'|'BLOCK'|'PARRY'|'DODGE'|'STAGGER'|'KNOCKBACK'|'DEAD';
+/** Normalized progress of `Heavy_Slash` right where the leap lands & blade slams downward onto the ground. */
+export const HEAVY_SLASH_LANDING_NORMALIZED=0.48;
 const DEFENSIVE_COMMANDS=new Set<CombatCommand>(['Sword_Block','Sword_Parry','Dodge_Left','Dodge_Right']);
 export class CombatController {
  phase:CombatPhase='UNARMED'; clip:CombatClip|null=null; sequence=0; normalized=0; comboIndex=-1;
  equipped=false; allowed=false; paused=false; dead=false; capable=false; weaponReady=true; speed=0; message='';
  private buffered:CombatCommand|null=null; private comboRemaining=0; private busy=false;
  private animationOwner:object|null=null;
+ private heavySlamCueFired=false;
  readonly hits=new Set<string>();
+ onAttackStart:((clip:CombatClip)=>void)|null=null;
+ onHeavySlashImpact:(()=>void)|null=null;
  get running(){return this.equipped&&this.allowed&&this.capable&&this.weaponReady&&!this.dead;}
  get movementLocked(){return this.running&&this.busy;}
  get attacking(){return this.busy&&!!this.clip&&!!ATTACKS[this.clip];}
@@ -37,8 +42,9 @@ export class CombatController {
    this.comboIndex=this.comboRemaining>0?(this.comboIndex+1)%COMBO.length:0;
    this.clip=COMBO[this.comboIndex];
   }else{this.clip=command;this.comboIndex=-1;}
-  this.busy=true;this.normalized=0;this.sequence++;this.hits.clear();this.buffered=null;
+  this.busy=true;this.normalized=0;this.sequence++;this.hits.clear();this.buffered=null;this.heavySlamCueFired=false;
   this.sample(0);
+  if(this.clip&&ATTACKS[this.clip]&&this.clip!=='Heavy_Slash')this.onAttackStart?.(this.clip);
  }
  sample(normalized:number){
   if(!this.busy||!this.clip)return;
@@ -46,15 +52,19 @@ export class CombatController {
   const def=ATTACKS[this.clip];
   this.phase=def?(normalized<def.activeStart?'STARTUP':normalized<=def.activeEnd?'ACTIVE':'RECOVERY'):
    this.clip==='Sword_Block'?'BLOCK':this.clip==='Sword_Parry'?'PARRY':this.clip.startsWith('Dodge')?'DODGE':this.clip==='Knockback'?'KNOCKBACK':'STAGGER';
+  if(this.clip==='Heavy_Slash'&&!this.heavySlamCueFired&&this.normalized>=HEAVY_SLASH_LANDING_NORMALIZED){
+   this.heavySlamCueFired=true;
+   this.onHeavySlashImpact?.();
+  }
  }
  finish(sequence:number){
   if(!this.busy||sequence!==this.sequence)return;
-  this.busy=false;this.clip=null;this.phase='IDLE';this.comboRemaining=.7;
+  this.busy=false;this.clip=null;this.phase='IDLE';this.comboRemaining=.7;this.heavySlamCueFired=false;
   const next=this.buffered;this.buffered=null;
   if(next&&this.running&&!this.paused)this.start(next);
  }
  idleStep(dt:number){if(!this.paused&&!this.busy)this.comboRemaining=Math.max(0,this.comboRemaining-dt);}
- cancel(){this.busy=false;this.clip=null;this.buffered=null;this.comboRemaining=0;this.comboIndex=-1;this.hits.clear();this.normalized=0;}
+ cancel(){this.busy=false;this.clip=null;this.buffered=null;this.comboRemaining=0;this.comboIndex=-1;this.hits.clear();this.normalized=0;this.heavySlamCueFired=false;}
  interrupt(clip:'Hit_React'|'Knockback'){
   if(!this.running||this.paused)return false;
   this.cancel();this.start(clip);return true;
