@@ -270,19 +270,6 @@ export function NightEnvironment({sky=true}:{sky?:boolean}) {
 			{monastery && (
 				<group position={[monastery.x, 6, monastery.z]}>
 					<NightLight color="#ffc85b" intensity={2.5} distance={75} decay={2} />
-					{/* စေတီငယ် ညမီးများ */}
-					{monastery.stupas.map((s, idx) => {
-						const cos = Math.cos(monastery.rotation);
-						const sin = Math.sin(monastery.rotation);
-						const wx = monastery.x + s.u * cos + s.v * sin;
-						const wz = monastery.z - s.u * sin + s.v * cos;
-						return (
-							<mesh key={idx} position={[wx - monastery.x, 8, wz - monastery.z]}>
-								<sphereGeometry args={[1.2, 6, 6]} />
-								<meshBasicMaterial color="#ffdc6b" />
-							</mesh>
-						);
-					})}
 				</group>
 			)}
 

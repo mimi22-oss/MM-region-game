@@ -1,3 +1,4 @@
+import { cemeteryToWorld, CEMETERY_PATROL_ROW_Z, MYOTHAR_CEMETERY_LAYOUT } from '../game/cemeteryLayout.ts';
 import { area5, angle as AREA5_ANGLE, toWorld } from './wards/myothar/area5.ts';
 import {
   shweMyanmarFuelStation,
@@ -660,47 +661,34 @@ function buildLocalUvZone(opts: {
 }
 
 function buildCemeteryHauntEnvironment(): GhostWarehouseEnvironment {
-  const cx = 60.32856;
-  const cz = -410.0967;
-  const rot = -0.39889;
-  const cmtC = Math.cos(-rot);
-  const cmtS = Math.sin(-rot);
-  const toCemWorld = (lx: number, lz: number) => ({
-    x: cx + lx * cmtC + lz * cmtS,
-    z: cz - lx * cmtS + lz * cmtC,
-  });
-
-  const wallBoxes: GhostObstacleBox[] = [
-    { id: 'cem-wall-n', ...toCemWorld(0, -27), halfW: 88, halfD: 0.6, rotation: rot, blocksSight: true },
-    { id: 'cem-wall-s', ...toCemWorld(0, 27), halfW: 88, halfD: 0.6, rotation: rot, blocksSight: true },
-    { id: 'cem-wall-e', ...toCemWorld(87.5, 0), halfW: 0.6, halfD: 27.5, rotation: rot, blocksSight: true },
-    { id: 'cem-wall-wn', ...toCemWorld(-87.5, -15.5), halfW: 0.6, halfD: 12.0, rotation: rot, blocksSight: true },
-    { id: 'cem-wall-ws', ...toCemWorld(-87.5, 15.5), halfW: 0.6, halfD: 12.0, rotation: rot, blocksSight: true },
-  ];
+  const layout = MYOTHAR_CEMETERY_LAYOUT;
+  const wallBoxes: GhostObstacleBox[] = layout.walls.map(wall => ({
+    id: `cem-${wall.key}`, x: wall.x, z: wall.z, halfW: wall.length / 2, halfD: .28, rotation: -wall.rot, blocksSight: true,
+  }));
 
   const defs: { id: string; role: GhostWaypointRole; lx: number; lz: number; preferredClip?: 'depressed' | 'dig' }[] = [
     { id: 'cem-ext-n', role: 'dark-corner', lx: -102, lz: -10, preferredClip: 'dig' },
     { id: 'cem-ext-mid', role: 'patrol', lx: -102, lz: 0 },
     { id: 'cem-ext-s', role: 'dark-corner', lx: -102, lz: 10, preferredClip: 'depressed' },
-    { id: 'cem-gate', role: 'patrol', lx: -87.5, lz: 0 },
+    { id: 'cem-gate', role: 'patrol', lx: -91, lz: 0 },
     { id: 'cem-w', role: 'patrol', lx: -65, lz: 0 },
-    { id: 'cem-w-mid', role: 'patrol', lx: -35, lz: 0 },
+    { id: 'cem-w-mid', role: 'patrol', lx: -42, lz: 0 },
     { id: 'cem-center', role: 'hiding', lx: 0, lz: 0, preferredClip: 'depressed' },
-    { id: 'cem-e-mid', role: 'patrol', lx: 35, lz: 0 },
+    { id: 'cem-e-mid', role: 'patrol', lx: 42, lz: 0 },
     { id: 'cem-e', role: 'hiding', lx: 65, lz: 0, preferredClip: 'dig' },
-    { id: 'cem-wn', role: 'dark-corner', lx: -45, lz: -16, preferredClip: 'dig' },
-    { id: 'cem-cn', role: 'hiding', lx: 0, lz: -16, preferredClip: 'depressed' },
-    { id: 'cem-en', role: 'dark-corner', lx: 45, lz: -16, preferredClip: 'dig' },
-    { id: 'cem-ws', role: 'dark-corner', lx: -45, lz: 16, preferredClip: 'depressed' },
-    { id: 'cem-cs', role: 'hiding', lx: 0, lz: 16, preferredClip: 'dig' },
-    { id: 'cem-es', role: 'dark-corner', lx: 45, lz: 16, preferredClip: 'depressed' },
+    { id: 'cem-wn', role: 'dark-corner', lx: -42, lz: -CEMETERY_PATROL_ROW_Z, preferredClip: 'dig' },
+    { id: 'cem-cn', role: 'hiding', lx: 0, lz: -CEMETERY_PATROL_ROW_Z, preferredClip: 'depressed' },
+    { id: 'cem-en', role: 'dark-corner', lx: 42, lz: -CEMETERY_PATROL_ROW_Z, preferredClip: 'dig' },
+    { id: 'cem-ws', role: 'dark-corner', lx: -42, lz: CEMETERY_PATROL_ROW_Z, preferredClip: 'depressed' },
+    { id: 'cem-cs', role: 'hiding', lx: 0, lz: CEMETERY_PATROL_ROW_Z, preferredClip: 'dig' },
+    { id: 'cem-es', role: 'dark-corner', lx: 42, lz: CEMETERY_PATROL_ROW_Z, preferredClip: 'depressed' },
   ];
 
   const nodes = defs.map((d) => ({
     id: d.id,
     role: d.role,
     preferredClip: d.preferredClip,
-    ...toCemWorld(d.lx, d.lz),
+    ...(d.id === 'cem-gate' ? { x: layout.entrance.x, z: layout.entrance.z } : cemeteryToWorld(layout, d.lx, d.lz)),
   }));
 
   const edges: [string, string][] = [
@@ -726,9 +714,9 @@ function buildCemeteryHauntEnvironment(): GhostWarehouseEnvironment {
 
   return buildWorldNodeZone(
     'myothar-cemetery',
-    'မြို့သာ သုသာန် · သင်္ချိုင်း',
-    cx,
-    cz,
+    'သင်္ချိုင်း (ကံပုလဲ) · သုသာန်',
+    layout.cx,
+    layout.cz,
     nodes,
     edges,
     wallBoxes,

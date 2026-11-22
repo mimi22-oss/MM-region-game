@@ -7,6 +7,11 @@ export type TerrainPeak = {
   plateau?: number;
   skirtPower?: number;
   obstacleRadius?: number;
+  /** Preferred direction of the ridge in local U/V radians, along the mountain's flank. */
+  ridgeAxis?: number;
+  ridgeRelief?: number;
+  /** Existing houses are surveyed to this sector's original ground profile. */
+  protectedTerraces?: boolean;
 };
 const smooth = (t: number) => t * t * (3 - 2 * t);
 function hash(x: number, z: number) {
@@ -46,34 +51,41 @@ export function mountainHeight(
 
     // Default small rounded summit crown (0.14); callers can set plateau explicitly
     const plateauRatio = p.plateau ?? 0.14;
-    const skirtPower = p.skirtPower ?? 1.25;
-    let topFactor: number;
     if (r <= plateauRatio) {
-      topFactor = 1;
-    } else {
-      const t = (r - plateauRatio) / (1 - plateauRatio);
-      // Concave-to-convex natural mountain slope: gentle valley foothills blending smoothly to peak
-      topFactor = Math.pow(Math.max(0, 1 - smooth(t)), skirtPower);
+      totalH = totalH === 0 ? p.height : smax(totalH, p.height, 10);
+      continue;
     }
+    const skirtPower = p.skirtPower ?? 1.25;
+    const t = (r - plateauRatio) / (1 - plateauRatio);
+    const topFactor = Math.pow(1 - smooth(t), skirtPower);
 
     // Subtle organic surface undulation scaled gently by peak height so summits stay exact
-    const centerTaper = Math.min(1, Math.max(0, (r - plateauRatio * 0.5) / 0.18));
-    const flankMask = Math.sin(Math.min(1, Math.max(0, (r - plateauRatio) / Math.max(0.05, 1 - plateauRatio))) * Math.PI);
+    const flankMask = Math.sin(t * Math.PI);
     const heightScale = Math.min(1.15, Math.max(0.35, p.height / 140));
     const roll1 =
       Math.sin(u / 34 + terrainNoise(u / 72, v / 72) * 1.8) *
       Math.cos(v / 30) *
       1.8;
     const roll2 = (terrainNoise(u / 20, v / 20) - 0.5) * 2.2;
-    const undulation = (roll1 + roll2) * topFactor * centerTaper * heightScale;
+    const undulation = (roll1 + roll2) * topFactor * flankMask * heightScale;
 
     // Natural radial mountain spurs & shallow forested valleys along the flanks
     const azimuth = Math.atan2(dz, dx);
     const spurPrimary = Math.sin(azimuth * 5 + terrainNoise(u / 95, v / 95) * 2.4);
     const spurSecondary = Math.cos(azimuth * 8 - terrainNoise(u / 52, v / 52) * 1.9);
-    const ridgeFactor = 1 + (0.075 * spurPrimary + 0.035 * spurSecondary) * flankMask;
-
-    const peakH = Math.max(0, (p.height * topFactor + undulation) * ridgeFactor);
+    const axis = azimuth - (p.ridgeAxis ?? 0);
+    const principalSpur = Math.cos(2 * axis + .3 * Math.sin(r * 8)) * .68 + Math.cos(3 * axis - 1.1) * .32;
+    const ridgeFactor = 1 + (.067 * spurPrimary + .026 * spurSecondary + (p.ridgeRelief ?? 0) * principalSpur) * flankMask;
+    let shape = (p.height * topFactor + undulation) * ridgeFactor;
+    if (p.protectedTerraces) {
+      const metres = r * p.radius;
+      const protection = smooth(Math.max(0, Math.min(1, (metres - 675) / 62, (1090 - metres) / 46,
+        (azimuth + 1.32) / .08, (-.73 - azimuth) / .10)));
+      const oldRoll = (roll1 + roll2) * topFactor * Math.min(1, (r - plateauRatio * .5) / .18) * heightScale;
+      const oldShape = (p.height * topFactor + oldRoll) * (1 + (.075 * spurPrimary + .035 * spurSecondary) * flankMask);
+      shape += (oldShape - shape) * protection;
+    }
+    const peakH = Math.max(0, shape);
     totalH = totalH === 0 ? peakH : smax(totalH, peakH, 10);
   }
   return totalH;
@@ -100,12 +112,12 @@ export function buildMountainTiles(
         z++
       )
         tiles.add(`${x},${z}`);
-  const valleyGrass = new Color("#65b247"),
-    meadowGreen = new Color("#4da13f"),
-    lushForest = new Color("#338239"),
-    sunlitGrass = new Color("#7ec454"),
-    highlandGreen = new Color("#3c8e43"),
-    mossyEarth = new Color("#5f7d47"),
+  const valleyGrass = new Color("#6b8a4e"),
+    meadowGreen = new Color("#617f48"),
+    lushForest = new Color("#304c37"),
+    sunlitGrass = new Color("#8d9a57"),
+    highlandGreen = new Color("#4c694d"),
+    exposedRock = new Color("#837e66"),
     blue = new Color("#87a8c3");
   return [...tiles]
     .map((key) => {
@@ -146,18 +158,17 @@ export function buildMountainTiles(
             terrainNoise(u / 34, v / 34) * 0.6 +
             terrainNoise(u / 11, v / 11) * 0.4;
           const patchNoise = terrainNoise(u / 85, v / 85);
-          // Lush green grass & emerald forest blanket from foothills (0m) all the way to summit (1,320m)
           const midBlend = smooth(Math.min(1, Math.max(0, (h - 25) / 260)));
           const highBlend = smooth(Math.min(1, Math.max(0, (h - 520) / 680)));
           const c = valleyGrass
             .clone()
             .lerp(meadowGreen, midBlend * 0.72)
-            .lerp(lushForest, patchNoise * 0.55)
-            .lerp(sunlitGrass, noise * 0.45)
+            .lerp(lushForest, patchNoise * .64)
+            .lerp(sunlitGrass, noise * .32)
             .lerp(highlandGreen, highBlend * 0.48);
-          // Keep even steeper slopes mossy-green rather than gray rock
-          const slopeAccent = smooth(Math.min(1, Math.max(0, (slope - 0.85) / 0.9))) * 0.28;
-          c.lerp(mossyEarth, slopeAccent);
+          const strata = terrainNoise(u / 45 + h / 58, v / 83);
+          const slopeAccent = smooth(Math.min(1, Math.max(0, (slope - .53) / 1.2))) * (.22 + strata * .62);
+          c.lerp(exposedRock, slopeAccent);
           c.lerp(blue, haze);
           colors.push(c.r, c.g, c.b);
         }

@@ -2,6 +2,7 @@ import { ParkedCarsPlan } from '../../Car';
 import { ParkedMotorcycle } from '../../Motorcycle';
 import { MOTORCYCLE_X, MOTORCYCLE_Z, MOTORCYCLE_YAW } from '../../../data/motorcycle';
 import { area5, farmhouse, toWorld } from '../../../data/wards/myothar/area5';
+import { PAGODA_APRON, PAGODA_OUTLINE, PAGODA_SHRINE, PAGODA_WEEKDAYS } from '../../../game/pagodaLayout';
 import { House, FARMHOUSE_NAME, houseFenceBounds, houseVisualRotation } from '../../House';
 import { Farmhouse } from '../../Farmhouse';
 import { UShweHouse, U_SHWE_HOUSE_ID } from '../../ushwehouse';
@@ -146,8 +147,19 @@ export function Area5Plan({labels,onSelectLocation}:{labels:boolean;onSelectLoca
     <rect x={b.u-b.width/2} y={b.v-b.depth/2} width={b.width} height={b.depth} fill={b.roof}/>
     {labels&&<text x={b.u} y={b.v} textAnchor="middle" fontSize="3.5" fill="#fff">{b.name}</text>}
    </g>)}
-   {area5.monastery.stupas.map((p,i)=><circle key={i} cx={p.u} cy={p.v} r={p.radius} fill="#edc856"/>)}
-   {labels&&<text x="0" y="-18" fontSize="5" textAnchor="middle">ကျောင်းဝင်း ကွင်းပြင်</text>}
+   {area5.monastery.stupas.map(p=><g key={p.id} transform={`translate(${p.u} ${p.v})`}>
+    <circle r={p.radius*(p.weekdayShrines?PAGODA_APRON.shrineRadius:PAGODA_APRON.radius)} fill="#e6dcc6"/>
+    <polygon
+      points={PAGODA_OUTLINE.map(({x,z})=>`${x*p.radius},${z*p.radius}`).join(' ')}
+      transform={`rotate(${(area5.monastery.rotation-p.yaw)*180/Math.PI})`}
+      fill="#edc856" stroke="#a77b2f" strokeWidth=".25"
+    />
+    {p.weekdayShrines&&PAGODA_WEEKDAYS.map(day=>{
+      const bearing=day.bearing*Math.PI/180, distance=p.radius*PAGODA_SHRINE.distance;
+      return <circle key={day.id} cx={Math.sin(bearing)*distance} cy={-Math.cos(bearing)*distance} r=".68" fill="#9b5236"><title>{day.label}</title></circle>;
+    })}
+   </g>)}
+   {labels&&<text x="0" y="-18" fontSize="5" textAnchor="middle">မြို့သာ နယ်မြေ(၅)ရပ်ကွက် ဘုန်းတော်ကြီးကျောင်း</text>}
   </g>
   <g transform={`rotate(${-area5.crossCanal.rotation*180/Math.PI})`}>
    <polyline points={area5.crossCanal.points.map(p=>p.join(',')).join(' ')} fill="none" stroke="#4d9395" strokeWidth={area5.crossCanal.depth} strokeLinejoin="round" strokeLinecap="round"/>

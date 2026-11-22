@@ -167,9 +167,9 @@ export const MyotharCenter = memo(function MyotharCenter({
 			<MyotharCenterLandmarks />
 
 			{/* ======================================================== */}
-			{/* ၃.၅။ သင်္ချိုင်း / သုသာန်ဝင်း (10,000 Multicolored Graves Reusable Cemetery) */}
+			{/* ၃.၅။ သင်္ချိုင်း (ကံပုလဲ) / သုသာန်ဝင်း */}
 			{/* ======================================================== */}
-			<Cemetery name="သင်္ချိုင်း" township="မြို့သာရပ်ကွက်" graveCount={10000} />
+			<Cemetery name="သင်္ချိုင်း (ကံပုလဲ)" township="ကံပုလဲ · ကလေးမြို့" />
 
 			{/* ======================================================== */}
 			{/* ၃.၆။ မြို့သာ အခြေခံပညာကျောင်း (Walk-In School Campus, Flagpole & Rest Pavilions) */}

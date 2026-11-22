@@ -18,6 +18,13 @@ import {
 	type MountainGrassTuftPlot,
 	type MountainTreePlot,
 } from '../game/weipulaClimb';
+import { WeipulaRoad } from './WeipulaRoad';
+import { TaungphilaMountainFeatures } from './TaungphilaMountainFeatures';
+import {
+	TAUNGPHILA_MOUNTAIN_WORLD,
+	TAUNGPHILA_ROAD_CONTROL_POINTS,
+	buildTaungphilaSlopeFlora,
+} from '../game/taungphilaWorld';
 import { MountainForestFixedPool } from '../game/treeResourcePool';
 import { WeipulaVillageResidents } from './WeipulaVillageResidents';
 import { ChinHornbillRoofEmblem, ChinTraditionalHouse } from './ChinTraditionalHouse';
@@ -39,6 +46,8 @@ const distantMountainTiers = [
 			radius,
 			plateau: 0.06,
 			skirtPower: 1.3,
+			ridgeAxis: .3 + .42 * Math.sin(i),
+			ridgeRelief: .2,
 			color: i % 2 ? '#3b5443' : '#334c3d',
 		};
 	}),
@@ -56,6 +65,8 @@ const distantMountainTiers = [
 			radius,
 			plateau: 0.05,
 			skirtPower: 1.35,
+			ridgeAxis: -.14 + .5 * Math.sin(i * 1.7),
+			ridgeRelief: .26,
 			color: '#3d5261',
 		};
 	}),
@@ -808,8 +819,15 @@ export function Mountains() {
 	// ၂။ မြောက်ဘက် တောင်တက် စောင်းတန်း ကျောက်လှေကားနှင့် နားနေဇရပ်များ
 	const stairway = useMemo(() => buildWeipulaStairway(foreground), []);
 
-	// ၃။ တောင်တစ်ခုလုံး စိမ်းစိုနေစေမည့် ထင်းရှူးပင်၊ သစ်ပင်နှင့် မြက်ခင်းချုံပုတ်များ
-	const slopeFlora = useMemo(() => buildWeipulaSlopeFlora(foreground, mobileQuality), []);
+	// ၃။ တောင်တစ်ခုလုံး (မဟာဝေပုလ္လ + တောင်ဖီလာ + အနောက်တောင်တန်း) စိမ်းစိုနေစေမည့် ထင်းရှူးပင်၊ သစ်ပင်နှင့် မြက်ခင်းချုံပုတ်များ
+	const slopeFlora = useMemo(() => {
+		const weipula = buildWeipulaSlopeFlora(foreground, mobileQuality);
+		const taungphila = buildTaungphilaSlopeFlora(foreground, mobileQuality);
+		return {
+			trees: [...weipula.trees, ...taungphila.trees],
+			grassTufts: [...weipula.grassTufts, ...taungphila.grassTufts],
+		};
+	}, []);
 
 	// တောင်ခြေ မုခ်ဦး တည်နေရာ (Base Foothill Archway, y ≈ 0m)
 	const baseGatePos = useMemo(() => {
@@ -833,46 +851,10 @@ export function Mountains() {
 			{/* ၂။ တောင်ခြေ မုခ်ဦး (Base Foothill Welcome Archway — Climb Trailhead at y ≈ 0m) */}
 			<BaseMountainArchway x={baseGatePos.x} y={baseGatePos.y} z={baseGatePos.z} />
 
-			{/* ၃။ ဝေပုလ္လ တောင်တက် ကွေ့ကောက်ကတ္တရာလမ်း (Clearly Visible Pitched Switchback Mountain Highway) */}
-			<group name="weipula-switchback-road">
-				{roadSegments.map(seg => (
-					<group key={seg.key} position={[seg.x, seg.y, seg.z]} rotation={[0, seg.yaw, 0]}>
-						{/* တောင်စောင်း ကျောက်ထိန်းနံရံ အောက်ခံ (Deep Retaining Stone Viaduct Wall into Hillside) */}
-						<mesh position={[0, -21.0, 0]} rotation={[-seg.pitch, 0, 0]}>
-							<boxGeometry args={[seg.width + 1.6, 41.6, seg.hyp + 0.8]} />
-							<meshStandardMaterial color="#676258" roughness={0.94} />
-						</mesh>
-						{/* ကတ္တရာ လမ်းမျက်နှာပြင် (Wide, Clearly Visible Walkable / Drivable Pitched Asphalt) */}
-						<mesh userData={{ walkable: true }} rotation={[-seg.pitch, 0, 0]} receiveShadow>
-							<boxGeometry args={[seg.width, 0.34, seg.hyp + 1.4]} />
-							<meshStandardMaterial color="#3c434a" roughness={0.82} />
-						</mesh>
-						{/* လမ်းအလယ် အဝါရောင်မျဉ်းကြောင်း (Crisp Yellow Center Stripe) */}
-						<mesh position={[0, 0.19, 0]} rotation={[-seg.pitch, 0, 0]}>
-							<boxGeometry args={[0.26, 0.03, seg.hyp * 0.62]} />
-							<meshBasicMaterial color="#fde047" />
-						</mesh>
-						{/* လမ်းဘေး အဖြူရောင် အနားမျဉ်း ၂ ကြောင်း (Bright White Shoulder Edge Lines) */}
-						{[-seg.width / 2 + 0.45, seg.width / 2 - 0.45].map(side => (
-							<mesh key={`edge-${side}`} position={[side, 0.19, 0]} rotation={[-seg.pitch, 0, 0]}>
-								<boxGeometry args={[0.22, 0.03, seg.hyp + 0.6]} />
-								<meshBasicMaterial color="#f8fafc" />
-							</mesh>
-						))}
-						{/* ချောက်ကမ်းပါးဘေး အဖြူရောင် အကာလက်ရန်းနံရံ (High-Visibility Concrete Mountain Guardrails) */}
-						{seg.hasGuardrail && (
-							<>
-								{[-seg.width / 2 - 0.25, seg.width / 2 + 0.25].map(side => (
-									<mesh key={`guard-${side}`} position={[side, 0.56, 0]} rotation={[-seg.pitch, 0, 0]}>
-										<boxGeometry args={[0.38, 0.82, seg.hyp + 0.5]} />
-										<meshStandardMaterial color="#f1efe8" roughness={0.74} />
-									</mesh>
-								))}
-							</>
-						)}
-					</group>
-				))}
-			</group>
+			<WeipulaRoad segments={roadSegments} peaks={foreground} />
+
+			{/* ၃.၅။ တောင်ဖီလာတောင် ဆိုင်ကယ်တောင်တက်လမ်း၊ ရေကန်၊ ဇရပ်၊ တောရဘုန်းကြီးကျောင်းနှင့် စေတီတော်များ */}
+			<TaungphilaMountainFeatures peaks={foreground} />
 
 			{/* ၄။ မဟာဝေပုလ္လ တောင်တက် ကျောက်လှေကား စောင်းတန်း (Clearly Visible Pilgrim Stone Stairway from Base to 1,320m Summit) */}
 			<group name="weipula-pilgrim-stairway">
@@ -1224,6 +1206,10 @@ export function WesternLandscapePlan() {
 		const w = toWorld(pt.u, pt.v);
 		return `${w.x.toFixed(1)},${w.z.toFixed(1)}`;
 	}).join(' ');
+	const taungphilaRoadSvgPoints = TAUNGPHILA_ROAD_CONTROL_POINTS.map(pt => {
+		const w = toWorld(pt.u, pt.v);
+		return `${w.x.toFixed(1)},${w.z.toFixed(1)}`;
+	}).join(' ');
 	const stairStart = toWorld(MAHA_WEIPULA_BASE_GATE_UV.u, MAHA_WEIPULA_BASE_GATE_UV.v);
 	const stairEnd = toWorld(MAHA_WEIPULA_SUMMIT_UV.u, MAHA_WEIPULA_SUMMIT_UV.v - 22);
 
@@ -1261,6 +1247,46 @@ export function WesternLandscapePlan() {
 				strokeLinejoin="round"
 				opacity="0.88"
 			/>
+			{/* တောင်ဖီလာတောင် ဆိုင်ကယ်တောင်တက်လမ်း၊ ရေကန်၊ တောရကျောင်းနှင့် စေတီများ (2D Map Overlay) */}
+			<polyline
+				points={taungphilaRoadSvgPoints}
+				fill="none"
+				stroke="#e5dcc8"
+				strokeWidth="3.0"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+				opacity="0.9"
+			/>
+			{TAUNGPHILA_MOUNTAIN_WORLD.lakes.map(lk => (
+				<ellipse
+					key={lk.id}
+					cx={lk.x}
+					cy={lk.z}
+					rx={lk.radiusX}
+					ry={lk.radiusZ}
+					fill="#3a8da0"
+					stroke="#9ad4e0"
+					strokeWidth="1.2"
+					opacity="0.86"
+					transform={`rotate(${(-lk.rotation * 180) / Math.PI} ${lk.x} ${lk.z})`}
+				/>
+			))}
+			{TAUNGPHILA_MOUNTAIN_WORLD.monasteries.map(m => (
+				<rect
+					key={m.id}
+					x={m.x - 5.5}
+					y={m.z - 4.5}
+					width="11"
+					height="9"
+					fill="#8f1f24"
+					stroke="#f2c144"
+					strokeWidth="1"
+					transform={`rotate(${(-m.rotation * 180) / Math.PI} ${m.x} ${m.z})`}
+				/>
+			))}
+			{TAUNGPHILA_MOUNTAIN_WORLD.pagodas.map(p => (
+				<circle key={p.id} cx={p.x} cy={p.z} r={Math.max(3.5, p.radius)} fill="#f2c844" stroke="#ffffff" strokeWidth="1" />
+			))}
 			<line
 				x1={stairStart.x}
 				y1={stairStart.z}

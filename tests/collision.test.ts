@@ -27,7 +27,9 @@ test('canal crossings and monastery footprints',()=>{
  const water=toWorld(-54,0);assert.equal(canStand(water.x,water.z),false);
  for(const localV of ward.canal.bridges){const v=localV+ward.canal.v;const p=toWorld(-54,v);assert.ok(canStand(p.x,p.z));const start=toWorld(-60,v),end=toWorld(-48,v);move(start,end.x-start.x,end.z-start.z);assert.ok(Math.hypot(start.x-end.x,start.z-end.z)<0.1)}
  const m=ward.monastery,c=Math.cos(m.rotation),s=Math.sin(m.rotation);
- for(const b of m.buildings){assert.equal(canStand(m.x+b.u*c+b.v*s,m.z-b.u*s+b.v*c),false)}
+ // Walk-in monastery buildings: stupas block walking while open courtyard and refectory stay accessible
+ for(const p of m.stupas){assert.equal(canStand(m.x+p.u*c+p.v*s,m.z-p.u*s+p.v*c),false)}
+ assert.equal(m.buildings.length,4);
  const yard=toWorld(205,46);assert.ok(canStand(yard.x,yard.z));
 });
 

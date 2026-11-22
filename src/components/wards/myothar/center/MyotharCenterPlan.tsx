@@ -9,7 +9,10 @@ import {
 	type MyotharCenterPOI,
 } from '../../../../data/wards/myothar/center/index.ts';
 import { MYOTHAR_SCHOOL_COMPOUND } from '../../../../data/wards/myothar/center/myotharSchoolCampus.ts';
+import { MYOTHAR_CEMETERY_LAYOUT } from '../../../../game/cemeteryLayout.ts';
 import { WALKIN_SCHOOL_HALL_BY_ID } from '../../../../game/schoolClassrooms.ts';
+
+const cemetery = MYOTHAR_CEMETERY_LAYOUT;
 
 export interface MyotharCenterPlanProps {
 	labels: boolean;
@@ -55,53 +58,13 @@ export const MyotharCenterPlan = memo(function MyotharCenterPlan({
 				})}
 			</g>
 
-			{/* ၁.၅။ သင်္ချိုင်း / သုသာန်ဝင်း (Cemetery Plan Polygon & Pathways) */}
-			<g id="mc-cemetery-plan">
-				{/* မြေကွက် ဧရိယာ (Cemetery Compound Area) */}
-				<polygon
-					points="-30.5,-401.6 134.2,-471.0 155.2,-417.9 -17.6,-349.9"
-					fill="#e2e8f0"
-					fillOpacity={0.65}
-					stroke="#64748b"
-					strokeWidth={1.2}
-					strokeDasharray="2 1"
-				/>
-				{/* အလယ်ဗဟို လျှောက်လမ်း (Central Avenue) */}
-				<line
-					x1={-24.0}
-					y1={-375.7}
-					x2={144.7}
-					y2={-444.5}
-					stroke="#94a3b8"
-					strokeWidth={2.4}
-					strokeLinecap="round"
-				/>
-				{/* ကန့်လန့်ဖြတ် လျှောက်လမ်းများ (Cross Aisles) */}
-				<line x1={15.0} y1={-420.0} x2={35.0} y2={-370.0} stroke="#cbd5e1" strokeWidth={1.6} />
-				<line x1={55.0} y1={-437.0} x2={75.0} y2={-387.0} stroke="#cbd5e1" strokeWidth={1.6} />
-				<line x1={95.0} y1={-454.0} x2={115.0} y2={-404.0} stroke="#cbd5e1" strokeWidth={1.6} />
-				{/* သုသာန် ဇရပ် (Rest Pavilion Footprint) */}
-				<rect
-					x={-2.0}
-					y={-388.0}
-					width={9.4}
-					height={6.8}
-					transform="rotate(-22.8, 2.7, -384.6)"
-					fill="#166534"
-					stroke="#14532d"
-					strokeWidth={0.6}
-					rx={0.5}
-				/>
-				{/* အဝင်မုခ်ဦး အမှတ်အသား (Entrance Arch) */}
-				<line
-					x1={-27.0}
-					y1={-378.0}
-					x2={-21.0}
-					y2={-373.5}
-					stroke="#d97706"
-					strokeWidth={2.2}
-					strokeLinecap="round"
-				/>
+			<g id="mc-cemetery-plan" transform={`translate(${cemetery.cx} ${cemetery.cz}) rotate(${cemetery.rot * 180 / Math.PI})`}>
+				<polygon points={cemetery.outline.map(p => p.join(',')).join(' ')} fill="#d6dbce" stroke="#64748b" strokeWidth={.8} />
+				{cemetery.paths.map(path => (
+					<polygon key={path.id} points={path.points.map(p => p.join(',')).join(' ')}
+						fill={path.kind === 'row' ? '#bdaf96' : '#a69984'} />
+				))}
+				<rect x={cemetery.zayatX - 4.7} y={-3.4} width={9.4} height={6.8} fill="#166534" stroke="#14532d" strokeWidth={.6} rx={.5} />
 			</g>
 
 			{/* ၁.၆။ မြို့သာ အခြေခံပညာကျောင်း (2D Map Plan: Compound, 3 Halls, Flagpole & 2 Rest Pavilions) */}

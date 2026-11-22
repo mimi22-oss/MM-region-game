@@ -3,23 +3,8 @@ import { Block } from './Primitives';
 import { FarmTrees } from './Tree';
 import { Field } from './Field';
 import { sourceIsEdited } from '../game/worldEdits';
-export function Monastery(){const m=ward.monastery;return <group position={[m.x,0,m.z]} rotation={[0,m.rotation,0]}>
- <Block y={0.02} w={m.width} h={0.04} d={m.depth} color="#b9b08a"/>
- <Block z={-18} y={0.06} w={80} h={0.04} d={23} color="#a7a279"/>
- {m.buildings.map(b=><group key={b.id} position={[b.u,0,b.v]}>
- <Block y={0.35} w={b.width+2} h={0.7} d={b.depth+2} color="#d2c6a3"/>
- <Block y={3.6} w={b.width} h={6} d={b.depth} color={b.color}/>
- {[-1,1].map(s=><mesh key={s} position={[s*b.width/4,7.2,0]} rotation={[0,0,-s*Math.atan2(2,b.width/2)]} castShadow><boxGeometry args={[Math.hypot(b.width/2,2)+1.5,0.22,b.depth+2]}/><meshStandardMaterial color={b.roof}/></mesh>)}
- <Block y={2} z={-b.depth/2-0.06} w={2.4} h={3} d={0.15} color="#5c4b38"/>
- {[-0.32,0.32].map(s=><Block key={s} x={s*b.width} y={3.5} z={-b.depth/2-0.1} w={2.5} h={1.6} d={0.2} color="#75918b"/>)}
- </group>)}
- {m.stupas.map((p,i)=><group key={i} position={[p.u,0,p.v]}>
- <Block y={0.3} w={p.radius*2} h={0.6} d={p.radius*2} color="#eee2b8"/>
- {[0,1,2].map(n=><mesh key={n} position={[0,0.8+n*0.55,0]} castShadow><cylinderGeometry args={[p.radius*(0.85-n*0.15),p.radius*(1-n*0.15),0.55,24]}/><meshStandardMaterial color="#d9b555" metalness={0.45} roughness={0.35}/></mesh>)}
- <mesh position={[0,2.2,0]} castShadow><sphereGeometry args={[p.radius*0.6,24,16,0,Math.PI*2,0,Math.PI/2]}/><meshStandardMaterial color="#e2b83e" metalness={0.55} roughness={0.3}/></mesh>
- <mesh position={[0,p.radius*1.5+2.2,0]} castShadow><coneGeometry args={[p.radius*0.4,p.radius*1.8,24]}/><meshStandardMaterial color="#edc856" metalness={0.5} roughness={0.3}/></mesh>
- </group>)}
- </group>}
+import { MyotharMonastery } from './MyotharMonastery';
+export function Monastery(){return <MyotharMonastery/>;}
 
 
 

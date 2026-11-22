@@ -20,6 +20,7 @@ import { ChinVillageBots } from './ChinVillageBots';
 import { VillageInstitutionBots } from './VillageInstitutionBots';
 import { FootballMatchBots } from './FootballMatchBots';
 import { PooledSchoolHalls } from './PooledSchoolHalls';
+import { PooledMonks } from './monastery/PooledMonks';
 import { FieldLivestockBots } from './FieldLivestockBots';
 import { RegionActivity } from './RegionActivity';
 import { snapshotRegion, regionFlows, animateRegionFlows, warmRegion, disposePreparedRegion } from '../game/preparedScene';
@@ -429,6 +430,7 @@ const fallbackFocus = { x: 0, z: 0 };
       <ChinVillageBots activeRegions={active} minute={minute} timeMode={timeMode} />
       <PooledSchoolHalls activeRegions={active} />
       <VillageInstitutionBots activeRegions={active} minute={minute} timeMode={timeMode} />
+      <PooledMonks activeRegions={active} minute={minute} timeMode={timeMode} />
       <FootballMatchBots activeRegions={active} minute={minute} />
       <FieldLivestockBots />
       <CarBots />

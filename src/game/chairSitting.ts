@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { angle, farmhouse } from '../data/ward.ts';
+import { cemeteryToWorld, MYOTHAR_CEMETERY_LAYOUT } from './cemeteryLayout.ts';
 import { nankaleinTeaShopData } from '../data/wards/kalayArea1/kalayArea1TeaShop.ts';
 import {
   getSpecialActionState,
@@ -335,23 +336,16 @@ function buildStaticChairs(): ChairSpot[] {
   }
 
   // 3. Cemetery Zayat Resting Benches (2 long benches, 3 seat positions each)
-  // Zayat origin: lx = -len/2 + 14 = -73.5 along cemetery rot=-0.39889,
-  // rendered inside <group position={[zayatPos.x, 0, zayatPos.z]} rotation={[0, -rot, 0]}>
-  // Plinth top = 0.44; bench mesh y=0.68, h=0.12 => seatTopY = 0.74 (0.30 above plinth)
-  const cemeteryCx = 60.32856;
-  const cemeteryCz = -410.0967;
-  const cemeteryRot = -0.39889;
-  const zayatLx = -87.5 + 14;
-  const zayatX = cemeteryCx + zayatLx * Math.cos(cemeteryRot);
-  const zayatZ = cemeteryCz + zayatLx * Math.sin(cemeteryRot);
-  const zayatGroupRot = -cemeteryRot;
+  const cemetery = MYOTHAR_CEMETERY_LAYOUT;
+  const zayat = cemeteryToWorld(cemetery, cemetery.zayatX, 0);
+  const zayatGroupRot = -cemetery.rot;
 
   for (const bz of [-2.55, 2.55]) {
     const faceZ = bz < 0 ? 1 : -1;
     const exitZ = bz < 0 ? -1.75 : 1.75;
     for (const bx of [-2.0, 0, 2.0]) {
-      const bPos = localToWorldXZ(zayatX, zayatZ, zayatGroupRot, bx, bz);
-      const bExit = localToWorldXZ(zayatX, zayatZ, zayatGroupRot, bx, exitZ);
+      const bPos = localToWorldXZ(zayat.x, zayat.z, zayatGroupRot, bx, bz);
+      const bExit = localToWorldXZ(zayat.x, zayat.z, zayatGroupRot, bx, exitZ);
       chairs.push({
         id: bx === 0 ? `cemetery-bench-${bz < 0 ? -2.6 : 2.6}` : `cemetery-bench-${bz < 0 ? -2.6 : 2.6}-${bx}`,
         x: bPos.x,

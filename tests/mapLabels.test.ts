@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { layoutMapLabels, uniqueMapLabels } from '../src/game/mapLabels.ts';
 import { worldMapLabels } from '../src/data/mapLabels.ts';
+import { detectLocation } from '../src/game/locationDetect.ts';
 import { myotharCenterPOIs } from '../src/data/wards/myothar/center/myotharCenterPOIs.ts';
 
 test('aerial labels preserve every custom POI at its rendered world coordinate', () => {
@@ -36,4 +37,18 @@ test('deduplication prefers a custom label but preserves distant namesakes', () 
  const base = { name: 'ကျောင်း', x: 0, z: 0, kind: 'place' as const, priority: 50 };
  const labels = uniqueMapLabels([{ ...base, id: 'destination' }, { ...base, id: 'custom', priority: 80 }, { ...base, id: 'far', z: 200 }]);
  assert.deepEqual(labels.map(label => label.id), ['custom', 'far']);
+});
+
+test('Myothar Area 5 monastery at (178.364, -90.213) detects as monastery instead of Kanbale', () => {
+ const loc = detectLocation(178.364, -90.213);
+ assert.equal(loc.id, 'myothar-area-5-monastery');
+ assert.equal(loc.label, 'မြို့သာ နယ်မြေ(၅)ရပ်ကွက် ဘုန်းတော်ကြီးကျောင်း');
+ assert.equal(loc.subArea, 'မြို့သာ နယ်မြေ(၅)ရပ်ကွက် ဘုန်းတော်ကြီးကျောင်း');
+ const label = worldMapLabels.find(l => l.id === 'destination:myothar-area-5-monastery');
+ assert.ok(label);
+ assert.equal(label.kind, 'place');
+ assert.equal(label.name, 'မြို့သာ နယ်မြေ(၅)ရပ်ကွက် ဘုန်းတော်ကြီးကျောင်း');
+ // Kanbale village itself remains unaffected
+ const kanbaleLoc = detectLocation(458.67, -464.24);
+ assert.equal(kanbaleLoc.id, 'kanbale');
 });

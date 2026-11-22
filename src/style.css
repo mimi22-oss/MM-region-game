@@ -11361,7 +11361,7 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 .horse-locked-toast {
   position: fixed;
   left: 50%;
-  bottom: max(92px, calc(env(safe-area-inset-bottom, 0px) + 84px));
+  bottom: max(180px, calc(env(safe-area-inset-bottom, 0px) + 84px));
   transform: translateX(-50%);
   z-index: 19;
   display: inline-flex;

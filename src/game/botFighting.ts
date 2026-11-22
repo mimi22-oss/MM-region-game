@@ -346,6 +346,7 @@ export function isProtectedFromFighting(
   playerX?: number,
   playerZ?: number,
 ): boolean {
+  if (botId && botId.toLowerCase().startsWith('monastery-monk-')) return true;
   if (isFarmhouseFamilyBot(botId)) return true;
   if (isInsideFarmhouseCompound(botX, botZ)) return true;
   if (playerX !== undefined && playerZ !== undefined && isInsideFarmhouseCompound(playerX, playerZ)) {
@@ -357,6 +358,7 @@ export function isProtectedFromFighting(
 /** Human-friendly Burmese label derived from a bot group's name / userData role. */
 export function formatBotTargetLabel(botName: string, npcRole?: string): string {
   const lower = botName.toLowerCase();
+  if (lower.startsWith('monastery-monk-') || npcRole === 'monk') return 'ဘုန်းတော်ကြီး';
   if (lower.startsWith('village-robot-')) return 'စက်ရုပ် Bot';
   if (lower.startsWith('farmhouse-family-')) {
     if (lower.includes('mom')) return 'အမေ (Farmhouse)';

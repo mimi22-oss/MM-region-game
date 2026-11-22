@@ -1036,7 +1036,7 @@ function App() {
     <main className={night ? "night-mode" : ""} data-time-period={environment.period}>
       <GhostGameOver/>
       <MissionVictoryDialog />
-      {!loading && !nearSchoolHall && !nearFootballPitch && <ThreeGhostsMissionHud />}
+      {!loading && !intro.active && !nearSchoolHall && !nearFootballPitch && <ThreeGhostsMissionHud />}
       {!loading && !intro.active && !mapOpen && !settingsOpen && nearFootballPitch && (
         <div
           className={
@@ -1330,7 +1330,7 @@ function App() {
       {/* Brief auto-hiding toast when approaching a horse before completing Zombie Mission */}
       {horseLockedNotice && !horseUnlocked && !intro.active && !loading && !mapOpen && !settingsOpen && (
         <div className="horse-locked-toast" role="status" aria-live="polite">
-          <span aria-hidden="true">🔒🐎</span>
+          <span aria-hidden="true">🐎</span>
           <span>{HORSE_LOCKED_MESSAGE}</span>
         </div>
       )}

@@ -47,8 +47,13 @@ import {
   WALKIN_SCHOOL_HALL_IDS,
   canStandWalkInSchoolHalls,
 } from "./schoolClassrooms.ts";
+import { canStandMonasteryBuildings } from "./monasteryLayout.ts";
+import { canStandTaungphilaFeatures } from "./taungphilaWorld.ts";
 import { canStandTharSiSchoolCampus } from "../data/villages/tharsi/schoolCampus.ts";
 import { canStandMyotharSchoolCampus } from "../data/wards/myothar/center/myotharSchoolCampus.ts";
+import { cemeteryTombBlocks, MYOTHAR_CEMETERY_LAYOUT } from './cemeteryLayout.ts';
+import { isOnWeipulaRoad } from './weipulaClimb.ts';
+
 export const PLAYER_RADIUS = 0.4;
 const nearbyAreca = spatialIndex(estatePalms, (p) => ({
   x: p.x,
@@ -183,16 +188,6 @@ const nearbyVillagePonds = spatialIndex(
     radius: Math.hypot(p.width / 2 + PLAYER_RADIUS, p.depth / 2 + PLAYER_RADIUS),
   }),
 );
-const MONASTERY_MAX_R_SQ = (() => {
-  let maxR = 0;
-  for (const b of ward.monastery.buildings) {
-    maxR = Math.max(maxR, Math.hypot(Math.abs(b.u) + b.width / 2 + PLAYER_RADIUS, Math.abs(b.v) + b.depth / 2 + PLAYER_RADIUS));
-  }
-  for (const p of ward.monastery.stupas) {
-    maxR = Math.max(maxR, Math.hypot(p.u, p.v) + p.radius + PLAYER_RADIUS);
-  }
-  return (maxR + 1) * (maxR + 1);
-})();
 
 // Farmhouse walk-in character home collision setup
 // Main house expanded to width=12m (lx=-6..6), depth=10m (lz=-5..5).
@@ -396,42 +391,25 @@ export function canStandNankaleinTeaShop(x: number, z: number): boolean {
   return true;
 }
 
-// Cemetery (သုသာန် / သင်္ချိုင်း) collision setup at Myothar Center
-const cemeteryCx = 60.32856;
-const cemeteryCz = -410.0967;
-const cemeteryRot = -0.39889;
-const cmtC = Math.cos(-cemeteryRot);
-const cmtS = Math.sin(-cemeteryRot);
+const cemetery = MYOTHAR_CEMETERY_LAYOUT;
+const cemeteryWalls = cemetery.walls.map(wall => ({
+  ...wall, cos: Math.cos(wall.rot), sin: Math.sin(wall.rot),
+}));
+const cemeteryGate = { ...cemetery.entrance, cos: Math.cos(cemetery.entrance.rot), sin: Math.sin(cemetery.entrance.rot) };
 
 export function canStandCemetery(x: number, z: number, clearance = 0): boolean {
-  const dx = x - cemeteryCx;
-  const dz = z - cemeteryCz;
-  if (dx * dx + dz * dz > 14400) return true;
-
-  const lx = dx * cmtC - dz * cmtS;
-  const lz = dx * cmtS + dz * cmtC;
-
-  const halfLen = 87.5;
-  const halfW = 27.0;
-
-  // Boundary walls (jumpable if clearance > 1.35m)
-  if (clearance <= 1.35) {
-    // North wall
-    if (Math.abs(lz - (-halfW)) < 0.45 && Math.abs(lx) <= halfLen + 0.45) return false;
-    // South wall
-    if (Math.abs(lz - halfW) < 0.45 && Math.abs(lx) <= halfLen + 0.45) return false;
-    // East wall
-    if (Math.abs(lx - halfLen) < 0.45 && Math.abs(lz) <= halfW + 0.45) return false;
-    // West wall with 6.4m entrance gate opening
-    if (Math.abs(lx - (-halfLen)) < 0.45 && Math.abs(lz) <= halfW + 0.45) {
-      if (Math.abs(lz) > 3.0) return false;
-    }
+  const dx = x - cemetery.cx, dz = z - cemetery.cz;
+  if (dx * dx + dz * dz > cemetery.bound * cemetery.bound) return true;
+  if (clearance <= 1.35) for (const wall of cemeteryWalls) {
+    const wx = x - wall.x, wz = z - wall.z;
+    if (Math.abs(wx * wall.cos + wz * wall.sin) < wall.length / 2 + PLAYER_RADIUS &&
+        Math.abs(-wx * wall.sin + wz * wall.cos) < .18 + PLAYER_RADIUS) return false;
   }
-
-  // Gate arch pillars
-  if (Math.hypot(lx - (-halfLen), Math.abs(lz) - 3.2) < 0.6) return false;
-
-  return true;
+  const gx = x - cemeteryGate.x, gz = z - cemeteryGate.z;
+  if (clearance < 4.4 &&
+      Math.abs(Math.abs(gx * cemeteryGate.cos + gz * cemeteryGate.sin) - 3.2) < .45 + PLAYER_RADIUS &&
+      Math.abs(-gx * cemeteryGate.sin + gz * cemeteryGate.cos) < .45 + PLAYER_RADIUS) return false;
+  return !cemeteryTombBlocks(x, z, clearance, PLAYER_RADIUS);
 }
 
 const cosA = Math.cos(angle);
@@ -612,27 +590,11 @@ export function canStand(x: number, z: number, clearance = 0, airborne = false):
   )
     return false;
   }
-  const m = ward.monastery,
-    dx = x - m.x,
-    dz = z - m.z;
-  const mu = dx * c - dz * s,
-    mv = dx * s + dz * c;
-  if (mu * mu + mv * mv <= MONASTERY_MAX_R_SQ) {
-    for (const b of m.buildings)
-      if (
-        Math.abs(mu - b.u) < b.width / 2 + PLAYER_RADIUS &&
-        Math.abs(mv - b.v) < b.depth / 2 + PLAYER_RADIUS
-      )
-        return false;
-    for (const p of m.stupas) {
-      const r = p.radius + PLAYER_RADIUS;
-      const sx = mu - p.u, sz = mv - p.v;
-      if (sx * sx + sz * sz < r * r) return false;
-    }
-  }
+  if (!canStandMonasteryBuildings(x, z, PLAYER_RADIUS)) return false;
+  if (!canStandTaungphilaFeatures(x, z, PLAYER_RADIUS, airborne)) return false;
   for (const mt of MOUNTAIN_LIMITS) {
     const mx = x - mt.x, mz = z - mt.z;
-    if (mx * mx + mz * mz < mt.limitSq) return false;
+    if (mx * mx + mz * mz < mt.limitSq && !isOnWeipulaRoad(x, z, PLAYER_RADIUS)) return false;
   }
   for (const car of driveableCars) {
     if (car.id === carRide.carId) continue;

@@ -158,7 +158,7 @@ export const myotharCenterPOIs: MyotharCenterPOI[] = [
   },
   {
     "id": "poi-myothar-center-cemetery",
-    "name": "သင်္ချိုင်း",
+    "name": "သင်္ချိုင်း (ကံပုလဲ)",
     "kind": "cemetery",
     "lon": 94.071731,
     "lat": 23.164069,

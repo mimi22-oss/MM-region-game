@@ -1,9 +1,33 @@
-import { memo, useMemo, useRef, useLayoutEffect } from 'react';
-import * as THREE from 'three';
+import { memo, useMemo } from 'react';
+import { Shape } from 'three';
+import { cemeteryToWorld, createCemeteryLayout, getCemeteryGrave, MYOTHAR_CEMETERY_BOUNDARY } from '../game/cemeteryLayout';
+import {
+	BURMESE_TOMB_PALETTES,
+	BurmeseTomb,
+	BurmeseTombInstancedBatch,
+	CemeteryTomb,
+	getCemeteryTombAssetCache,
+	type BurmeseTombProps,
+	type CemeteryTombKind,
+	type CemeteryTombProps,
+	type InstancedTombRecord,
+} from './cemetery/BurmeseTomb';
+
+export {
+	BURMESE_TOMB_PALETTES,
+	BurmeseTomb,
+	BurmeseTombInstancedBatch,
+	CemeteryTomb,
+	getCemeteryTombAssetCache,
+	type BurmeseTombProps,
+	type CemeteryTombKind,
+	type CemeteryTombProps,
+	type InstancedTombRecord,
+};
 
 export interface CemeteryProps {
 	/** Boundary polygon in scene [x, z] coordinates (4 or more points). */
-	boundary?: [number, number][];
+	boundary?: readonly (readonly [number, number])[];
 	/** Explicit center position [x, z] if boundary not provided or to override. */
 	center?: [number, number];
 	/** Rotation angle in radians (default: computed from boundary or 0). */
@@ -12,7 +36,7 @@ export interface CemeteryProps {
 	length?: number;
 	/** Width of cemetery in meters (if boundary not provided). */
 	width?: number;
-	/** Target number of graves (default: 10000). */
+	/** Optional cap. By default, fill the available grave plots. */
 	graveCount?: number;
 	/** Cemetery name in Myanmar or English (e.g., "မြို့သာ သုသာန်", "သင်္ချိုင်း"). */
 	name?: string;
@@ -30,353 +54,84 @@ export interface CemeteryProps {
 	position?: [number, number, number];
 }
 
-/**
- * မြို့သာ အလယ် GeoJSON ဖြင့် ပေးထားသော မူလ သင်္ချိုင်း နယ်နိမိတ် (Scene Coordinates XZ)
- */
-export const defaultMyotharCemeteryBoundary: [number, number][] = [
-	[-30.50424561717233, -401.59180192706134],
-	[134.1514837155285, -470.9921594058478],
-	[155.24374922378712, -417.9212562763674],
-	[-17.576748811622224, -349.8816901206944],
-];
+export const defaultMyotharCemeteryBoundary = MYOTHAR_CEMETERY_BOUNDARY;
 
-/**
- * Point-in-polygon raycasting algorithm
- */
-function isPointInPolygon(pt: [number, number], poly: [number, number][]): boolean {
-	let inside = false;
-	for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-		const xi = poly[i][0], zi = poly[i][1];
-		const xj = poly[j][0], zj = poly[j][1];
-		const intersect =
-			zi > pt[1] !== zj > pt[1] && pt[0] < ((xj - xi) * (pt[1] - zi)) / (zj - zi) + xi;
-		if (intersect) inside = !inside;
+function pathShape(points: readonly (readonly [number, number])[]) {
+	const shape = new Shape();
+	for (const [i, [x, z]] of points.entries()) {
+		if (i === 0) shape.moveTo(x, -z);
+		else shape.lineTo(x, -z);
 	}
-	return inside;
+	shape.closePath();
+	return shape;
 }
 
-/**
- * မြန်မာ့ရိုးရာ အုတ်ဂူများနှင့် ကျောက်စာတိုင် အရောင်အသွေးများ (Authentic Myanmar Cemetery Palette)
- */
-const GRAVE_PALETTES = [
-	{ plinth: '#f8fafc', head: '#ffffff' }, // Pure white marble (စကျင်ကျောက်ဖြူ)
-	{ plinth: '#e2e8f0', head: '#f1f5f9' }, // Light whitewashed stone (ထုံးဖြူရောင်)
-	{ plinth: '#cbd5e1', head: '#94a3b8' }, // Granite grey (ကျောက်နှမ်း မီးခိုး)
-	{ plinth: '#64748b', head: '#334155' }, // Charcoal slate (ကျောက်နက်ရောင်)
-	{ plinth: '#a7f3d0', head: '#6ee7b7' }, // Jade celadon green (ကျောက်စိမ်းနု)
-	{ plinth: '#bae6fd', head: '#7dd3fc' }, // Sky / Cyan blue (မိုးပြာရောင်)
-	{ plinth: '#fde68a', head: '#fcd34d' }, // Golden yellow / Sandstone (ရွှေဝါ/သဲကျောက်)
-	{ plinth: '#fecdd3', head: '#fda4af' }, // Rose pink (ပန်းရောင်နု)
-	{ plinth: '#fed7aa', head: '#fdba74' }, // Terracotta / Peach (အုတ်နီရောင်ဖျော့)
-	{ plinth: '#e9d5ff', head: '#d8b4fe' }, // Lavender violet (ခရမ်းနု)
-	{ plinth: '#d9f99d', head: '#bef264' }, // Moss lime stone (ကျောက်ညှိစိမ်းဖျော့)
-	{ plinth: '#f5f5f4', head: '#e7e5e4' }, // Warm alabaster / Ivory (ဆင်စွယ်ရောင်)
-];
-
-const plinthGeometry = new THREE.BoxGeometry(0.96, 0.22, 0.46);
-const headstoneGeometry = new THREE.BoxGeometry(0.14, 0.46, 0.38);
-
-/**
- * Reusable Cemetery (သင်္ချိုင်း / သုသာန်) Component
- *
- * အင်္ဂါရပ်များ:
- * ၁။ InstancedMesh ဖြင့် အုတ်ဂူ ၁၀,၀၀၀ (10,000 graves) ကို Draw Call ၂ ခုတည်းဖြင့် 60 FPS ချောမွေ့စွာ Render ပြုလုပ်ခြင်း
- * ၂။ အရောင်မျိုးစုံ (စကျင်ကျောက်ဖြူ၊ မိုးပြာ၊ ကျောက်စိမ်းနု၊ ရွှေဝါ၊ ပန်းရောင်၊ အုတ်နီ၊ ကျောက်နက် စသည်)
- * ၃။ သုသာန် အုတ်တံတိုင်း (Boundary Perimeter Wall) နှင့် မုခ်ဦး (Entrance Archway)
- * ၄။ မြန်မာ့ရိုးရာ သုသာန် ဇရပ် (Funeral Rest Pavilion)၊ ရေအိုးစင်နှင့် နားနေခုံများ
- * ၅။ အလယ်ဗဟို လျှောက်လမ်း (Central Avenue) နှင့် ဖြတ်သန်းလမ်းများ (Cross Aisles)
- * ၆။ တရုတ်စံပယ်ပင်များ (Frangipani) နှင့် အရိပ်ရ သစ်ပင်ကြီးများ (Shade Trees)
- * ၇။ တခြားမြို့နယ်/ရပ်ကွက်များတွင်လည်း Boundary ပေးရုံဖြင့် အသင့်ယူသုံးနိုင်သော Reusable Architecture
- */
 export const Cemetery = memo(function Cemetery({
 	boundary = defaultMyotharCemeteryBoundary,
 	center,
 	rotation,
 	length,
 	width,
-	graveCount = 10000,
-	name = 'သင်္ချိုင်း',
-	township = 'ကလေးမြို့',
+	graveCount = Infinity,
+	name = 'သင်္ချိုင်း (ကံပုလဲ)',
+	township = 'ကံပုလဲ · ကလေးမြို့',
 	hasWall = true,
 	hasArch = true,
 	hasZayat = true,
 	hasTrees = true,
 	position = [0, 0, 0],
 }: CemeteryProps) {
-	const plinthMeshRef = useRef<THREE.InstancedMesh>(null);
-	const headstoneMeshRef = useRef<THREE.InstancedMesh>(null);
+	const tombCache = getCemeteryTombAssetCache();
+	const archSignMat = useMemo(
+		() => tombCache.getArchSignMat(name, township),
+		[tombCache, name, township],
+	);
 
-	// ၁။ နယ်နိမိတ် ဗဟို၊ အတိုင်းအတာနှင့် လည်ပတ်ထောင့် တွက်ချက်ခြင်း
-	const config = useMemo(() => {
-		let cx = 0,
-			cz = 0;
-		if (center) {
-			cx = center[0];
-			cz = center[1];
-		} else if (boundary && boundary.length >= 3) {
-			for (const p of boundary) {
-				cx += p[0];
-				cz += p[1];
-			}
-			cx /= boundary.length;
-			cz /= boundary.length;
-		}
-
-		let rot = rotation ?? 0;
-		let len = length ?? 175;
-		let w = width ?? 54;
-
-		if (boundary && boundary.length >= 4) {
-			const dx = boundary[1][0] - boundary[0][0];
-			const dz = boundary[1][1] - boundary[0][1];
-			if (rotation === undefined) {
-				rot = Math.atan2(dz, dx);
-			}
-			if (length === undefined) {
-				len = Math.hypot(dx, dz);
-			}
-			if (width === undefined) {
-				const dxW = boundary[2][0] - boundary[1][0];
-				const dzW = boundary[2][1] - boundary[1][1];
-				w = Math.hypot(dxW, dzW);
-			}
-		}
-
-		return { cx, cz, rot, len, w };
-	}, [boundary, center, rotation, length, width]);
-
-	// ၂။ အုတ်ဂူ ၁၀,၀၀၀ နေရာချထားမှု တွက်ချက်ခြင်း (Layout Grid with Pathways & Zayat Clearances)
-	const graves = useMemo(() => {
-		const list: {
-			x: number;
-			z: number;
-			headX: number;
-			headZ: number;
-			rotation: number;
-			tilt: number;
-			scaleY: number;
-			plinthColor: string;
-			headColor: string;
-		}[] = [];
-
-		const { cx, cz, rot, len, w } = config;
-		const cosR = Math.cos(rot);
-		const sinR = Math.sin(rot);
-
-		// Grid parameters tuned to generate ~10,000 inside boundary
-		const rows = 82;
-		const cols = 142;
-		const halfLen = len / 2 - 2.5;
-		const halfW = w / 2 - 2.2;
-		const stepZ = (halfW * 2) / (rows - 1);
-		const stepX = (halfLen * 2) / (cols - 1);
-
-		let seed = 42;
-		const nextRand = () => {
-			seed = (seed * 9301 + 49297) % 233280;
-			return seed / 233280;
-		};
-
-		for (let r = 0; r < rows; r++) {
-			const lz = -halfW + r * stepZ;
-			// အလယ်ဗဟို လျှောက်လမ်း (Central Walkway Avenue)
-			if (Math.abs(lz) < 1.35) continue;
-
-			for (let c = 0; c < cols; c++) {
-				const lx = -halfLen + c * stepX;
-
-				// ကန့်လန့်ဖြတ် လျှောက်လမ်းများ (Cross Aisles)
-				if (
-					Math.abs(lx + 42) < 0.95 ||
-					Math.abs(lx) < 0.95 ||
-					Math.abs(lx - 42) < 0.95
-				)
-					continue;
-
-				// အဝင်ဝရှိ ဇရပ်နှင့် ခြံဝင်းလွတ် (Zayat Courtyard Plaza)
-				if (lx > -halfLen + 5 && lx < -halfLen + 24 && Math.abs(lz) < 6.8) continue;
-
-				// Global world coordinates
-				const wx = cx + lx * cosR - lz * sinR;
-				const wz = cz + lx * sinR + lz * cosR;
-
-				if (boundary.length >= 3 && !isPointInPolygon([wx, wz], boundary)) {
+	const config = useMemo(() => createCemeteryLayout({ boundary, center, rotation, length, width, hasZayat, hasTrees }),
+		[boundary, center, rotation, length, width, hasZayat, hasTrees]);
+	const { plots, features } = useMemo(() => {
+		const plots = new Map<string, InstancedTombRecord[]>();
+		const features: Array<BurmeseTombProps & { key: string }> = [];
+		let count = 0;
+		for (let row = 0; row < config.rows.length && count < graveCount; row++) {
+			for (let column = 0; column < config.columns && count < graveCount; column++) {
+				const plot = getCemeteryGrave(config, row, column);
+				if (!plot) continue;
+				count++;
+				const world = cemeteryToWorld(config, plot.x, plot.z);
+				const rotation = -config.rot + (plot.z < 0 ? Math.PI / 2 : -Math.PI / 2);
+				const variant = (row * 13 + column * 7) % BURMESE_TOMB_PALETTES.length;
+				const palette = BURMESE_TOMB_PALETTES[variant];
+				if (plot.epitaph) {
+					features.push({ ...world, key: `${row}-${column}`, rotation, scale: plot.scale, bodyColor: palette.body,
+						epitaphTitle: plot.epitaph[0], epitaphSubtitle: plot.epitaph[1] });
 					continue;
 				}
-
-				const rand = nextRand();
-				const paletteIdx = Math.floor(rand * GRAVE_PALETTES.length);
-				const palette = GRAVE_PALETTES[paletteIdx];
-
-				// Subtle natural organic tilts and scales
-				const tilt = (nextRand() - 0.5) * 0.08;
-				const scaleY = 0.88 + nextRand() * 0.28;
-
-				// Headstone position at the head end of the plinth
-				const headOffset = -0.36;
-				const headX = wx + headOffset * cosR;
-				const headZ = wz + headOffset * sinR;
-
-				list.push({
-					x: wx,
-					z: wz,
-					headX,
-					headZ,
-					rotation: rot,
-					tilt,
-					scaleY,
-					plinthColor: palette.plinth,
-					headColor: palette.head,
-				});
-
-				if (list.length >= graveCount) break;
-			}
-			if (list.length >= graveCount) break;
-		}
-
-		return list;
-	}, [config, boundary, graveCount]);
-
-	// ၃။ InstancedMesh အတွက် Matrix နှင့် Color များကို GPU Buffer သို့ ပေးပို့ခြင်း
-	useLayoutEffect(() => {
-		if (!plinthMeshRef.current || !headstoneMeshRef.current || graves.length === 0) return;
-
-		const dummy = new THREE.Object3D();
-		const color = new THREE.Color();
-		const count = graves.length;
-
-		for (let i = 0; i < count; i++) {
-			const g = graves[i];
-
-			// (က) အုတ်ဂူ အောက်ခြေခုံ (Plinth)
-			dummy.position.set(g.x, 0.11, g.z);
-			dummy.rotation.set(0, g.rotation, 0);
-			dummy.scale.set(1, 1, 1);
-			dummy.updateMatrix();
-			plinthMeshRef.current.setMatrixAt(i, dummy.matrix);
-			color.set(g.plinthColor);
-			plinthMeshRef.current.setColorAt(i, color);
-
-			// (ခ) အုတ်ဂူ ကျောက်စာတိုင် (Headstone)
-			dummy.position.set(g.headX, 0.44 * g.scaleY, g.headZ);
-			dummy.rotation.set(0, g.rotation + g.tilt, 0);
-			dummy.scale.set(1, g.scaleY, 1);
-			dummy.updateMatrix();
-			headstoneMeshRef.current.setMatrixAt(i, dummy.matrix);
-			color.set(g.headColor);
-			headstoneMeshRef.current.setColorAt(i, color);
-		}
-
-		plinthMeshRef.current.instanceMatrix.needsUpdate = true;
-		if (plinthMeshRef.current.instanceColor) plinthMeshRef.current.instanceColor.needsUpdate = true;
-		plinthMeshRef.current.computeBoundingSphere();
-
-		headstoneMeshRef.current.instanceMatrix.needsUpdate = true;
-		if (headstoneMeshRef.current.instanceColor)
-			headstoneMeshRef.current.instanceColor.needsUpdate = true;
-		headstoneMeshRef.current.computeBoundingSphere();
-	}, [graves]);
-
-	// ၄။ အုတ်တံတိုင်း (Perimeter Walls) တွက်ချက်ခြင်း
-	const wallSegments = useMemo(() => {
-		if (!hasWall || boundary.length < 3) return [];
-		const segments: {
-			key: string;
-			x: number;
-			z: number;
-			length: number;
-			rot: number;
-			isWestGate?: boolean;
-		}[] = [];
-
-		const n = boundary.length;
-		for (let i = 0; i < n; i++) {
-			const p1 = boundary[i];
-			const p2 = boundary[(i + 1) % n];
-			const dx = p2[0] - p1[0];
-			const dz = p2[1] - p1[1];
-			const segLen = Math.hypot(dx, dz);
-			const segRot = Math.atan2(dz, dx);
-
-			// Side 3->0 is the West entrance side (faces town access)
-			if (i === 3) {
-				const gateWidth = 6.4;
-				const halfWall = (segLen - gateWidth) / 2;
-
-				// West wall section 1 (left of gate)
-				const mid1X = p1[0] + (dx / segLen) * (halfWall / 2);
-				const mid1Z = p1[1] + (dz / segLen) * (halfWall / 2);
-				segments.push({
-					key: `wall-west-1`,
-					x: mid1X,
-					z: mid1Z,
-					length: halfWall,
-					rot: segRot,
-				});
-
-				// West wall section 2 (right of gate)
-				const mid2X = p2[0] - (dx / segLen) * (halfWall / 2);
-				const mid2Z = p2[1] - (dz / segLen) * (halfWall / 2);
-				segments.push({
-					key: `wall-west-2`,
-					x: mid2X,
-					z: mid2Z,
-					length: halfWall,
-					rot: segRot,
-				});
-			} else {
-				const midX = (p1[0] + p2[0]) / 2;
-				const midZ = (p1[1] + p2[1]) / 2;
-				segments.push({
-					key: `wall-seg-${i}`,
-					x: midX,
-					z: midZ,
-					length: segLen,
-					rot: segRot,
-				});
+				const block = `${Math.floor(column / 15)}-${Math.floor(row / 6)}`;
+				const list = plots.get(block) ?? [];
+				if (list.length === 0) plots.set(block, list);
+				list.push({ ...world, rotation, tilt: 0, scaleY: .95 + variant * .012, bodyColor: palette.body, accentColor: palette.accent });
 			}
 		}
-
-		return segments;
-	}, [boundary, hasWall]);
-
-	// ၅။ အဝင်မုခ်ဦး တည်နေရာ (West Entrance Archway Location)
-	const entrance = useMemo(() => {
-		if (boundary.length < 4) return { x: config.cx, z: config.cz, rot: config.rot };
-		// West side center between point 3 and 0
-		const p3 = boundary[3];
-		const p0 = boundary[0];
-		const ex = (p3[0] + p0[0]) / 2;
-		const ez = (p3[1] + p0[1]) / 2;
-		const dx = p0[0] - p3[0];
-		const dz = p0[1] - p3[1];
-		const rot = Math.atan2(dz, dx);
-		return { x: ex, z: ez, rot };
-	}, [boundary, config]);
-
-	// ၆။ သုသာန် ဇရပ် တည်နေရာ (Rest Pavilion Location)
-	const zayatPos = useMemo(() => {
-		const { cx, cz, rot, len } = config;
-		const cosR = Math.cos(rot);
-		const sinR = Math.sin(rot);
-		// Placed near west courtyard (lx ≈ -len/2 + 14, lz = 0)
-		const lx = -len / 2 + 14;
-		const lz = 0;
-		const x = cx + lx * cosR - lz * sinR;
-		const z = cz + lx * sinR + lz * cosR;
-		return { x, z, rot };
-	}, [config]);
+		return { plots, features };
+	}, [config, graveCount]);
+	const surfaces = useMemo(() => [
+		{ id: 'ground', kind: 'ground', shape: pathShape(config.outline) },
+		...config.paths.map(path => ({ ...path, shape: pathShape(path.points) })),
+	], [config]);
+	const zayatPos = cemeteryToWorld(config, config.zayatX, 0);
+	const { entrance, walls } = config;
 
 	// ၇။ တရုတ်စံပယ်ပင်များနှင့် အရိပ်ရပင်များ (Frangipani & Shading Trees)
 	const treeSpots = useMemo(() => {
 		if (!hasTrees) return [];
 		const list: { key: string; x: number; z: number; isFrangipani: boolean }[] = [];
-		const { cx, cz, rot, len } = config;
+		const { cx, cz, rot } = config;
 		const cosR = Math.cos(rot);
 		const sinR = Math.sin(rot);
 
 		// Frangipani trees along central avenue
-		const frangipaniXOffsets = [-len * 0.38, -len * 0.22, -len * 0.08, len * 0.08, len * 0.22, len * 0.36];
+		const frangipaniXOffsets = config.treeOffsets;
 		frangipaniXOffsets.forEach((ox, idx) => {
 			[-2.2, 2.2].forEach((oz, sideIdx) => {
 				const wx = cx + ox * cosR - oz * sinR;
@@ -391,8 +146,8 @@ export const Cemetery = memo(function Cemetery({
 		});
 
 		// Shade trees along perimeter corners
-		if (boundary.length >= 4) {
-			boundary.forEach((p, idx) => {
+		if (config.points.length >= 4) {
+			config.points.forEach((p, idx) => {
 				// Offset slightly inside corner
 				const cornerX = p[0] + (cx - p[0]) * 0.06;
 				const cornerZ = p[1] + (cz - p[1]) * 0.06;
@@ -410,79 +165,26 @@ export const Cemetery = memo(function Cemetery({
 
 	return (
 		<group position={position} name="cemetery-complex">
-			{/* ======================================================== */}
-			{/* ၁။ မြေပြင် အောက်ခြေခုံ (Cemetery Earth Ground) */}
-			{/* ======================================================== */}
-			<mesh
-				position={[config.cx, -0.02, config.cz]}
-				rotation={[-Math.PI / 2, 0, config.rot]}
-				receiveShadow
-				userData={{ walkable: true }}
-			>
-				<planeGeometry args={[config.len + 4, config.w + 4]} />
-				<meshStandardMaterial color="#788b64" roughness={0.92} />
-			</mesh>
-
-			{/* ======================================================== */}
-			{/* ၂။ အလယ်ဗဟို လျှောက်လမ်း (Main Central Paved Avenue) */}
-			{/* ======================================================== */}
-			<mesh
-				position={[config.cx, 0.03, config.cz]}
-				rotation={[-Math.PI / 2, 0, config.rot]}
-				receiveShadow
-				userData={{ walkable: true }}
-			>
-				<planeGeometry args={[config.len - 4, 2.7]} />
-				<meshStandardMaterial color="#c2b8a7" roughness={0.88} />
-			</mesh>
-
-			{/* ကန့်လန့်ဖြတ် လျှောက်လမ်းများ (Cross Aisles) */}
-			{[-42, 0, 42].map((ox) => {
-				const cosR = Math.cos(config.rot);
-				const sinR = Math.sin(config.rot);
-				const px = config.cx + ox * cosR;
-				const pz = config.cz + ox * sinR;
-				return (
-					<mesh
-						key={`cross-walk-${ox}`}
-						position={[px, 0.025, pz]}
-						rotation={[-Math.PI / 2, 0, config.rot + Math.PI / 2]}
-						receiveShadow
-						userData={{ walkable: true }}
-					>
-						<planeGeometry args={[config.w - 4, 1.8]} />
-						<meshStandardMaterial color="#bab1a0" roughness={0.9} />
+			<group position={[config.cx, 0, config.cz]} rotation={[0, -config.rot, 0]} name="cemetery-footpaths">
+				{surfaces.map(({ id, kind, shape }) => (
+					<mesh key={id} name={id}
+						position={[0, kind === 'ground' ? .012 : kind === 'avenue' ? .047 : kind === 'cross' ? .037 : .029, 0]}
+						rotation={[-Math.PI / 2, 0, 0]} receiveShadow userData={{ walkable: true }}>
+						<shapeGeometry args={[shape]} />
+						<meshStandardMaterial color={kind === 'ground' ? '#76865f' : kind === 'row' ? '#ac9b7e' : '#c5b7a0'} roughness={.95} />
 					</mesh>
-				);
-			})}
+				))}
+			</group>
 
-			{/* ======================================================== */}
-			{/* ၃။ အုတ်ဂူ ၁၀,၀၀၀ (Instanced Multicolored Graves) */}
-			{/* ======================================================== */}
-			<instancedMesh
-				ref={plinthMeshRef}
-				args={[plinthGeometry, undefined, graves.length]}
-				castShadow
-				receiveShadow
-			>
-				<meshStandardMaterial roughness={0.72} metalness={0.08} />
-			</instancedMesh>
-
-			<instancedMesh
-				ref={headstoneMeshRef}
-				args={[headstoneGeometry, undefined, graves.length]}
-				castShadow
-				receiveShadow
-			>
-				<meshStandardMaterial roughness={0.65} metalness={0.12} />
-			</instancedMesh>
+			{[...plots].map(([key, tombs]) => <BurmeseTombInstancedBatch key={key} tombs={tombs} />)}
+			{features.map(({ key, ...tomb }) => <BurmeseTomb key={key} {...tomb} />)}
 
 			{/* ======================================================== */}
 			{/* ၄။ သုသာန် အုတ်တံတိုင်း (Perimeter Brick Walls & Posts) */}
 			{/* ======================================================== */}
 			{hasWall && (
 				<group name="cemetery-walls">
-					{wallSegments.map((s) => (
+					{walls.map((s) => (
 						<group key={s.key} position={[s.x, 0.6, s.z]} rotation={[0, -s.rot, 0]}>
 							{/* Wall Body */}
 							<mesh castShadow receiveShadow>
@@ -498,7 +200,7 @@ export const Cemetery = memo(function Cemetery({
 					))}
 
 					{/* Perimeter Corner & Gate Pillars */}
-					{boundary.map((p, idx) => (
+					{config.points.map((p, idx) => (
 						<group key={`corner-pillar-${idx}`} position={[p[0], 0.75, p[1]]}>
 							<mesh castShadow receiveShadow>
 								<boxGeometry args={[0.55, 1.5, 0.55]} />
@@ -549,10 +251,9 @@ export const Cemetery = memo(function Cemetery({
 						<meshStandardMaterial color="#1e3a5f" roughness={0.5} />
 					</mesh>
 
-					{/* Signboard Banner with Cemetery Name */}
-					<mesh position={[0, 4.5, 0.38]} castShadow>
-						<boxGeometry args={[4.8, 0.65, 0.08]} />
-						<meshStandardMaterial color="#991b1b" roughness={0.4} />
+					{/* Signboard Banner with Cemetery Name (`သင်္ချိုင်း (ကံပုလဲ)`) */}
+					<mesh position={[0, 4.5, 0]} castShadow material={archSignMat}>
+						<boxGeometry args={[4.8, 0.72, 0.76]} />
 					</mesh>
 
 					{/* Multi-tiered Pediment (ပြာသာဒ် မုခ်ခေါင်း) */}
@@ -577,7 +278,7 @@ export const Cemetery = memo(function Cemetery({
 			{hasZayat && (
 				<group
 					position={[zayatPos.x, 0, zayatPos.z]}
-					rotation={[0, -zayatPos.rot, 0]}
+					rotation={[0, -config.rot, 0]}
 					name="cemetery-zayat"
 				>
 					{/* Raised Concrete Plinth Platform */}

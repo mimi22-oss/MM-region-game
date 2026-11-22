@@ -2,6 +2,16 @@ export type House = { id:string; name:string; x:number; z:number; width:number; 
 export const angle=Math.PI/4;
 export function toWorld(u:number,v:number){return {x:u*Math.cos(angle)+v*Math.sin(angle),z:-u*Math.sin(angle)+v*Math.cos(angle)}}
 
+const monasteryOrigin = toWorld(205, 64);
+const monasteryStupas = [
+ {id:'myothar-monastery-stupa-main', x:213.979, z:-112.147, yaw:4.950652, radius:5, weekdayShrines:true},
+ {id:'myothar-monastery-stupa-medium', x:209.222, z:-128.463, yaw:1.570796, radius:2.7, weekdayShrines:false},
+ {id:'myothar-monastery-stupa-small', x:197.862, z:-123.834, yaw:1.570796, radius:2, weekdayShrines:false},
+].map(p => {
+ const dx = p.x - monasteryOrigin.x, dz = p.z - monasteryOrigin.z;
+ return {...p, u:dx*Math.cos(angle)-dz*Math.sin(angle), v:dx*Math.sin(angle)+dz*Math.cos(angle)};
+});
+
 const houses:House[]=[];
 for(let row=0;row<3;row++)for(let n=0;n<7;n++){
  const i=houses.length;
@@ -77,10 +87,14 @@ export const area5={
     {u:1620,v:5160,radius:420,height:420,plateau:0.08,skirtPower:1.3,obstacleRadius:6.5},
     // Western mountain spine connecting Taungphila seamlessly into Weipula massif
     ...Array.from({length:37},(_,i)=>470+i*120).map((v,i)=>({u:-630,v,radius:125+(i%4)*8,height:175+(i%5)*26,plateau:0.08,skirtPower:1.3,obstacleRadius:6.5}))
-   ].map((m,i)=>({...m,id:`weipula-${i}`,...toWorld(m.u,m.v),color:i<10?'#486b52':'#557359'}))},
+   ].map((m,i)=>({...m,id:`weipula-${i}`,...toWorld(m.u,m.v),color:i<10?'#486b52':'#557359',
+    ridgeAxis: i === 2 ? .28 : i < 10 ? .35 + i * .29 : Math.PI / 2 + Math.sin(i * .48) * .32,
+    ridgeRelief: i === 2 ? .048 : i < 10 ? .12 : .075,
+    protectedTerraces: i === 2,
+   }))},
  westernFields:[270,210,330].flatMap((v,row)=>Array.from({length:5},(_,i)=>({id:`western-field-${row}-${i}`,row,u:-216-i*42,v,...toWorld(-216-i*42,v),width:38,depth:54,rotation:angle,color:['#8ba65d','#a6ad63','#719650'][(i+row)%3]}))),
  taungphila:{name:'တောင်ဖီလာတောင်',label:toWorld(-575,230)},
- mountains:[...Array.from({length:5},(_,i)=>({u:-520-(i%2)*20,v:60+i*85,radius:72,height:145+(i%3)*28,plateau:0.1,skirtPower:1.25})),...Array.from({length:3},(_,i)=>({u:-630,v:100+i*120,radius:65,height:210+i*18,plateau:0.1,skirtPower:1.25}))].map((m,i)=>({...m,id:`western-mountain-${i}`,name:'တောင်ဖီလာတောင်',...toWorld(m.u,m.v),color:i<5?'#607b62':'#718487'})),
+ mountains:[...Array.from({length:5},(_,i)=>({u:-520-(i%2)*20,v:60+i*85,radius:72,height:145+(i%3)*28,plateau:0.1,skirtPower:1.25,obstacleRadius:6.5})),...Array.from({length:3},(_,i)=>({u:-630,v:100+i*120,radius:65,height:210+i*18,plateau:0.1,skirtPower:1.25,obstacleRadius:6.5}))].map((m,i)=>({...m,id:`western-mountain-${i}`,name:'တောင်ဖီလာတောင်',...toWorld(m.u,m.v),color:i<5?'#607b62':'#718487'})),
  crossCanal:{v:282,junctionV:376,depth:3,rotation:angle,
   points:[[125,282],[0,282],[-5,284],[-9,290],[-9,334],[-9,362],[-12,372],[-24,376],[-170,376]],
   bridges:[{u:0,v:282,width:12,depth:7},{u:-9,v:310,width:7,depth:4}]},
@@ -97,12 +111,13 @@ export const area5={
  pond:{...toWorld(-140,270),width:16,depth:10,rotation:angle},
  farmTrees:[[-132,255],[-148,255],[-148,285],[-132,285]].map(([u,v],i)=>({id:`farm-tree-${i}`,...toWorld(u,v),radius:0.5})),
  openGround:{...toWorld(96,-50),width:100,depth:100,rotation:angle},
- monastery:{...toWorld(205,64),width:96,depth:66,rotation:angle,
+ monastery:{...monasteryOrigin,width:96,depth:66,rotation:angle,
   buildings:[
-   {id:'mandap',name:'မဏ္ဍပ်',u:-32,v:7,width:19,depth:20,color:'#d8cfb7',roof:'#8b9caa'},
-   {id:'dhamma',name:'ဓမ္မာရုံ',u:0,v:3,width:25,depth:19,color:'#e7d7b4',roof:'#547b69'},
-   {id:'quarters',name:'ဘုန်းကြီးကျောင်းဆောင်',u:0,v:23,width:27,depth:14,color:'#bda382',roof:'#80564d'}],
-  stupas:[{u:31,v:9,radius:5},{u:34,v:-10,radius:2.7},{u:23,v:-14,radius:2}],
+   {id:'mandap',name:'မဏ္ဍပ်',u:-32,v:7,width:19,depth:20,color:'#f4ead2',roof:'#1f5e47'},
+   {id:'dhamma',name:'ဓမ္မာရုံ',u:0,v:3,width:25,depth:19,color:'#f4ead2',roof:'#8f1f24'},
+   {id:'quarters',name:'ဘုန်းကြီးကျောင်းဆောင်',u:0,v:23,width:27,depth:14,color:'#6b3e26',roof:'#6e2820'},
+   {id:'refectory',name:'ဆွမ်းစားဆောင်',u:-32,v:29,width:22,depth:12,color:'#f4ead2',roof:'#8c3b2b'}],
+  stupas:monasteryStupas,
  },
  roads:[{id:'farmhouse-access',name:'စိုက်ခင်းအိမ်ဝင်လမ်း',...toWorld(-31.5,270),width:63,depth:3,rotation:angle,main:false},{id:'ah1',name:'AH1',...toWorld(0,2666.69),width:12,depth:5466.62,rotation:angle,main:true},
  ...[-77,-99].map((u,i)=>({id:`lane${i}`,name:'ရပ်ကွက်လမ်း',...toWorld(u,0),width:5,depth:226,rotation:angle,main:false})),

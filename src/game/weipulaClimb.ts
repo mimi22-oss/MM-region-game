@@ -1,5 +1,5 @@
-import { angle, toWorld } from '../data/ward.ts';
-import { mountainHeight, type TerrainPeak } from './mountainTerrain.ts';
+import { angle, toWorld, ward } from '../data/ward.ts';
+import { mountainHeight, terrainNoise, type TerrainPeak } from './mountainTerrain.ts';
 import { isInsideWeipulaChinVillageUV } from './weipulaChinVillageLayout.ts';
 
 /**
@@ -23,6 +23,7 @@ export const MAHA_WEIPULA_SUMMIT_UV = { u: -1560, v: 6120 } as const;
 export const MAHA_WEIPULA_PLAZA_UV = { u: -1560, v: 6068 } as const;
 export const MAHA_WEIPULA_BASE_GATE_UV = { u: -1560, v: 4610 } as const;
 export const WEIPULA_VILLAGE_V_OFFSET = 420;
+const routePeaks = [...ward.mountains, ...ward.weipula.peaks];
 
 export type RoadControlPoint = {
   u: number;
@@ -31,9 +32,8 @@ export type RoadControlPoint = {
 };
 
 /**
- * Generates smooth contour-hugging switchback waypoints across the broad northern face
- * of Maha Weipula so the highway zig-zags gracefully up the lush green mountainside
- * with ~6.8 km climbing length (~19% average grade, never buried inside the mountain!).
+ * The approach crosses the low western ridge. On the main face the route follows
+ * successively higher contours, turning gradually between traverses.
  */
 function generateSwitchbackWaypoints(): RoadControlPoint[] {
   const cu = MAHA_WEIPULA_SUMMIT_UV.u;
@@ -80,24 +80,36 @@ function generateSwitchbackWaypoints(): RoadControlPoint[] {
     { u: MAHA_WEIPULA_BASE_GATE_UV.u, v: MAHA_WEIPULA_BASE_GATE_UV.v, w: 11.0 },
   ];
 
-  // 3. Parametric 6-sweep panoramic switchback hugging the northern face of 1,320m Maha Weipula
-  //    (Angle centered at -PI/2, due North facing Nat Myaung / Kalay Valley!)
-  const climbSamples = 170;
-  const rStart = 1510;
-  const rEnd = 52;
-  for (let i = 1; i <= climbSamples; i++) {
-    const t = i / climbSamples;
-    const r = rStart + (rEnd - rStart) * t;
-    const envelope =
-      Math.sin(Math.min(1, t / 0.08) * (Math.PI / 2)) *
-      Math.sin(Math.min(1, (1 - t) / 0.1) * (Math.PI / 2));
-    const angularSpan = (0.64 + 0.56 * Math.pow(t, 0.85)) * envelope;
-    const theta = -Math.PI / 2 - Math.sin(t * Math.PI * 6) * angularSpan;
-
-    const u = cu + Math.cos(theta) * r;
-    const v = cv + Math.sin(theta) * r;
-    const w = t > 0.94 ? 11.2 : 10.0;
-    pts.push({ u, v, w });
+  const traverses = 29;
+  const divisions = 14;
+  const summitHeight = mountainHeight(cu, cv, routePeaks);
+  for (let leg = 0; leg < traverses; leg++) {
+    for (let i = leg === 0 ? 1 : 0; i < divisions; i++) {
+      const t = i / divisions;
+      const sweep = t ** 3 * (10 - 15 * t + 6 * t * t);
+      const climb = leg + t + .13 * Math.sin(t * Math.PI * 2);
+      // The narrow stretch below the settlement has smaller height gains and more turns.
+      const progress = climb <= 5 ? climb * .18 / 5
+        : climb <= 20 ? .18 + (climb - 5) * .45 / 15
+          : .63 + (climb - 20) * .37 / (traverses - 20);
+      const turn = Math.min(1, progress / .043, (1 - progress) / .038);
+      // The existing Chin settlement occupies the northeastern mid-slope.
+      const villageBand = Math.max(0, Math.min(1, (progress - .09) / .07, (.62 - progress) / .09));
+      const span = .79 - .53 * villageBand * villageBand * (3 - 2 * villageBand);
+      const heading = -Math.PI / 2 + (.029 + (leg % 2 ? 1 - sweep : sweep) * span) * turn;
+      const du = Math.cos(heading), dv = Math.sin(heading);
+      const targetHeight = summitHeight * progress;
+      // Solve along the ray on the northern/eastern face, outside the neighbouring western shoulder.
+      let inner = 52, outer = 1510;
+      for (let pass = 0; pass < 18; pass++) {
+        const radius = (inner + outer) / 2;
+        if (mountainHeight(cu + du * radius, cv + dv * radius, routePeaks) >= targetHeight) inner = radius;
+        else outer = radius;
+      }
+      const radius = (inner + outer) / 2;
+      const w = progress > .98 ? 11.2 : 6.6 + 3.6 * Math.pow(Math.sin(Math.PI * t), .6);
+      pts.push({ u: cu + du * radius, v: cv + dv * radius, w });
+    }
   }
 
   // Final tie-in directly onto the Summit Parking Plaza
@@ -107,6 +119,20 @@ function generateSwitchbackWaypoints(): RoadControlPoint[] {
 
 export const WEIPULA_ROAD_CONTROL_POINTS: readonly RoadControlPoint[] =
   generateSwitchbackWaypoints();
+
+export function isOnWeipulaRoad(x: number, z: number, margin = 0) {
+  const c = Math.cos(angle), s = Math.sin(angle);
+  const u = x * c - z * s, v = x * s + z * c;
+  if (u < -1590 || u > 3 || v < 4520 || v > 6080) return false;
+  for (let i = 1; i < WEIPULA_ROAD_CONTROL_POINTS.length; i++) {
+    const a = WEIPULA_ROAD_CONTROL_POINTS[i - 1], b = WEIPULA_ROAD_CONTROL_POINTS[i];
+    const du = b.u - a.u, dv = b.v - a.v;
+    const t = Math.max(0, Math.min(1, ((u - a.u) * du + (v - a.v) * dv) / Math.max(.001, du * du + dv * dv)));
+    const halfWidth = (a.w + (b.w - a.w) * t) / 2 - margin;
+    if (halfWidth > 0 && (u - a.u - du * t) ** 2 + (v - a.v - dv * t) ** 2 < halfWidth ** 2) return true;
+  }
+  return false;
+}
 
 export type PitchedRoadSegment = {
   key: string;
@@ -158,7 +184,7 @@ function roadMinVisibleElevation(u: number, v: number, peaks: readonly TerrainPe
 /**
  * Builds dense, clearly visible, contour-hugging 3D switchback road segments from AH1 (y = 0m)
  * UP & OVER the scenic western ridge pass at (-635, 4665), down to the Base Welcome Archway,
- * and up the 6-sweep switchback highway to the 1,320m Summit Parking Plaza.
+ * and up the contour traverses to the 1,320m Summit Parking Plaza.
  *
  * Guarantees for EVERY single segment from i = 0 to end:
  *  - Strictly ABOVE terrain across its full width (never buried underneath any mountain!)
@@ -470,101 +496,59 @@ export function buildWeipulaSlopeFlora(
   const cu = MAHA_WEIPULA_SUMMIT_UV.u;
   const cv = MAHA_WEIPULA_SUMMIT_UV.v;
 
-  // 14 concentric forest belts blanketing the entire 3 km green mountain massif
-  const densityScale = mobile ? 0.55 : 1.0;
-  const rings = [
-    { r: 1460, count: Math.round(92 * densityScale) },
-    { r: 1360, count: Math.round(90 * densityScale) },
-    { r: 1250, count: Math.round(88 * densityScale) },
-    { r: 1140, count: Math.round(86 * densityScale) },
-    { r: 1030, count: Math.round(84 * densityScale) },
-    { r: 920, count: Math.round(82 * densityScale) },
-    { r: 810, count: Math.round(78 * densityScale) },
-    { r: 700, count: Math.round(74 * densityScale) },
-    { r: 590, count: Math.round(68 * densityScale) },
-    { r: 480, count: Math.round(62 * densityScale) },
-    { r: 380, count: Math.round(54 * densityScale) },
-    { r: 285, count: Math.round(46 * densityScale) },
-    { r: 195, count: Math.round(38 * densityScale) },
-    { r: 118, count: Math.round(28 * densityScale) },
-  ];
-
-  let idx = 0;
-  for (let ri = 0; ri < rings.length; ri++) {
-    const ring = rings[ri];
-    for (let k = 0; k < ring.count; k++) {
-      idx++;
-      const seed = Math.sin(idx * 12.9898 + ri * 78.233) * 43758.5453;
-      const frac = seed - Math.floor(seed);
-      const seed2 = Math.sin(idx * 45.164 + ri * 17.71) * 43758.5453;
-      const frac2 = seed2 - Math.floor(seed2);
-      const theta = (k / ring.count) * Math.PI * 2 + ri * 0.37 + (frac - 0.5) * 0.1;
-      const rad = ring.r + (frac2 - 0.5) * 78;
-      const u = cu + Math.cos(theta) * rad;
-      const v = cv + Math.sin(theta) * rad;
-
-      if (Math.hypot(u - cu, v - cv) < 76) continue;
-      if (Math.hypot(u - MAHA_WEIPULA_PLAZA_UV.u, v - MAHA_WEIPULA_PLAZA_UV.v) < 42) continue;
-      if (Math.abs(u - cu) < 16 && v >= 4590 && v <= 6110) continue; // Pilgrim stairway
-      if (distToRoadUV(u, v) < 15.5) continue; // Switchback highway clearance
-      if (isInsideWeipulaChinVillageUV(u, v, 10)) continue; // 100-house terraced Chin hillside village
-      if (u > -48) continue; // Keep AH1 & paddy fields clear
-
+  const addRow = (id: string, peak: TerrainPeak, radius: number, count: number, row: number) => {
+    for (let i = 0; i < count; i++) {
+      // Keep the same row and tree positions on desktop and phone.
+      if (mobile && i % 2 !== 0) continue;
+      const t = i * Math.PI * 2 / count + row * .23;
+      const wave = Math.sin(t * 3 + row * .37) * .061 + Math.sin(t * 5 - row * .41) * .031;
+      const r = radius * (1 + wave);
+      const u = peak.u + Math.cos(t) * r;
+      const v = peak.v + Math.sin(t) * r;
+      if (v < 4440 || Math.abs(u) < 29) continue;
+      if (Math.hypot(u - cu, v - cv) < 76 || Math.hypot(u - MAHA_WEIPULA_PLAZA_UV.u, v - MAHA_WEIPULA_PLAZA_UV.v) < 47) continue;
+      if (Math.abs(u - cu) < 19 && v >= 4590 && v <= 6110) continue;
+      if (u >= -375 && u <= -297 && v >= 4760 && v <= 4920) continue;
+      if (isInsideWeipulaChinVillageUV(u, v, 13) || distToRoadUV(u, v) < 20) continue;
       const h = mountainHeight(u, v, peaks);
-      if (h < 1.0) continue;
+      if (h < 1.4 || h > peak.height * .99) continue;
+      const slope = Math.max(
+        Math.abs(mountainHeight(u + 5, v, peaks) - mountainHeight(u - 5, v, peaks)),
+        Math.abs(mountainHeight(u, v + 5, peaks) - mountainHeight(u, v - 5, peaks)),
+      ) / 10;
+      if (slope > 1.65) continue;
+
+      const variation = terrainNoise(u / 37, v / 47);
       const pos = toWorld(u, v);
       trees.push({
-        id: `weipula-tree-${idx}`,
-        u,
-        v,
-        x: pos.x,
-        y: h - 1.2,
-        z: pos.z,
-        scale: 1.55 + frac * 1.45,
-        kind: idx % 5 < 3 ? 'pine' : 'broad',
-        tintIndex: idx % 5,
+        id: `weipula-${id}-row-${row}-${i}`,
+        u, v, ...pos,
+        y: h - .84,
+        scale: .8 + variation * .78 + Math.min(.42, peak.radius / 3200),
+        kind: h > 620 ? (i % 5 < 4 ? 'pine' : 'broad') : (i % 5 === 0 ? 'pine' : 'broad'),
+        tintIndex: (i + row * 3) % 5,
       });
     }
+  };
+
+  const main = peaks.find(p => p.u === cu && p.v === cv);
+  if (main) {
+    const beltRadii = [1460, 1370, 1270, 1170, 1070, 970, 870, 770, 670, 570, 470, 378, 290, 205, 125];
+    beltRadii.forEach((r, row) => addRow('main', main, r, Math.max(32, Math.round(r * .078)), row));
   }
-
-  // Extra lush green trees on the NE foothill ridge & western ridge pass around (-635, 4665)
-  const foothillCenters = [
-    { u: -380, v: 4920, r: 260, count: Math.round(110 * densityScale) },
-    { u: -630, v: 4665, r: 195, count: Math.round(95 * densityScale) },
-  ];
-  for (let ci = 0; ci < foothillCenters.length; ci++) {
-    const fc = foothillCenters[ci];
-    for (let i = 0; i < fc.count; i++) {
-      const s1 = Math.sin((i + 5 + ci * 97) * 31.73) * 43758.5453;
-      const f1 = s1 - Math.floor(s1);
-      const s2 = Math.sin((i + 19 + ci * 53) * 63.17) * 43758.5453;
-      const f2 = s2 - Math.floor(s2);
-      const theta = (i / fc.count) * Math.PI * 2 + f1 * 0.4;
-      const rad = 25 + f2 * fc.r;
-      const u = fc.u + Math.cos(theta) * rad;
-      const v = fc.v + Math.sin(theta) * rad;
-      if (u >= -368 && u <= -304 && v >= 4775 && v <= 4905) continue; // Terraced village
-      if (distToRoadUV(u, v) < 14.5) continue; // Keep winding ridge pass road completely clear!
-      if (u > -52 || v < 4540) continue;
-      const h = mountainHeight(u, v, peaks);
-      if (h < 1.5) continue;
-      const pos = toWorld(u, v);
-      trees.push({
-        id: `weipula-foothill-tree-${ci}-${i}`,
-        u,
-        v,
-        x: pos.x,
-        y: h - 1.0,
-        z: pos.z,
-        scale: 1.15 + f1 * 0.85,
-        kind: i % 2 === 0 ? 'broad' : 'pine',
-        tintIndex: (i + ci) % 5,
-      });
-    }
+  // Smaller, separate bands follow the contours of adjoining peaks and ridge shoulders.
+  const shoulders = peaks.filter(p => p !== main && p.v >= 4510);
+  for (const [i, peak] of shoulders.entries()) {
+    if (main && Math.hypot(peak.u - main.u, peak.v - main.v) < main.radius * .67) continue;
+    const belts = peak.radius > 400 ? [.82, .64, .45, .27] : [.76, .55, .33];
+    belts.forEach((fraction, row) => {
+      const radius = peak.radius * fraction;
+      addRow(`shoulder-${i}`, peak, radius, Math.max(9, Math.round(radius * .074)), row);
+    });
   }
 
   // Lush green meadow shrubs & hillside grass clusters blanketing slopes between trees
-  const tuftCount = Math.round(580 * densityScale);
+  const tuftCount = Math.round(580 * (mobile ? .55 : 1));
   for (let i = 0; i < tuftCount; i++) {
     const s1 = Math.sin((i + 37) * 27.91) * 43758.5453;
     const f1 = s1 - Math.floor(s1);
