@@ -34,6 +34,12 @@ interface Position {
   y: number;
 }
 
+function isCompactHudViewport(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (window.innerWidth <= 768) return true;
+  return typeof window.matchMedia === 'function' && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+}
+
 export function ThreeGhostsMissionHud() {
   const progress = useThreeGhostsMission();
   const zombieMission = useZombieForestMission();
@@ -53,7 +59,7 @@ export function ThreeGhostsMissionHud() {
       return true;
     }
   });
-  const [isMobile, setIsMobile] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+  const [isMobile, setIsMobile] = useState<boolean>(isCompactHudViewport);
 
   // Draggable positioning state
   const [position, setPosition] = useState<Position | null>(() => {
@@ -143,24 +149,25 @@ export function ThreeGhostsMissionHud() {
     });
   }, []);
 
-  // Clamping helper to prevent dragging off-screen
+  // Clamping helper to prevent dragging off-screen or into mobile browser status/notch area
   const clampPosition = useCallback((x: number, y: number): Position => {
     if (typeof window === 'undefined') return { x, y };
     const margin = 8;
+    const minTop = 24;
     const elemWidth = containerRef.current?.offsetWidth ?? 288;
     const elemHeight = containerRef.current?.offsetHeight ?? 60;
     const maxX = Math.max(margin, window.innerWidth - elemWidth - margin);
-    const maxY = Math.max(margin, window.innerHeight - elemHeight - margin);
+    const maxY = Math.max(minTop, window.innerHeight - elemHeight - margin);
     return {
       x: Math.min(Math.max(margin, x), maxX),
-      y: Math.min(Math.max(margin, y), maxY),
+      y: Math.min(Math.max(minTop, y), maxY),
     };
   }, []);
 
   // Keep within bounds on window resize
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
+      setIsMobile(isCompactHudViewport());
       setPosition(prev => (prev ? clampPosition(prev.x, prev.y) : null));
     };
     window.addEventListener('resize', handleResize);
@@ -266,16 +273,14 @@ export function ThreeGhostsMissionHud() {
     : 0;
   const completedMissionsCount = (progress.completed ? 1 : 0) + (zombieCompleted ? 1 : 0);
 
-  // Inline positioning style (positioned above location-toast at left: 25px, top: 12px)
-  const style: React.CSSProperties = position
+  // Default positioning comes from .ghost-hud-container CSS (safe-area aware on desktop & mobile).
+  // Dragged/restored positions are still guarded by CSS max() so the HUD never enters the mobile status bar / notch area.
+  const style: React.CSSProperties | undefined = position
     ? {
-        left: `${position.x}px`,
-        top: `${position.y}px`,
+        left: `max(8px, calc(env(safe-area-inset-left, 0px) + 8px), ${position.x}px)`,
+        top: `max(24px, calc(env(safe-area-inset-top, 0px) + 16px), ${position.y}px)`,
       }
-    : {
-        left: 'max(25px, calc(env(safe-area-inset-left, 0px) + 25px))',
-        top: 'max(12px, calc(env(safe-area-inset-top, 0px) + 12px))',
-      };
+    : undefined;
 
   const modalPortal =
     activeModal && typeof document !== 'undefined'

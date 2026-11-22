@@ -6,8 +6,8 @@
 .ghost-hud-container {
   position: fixed;
   z-index: 85;
-  top: max(12px, calc(env(safe-area-inset-top, 0px) + 12px));
-  left: max(25px, calc(env(safe-area-inset-left, 0px) + 25px));
+  top: max(24px, calc(env(safe-area-inset-top, 0px) + 16px));
+  left: max(25px, calc(env(safe-area-inset-left, 0px) + 16px));
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
@@ -1031,7 +1031,12 @@
 /* ==========================================================================
    8. MOBILE RESPONSIVE TUNING
    ========================================================================== */
-@media (max-width: 768px) {
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  .ghost-hud-container {
+    top: max(24px, calc(env(safe-area-inset-top, 0px) + 16px));
+    left: max(16px, calc(env(safe-area-inset-left, 0px) + 12px));
+  }
+
   .ghost-hud-pill {
     padding: 5px 10px 5px 8px;
     font-size: 12px;
@@ -1044,12 +1049,14 @@
 
   .ghost-hud-card {
     width: 292px;
-    max-width: calc(100vw - 20px);
+    max-width: calc(100vw - max(20px, calc(env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px) + 20px)));
     max-height: calc(100vh - 100px);
+    max-height: calc(100dvh - max(24px, calc(env(safe-area-inset-top, 0px) + 16px)) - env(safe-area-inset-bottom, 0px) - 20px);
   }
 
   .ghost-hud-body {
     max-height: calc(100vh - 150px);
+    max-height: calc(100dvh - max(24px, calc(env(safe-area-inset-top, 0px) + 16px)) - env(safe-area-inset-bottom, 0px) - 70px);
     padding: 10px;
     gap: 8px;
   }

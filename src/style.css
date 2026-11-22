@@ -800,8 +800,8 @@ main.night-mode .map-haunt-note {
 
 .location-toast {
 	position: absolute;
-	top: 90px;
-	left: 25px;
+	top: max(86px, calc(env(safe-area-inset-top, 0px) + 78px));
+	left: max(25px, calc(env(safe-area-inset-left, 0px) + 16px));
 	transform: none;
 	z-index: 12;
 	display: flex;
@@ -2119,8 +2119,8 @@ main.night-mode .home-guidance-pill {
 
 	.location-toast {
 		display: flex !important;
-		top: max(52px, calc(env(safe-area-inset-top, 0px) + 52px)) !important;
-		left: max(25px, calc(env(safe-area-inset-left, 0px) + 25px)) !important;
+		top: max(72px, calc(env(safe-area-inset-top, 0px) + 64px)) !important;
+		left: max(16px, calc(env(safe-area-inset-left, 0px) + 12px)) !important;
 		transform: none !important;
 		width: auto;
 		max-width: calc(100vw - 40px);
@@ -9345,8 +9345,8 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
    ================================================================ */
 .bot-fight-hud {
   position: fixed;
-  top: 150px;
-  left: max(25px, env(safe-area-inset-left));
+  top: max(150px, calc(env(safe-area-inset-top, 0px) + 142px));
+  left: max(25px, calc(env(safe-area-inset-left, 0px) + 16px));
   right: auto;
   bottom: auto;
   z-index: 26;
@@ -9699,8 +9699,8 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 /* On touch / narrow screens, keep bot-fight-hud below .location-toast & buttons beside .mobile-sprint-btn */
 @media (max-width: 760px), (hover: none) and (pointer: coarse) {
   .bot-fight-hud {
-    top: max(100px, calc(env(safe-area-inset-top, 0px) + 100px));
-    left: max(25px, calc(env(safe-area-inset-left, 0px) + 25px));
+    top: max(130px, calc(env(safe-area-inset-top, 0px) + 122px));
+    left: max(16px, calc(env(safe-area-inset-left, 0px) + 12px));
     right: auto;
     bottom: auto;
     align-items: flex-start;
@@ -11297,8 +11297,8 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 
 .horse-ride-speed {
   position: fixed;
-  top: max(58px, calc(env(safe-area-inset-top, 0px) + 58px));
-  left: max(25px, calc(env(safe-area-inset-left, 0px) + 25px));
+  top: max(86px, calc(env(safe-area-inset-top, 0px) + 78px));
+  left: max(25px, calc(env(safe-area-inset-left, 0px) + 16px));
   z-index: 16;
   display: inline-flex;
   align-items: center;
@@ -11332,8 +11332,8 @@ main.night-mode .mobile-auto-status.mobile-auto-status-locked {
 }
 
 .horse-ride-speed.horse-ride-speed-below-location {
-  top: max(146px, calc(env(safe-area-inset-top, 0px) + 146px));
-  left: max(25px, calc(env(safe-area-inset-left, 0px) + 25px));
+  top: max(150px, calc(env(safe-area-inset-top, 0px) + 142px));
+  left: max(25px, calc(env(safe-area-inset-left, 0px) + 16px));
 }
 
 .horse-ride-speed.horse-ride-speed-below-location.horse-ride-speed-football {
@@ -11466,8 +11466,8 @@ main.night-mode .horse-ride-dismount {
   }
 
   .horse-ride-speed {
-    top: max(50px, calc(env(safe-area-inset-top, 0px) + 50px));
-    left: max(25px, calc(env(safe-area-inset-left, 0px) + 25px));
+    top: max(72px, calc(env(safe-area-inset-top, 0px) + 64px));
+    left: max(16px, calc(env(safe-area-inset-left, 0px) + 12px));
     padding: 4px 10px;
     font-size: 10.5px;
   }
@@ -11483,17 +11483,17 @@ main.night-mode .horse-ride-dismount {
   }
 
   .horse-ride-speed.horse-ride-speed-below-location {
-    top: max(96px, calc(env(safe-area-inset-top, 0px) + 96px));
-    left: max(25px, calc(env(safe-area-inset-left, 0px) + 25px));
+    top: max(130px, calc(env(safe-area-inset-top, 0px) + 122px));
+    left: max(16px, calc(env(safe-area-inset-left, 0px) + 12px));
   }
 
   .horse-ride-speed.horse-ride-speed-below-location.horse-ride-speed-football {
-    top: max(134px, calc(env(safe-area-inset-top, 0px) + 132px));
+    top: max(146px, calc(env(safe-area-inset-top, 0px) + 144px));
     left: max(10px, calc(env(safe-area-inset-left, 0px) + 8px));
   }
 
   .horse-ride-speed.horse-ride-speed-below-location.horse-ride-speed-school {
-    top: max(126px, calc(env(safe-area-inset-top, 0px) + 124px));
+    top: max(138px, calc(env(safe-area-inset-top, 0px) + 136px));
     left: max(10px, calc(env(safe-area-inset-left, 0px) + 8px));
   }
 
