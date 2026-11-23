@@ -12,7 +12,8 @@ import { getPlayerDeathState, killPlayerFromGhost } from '../playerDeath.ts';
 import { isPlayerHomeProtected } from '../playerHomeProtection.ts';
 import { rideLife } from '../rideLife.ts';
 import { playSpecialAction } from '../specialActions.ts';
-import { playEnemyHitPlayerSound } from '../combat/swordAudio.ts';
+import { playGhostHitPlayerSound } from '../combat/swordAudio.ts';
+import { triggerPlayerKnockback } from '../combat/playerKnockback.ts';
 import {
   getActiveMissionWeapon,
   hasCompletedThreeGhostsMission,
@@ -953,6 +954,7 @@ export function applyZombieAttackToPlayer(
   playerX: number,
   playerZ: number,
   rng: () => number = Math.random,
+  cameraPos?: { x: number; z: number },
 ): ZombiePlayerAttackResult {
   if (
     getPlayerDeathState().phase !== 'alive' ||
@@ -988,12 +990,25 @@ export function applyZombieAttackToPlayer(
     };
   }
 
-  playEnemyHitPlayerSound();
+  const attacker = state.zombies.find(z => z.id === zombieId);
+  const attackerX = attacker?.x ?? playerX;
+  const attackerZ = attacker?.z ?? playerZ - 1;
+
+  playGhostHitPlayerSound();
+  const kb = triggerPlayerKnockback({
+    ghostId: zombieId,
+    ghostX: attackerX,
+    ghostZ: attackerZ,
+    playerX,
+    playerZ,
+    cameraX: cameraPos?.x,
+    cameraZ: cameraPos?.z,
+  });
+
   rideLife.mode = 'walking';
   rideLife.damage = 1;
   rideLife.lives = Math.max(0, Math.round((rideLife.lives - 1) * 10) / 10);
-  // Brief blink feedback without freezing movement or sword attacks
-  rideLife.invulnerable = 0.55;
+  rideLife.invulnerable = Math.max(1.2, kb.durationSec + 0.55);
   rideLife.crashTime = 0;
 
   const livesRemaining = rideLife.lives;
@@ -1019,7 +1034,14 @@ export function applyZombieAttackToPlayer(
     };
   }
 
-  const msg = `💔 ${zombieId} တိုက်ခိုက်ခံရသည်! Heart ၁ ခု လျော့သွားပါပြီ (ကျန်ရှိ: ${livesRemaining}/${ZOMBIE_PLAYER_MAX_HEARTS})`;
+  playSpecialAction('flying-back-away', {
+    loop: false,
+    force: true,
+    restart: true,
+    speed: kb.playbackSpeed,
+  });
+
+  const msg = `💥 ${zombieId} ရိုက်ခံရ၍ ${kb.distance}m လွင့်သွားသည်! (Life: ${livesRemaining}/${ZOMBIE_PLAYER_MAX_HEARTS})`;
   publish({ ...state, lastMessage: msg });
   return {
     applied: true,

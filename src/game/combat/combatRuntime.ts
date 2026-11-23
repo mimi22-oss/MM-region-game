@@ -4,6 +4,7 @@ import {ATTACKS} from './AttackDefinitions.ts';
 import {SwordHitDetection} from './SwordHitDetection.ts';
 import {GHOST_IDS,GROUP_SHIELD_RADIUS_M,SWORD_DAMAGE,damageMissionGhost,getActiveMissionWeapon,getThreeGhostsProgress,hasCompletedThreeGhostsMission,isGhostDefeated} from '../missions/threeGhostsMission.ts';
 import {damageZombie,isZombieAlive,isZombieTargetId} from '../missions/zombieForestMission.ts';
+import {damageMountainTiger,getActiveCombatTigers} from '../mountainTigerCombat.ts';
 import {getGhostRuntime} from '../missions/ghostRuntimeRegistry.ts';
 import {requestGhostReaction} from './GhostCombatReactions.ts';
 import {clearGhostEncounterInteraction} from '../ghostConfig.ts';
@@ -106,6 +107,33 @@ export function sampleCombatBlade(active:boolean){
    const crit=dead||playerCombat.clip==='Heavy_Slash'||playerCombat.clip==='Combo_Finisher';
    emitDamagePopup(targetPos.x,targetPos.y+target.height*.82,targetPos.z,dead?`-${SWORD_DAMAGE} HP · KO!`:`-${SWORD_DAMAGE} HP`,crit,impact.seed);
    playerCombat.message=`${id}: ${getThreeGhostsProgress().hp[id as keyof ReturnType<typeof getThreeGhostsProgress>['hp']]} HP`;
+  }
+
+  // Open-World Mountain Tiger melee sword hit detection
+  const liveTigers=getActiveCombatTigers();
+  if(liveTigers.length>0){
+   const playerYaw=Math.atan2(-forward.x,-forward.z);
+   for(const tiger of liveTigers){
+    if(playerCombat.hits.has(tiger.id))continue;
+    const dx=tiger.x-player.x,dz=tiger.z-player.z,distance=Math.hypot(dx,dz);
+    const facing=distance<.01?1:(dx*forward.x+dz*forward.z)/distance;
+    if(distance>3.5||facing<(playerCombat.clip==='Spin_Slash'?-.95:-.25))continue;
+    const tigerHeight=1.25*tiger.scale;
+    const tigerRadius=0.95*tiger.scale;
+    a.set(tiger.x,tiger.y+0.15,tiger.z);b.set(tiger.x,tiger.y+tigerHeight,tiger.z);
+    const tigerHit=detector.sweptBlade(previousBase,previousTip,base,tip,a,b,tigerRadius+0.25)||(distance<=2.95&&facing>=0.1);
+    if(!tigerHit)continue;
+    if(!combatLineClear(player.x,player.z,tiger.x,tiger.z))continue;
+    const dmg=playerCombat.clip==='Heavy_Slash'||playerCombat.clip==='Combo_Finisher'?SWORD_DAMAGE*2:SWORD_DAMAGE;
+    const res=damageMountainTiger(tiger.id,dmg,'sword',player.x,player.z,player.y,playerYaw);
+    if(!res)continue;
+    playerCombat.hits.add(tiger.id);
+    playKnifeHitSound();
+    const impact=combatEffects.impacts[combatEffects.impactHead++%combatEffects.impacts.length];
+    impact.position.copy(base).lerp(tip,.5);impact.at=combatEffects.time;impact.seed=playerCombat.sequence*17+combatEffects.impactHead;
+    const crit=res.defeated||dmg>SWORD_DAMAGE;
+    emitDamagePopup(tiger.x,tiger.y+tigerHeight+0.25,tiger.z,res.defeated?`-${dmg} HP · KO!`:`-${dmg} HP`,crit,impact.seed);
+   }
   }
  }
  previousBase.copy(base);previousTip.copy(tip);

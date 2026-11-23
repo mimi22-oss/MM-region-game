@@ -11,6 +11,24 @@ import {
 } from './mountainWildlifeAvoidance.ts';
 import { buildMountainDeerSpawns, type MountainDeerSpawn } from './mountainDeerPool.ts';
 import { buildMountainRabbitSpawns, type MountainRabbitSpawn } from './mountainRabbitPool.ts';
+import {
+  TIGER_AGGRO_RADIUS_M,
+  TIGER_ATTACK_DELAY_MAX_SEC,
+  TIGER_ATTACK_DELAY_MIN_SEC,
+  TIGER_COLLAPSE_HIDE_SEC,
+  TIGER_GIVEUP_RADIUS_M,
+  TIGER_HIT_RANGE_M,
+  TIGER_POUNCE_RANGE_M,
+  TIGER_POUNCE_SEC,
+  TIGER_TELEGRAPH_SEC,
+  TIGER_WARN_RADIUS_M,
+  applyTigerAttackToPlayer,
+  getCombatTiger,
+  markCombatTigerSlotActive,
+  markCombatTigerSlotInactive,
+  playTigerCombatRoar,
+  registerMountainTigerSpawns,
+} from './mountainTigerCombat.ts';
 import { mountainHeight, type TerrainPeak } from './mountainTerrain.ts';
 import {
   getMountainTigerAssetCache,
@@ -59,6 +77,24 @@ export interface MountainTigerSpawn {
   readonly phaseOffset: number;
 }
 
+export interface MountainTigerCombatContext {
+  readonly playerX: number;
+  readonly playerY: number;
+  readonly playerZ: number;
+  readonly canEngage: boolean;
+  readonly cameraX?: number;
+  readonly cameraZ?: number;
+}
+
+export interface TigerHpBarAnchor {
+  id: string;
+  x: number;
+  y: number;
+  z: number;
+  hp: number;
+  maxHp: number;
+}
+
 interface ActiveTigerRuntime {
   spawnIdx: number;
   x: number;
@@ -67,8 +103,16 @@ interface ActiveTigerRuntime {
   yaw: number;
   targetX: number;
   targetZ: number;
-  state: 'prowl' | 'rest';
+  state: 'prowl' | 'rest' | 'warn' | 'chase' | 'telegraph' | 'pounce' | 'stagger' | 'defeated';
   stateTimer: number;
+  attackDelay: number;
+  pounceElapsed: number;
+  pounceDirX: number;
+  pounceDirZ: number;
+  pounceHitChecked: boolean;
+  pounceLiftY: number;
+  collapseBlend: number;
+  warnRoared: boolean;
   gaitPhase: number;
   restBlend: number;
   speed: number;
@@ -319,6 +363,7 @@ export class MountainTigerFixedPool {
     this.cache = getMountainTigerAssetCache();
     this.config = config;
     this.spawns = spawns;
+    registerMountainTigerSpawns(spawns);
 
     const cap = Math.min(config.capacity, Math.max(1, spawns.length));
     this.pool = new FixedObjectPool<ActiveTigerRuntime>(cap, () => ({
@@ -331,6 +376,14 @@ export class MountainTigerFixedPool {
       targetZ: 0,
       state: 'prowl',
       stateTimer: 2.5,
+      attackDelay: 1.2,
+      pounceElapsed: 0,
+      pounceDirX: 0,
+      pounceDirZ: 1,
+      pounceHitChecked: false,
+      pounceLiftY: 0,
+      collapseBlend: 0,
+      warnRoared: false,
       gaitPhase: 0,
       restBlend: 0,
       speed: 1.8,
@@ -410,6 +463,7 @@ export class MountainTigerFixedPool {
         const srcIdx = this.desiredById.get(slot.ownerId!)!;
         const sp = this.spawns[srcIdx];
         const r = slot.value;
+        const combat = getCombatTiger(sp.id);
         r.spawnIdx = srcIdx;
         r.x = sp.homeX;
         r.y = sp.homeY;
@@ -417,18 +471,35 @@ export class MountainTigerFixedPool {
         r.yaw = sp.phaseOffset;
         r.targetX = sp.homeX + Math.sin(sp.phaseOffset) * 5;
         r.targetZ = sp.homeZ + Math.cos(sp.phaseOffset) * 5;
-        r.state = srcIdx % 2 === 0 ? 'prowl' : 'rest';
+        r.state = combat && !combat.alive ? 'defeated' : srcIdx % 2 === 0 ? 'prowl' : 'rest';
         r.stateTimer = 2.5 + (srcIdx % 4) * 1.1;
+        r.attackDelay = TIGER_ATTACK_DELAY_MIN_SEC + (srcIdx % 3) * 0.45;
+        r.pounceElapsed = 0;
+        r.pounceDirX = 0;
+        r.pounceDirZ = 1;
+        r.pounceHitChecked = false;
+        r.pounceLiftY = 0;
+        r.collapseBlend = combat && !combat.alive ? 1 : 0;
+        r.warnRoared = false;
         r.gaitPhase = (srcIdx * 0.23) % 1;
         r.restBlend = r.state === 'rest' ? 1 : 0;
         r.speed = 1.65 + (srcIdx % 3) * 0.28;
-        upsertWildlifeActor(sp.id, 'tiger', r.x, r.z, 1.2 * sp.scale);
-        this.applyCoatTint(slot.index, sp.coatTintIndex);
-        this.writeSlotMatrices(slot.index, r, sp);
+        if (combat && !combat.alive && combat.defeatedTimer >= TIGER_COLLAPSE_HIDE_SEC) {
+          removeWildlifeActor(sp.id);
+          markCombatTigerSlotInactive(sp.id);
+          this.hideSlot(slot.index);
+        } else {
+          upsertWildlifeActor(sp.id, 'tiger', r.x, r.z, 1.2 * sp.scale);
+          markCombatTigerSlotActive(sp.id, r.x, r.y, r.z, r.yaw);
+          this.applyCoatTint(slot.index, sp.coatTintIndex);
+          this.writeSlotMatrices(slot.index, r, sp);
+        }
       },
       (slot) => {
         if (slot.value.spawnIdx >= 0) {
-          removeWildlifeActor(this.spawns[slot.value.spawnIdx].id);
+          const id = this.spawns[slot.value.spawnIdx].id;
+          removeWildlifeActor(id);
+          markCombatTigerSlotInactive(id);
         }
         slot.value.spawnIdx = -1;
         this.hideSlot(slot.index);
@@ -449,6 +520,7 @@ export class MountainTigerFixedPool {
     focusX: number,
     focusZ: number,
     peaks: readonly TerrainPeak[],
+    combatCtx?: MountainTigerCombatContext,
   ): void {
     const dt = Math.min(0.05, Math.max(0, rawDt));
     this.syncToFocus(focusX, focusZ);
@@ -458,11 +530,254 @@ export class MountainTigerFixedPool {
     let updatedAny = false;
     const avoid: AvoidanceOut = { steerX: 0, steerZ: 0, blocked: false };
 
+    const turnToward = (r: ActiveTigerRuntime, desiredYaw: number, rate: number) => {
+      let diff = desiredYaw - r.yaw;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      r.yaw += diff * Math.min(1, dt * rate);
+    };
+
+    const sampleDelay = () =>
+      TIGER_ATTACK_DELAY_MIN_SEC +
+      Math.random() * (TIGER_ATTACK_DELAY_MAX_SEC - TIGER_ATTACK_DELAY_MIN_SEC);
+
     this.pool.forEachActive((slot) => {
       const r = slot.value;
       if (r.spawnIdx < 0) return;
       const sp = this.spawns[r.spawnIdx];
       const selfRadius = 1.2 * sp.scale;
+      const combat = getCombatTiger(sp.id);
+
+      // Handle defeated tiger collapse & clean hiding
+      if (combat && !combat.alive) {
+        if (r.state !== 'defeated') {
+          r.state = 'defeated';
+          r.pounceLiftY = 0;
+          removeWildlifeActor(sp.id);
+          markCombatTigerSlotInactive(sp.id);
+        }
+        combat.defeatedTimer += dt;
+        r.collapseBlend = Math.min(1, combat.defeatedTimer / 0.55);
+        if (combat.defeatedTimer >= TIGER_COLLAPSE_HIDE_SEC) {
+          this.hideSlot(slot.index);
+        } else {
+          this.writeSlotMatrices(slot.index, r, sp);
+        }
+        updatedAny = true;
+        return;
+      }
+
+      if (combat) {
+        if (combat.aggroTimer > 0) combat.aggroTimer = Math.max(0, combat.aggroTimer - dt);
+        if (combat.hitFlashTimer > 0) combat.hitFlashTimer = Math.max(0, combat.hitFlashTimer - dt);
+        if (combat.staggerTimer > 0) {
+          combat.staggerTimer = Math.max(0, combat.staggerTimer - dt);
+          if (r.state !== 'stagger') {
+            r.state = 'stagger';
+            r.pounceLiftY = 0;
+            r.pounceElapsed = 0;
+            r.attackDelay = Math.max(r.attackDelay, 0.9);
+          }
+        }
+      }
+
+      // Open-world combat AI when player context is provided
+      const px = combatCtx ? combatCtx.playerX : focusX;
+      const py = combatCtx ? combatCtx.playerY : r.y;
+      const pz = combatCtx ? combatCtx.playerZ : focusZ;
+      const dxP = px - r.x;
+      const dzP = pz - r.z;
+      const distToPlayer = Math.hypot(dxP, dzP);
+      const distFromHome = Math.hypot(r.x - sp.homeX, r.z - sp.homeZ);
+      const playerOnBoulderOrHigh = combatCtx ? py > r.y + 0.65 : false;
+      const canEngage = Boolean(combatCtx?.canEngage);
+      const aggroActive = Boolean(combat && combat.aggroTimer > 0);
+
+      if (r.state === 'stagger') {
+        r.pounceLiftY = 0;
+        r.restBlend += (0.45 - r.restBlend) * Math.min(1, dt * 8);
+        if (!combat || combat.staggerTimer <= 0) {
+          r.state = canEngage && (distToPlayer <= TIGER_AGGRO_RADIUS_M || aggroActive) ? 'chase' : 'prowl';
+        }
+        upsertWildlifeActor(sp.id, 'tiger', r.x, r.z, selfRadius);
+        markCombatTigerSlotActive(sp.id, r.x, r.y, r.z, r.yaw);
+        this.writeSlotMatrices(slot.index, r, sp);
+        updatedAny = true;
+        return;
+      }
+
+      if (canEngage && (distToPlayer <= TIGER_WARN_RADIUS_M || aggroActive) && distFromHome <= TIGER_GIVEUP_RADIUS_M) {
+        const yawToPlayer = Math.atan2(dxP, dzP);
+
+        if (r.state === 'pounce') {
+          r.pounceElapsed += dt;
+          const pt = Math.min(1, r.pounceElapsed / TIGER_POUNCE_SEC);
+          r.pounceLiftY = Math.sin(Math.PI * pt) * 0.68;
+          r.restBlend += (0.15 - r.restBlend) * Math.min(1, dt * 10);
+          turnToward(r, Math.atan2(r.pounceDirX, r.pounceDirZ), 12);
+
+          const lungeStep = 7.6 * dt;
+          const nx = r.x + r.pounceDirX * lungeStep;
+          const nz = r.z + r.pounceDirZ * lungeStep;
+          if (
+            canStandHighlandPlateau(nx, nz, 0.75, false) &&
+            !highlandTreeBlocks(nx, nz, 0.55) &&
+            !isOnTaungphilaRoad(nx, nz, -4) &&
+            !isOnWeipulaRoad(nx, nz, -4)
+          ) {
+            r.x = nx;
+            r.z = nz;
+            const nu = nx * cosA - nz * sinA;
+            const nv = nx * sinA + nz * cosA;
+            r.y = mountainHeight(nu, nv, peaks);
+          }
+
+          if (!r.pounceHitChecked && pt >= 0.45) {
+            r.pounceHitChecked = true;
+            const hitDist = Math.hypot(px - r.x, pz - r.z);
+            const verticalGap = Math.abs(py - r.y);
+            if (hitDist <= TIGER_HIT_RANGE_M && verticalGap <= 0.85) {
+              applyTigerAttackToPlayer({
+                tigerId: sp.id,
+                tigerX: r.x,
+                tigerZ: r.z,
+                playerX: px,
+                playerZ: pz,
+                cameraX: combatCtx?.cameraX,
+                cameraZ: combatCtx?.cameraZ,
+              });
+            }
+          }
+
+          if (pt >= 1) {
+            r.state = 'chase';
+            r.pounceElapsed = 0;
+            r.pounceLiftY = 0;
+            r.attackDelay = sampleDelay();
+          }
+
+          upsertWildlifeActor(sp.id, 'tiger', r.x, r.z, selfRadius);
+          markCombatTigerSlotActive(sp.id, r.x, r.y, r.z, r.yaw);
+          this.writeSlotMatrices(slot.index, r, sp);
+          updatedAny = true;
+          return;
+        }
+
+        if (r.state === 'telegraph') {
+          r.stateTimer -= dt;
+          r.pounceLiftY = 0;
+          r.restBlend += (0.85 - r.restBlend) * Math.min(1, dt * 10);
+          turnToward(r, yawToPlayer, 10);
+          if (playerOnBoulderOrHigh || distToPlayer > TIGER_POUNCE_RANGE_M + 2.2) {
+            r.state = 'chase';
+            r.attackDelay = 0.7;
+          } else if (r.stateTimer <= 0) {
+            r.state = 'pounce';
+            r.pounceElapsed = 0;
+            r.pounceHitChecked = false;
+            const len = Math.max(0.001, distToPlayer);
+            r.pounceDirX = dxP / len;
+            r.pounceDirZ = dzP / len;
+            playTigerCombatRoar(0.86);
+          }
+          upsertWildlifeActor(sp.id, 'tiger', r.x, r.z, selfRadius);
+          markCombatTigerSlotActive(sp.id, r.x, r.y, r.z, r.yaw);
+          this.writeSlotMatrices(slot.index, r, sp);
+          updatedAny = true;
+          return;
+        }
+
+        // Entering warning zone (16m..24m) before full aggro
+        if (distToPlayer > TIGER_AGGRO_RADIUS_M && !aggroActive) {
+          r.state = 'warn';
+          r.pounceLiftY = 0;
+          r.restBlend += (0.55 - r.restBlend) * Math.min(1, dt * 4.5);
+          turnToward(r, yawToPlayer, 6);
+          if (!r.warnRoared) {
+            r.warnRoared = true;
+            playTigerCombatRoar(0.75);
+          }
+          upsertWildlifeActor(sp.id, 'tiger', r.x, r.z, selfRadius);
+          markCombatTigerSlotActive(sp.id, r.x, r.y, r.z, r.yaw);
+          this.writeSlotMatrices(slot.index, r, sp);
+          updatedAny = true;
+          return;
+        }
+
+        // Active chase!
+        if (r.state !== 'chase') {
+          r.state = 'chase';
+          r.attackDelay = Math.max(0.75, sampleDelay() * 0.75);
+          if (!r.warnRoared) {
+            r.warnRoared = true;
+            playTigerCombatRoar(0.82);
+          }
+        }
+        r.pounceLiftY = 0;
+        r.restBlend += (0 - r.restBlend) * Math.min(1, dt * 6);
+        r.attackDelay = Math.max(0, r.attackDelay - dt);
+
+        if (distToPlayer <= TIGER_POUNCE_RANGE_M && !playerOnBoulderOrHigh && r.attackDelay <= 0) {
+          r.state = 'telegraph';
+          r.stateTimer = TIGER_TELEGRAPH_SEC;
+          playTigerCombatRoar(0.8);
+        } else {
+          computeWildlifeAvoidance(sp.id, r.x, r.z, selfRadius, px, pz, avoid);
+          const stopDist = playerOnBoulderOrHigh ? 2.8 : 2.15;
+          if (distToPlayer > stopDist) {
+            const goalDirX = dxP / Math.max(0.001, distToPlayer);
+            const goalDirZ = dzP / Math.max(0.001, distToPlayer);
+            const blendX = goalDirX + avoid.steerX * 0.85;
+            const blendZ = goalDirZ + avoid.steerZ * 0.85;
+            turnToward(r, Math.atan2(blendX, blendZ), 7.5);
+
+            const chaseSpeed = sp.groupKind === 'solo' ? 5.6 : 5.2;
+            const stepDist = Math.min(distToPlayer - stopDist + 0.15, chaseSpeed * dt);
+            const tryAngles = [0, 0.55, -0.55, 1.1, -1.1];
+            for (let a = 0; a < tryAngles.length; a++) {
+              const yawTry = r.yaw + tryAngles[a];
+              const nx = r.x + Math.sin(yawTry) * stepDist;
+              const nz = r.z + Math.cos(yawTry) * stepDist;
+              if (
+                Math.hypot(nx - sp.homeX, nz - sp.homeZ) <= TIGER_GIVEUP_RADIUS_M &&
+                canStandHighlandPlateau(nx, nz, 0.8, false) &&
+                !highlandTreeBlocks(nx, nz, 0.6) &&
+                !isOnTaungphilaRoad(nx, nz, -4) &&
+                !isOnWeipulaRoad(nx, nz, -4)
+              ) {
+                r.x = nx;
+                r.z = nz;
+                if (a > 0) r.yaw = yawTry;
+                const nu = nx * cosA - nz * sinA;
+                const nv = nx * sinA + nz * cosA;
+                r.y = mountainHeight(nu, nv, peaks);
+                r.gaitPhase = (r.gaitPhase + stepDist * 0.85) % 1;
+                break;
+              }
+            }
+          } else {
+            // Circle/face player while waiting out attackDelay or while player stands safely on boulder/inside house
+            turnToward(r, yawToPlayer, 8);
+          }
+        }
+
+        upsertWildlifeActor(sp.id, 'tiger', r.x, r.z, selfRadius);
+        markCombatTigerSlotActive(sp.id, r.x, r.y, r.z, r.yaw);
+        this.writeSlotMatrices(slot.index, r, sp);
+        updatedAny = true;
+        return;
+      }
+
+      // Reset combat states back to normal territory patrol once player leaves territory
+      if (r.state !== 'prowl' && r.state !== 'rest') {
+        r.state = 'prowl';
+        r.targetX = sp.homeX;
+        r.targetZ = sp.homeZ;
+        r.pounceLiftY = 0;
+        r.warnRoared = false;
+      } else if (distToPlayer > TIGER_WARN_RADIUS_M + 4) {
+        r.warnRoared = false;
+      }
 
       computeWildlifeAvoidance(sp.id, r.x, r.z, selfRadius, focusX, focusZ, avoid);
 
@@ -479,10 +794,7 @@ export class MountainTigerFixedPool {
           const blendX = goalDirX + avoid.steerX * 1.6;
           const blendZ = goalDirZ + avoid.steerZ * 1.6;
           const desiredYaw = Math.atan2(blendX, blendZ);
-          let diff = desiredYaw - r.yaw;
-          while (diff > Math.PI) diff -= Math.PI * 2;
-          while (diff < -Math.PI) diff += Math.PI * 2;
-          r.yaw += diff * Math.min(1, dt * 4.4);
+          turnToward(r, desiredYaw, 4.4);
 
           const stepDist = Math.min(Math.max(dist, 0.8), r.speed * dt);
           const tryAngles = [0, 0.75, -0.75, 1.4, -1.4];
@@ -493,7 +805,7 @@ export class MountainTigerFixedPool {
             const nz = r.z + Math.cos(yawTry) * stepDist;
             // Strictly remain inside territory patrol radius & never clip through mate/other wildlife!
             if (
-              Math.hypot(nx - sp.homeX, nz - sp.homeZ) <= sp.wanderRadius &&
+              Math.hypot(nx - sp.homeX, nz - sp.homeZ) <= Math.max(sp.wanderRadius, distFromHome + 0.5) &&
               !isOnTaungphilaRoad(nx, nz, -4) &&
               !isOnWeipulaRoad(nx, nz, -4) &&
               canStandHighlandPlateau(nx, nz, 0.8, false) &&
@@ -533,6 +845,7 @@ export class MountainTigerFixedPool {
       }
 
       upsertWildlifeActor(sp.id, 'tiger', r.x, r.z, selfRadius);
+      markCombatTigerSlotActive(sp.id, r.x, r.y, r.z, r.yaw);
       this.writeSlotMatrices(slot.index, r, sp);
       updatedAny = true;
     });
@@ -542,16 +855,49 @@ export class MountainTigerFixedPool {
     }
   }
 
+  /** Collects live tigers currently in combat or wounded so the scene can render overhead 3D HP bars. */
+  collectCombatHpBars(out: TigerHpBarAnchor[]): TigerHpBarAnchor[] {
+    out.length = 0;
+    this.pool.forEachActive((slot) => {
+      const r = slot.value;
+      if (r.spawnIdx < 0) return;
+      const sp = this.spawns[r.spawnIdx];
+      const combat = getCombatTiger(sp.id);
+      if (!combat || !combat.alive) return;
+      const inCombat =
+        combat.hp < combat.maxHp ||
+        r.state === 'warn' ||
+        r.state === 'chase' ||
+        r.state === 'telegraph' ||
+        r.state === 'pounce' ||
+        r.state === 'stagger';
+      if (!inCombat) return;
+      out.push({
+        id: sp.id,
+        x: r.x,
+        y: r.y + 1.55 * sp.scale + r.pounceLiftY,
+        z: r.z,
+        hp: combat.hp,
+        maxHp: combat.maxHp,
+      });
+    });
+    return out;
+  }
+
   private writeSlotMatrices(idx: number, r: ActiveTigerRuntime, sp: MountainTigerSpawn): void {
     const s = sp.scale;
-    const prowling = r.state === 'prowl';
-    const crouchDrop = r.restBlend * .24;
+    const moving = r.state === 'prowl' || r.state === 'chase';
+    const pouncing = r.state === 'pounce';
+    const defeated = r.state === 'defeated';
+    const crouchDrop = r.restBlend * 0.24 + (defeated ? r.collapseBlend * 0.42 : 0);
     const gait = r.gaitPhase * Math.PI * 2;
-    const bodyBob = prowling ? Math.cos(gait * 2) * .018 : 0;
-    const tailSway = Math.sin(this.elapsed * 2.4 + sp.phaseOffset) * 0.34;
+    const bodyBob = moving ? Math.cos(gait * 2) * (r.state === 'chase' ? 0.036 : 0.018) : 0;
+    const tailSway = defeated ? 0 : Math.sin(this.elapsed * (r.state === 'chase' || r.state === 'telegraph' ? 5.2 : 2.4) + sp.phaseOffset) * 0.34;
     const headScan = r.state === 'rest' ? Math.sin(this.elapsed * 1.2 + sp.phaseOffset) * 0.32 : 0;
+    const bodyPitch = pouncing ? -0.28 : r.state === 'telegraph' ? 0.14 : r.state === 'stagger' ? -0.18 : 0;
+    const bodyRoll = defeated ? r.collapseBlend * (Math.PI * 0.48) : 0;
 
-    scratchEuler.set(0, r.yaw, 0, 'YXZ');
+    scratchEuler.set(bodyPitch, r.yaw, bodyRoll, 'YXZ');
     scratchQuat.setFromEuler(scratchEuler);
 
     const placePart = (
@@ -569,7 +915,7 @@ export class MountainTigerFixedPool {
       scratchOffset.set(lx * s, ly * s, lz * s).applyQuaternion(scratchQuat);
       scratchPos.set(
         r.x + scratchOffset.x,
-        r.y + scratchOffset.y,
+        r.y + r.pounceLiftY + scratchOffset.y,
         r.z + scratchOffset.z,
       );
       if (rx !== 0 || ry !== 0 || rz !== 0) {
@@ -585,16 +931,24 @@ export class MountainTigerFixedPool {
 
     placePart(this.bodyMesh, 0, bodyBob - crouchDrop, 0, 1, 1, 1);
     placePart(this.headMesh, TIGER_HEAD[0], TIGER_HEAD[1] + bodyBob - crouchDrop, TIGER_HEAD[2],
-      1, 1, 1, r.restBlend * .08, headScan);
+      1, 1, 1, r.restBlend * 0.08, headScan);
     placePart(this.tailMesh, TIGER_TAIL[0], TIGER_TAIL[1] + bodyBob - crouchDrop, TIGER_TAIL[2],
-      1, 1, 1, tailSway * .18, tailSway);
+      1, 1, 1, tailSway * 0.18, tailSway);
 
-    const legScale = 1 - crouchDrop / -TIGER_ANKLE[1];
+    const legScale = Math.max(0.55, 1 - crouchDrop / -TIGER_ANKLE[1]);
     for (const [i, leg] of TIGER_LEGS.entries()) {
       const cycle = gait + leg.phase * Math.PI * 2;
-      const swing = prowling ? Math.sin(cycle) * .26 : 0;
-      const lift = prowling ? Math.max(0, Math.cos(cycle)) * .10 : 0;
-      const pitch = swing + r.restBlend * (leg.hind ? .18 : -.18);
+      const swing = pouncing
+        ? leg.hind ? 0.52 : -0.58
+        : moving
+          ? Math.sin(cycle) * (r.state === 'chase' ? 0.42 : 0.26)
+          : 0;
+      const lift = pouncing
+        ? 0.14
+        : moving
+          ? Math.max(0, Math.cos(cycle)) * (r.state === 'chase' ? 0.16 : 0.1)
+          : 0;
+      const pitch = swing + r.restBlend * (leg.hind ? 0.18 : -0.18);
       const ankleY = TIGER_ANKLE[1] * legScale;
       const ankleZ = TIGER_ANKLE[2];
       // Shorten/lift the foot on the return stroke while keeping the planted paw at ground level.

@@ -194,7 +194,8 @@ test('Football scoreboard HUD detects every football pitch, publishes live Red v
 
   const mainSrc = fs.readFileSync(path.join(process.cwd(), 'src/main.tsx'), 'utf8');
   const cssSrc = fs.readFileSync(path.join(process.cwd(), 'src/style.css'), 'utf8');
-  assert.ok(mainSrc.includes('!nearSchoolHall && !nearFootballPitch && <ThreeGhostsMissionHud'), 'hides ghost HUD near football pitches');
+  assert.ok(mainSrc.includes('const showFootballScoreHud = Boolean(nearFootballPitch && footballMatchActive);'), 'hides football-score-hud when football players are inactive at evening/night');
+  assert.ok(mainSrc.includes('!nearSchoolHall && !showFootballScoreHud && <ThreeGhostsMissionHud'), 'hides ghost HUD only when active football scoreboard is shown');
   assert.ok(mainSrc.includes('football-score-hud'), 'renders football-score-hud in main.tsx');
   assert.ok(mainSrc.includes('location-toast-below-football'), 'offsets location-toast below football-score-hud');
   assert.ok(mainSrc.includes('setTimeout(() => setArrivalToast(null), 2200)'), 'auto-hides arrivalToast after 2.2s even after teleport or walking');

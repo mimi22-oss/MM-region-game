@@ -1,5 +1,6 @@
 import {
   WEAPON_ENEMY_HIT_PLAYER_AUDIO_FILES,
+  WEAPON_GHOST_HIT_PLAYER_AUDIO_FILES,
   WEAPON_KNIFE_DRAW_AUDIO_FILES,
   WEAPON_KNIFE_HEAVY_SLAM_AUDIO_FILES,
   WEAPON_KNIFE_HIT_AUDIO_FILES,
@@ -22,6 +23,7 @@ const ALL_SWORD_SFX = [
   ...WEAPON_KNIFE_HIT_AUDIO_FILES,
   ...WEAPON_KNIFE_HEAVY_SLAM_AUDIO_FILES,
   ...WEAPON_ENEMY_HIT_PLAYER_AUDIO_FILES,
+  ...WEAPON_GHOST_HIT_PLAYER_AUDIO_FILES,
 ] as const;
 
 export function preloadSwordAudio(): void {
@@ -106,7 +108,12 @@ export function playHeavySlashGroundSound(): void {
   playSwordSample(WEAPON_KNIFE_HEAVY_SLAM_AUDIO_FILES, 0.92, 0.97, 1.03);
 }
 
-/** Ghost / Zombie တို့က Player Character ကို ရိုက်မိသည့်အချိန် အသံ (`universfield-cinematic-impact-hit-02-454665`) */
+/** Zombie တို့က Player Character ကို ရိုက်မိသည့်အချိန် အသံ (`universfield-cinematic-impact-hit-02-454665`) */
 export function playEnemyHitPlayerSound(): void {
   playSwordSample(WEAPON_ENEMY_HIT_PLAYER_AUDIO_FILES, 0.95, 0.97, 1.04);
+}
+
+/** Ghost / Zombie ရိုက်ထိလိုက်သည့်အချိန် အသံ (`universfield-punch-03-352040`) */
+export function playGhostHitPlayerSound(): void {
+  playSwordSample(WEAPON_GHOST_HIT_PLAYER_AUDIO_FILES, 0.98, 0.97, 1.04);
 }

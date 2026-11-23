@@ -1,9 +1,9 @@
 import type {GhostEncounterInteractionState} from '../ghostConfig.ts';
 
-export const GHOST_REACTION_DELAY_MIN_SEC = 2.0;
-export const GHOST_REACTION_DELAY_MAX_SEC = 5.0;
+export const GHOST_REACTION_DELAY_MIN_SEC = 1.0;
+export const GHOST_REACTION_DELAY_MAX_SEC = 3.0;
 
-/** Random 2–5s hesitation delay before a nearby ghost reacts/strikes in sword duel mode. */
+/** Random 1–3s hesitation delay before a nearby ghost reacts/strikes in sword duel mode. */
 export function sampleGhostReactionDelay(rng: () => number = Math.random): number {
   return GHOST_REACTION_DELAY_MIN_SEC + rng() * (GHOST_REACTION_DELAY_MAX_SEC - GHOST_REACTION_DELAY_MIN_SEC);
 }

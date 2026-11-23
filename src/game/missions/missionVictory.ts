@@ -3,6 +3,7 @@ import { resetPlayerKnockback } from '../combat/playerKnockback.ts';
 import { clearGhostEncounterInteraction, clearGhostThreat } from '../ghostConfig.ts';
 import { rideLife } from '../rideLife.ts';
 import { GHOST_IDS, resetThreeGhostsMission } from './threeGhostsMission.ts';
+import { resetVictoryDroneCamera } from './victoryCamera.ts';
 import { rerollZombieForestWave } from './zombieForestMission.ts';
 
 export type VictoryMissionKind = 'ghost' | 'zombie';
@@ -34,6 +35,7 @@ export function resetGhostMissionForReplay(): void {
     clearGhostThreat(id);
   }
   resetPlayerKnockback();
+  resetVictoryDroneCamera();
   rideLife.lives = 3;
   rideLife.damage = 0;
   rideLife.invulnerable = 0;
@@ -46,6 +48,7 @@ export function resetGhostMissionForReplay(): void {
  * even after `✓ ပြီးဆုံးပြီ` (and triggers the Zombie Victory Dialog again on 13/13!).
  */
 export function resetZombieMissionForReplay(): void {
+  resetVictoryDroneCamera();
   rideLife.lives = 3;
   rideLife.damage = 0;
   rideLife.invulnerable = 0;

@@ -53,6 +53,10 @@ export const WEAPON_ENEMY_HIT_PLAYER_AUDIO_FILES = [
   'assets/audio/weapons/universfield-cinematic-impact-hit-02-454665.mta',
 ] as const;
 
+export const WEAPON_GHOST_HIT_PLAYER_AUDIO_FILES = [
+  'assets/audio/weapons/universfield-punch-03-352040.mta',
+] as const;
+
 export const WAREHOUSE_HORROR_LOOP_AUDIO_FILE =
   'assets/audio/warehouse/arctsound-horror-576085.mta' as const;
 
@@ -66,6 +70,7 @@ export const ALL_MP3_SFX_FILES = [
   ...WEAPON_KNIFE_HIT_AUDIO_FILES,
   ...WEAPON_KNIFE_HEAVY_SLAM_AUDIO_FILES,
   ...WEAPON_ENEMY_HIT_PLAYER_AUDIO_FILES,
+  ...WEAPON_GHOST_HIT_PLAYER_AUDIO_FILES,
   WAREHOUSE_HORROR_LOOP_AUDIO_FILE,
 ] as const;
 

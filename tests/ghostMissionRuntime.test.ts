@@ -173,4 +173,41 @@ test('ThreeGhostsMissionScene temporarily disables 20m ghost clearance gate and 
   const mainSrc = readFileSync('src/main.tsx', 'utf8');
   assert.ok(mainSrc.includes('<MissionVictoryDialog />'), 'main.tsx must mount MissionVictoryDialog');
   assert.ok(hudSrc.includes('resetGhostMissionForReplay'), 'ThreeGhostsMissionHud must expose Mission 1 Reset button');
+
+  // Verify Victory Drone Camera sweeps smoothly from behind around to directly in front of the character's face
+  const vcam = await import('../src/game/missions/victoryCamera.ts');
+  vcam.resetVictoryDroneCamera();
+  assert.equal(vcam.isVictoryDroneCameraActive(), false);
+  vcam.triggerVictoryDroneCamera('ghost');
+  assert.equal(vcam.isVictoryDroneCameraActive(), true);
+  assert.equal(vcam.isVictoryDroneLockingMovement(), true);
+  // Avatar at (10, 0, 20) facing -Z (bodyYaw = 0 => face points toward (0, 0, -1)); camera starts behind at (10, 2.2, 26)
+  let peakY = 0;
+  let finalPose = null;
+  for (let i = 0; i < 45; i++) {
+    finalPose = vcam.stepVictoryDroneCamera(0.05, {
+      playerX: 10,
+      playerGroundY: 0,
+      playerZ: 20,
+      bodyYaw: 0,
+      bodyScale: 1,
+      currentCamX: 10,
+      currentCamY: 2.2,
+      currentCamZ: 26,
+    });
+    if (finalPose) peakY = Math.max(peakY, finalPose.camY);
+  }
+  assert.ok(finalPose, 'Victory drone pose must stay active while celebrating');
+  assert.ok(peakY > 2.8, `Victory drone must rise in an aerial arc mid-orbit (got ${peakY.toFixed(2)}m)`);
+  // Camera must end directly in front of the character's face (-Z side of z=20 => camZ < 20, centered near x=10)
+  assert.ok(finalPose.camZ < 17.8, `Victory drone must face character head-on on -Z front side (got camZ=${finalPose.camZ.toFixed(2)})`);
+  assert.ok(Math.abs(finalPose.camX - 10) < 0.7, `Victory drone must center on character face (got camX=${finalPose.camX.toFixed(2)})`);
+  assert.ok(finalPose.lookY > 1.2 && finalPose.lookY < 1.7, `Victory drone lookAt must frame character face/chest (got ${finalPose.lookY.toFixed(2)}m)`);
+  // Dismissing Victory Dialog glides camera smoothly back to normal gameplay
+  vcam.dismissVictoryDroneCamera();
+  assert.equal(vcam.isVictoryDroneLockingMovement(), false);
+  for (let i = 0; i < 20; i++) {
+    vcam.stepVictoryDroneCamera(0.05, { playerX: 10, playerGroundY: 0, playerZ: 20, bodyYaw: 0 });
+  }
+  assert.equal(vcam.isVictoryDroneCameraActive(), false, 'Victory drone must finish returning smoothly after dismiss');
 });

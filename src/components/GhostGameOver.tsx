@@ -1,20 +1,48 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { requestPlayerRespawn, usePlayerDeathState } from '../game/playerDeath';
 import { getBotFightingState } from '../game/botFighting';
 
+/** Let the player watch the airborne knockback & cinematic drone view for 5 seconds before showing Game Over. */
+export const GAME_OVER_DRONE_DELAY_MS = 5000;
+
 export function GhostGameOver() {
   const state = usePlayerDeathState();
+  const [revealedGeneration, setRevealedGeneration] = useState(0);
+
+  // Wait 5 seconds after fatal death so the knockback flight & aerial drone view play unobstructed first
+  useEffect(() => {
+    if (state.phase === 'alive') {
+      setRevealedGeneration(0);
+      return;
+    }
+    if (state.phase === 'respawning') {
+      setRevealedGeneration(state.generation);
+      return;
+    }
+    const gen = state.generation;
+    const timer = window.setTimeout(() => {
+      setRevealedGeneration(gen);
+    }, GAME_OVER_DRONE_DELAY_MS);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [state.phase, state.generation]);
+
+  const dialogVisible =
+    state.phase === 'respawning' ||
+    (state.phase === 'dead' && revealedGeneration === state.generation);
 
   // Release pointer lock cleanly when Game Over opens so the user can immediately click Restart
   useEffect(() => {
-    if (state.phase !== 'alive' && typeof document !== 'undefined' && document.pointerLockElement) {
+    if (dialogVisible && typeof document !== 'undefined' && document.pointerLockElement) {
       document.exitPointerLock();
     }
-  }, [state.phase]);
+  }, [dialogVisible]);
 
-  if (state.phase === 'alive') return null;
+  if (!dialogVisible) return null;
 
   const isZombie = Boolean(state.ghostId?.startsWith('zombie-'));
+  const isTiger = Boolean(state.ghostId?.startsWith('mtn-tiger-'));
   const isBotFight = Boolean(state.ghostId?.startsWith('bot-fight:'));
   const isBridgeFall = Boolean(state.ghostId?.startsWith('bridge-fall:'));
   const isRespawning = state.phase === 'respawning';
@@ -41,29 +69,35 @@ export function GhostGameOver() {
     ? 'BRIDGE FALL · တံတားပေါ်မှ ပြုတ်ကျခြင်း'
     : isBotFight
       ? 'KNOCKOUT · HP 0 / 100'
-      : isZombie
-        ? 'ZOMBIE OVERRUN'
-        : 'GHOST CAPTURED';
+      : isTiger
+        ? 'TIGER MAUL · တောင်ပေါ်ကျား တိုက်ခိုက်မှု'
+        : isZombie
+          ? 'ZOMBIE OVERRUN'
+          : 'GHOST CAPTURED';
 
   const subtitle = isBridgeFall
     ? 'တံတားကနေ တောင်အောက်သို့ ပြုတ်ကျသွားပါပြီ'
     : isBotFight
       ? 'တိုက်ပွဲ ရှုံးနိမ့်သွားပါပြီ'
-      : isZombie
-        ? 'Zombie တိုက်ခိုက်ခံရပါပြီ'
-        : 'သရဲဖမ်းမိသွားပါပြီ';
+      : isTiger
+        ? 'တောင်ပေါ်ကျား တိုက်ခိုက်ခံရပါပြီ'
+        : isZombie
+          ? 'Zombie တိုက်ခိုက်ခံရပါပြီ'
+          : 'သရဲဖမ်းမိသွားပါပြီ';
 
   const message = isBridgeFall
     ? 'တောင်တက်တံတားပေါ်မှ တောင်အောက်သို့ ပြုတ်ကျသွားသဖြင့် ဂိမ်းပြီးဆုံးသွားပါပြီ။ အိမ် Safe Zone မှ ပြန်လည်စတင်နိုင်ပါသည်။'
     : isBotFight
       ? 'Bot နှင့် တိုက်ခိုက်ရာတွင် HP 100 မှ 0 သို့ ကုန်သွားပြီး လဲကျသွားပါပြီ။ အိမ် Safe Zone မှ ပြန်လည်စတင်နိုင်ပါသည်။'
-      : isZombie
-        ? 'Zombie တိုက်ခိုက်ခံရသဖြင့် Heart Life ၃ ခုလုံး ကုန်သွားပါပြီ။ အိမ် Safe Zone တွင် မူလကနေ ပြန်စနိုင်ပါတယ်။'
-        : 'သရဲဖမ်းမိသွားပါပြီ။ အိမ် Safe Zone တွင် ပြန်လည်စတင်နိုင်ပါသည်။';
+      : isTiger
+        ? 'တောင်ပေါ်ကျား ခုန်အုပ်တိုက်ခိုက်ခံရသဖြင့် ဂိမ်းပြီးဆုံးသွားပါပြီ။ အိမ် Safe Zone မှ ပြန်လည်စတင်နိုင်ပါသည်။'
+        : isZombie
+          ? 'Zombie တိုက်ခိုက်ခံရသဖြင့် Heart Life ၃ ခုလုံး ကုန်သွားပါပြီ။ အိမ် Safe Zone တွင် မူလကနေ ပြန်စနိုင်ပါတယ်။'
+          : 'သရဲဖမ်းမိသွားပါပြီ။ အိမ် Safe Zone တွင် ပြန်လည်စတင်နိုင်ပါသည်။';
 
   const btnLabel = isRespawning
     ? 'ပြန်လည်စတင်နေသည်…'
-    : isBotFight || isBridgeFall
+    : isBotFight || isBridgeFall || isTiger
       ? 'အစမှ ပြန်စမည် · Restart'
       : 'အိမ်တွင် ပြန်စမည် · Respawn';
 
@@ -85,7 +119,7 @@ export function GhostGameOver() {
           <div className="game-over-emblem" aria-hidden="true">
             <div className="game-over-emblem-ring" />
             <span className="game-over-emblem-icon">
-              {isBridgeFall ? '⛰️' : isBotFight ? '🥊' : isZombie ? '☣️' : '👻'}
+              {isBridgeFall ? '⛰️' : isBotFight ? '🥊' : isTiger ? '🐯' : isZombie ? '☣️' : '👻'}
             </span>
           </div>
 

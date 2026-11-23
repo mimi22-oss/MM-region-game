@@ -149,13 +149,19 @@ export function ZombieForestScene({ paused = false }: { paused?: boolean }) {
     );
 
     if (aiRes.strikeZombieId) {
-      const attackRes = applyZombieAttackToPlayer(aiRes.strikeZombieId, px, pz);
+      const attackRes = applyZombieAttackToPlayer(
+        aiRes.strikeZombieId,
+        px,
+        pz,
+        Math.random,
+        { x: camera.position.x, z: camera.position.z },
+      );
       if (attackRes.blocked) {
         playerCombat.message = attackRes.message;
         ghostMissionProximity.lastMessage = attackRes.message;
       } else if (attackRes.applied) {
         if (!attackRes.playerDied) {
-          playerCombat.interrupt('Hit_React');
+          playerCombat.cancel();
         }
         playerCombat.message = attackRes.message;
         ghostMissionProximity.lastMessage = attackRes.message;

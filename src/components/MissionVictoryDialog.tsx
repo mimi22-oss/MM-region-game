@@ -7,17 +7,22 @@ import {
   ZOMBIE_COUNT,
   useZombieForestMission,
 } from '../game/missions/zombieForestMission';
-import { playSpecialAction } from '../game/specialActions';
+import { playSpecialAction, stopSpecialAction } from '../game/specialActions';
+import { playerCombat } from '../game/combat/combatRuntime';
+import { resetPlayerKnockback } from '../game/combat/playerKnockback';
 import {
   detectMissionVictoryTransition,
   resetGhostMissionForReplay,
   resetZombieMissionForReplay,
   type VictoryMissionKind,
 } from '../game/missions/missionVictory';
+import {
+  VICTORY_POPUP_DELAY_MS,
+  dismissVictoryDroneCamera,
+  triggerVictoryDroneCamera,
+} from '../game/missions/victoryCamera';
 
 export { detectMissionVictoryTransition, type VictoryMissionKind };
-
-const VICTORY_POPUP_DELAY_MS = 650;
 
 /**
  * Celebratory Mission Victory Dialog shown automatically when:
@@ -50,9 +55,14 @@ export function MissionVictoryDialog() {
       pendingTimerRef.current = null;
     }
 
-    // Play character victory animation briefly while the victory dialog appears
+    // Clear any in-flight combat/knockback and launch the front-facing Victory Drone Celebration
+    resetPlayerKnockback();
+    playerCombat.cancel();
+    triggerVictoryDroneCamera(triggered);
+
+    // Loop character victory celebration animation while the drone orbits around to their face
     try {
-      playSpecialAction('victory', { loop: false, force: true, restart: true });
+      playSpecialAction('victory', { loop: true, force: true, restart: true });
     } catch {
       // Non-GLB or non-browser environments safely ignore
     }
@@ -72,6 +82,16 @@ export function MissionVictoryDialog() {
     [],
   );
 
+  const close = () => {
+    setActiveVictory(null);
+    dismissVictoryDroneCamera();
+    try {
+      stopSpecialAction();
+    } catch {
+      // safely ignore
+    }
+  };
+
   // Release pointer lock & support Escape to close
   useEffect(() => {
     if (!activeVictory) return;
@@ -82,7 +102,7 @@ export function MissionVictoryDialog() {
       if (e.code === 'Escape' || e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
-        setActiveVictory(null);
+        close();
       }
     };
     window.addEventListener('keydown', onKeyDown, true);
@@ -92,7 +112,6 @@ export function MissionVictoryDialog() {
   if (!activeVictory) return null;
 
   const isZombie = activeVictory === 'zombie';
-  const close = () => setActiveVictory(null);
 
   const badgeText = isZombie
     ? `ZOMBIE MISSION COMPLETE · ${ZOMBIE_COUNT} / ${ZOMBIE_COUNT}`

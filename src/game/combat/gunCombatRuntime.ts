@@ -13,6 +13,10 @@ import {
   damageZombie,
   getZombieForestProgress,
 } from '../missions/zombieForestMission.ts';
+import {
+  damageMountainTiger,
+  getActiveCombatTigers,
+} from '../mountainTigerCombat.ts';
 import { requestGhostReaction } from './GhostCombatReactions.ts';
 import { clearGhostEncounterInteraction } from '../ghostConfig.ts';
 import { canStand, treeBlocks } from '../collision.ts';
@@ -31,12 +35,13 @@ export const GUN_COOLDOWN_SEC = 0.25;
 /** Strict PUBG-style ray-to-body hit radii (no off-aim magic cone hits). */
 export const GUN_ZOMBIE_HIT_RADIUS_M = 0.65;
 export const GUN_GHOST_BASE_HIT_RADIUS_M = 0.78;
+export const GUN_TIGER_HIT_RADIUS_M = 0.95;
 export const GUN_AIM_CONE_COS = 0.96;
 export const GUN_SHOOTING_MOTION_ID = 'shooting';
 
 export interface GunAimTarget {
   readonly id: string;
-  readonly kind: 'zombie' | 'ghost';
+  readonly kind: 'zombie' | 'ghost' | 'tiger';
   readonly x: number;
   readonly y: number;
   readonly z: number;
@@ -57,7 +62,7 @@ export interface GunAimPreview {
 
 export interface GunAimHudSnapshot {
   readonly locked: boolean;
-  readonly kind: 'zombie' | 'ghost' | null;
+  readonly kind: 'zombie' | 'ghost' | 'tiger' | null;
 }
 
 const gunAimHudListeners = new Set<() => void>();
@@ -74,7 +79,7 @@ export function subscribeGunAimHud(listener: () => void): () => void {
   };
 }
 
-function publishGunAimHud(locked: boolean, kind: 'zombie' | 'ghost' | null): void {
+function publishGunAimHud(locked: boolean, kind: 'zombie' | 'ghost' | 'tiger' | null): void {
   if (gunAimHudSnapshot.locked === locked && gunAimHudSnapshot.kind === kind) return;
   gunAimHudSnapshot = Object.freeze({ locked, kind });
   for (const fn of gunAimHudListeners) fn();
@@ -103,7 +108,7 @@ export function registerCombatGun(root: Object3D, avatar: Object3D): () => void 
   };
 }
 
-export type GunHitKind = 'zombie' | 'ghost' | 'tree' | 'building';
+export type GunHitKind = 'zombie' | 'ghost' | 'tiger' | 'tree' | 'building';
 
 export interface GunTracerEffect {
   readonly from: Vector3;
@@ -232,6 +237,27 @@ export function resolveGunAimTarget(
         x: g.x,
         y: 1.3,
         z: g.z,
+        distance: along,
+      };
+    }
+  }
+
+  // 3. Check active Open-World Mountain Tigers along exact forward ray
+  for (const tiger of getActiveCombatTigers()) {
+    const dx = tiger.x - px;
+    const dz = tiger.z - pz;
+    const along = dx * fx + dz * fz;
+    if (along < 0.15 || along > limitDist) continue;
+    const perp = Math.abs(dx * -fz + dz * fx);
+    if (perp > GUN_TIGER_HIT_RADIUS_M * tiger.scale) continue;
+    if (!combatLineClear(px, pz, tiger.x, tiger.z)) continue;
+    if (!bestTarget || along < bestTarget.distance) {
+      bestTarget = {
+        id: tiger.id,
+        kind: 'tiger',
+        x: tiger.x,
+        y: tiger.y + 0.85 * tiger.scale,
+        z: tiger.z,
         distance: along,
       };
     }
@@ -563,6 +589,27 @@ export function requestGunShot(options: GunShotOptions = {}): GunShotResult {
       fired: true,
       hitId: bestTarget.id,
       hitKind: 'zombie',
+      defeated: Boolean(res?.defeated),
+      message,
+    };
+  }
+
+  if (bestTarget.kind === 'tiger') {
+    const res = damageMountainTiger(
+      bestTarget.id,
+      GUN_DAMAGE,
+      'gun',
+      px,
+      pz,
+      Math.max(0, py - 1.15),
+      Math.atan2(-fx, -fz),
+    );
+    const message = res?.message ?? '';
+    if (message) playerCombat.message = message;
+    return {
+      fired: true,
+      hitId: bestTarget.id,
+      hitKind: 'tiger',
       defeated: Boolean(res?.defeated),
       message,
     };

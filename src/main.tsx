@@ -2,6 +2,7 @@ import {WeaponMenu} from './components/combat/WeaponMenu';
 import { ThreeGhostsMissionHud } from './components/ThreeGhostsMissionHud';
 import {GhostGameOver} from './components/GhostGameOver';
 import { MissionVictoryDialog } from './components/MissionVictoryDialog';
+import { RabbitCarrotCelebrationHud } from './components/RabbitCarrotCelebration';
 import '@fontsource/noto-sans-myanmar/400.css';
 import '@fontsource/noto-sans-myanmar/600.css';
 import '@fontsource/noto-sans-myanmar/700.css';
@@ -627,6 +628,7 @@ function App() {
   );
   const ridingHorse = horseStatus.phase === 'mounting' || horseStatus.phase === 'riding';
   const footballMatchActive = areFootballPlayersVisibleAtMinute(environment.minute);
+  const showFootballScoreHud = Boolean(nearFootballPitch && footballMatchActive);
   const activeFootballScore = nearFootballPitch ? footballScoreboard[nearFootballPitch.id] : null;
   const charAtFootballPitch = useMemo(
     () => findNearestFootballPitch(pos.x, pos.z),
@@ -1047,8 +1049,23 @@ function App() {
     <main className={night ? "night-mode" : ""} data-time-period={environment.period}>
       <GhostGameOver/>
       <MissionVictoryDialog />
-      {!loading && !intro.active && !nearSchoolHall && !nearFootballPitch && <ThreeGhostsMissionHud />}
-      {!loading && !intro.active && !mapOpen && !settingsOpen && nearFootballPitch && (
+      {!loading && !intro.active && !mapOpen && !settingsOpen && (
+        <RabbitCarrotCelebrationHud
+          playerPosRef={posRef}
+          playerYawRef={robotYawRef}
+          onMountain={
+            currentLoc.id === "taungphila" ||
+            currentLoc.id === "western-highlands" ||
+            currentLoc.id === "eastern-mountains" ||
+            currentLoc.id === "weipula" ||
+            currentLoc.id === "weipula-base" ||
+            currentLoc.id === "weipula-village" ||
+            currentLoc.id === "weipula-chin-village"
+          }
+        />
+      )}
+      {!loading && !intro.active && !nearSchoolHall && !showFootballScoreHud && <ThreeGhostsMissionHud />}
+      {!loading && !intro.active && !mapOpen && !settingsOpen && showFootballScoreHud && nearFootballPitch && (
         <div
           className={
             activeFootballScore?.phase === "goal-celebration" && footballMatchActive
@@ -1099,7 +1116,7 @@ function App() {
           </div>
         </div>
       )}
-      {!loading && !intro.active && !mapOpen && !settingsOpen && !nearFootballPitch && nearSchoolHall && (
+      {!loading && !intro.active && !mapOpen && !settingsOpen && !showFootballScoreHud && nearSchoolHall && (
         <div
           className="school-time-hud"
           role="status"
@@ -1347,7 +1364,7 @@ function App() {
               (classroomNotice && classroomNoticeNearPlayer) || arrivalToast
                 ? "horse-ride-speed-below-location"
                 : "horse-ride-speed-below-ghost",
-              nearFootballPitch
+              showFootballScoreHud
                 ? "horse-ride-speed-football"
                 : nearSchoolHall
                   ? "horse-ride-speed-school"
@@ -1504,7 +1521,7 @@ function App() {
       {!intro.active && classroomNotice && classroomNoticeNearPlayer && !mapOpen && (
         <div
           className={
-            nearFootballPitch
+            showFootballScoreHud
               ? "location-toast location-toast-below-football"
               : nearSchoolHall
                 ? "location-toast location-toast-below-school"
@@ -1523,7 +1540,7 @@ function App() {
       {!intro.active && arrivalToast && !(classroomNotice && classroomNoticeNearPlayer) && !mapOpen && (
         <div
           className={
-            nearFootballPitch
+            showFootballScoreHud
               ? "location-toast location-toast-below-football"
               : nearSchoolHall
                 ? "location-toast location-toast-below-school"

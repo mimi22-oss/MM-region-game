@@ -11509,3 +11509,104 @@ main.night-mode .horse-ride-dismount {
     font-size: 7px;
   }
 }
+
+/* ==========================================================================
+   🥕 5-Second Auto-Bot Rabbit Carrot-Feeding Celebration HUD & Feed Button
+   ========================================================================== */
+.rabbit-carrot-banner {
+  position: fixed;
+  left: 50%;
+  bottom: max(26px, calc(env(safe-area-inset-bottom, 0px) + 18px));
+  transform: translateX(-50%);
+  z-index: 95;
+  width: min(420px, calc(100vw - 28px));
+  padding: 12px 16px 10px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(20, 34, 24, 0.92) 0%, rgba(46, 26, 12, 0.92) 100%);
+  border: 1.5px solid rgba(251, 146, 60, 0.65);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff7ed;
+  pointer-events: none;
+  user-select: none;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Myanmar", sans-serif;
+}
+
+.rabbit-carrot-banner-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rabbit-carrot-banner-icon {
+  font-size: 26px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.rabbit-carrot-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rabbit-carrot-banner-text strong {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #fed7aa;
+}
+
+.rabbit-carrot-banner-text span {
+  font-size: 11.5px;
+  color: #dcfce7;
+}
+
+.rabbit-carrot-progress {
+  margin-top: 8px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+
+.rabbit-carrot-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f97316, #facc15, #4ade80);
+  transition: width 0.08s linear;
+}
+
+.rabbit-carrot-feed-btn {
+  position: fixed;
+  left: 50%;
+  bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 16px));
+  transform: translateX(-50%);
+  z-index: 42;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 15px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(251, 146, 60, 0.72);
+  background: linear-gradient(135deg, rgba(30, 41, 28, 0.92), rgba(67, 30, 11, 0.92));
+  color: #ffedd5;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Myanmar", sans-serif;
+  transition: transform 0.14s ease, border-color 0.2s ease;
+}
+
+.rabbit-carrot-feed-btn:hover {
+  transform: translateX(-50%) translateY(-1px);
+  border-color: #fdba74;
+}
+
+.rabbit-carrot-feed-btn:active {
+  transform: translateX(-50%) scale(0.96);
+}

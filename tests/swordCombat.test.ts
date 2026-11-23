@@ -9,7 +9,7 @@ import {CombatAnimationDriver} from '../src/game/combat/CombatAnimationDriver.ts
 import {ATTACKS,COMBAT_CLIPS,COMBO} from '../src/game/combat/AttackDefinitions.ts';
 import {SwordHitDetection} from '../src/game/combat/SwordHitDetection.ts';
 import {GHOST_REACTION_DELAY_MAX_SEC,GHOST_REACTION_DELAY_MIN_SEC,GuardMeleeController,sampleGhostReactionDelay} from '../src/game/combat/GuardMeleeController.ts';
-import {getGhostKnockbackDistance,isPlayerKnockbackActive,resetPlayerKnockback,stepPlayerKnockback,triggerPlayerKnockback} from '../src/game/combat/playerKnockback.ts';
+import {getGhostKnockbackDistance,isPlayerKnockbackActive,isPlayerKnockbackCameraActive,resetPlayerKnockback,stepPlayerKnockback,stepPlayerKnockbackCamera,triggerPlayerKnockback} from '../src/game/combat/playerKnockback.ts';
 import {getMotion} from '../src/animation/core/MotionRegistry.ts';
 import {requestGhostReaction,ghostCombatReaction,finishGhostReaction,setGhostCombatEngaged,ghostCombatMovementLocked,clearGhostCombatReaction} from '../src/game/combat/GhostCombatReactions.ts';
 import {playerCombat,registerCombatWeapon,registerCombatTarget,sampleCombatBlade,combatEffects,REQUIRE_GHOST_GROUP_SHIELD} from '../src/game/combat/combatRuntime.ts';
@@ -94,29 +94,35 @@ test('guard contact follows animation marker; protection, parry and invalid cont
  const parry=new GuardMeleeController();parry.step(input);parry.step({...input,attackNormalized:.5,defence:'parry'});assert.equal(parry.parried,true);assert.equal(parry.interaction.active,false);
  const caught=new GuardMeleeController(.1,.2);caught.step(input);caught.step({...input,attackNormalized:.5});
  let killed=0;for(let i=0;i<10;i++){caught.step(input);if(caught.killed)killed++;}assert.equal(killed,1);
- // Sword-equipped player: ghost waits random 2-5s before reacting/striking, never instant-grabs, and lands 1-Heart hit (like Zombie)
- assert.equal(GHOST_REACTION_DELAY_MIN_SEC,2.0);
- assert.equal(GHOST_REACTION_DELAY_MAX_SEC,5.0);
- assert.equal(sampleGhostReactionDelay(()=>0),2.0);
- assert.equal(sampleGhostReactionDelay(()=>1),5.0);
+ // Sword-equipped player: ghost waits random 1-3s before reacting/striking, never instant-grabs, and lands 1-Heart hit (like Zombie)
+ assert.equal(GHOST_REACTION_DELAY_MIN_SEC,1.0);
+ assert.equal(GHOST_REACTION_DELAY_MAX_SEC,3.0);
+ assert.equal(sampleGhostReactionDelay(()=>0),1.0);
+ assert.equal(sampleGhostReactionDelay(()=>1),3.0);
  const duel=new GuardMeleeController();
- // Approaches at 1.35m -> enters wait (2-5s random delay), does NOT immediately swing or grab!
+ // Approaches at 1.35m -> enters wait (1-3s random delay), does NOT immediately swing or grab!
  duel.step({...input,dt:0.05,distance:1.35,swordEquipped:true,rng:()=>0});
- assert.equal(duel.waiting,true,'Ghost should enter 2-5s wait delay before reacting');
+ assert.equal(duel.waiting,true,'Ghost should enter 1-3s wait delay before reacting');
  assert.equal(duel.started,false,'Ghost must not immediately attack upon closing distance');
  assert.equal(duel.interaction.active,false,'Ghost must not instant-grab sword player');
- // Advance 1.5s (< 2.0s min delay): still waiting so player has time to slash!
- for(let i=0;i<15;i++)duel.step({...input,dt:0.1,distance:1.35,swordEquipped:true,rng:()=>0});
- assert.equal(duel.started,false,'Ghost must still wait before 2s elapsed');
- // Advance past 2.0s: ghost now starts attack windup
+ // Advance 0.7s (< 1.0s min delay): still waiting so player has time to slash!
+ for(let i=0;i<7;i++)duel.step({...input,dt:0.1,distance:1.35,swordEquipped:true,rng:()=>0});
+ assert.equal(duel.started,false,'Ghost must still wait before 1s elapsed');
+ // Advance past 1.0s: ghost now starts attack windup
  for(let i=0;i<6;i++){duel.step({...input,dt:0.1,distance:1.35,swordEquipped:true,rng:()=>0});if(duel.started)break;}
- assert.equal(duel.started,true,'Ghost swings after 2-5s random hesitation delay');
+ assert.equal(duel.started,true,'Ghost swings after 1-3s random hesitation delay');
+ // If player slashes during ghost windup, ghost resets into another 1-3s wait
+ duel.step({...input,dt:0.05,distance:1.35,swordEquipped:true,playerAttacking:true,rng:()=>0});
+ assert.equal(duel.waiting,true,'Slashing during windup resets ghost into 1-3s wait');
+ // Advance past 1.0s again so ghost starts a fresh windup
+ for(let i=0;i<12;i++){duel.step({...input,dt:0.1,distance:1.35,swordEquipped:true,rng:()=>0});if(duel.started)break;}
+ assert.equal(duel.started,true,'Ghost swings again after 1-3s clash delay');
  // Strike connects at normalized >= 0.5: sets hitLanded=true (-1 Heart like Zombie), NOT instant grab/kill!
  duel.step({...input,dt:0.05,distance:1.35,swordEquipped:true,attackNormalized:0.55,rng:()=>0.5});
  assert.equal(duel.hitLanded,true,'Ghost sword-duel strike must emit hitLanded (-1 Heart like Zombie)');
  assert.equal(duel.killed,false,'Single ghost strike must not insta-kill player');
  assert.equal(duel.interaction.active,false,'Ghost sword-duel strike must not lock player in neck-grab');
- assert.equal(duel.waiting,true,'Ghost enters next 2-5s random wait after striking');
+ assert.equal(duel.waiting,true,'Ghost enters next 1-3s random wait after striking');
  // Camera obstruction raycast must safely ignore floating Sprites even when ray.camera is unset
  const camScene=new Group();
  const sprite=new Sprite(new SpriteMaterial());
@@ -126,18 +132,42 @@ test('guard contact follows animation marker; protection, parry and invalid cont
  const ray=new Raycaster(new Vector3(0,1,0),new Vector3(0,0,-1));
  assert.doesNotThrow(()=>query(ray,camScene,null,false,null),'cameraObstruction must never throw on Sprite when ray.camera is unset');
 
- // Ghost strike knockback: ghost-1 = 0.5m, ghost-2 = 1.0m, ghost-3 = 2.0m using flying-back-away.glb
+ // Ghost strike knockback: ghost-1 = 4.0m, ghost-2 = 6.0m, ghost-3 = 10.0m with airborne arc & cinematic drone view
  assert.equal(getMotion('flying-back-away')?.assetUrl,'/motions/movement/flying-back-away.glb');
- for(const [gid,expectedDist] of [['ghost-1',0.5],['ghost-2',1.0],['ghost-3',2.0]] as const){
+ for(const [gid,expectedDist] of [['ghost-1',4.0],['ghost-2',6.0],['ghost-3',10.0]] as const){
   resetPlayerKnockback();
   assert.equal(getGhostKnockbackDistance(gid),expectedDist);
   const pos={x:10,z:12};
-  triggerPlayerKnockback({ghostId:gid,ghostX:10,ghostZ:10,playerX:pos.x,playerZ:pos.z});
+  triggerPlayerKnockback({ghostId:gid,ghostX:10,ghostZ:10,playerX:pos.x,playerZ:pos.z,cameraX:14,cameraZ:13});
   assert.equal(isPlayerKnockbackActive(),true);
-  for(let i=0;i<30;i++)stepPlayerKnockback(0.05,pos,()=>true);
+  assert.equal(isPlayerKnockbackCameraActive(),true);
+  let maxLift=0;
+  let maxDroneElevation=0;
+  let maxFovBoost=0;
+  for(let i=0;i<30;i++){
+   const step=stepPlayerKnockback(0.05,pos,()=>true);
+   maxLift=Math.max(maxLift,step.liftY);
+   const cam=stepPlayerKnockbackCamera(0.05,pos.x,0,pos.z);
+   if(cam){
+    maxDroneElevation=Math.max(maxDroneElevation,cam.camY);
+    maxFovBoost=Math.max(maxFovBoost,cam.fovBoostDeg);
+   }
+  }
   assert.equal(isPlayerKnockbackActive(),false);
-  assert.ok(Math.abs((pos.z-12)-expectedDist)<0.02,`${gid} should knock player back ${expectedDist}m, got ${(pos.z-12).toFixed(3)}m`);
+  assert.ok(Math.abs((pos.z-12)-expectedDist)<0.05,`${gid} should knock player back ${expectedDist}m, got ${(pos.z-12).toFixed(3)}m`);
+  assert.ok(maxLift>=0.5,`${gid} knockback should launch player visibly airborne (got ${maxLift.toFixed(2)}m)`);
+  assert.ok(maxDroneElevation>=3.0,`${gid} drone camera should elevate above ground (got ${maxDroneElevation.toFixed(2)}m)`);
+  assert.ok(maxFovBoost>=4.0,`${gid} drone camera should apply dynamic FOV boost (got ${maxFovBoost.toFixed(2)}deg)`);
+  // Advance remaining hold + return duration so drone camera finishes cleanly
+  for(let i=0;i<40;i++)stepPlayerKnockbackCamera(0.05,pos.x,0,pos.z);
+  assert.equal(isPlayerKnockbackCameraActive(),false,`${gid} drone camera should return smoothly to normal camera`);
  }
+ // Fatal death keeps knockback drone orbiting smoothly for the full 5s pre-Game-Over window
+ resetPlayerKnockback();
+ triggerPlayerKnockback({ghostId:'ghost-3',ghostX:10,ghostZ:10,playerX:10,playerZ:12,cameraX:14,cameraZ:13});
+ let fatalPose=null;
+ for(let i=0;i<100;i++)fatalPose=stepPlayerKnockbackCamera(0.05,10,0,22,{fatalHold:true});
+ assert.ok(fatalPose&&isPlayerKnockbackCameraActive(),'Fatal death drone view stays active across full 5.0s showcase before Game Over');
  resetPlayerKnockback();
 });
 test('ghost reaction and engagement state stays independent; stale completion cannot clear a newer stun',()=>{

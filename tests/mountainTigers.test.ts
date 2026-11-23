@@ -17,6 +17,31 @@ import {
   TIGER_PREY_MIN_SEPARATION_M,
   buildMountainTigerSpawns,
 } from '../src/game/mountainTigerPool.ts';
+import {
+  applyTigerAttackToPlayer,
+  clearMountainTigerCombatRegistry,
+  damageMountainTiger,
+  getMountainTigerCombatSnapshot,
+  registerMountainTigerSpawns,
+  resetMountainTigerCombat,
+} from '../src/game/mountainTigerCombat.ts';
+import {
+  RABBIT_CARROT_CINEMATIC_DURATION_SEC,
+  isRabbitCarrotCinematicActive,
+  resetRabbitCarrotCinematic,
+  stepRabbitCarrotCamera,
+} from '../src/game/rabbitCarrotCinematic.ts';
+import {
+  isPlayerKnockbackActive,
+  isPlayerKnockbackCameraActive,
+  resetPlayerKnockback,
+  stepPlayerKnockback,
+} from '../src/game/combat/playerKnockback.ts';
+import { GHOST_IDS, collectGhostSword, markGhostEncounter, resetThreeGhostsMission, selectMissionWeapon } from '../src/game/missions/threeGhostsMission.ts';
+import { completePlayerRespawn, getPlayerDeathState, requestPlayerRespawn, stepPlayerRespawnGrace } from '../src/game/playerDeath.ts';
+import { rideLife } from '../src/game/rideLife.ts';
+import { resolveGunAimTarget } from '../src/game/combat/gunCombatRuntime.ts';
+import { markCombatTigerSlotActive } from '../src/game/mountainTigerCombat.ts';
 
 const allPeaks = [...ward.mountains, ...ward.weipula.peaks];
 
@@ -104,4 +129,104 @@ test('MountainTigerAssetCache is a strict Singleton and MountainTigerFixedPool a
   pool.disposePool();
   assert.equal(pool.metrics().activeCount, 0);
   disposeMountainTigerAssetCache();
+});
+
+test('Open-world tiger combat kills unarmed players, allows armed combat + 4m knockback, and unlocks carrots + 5s Auto-Bot rabbit feeding cinematic when all tigers fall', () => {
+  clearMountainTigerCombatRegistry();
+  resetRabbitCarrotCinematic();
+  resetPlayerKnockback();
+  stepPlayerRespawnGrace(10);
+  Object.assign(rideLife, { lives: 3, crashTime: 0, invulnerable: 0, contact: false, damage: 0 });
+
+  // Register a small 2-tiger open-world test group on walkable mountain ground
+  const sampleTigers = buildMountainTigerSpawns(allPeaks).slice(0, 2);
+  registerMountainTigerSpawns(sampleTigers);
+  resetMountainTigerCombat(true);
+  const t0 = sampleTigers[0];
+  const t1 = sampleTigers[1];
+  markCombatTigerSlotActive(t0.id, t0.homeX, t0.homeY, t0.homeZ, 0);
+  markCombatTigerSlotActive(t1.id, t1.homeX, t1.homeY, t1.homeZ, 0);
+
+  // 1. Unarmed player (Mission 1/2 not done / no weapon) entering tiger territory dies on tiger pounce
+  selectMissionWeapon(null);
+  const unarmedHit = applyTigerAttackToPlayer({
+    tigerId: t0.id,
+    tigerX: t0.homeX,
+    tigerZ: t0.homeZ,
+    playerX: t0.homeX,
+    playerZ: t0.homeZ + 1.5,
+  });
+  assert.equal(unarmedHit.applied, true);
+  assert.equal(unarmedHit.fatalUnarmed, true);
+  assert.equal(unarmedHit.playerDied, true);
+  assert.equal(rideLife.lives, 0);
+  assert.equal(getPlayerDeathState().phase, 'dead');
+
+  // Respawn player & equip sword
+  requestPlayerRespawn();
+  completePlayerRespawn();
+  stepPlayerRespawnGrace(10);
+  resetPlayerKnockback();
+  Object.assign(rideLife, { lives: 3, crashTime: 0, invulnerable: 0, contact: false, damage: 0 });
+
+  // 2. Armed player (has sword) takes -1 Heart + 4m airborne knockback (0.80s, 0.70m lift) + drone view
+  GHOST_IDS.forEach(markGhostEncounter);
+  collectGhostSword();
+  selectMissionWeapon('ghost-sword');
+  const armedHit = applyTigerAttackToPlayer({
+    tigerId: t0.id,
+    tigerX: t0.homeX,
+    tigerZ: t0.homeZ,
+    playerX: t0.homeX,
+    playerZ: t0.homeZ + 1.5,
+  });
+  assert.equal(armedHit.applied, true);
+  assert.equal(armedHit.fatalUnarmed, false);
+  assert.equal(armedHit.playerDied, false);
+  assert.equal(rideLife.lives, 2);
+  assert.equal(isPlayerKnockbackActive(), true);
+  assert.equal(isPlayerKnockbackCameraActive(), true);
+  const kbPos = { x: t0.homeX, z: t0.homeZ + 1.5 };
+  let maxLift = 0;
+  for (let i = 0; i < 20; i++) {
+    maxLift = Math.max(maxLift, stepPlayerKnockback(0.05, kbPos, () => true).liftY);
+  }
+  assert.equal(isPlayerKnockbackActive(), false);
+  assert.ok(Math.abs(maxLift - 0.7) < 0.06, `Tiger knockback lifts 0.70m (got ${maxLift.toFixed(2)}m)`);
+  resetPlayerKnockback();
+
+  // 3. Gun aim raycast locks cleanly onto active mountain tiger
+  const aim = resolveGunAimTarget(t0.homeX, t0.homeZ + 8, 0, -1, 32, null);
+  assert.ok(aim && aim.kind === 'tiger' && aim.id === t0.id, 'Gun raycast targets active mountain tigers');
+
+  // 4. Defeating ALL mountain tigers unlocks Carrots & triggers 5-second Auto-Bot Rabbit Feeding Cinematic
+  const kill1 = damageMountainTiger(t0.id, 100, 'sword', t0.homeX, t0.homeZ + 2, t0.homeY, 0);
+  assert.equal(kill1?.defeated, true);
+  assert.equal(kill1?.allDefeated, false);
+  assert.equal(isRabbitCarrotCinematicActive(), false);
+
+  const kill2 = damageMountainTiger(t1.id, 100, 'gun', t1.homeX, t1.homeZ + 2, t1.homeY, 0);
+  assert.equal(kill2?.defeated, true);
+  assert.equal(kill2?.allDefeated, true);
+  assert.equal(getMountainTigerCombatSnapshot().carrotsUnlocked, true, 'All tigers defeated unlocks carrots reward');
+  assert.equal(isRabbitCarrotCinematicActive(), true, '5s Auto-Bot rabbit carrot-feeding cinematic triggers automatically');
+
+  // Step through 5.0s showcase + 0.75s smooth return
+  let sawShowcasePose = false;
+  for (let i = 0; i < Math.ceil(RABBIT_CARROT_CINEMATIC_DURATION_SEC / 0.05) - 2; i++) {
+    const pose = stepRabbitCarrotCamera(0.05, () => t1.homeY);
+    if (pose && pose.lockingMovement) sawShowcasePose = true;
+  }
+  assert.equal(sawShowcasePose, true, 'Cinematic camera smoothly showcases Auto-Bot & rabbits for 5 seconds');
+  for (let i = 0; i < 30; i++) {
+    stepRabbitCarrotCamera(0.05, () => t1.homeY);
+  }
+  assert.equal(isRabbitCarrotCinematicActive(), false, 'Cinematic camera returns cleanly to player after 5s + return');
+
+  // Cleanup
+  selectMissionWeapon(null);
+  resetThreeGhostsMission();
+  resetMountainTigerCombat(true);
+  resetRabbitCarrotCinematic();
+  resetPlayerKnockback();
 });

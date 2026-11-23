@@ -39,6 +39,12 @@ import {
   requestPlayerRespawn,
   stepPlayerRespawnGrace,
 } from '../src/game/playerDeath.ts';
+import {
+  isPlayerKnockbackActive,
+  isPlayerKnockbackCameraActive,
+  resetPlayerKnockback,
+  stepPlayerKnockback,
+} from '../src/game/combat/playerKnockback.ts';
 import { rideLife } from '../src/game/rideLife.ts';
 import {
   GHOST_IDS,
@@ -622,7 +628,8 @@ test('each zombie attack deducts 1 heart from the 3 heart lives; using ကာ wi
   playerCombat.cancel();
   playerCombat.context(false, false);
 
-  // 1st unblocked zombie attack -> 3 hearts becomes 2 hearts
+  // 1st unblocked zombie attack -> 3 hearts becomes 2 hearts + launches 4m airborne knockback (0.80s, 0.70m lift) + drone view
+  resetPlayerKnockback();
   const hit1 = applyZombieAttackToPlayer('zombie-2', 410, 410, rng);
   assert.equal(hit1.applied, true);
   assert.equal(hit1.blocked, false);
@@ -630,6 +637,18 @@ test('each zombie attack deducts 1 heart from the 3 heart lives; using ကာ wi
   assert.equal(rideLife.lives, 2);
   assert.equal(hit1.playerDied, false);
   assert.equal(getPlayerDeathState().phase, 'alive');
+  assert.equal(isPlayerKnockbackActive(), true, 'Zombie hit must launch player knockback');
+  assert.equal(isPlayerKnockbackCameraActive(), true, 'Zombie hit must activate knockback drone view');
+  const kbPos = { x: 410, z: 410 };
+  let maxZombieLift = 0;
+  for (let i = 0; i < 20; i++) {
+    const s = stepPlayerKnockback(0.05, kbPos, () => true);
+    maxZombieLift = Math.max(maxZombieLift, s.liftY);
+  }
+  assert.equal(isPlayerKnockbackActive(), false, 'Zombie knockback finishes within 0.80s');
+  assert.ok(Math.abs(Math.hypot(kbPos.x - 410, kbPos.z - 410) - 4.0) < 0.08, 'Zombie hit launches player 4m');
+  assert.ok(Math.abs(maxZombieLift - 0.7) < 0.06, `Zombie knockback peaks near 0.70m lift (got ${maxZombieLift.toFixed(3)}m)`);
+  resetPlayerKnockback();
 
   // 2nd unblocked zombie attack -> 2 hearts becomes 1 heart
   const hit2 = applyZombieAttackToPlayer('zombie-2', 410, 410, rng);

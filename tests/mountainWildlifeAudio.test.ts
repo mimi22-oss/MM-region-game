@@ -8,6 +8,7 @@ import {
   GAME_AUDIO_MAGIC,
   WAREHOUSE_HORROR_LOOP_AUDIO_FILE,
   WEAPON_ENEMY_HIT_PLAYER_AUDIO_FILES,
+  WEAPON_GHOST_HIT_PLAYER_AUDIO_FILES,
   WEAPON_GUNSHOT_AUDIO_FILES,
   WEAPON_KNIFE_DRAW_AUDIO_FILES,
   WEAPON_KNIFE_HEAVY_SLAM_AUDIO_FILES,
@@ -168,7 +169,7 @@ test('MountainWildlifeAudioController tracks nearest live tiger/deer safely in h
   ctrl.step(0.15, sampleTiger.homeX, sampleTiger.homeZ, 0, -1, allPeaks, tigers, deer);
 });
 
-test('All 13 wildlife, weapon and warehouse audio assets are packed as anti-IDM .mta containers and unwrap to valid MP3 audio', () => {
+test('All 14 wildlife, weapon and warehouse audio assets are packed as anti-IDM .mta containers and unwrap to valid MP3 audio', () => {
   assert.equal(WILDLIFE_TIGER_AUDIO_FILES.length, 3);
   assert.equal(WILDLIFE_DEER_BABY_AUDIO_FILES.length, 1);
   assert.equal(WILDLIFE_DEER_STAG_AUDIO_FILES.length, 1);
@@ -178,8 +179,9 @@ test('All 13 wildlife, weapon and warehouse audio assets are packed as anti-IDM 
   assert.equal(WEAPON_KNIFE_HIT_AUDIO_FILES.length, 1);
   assert.equal(WEAPON_KNIFE_HEAVY_SLAM_AUDIO_FILES.length, 1);
   assert.equal(WEAPON_ENEMY_HIT_PLAYER_AUDIO_FILES.length, 1);
+  assert.equal(WEAPON_GHOST_HIT_PLAYER_AUDIO_FILES.length, 1);
   assert.ok(WAREHOUSE_HORROR_LOOP_AUDIO_FILE.endsWith('arctsound-horror-576085.mta'));
-  assert.equal(ALL_MP3_SFX_FILES.length, 13);
+  assert.equal(ALL_MP3_SFX_FILES.length, 14);
 
   for (const rel of ALL_MP3_SFX_FILES) {
     assert.ok(rel.endsWith('.mta'), `Asset must use non-media .mta extension (got ${rel})`);

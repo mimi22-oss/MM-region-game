@@ -1,5 +1,7 @@
 import {playerCombat} from '../game/combat/combatRuntime';
-import {isPlayerKnockbackActive,resetPlayerKnockback,stepPlayerKnockback} from '../game/combat/playerKnockback';
+import {ensureDeathDroneCamera,isPlayerKnockbackActive,isPlayerKnockbackCameraActive,resetPlayerKnockback,stepPlayerKnockback,stepPlayerKnockbackCamera} from '../game/combat/playerKnockback';
+import {isVictoryDroneCameraActive,isVictoryDroneLockingMovement,stepVictoryDroneCamera} from '../game/missions/victoryCamera';
+import {isRabbitCarrotCinematicActive,isRabbitCarrotLockingMovement,stepRabbitCarrotCamera} from '../game/rabbitCarrotCinematic';
 import {getActiveMissionWeapon,getThreeGhostsProgress} from '../game/missions/threeGhostsMission';
 import {HeldGhostSword} from './HeldGhostSword';
 import {HeldGun,isGunMotionId} from './HeldGun';
@@ -192,6 +194,7 @@ export const Player = memo(function Player({
  const playerGroundYRef=useRef(0);
  const smoothedAvatarYRef=useRef<number|null>(null);
  const smoothedCamYRef=useRef<number|null>(null);
+ const knockbackBaseFovRef=useRef<number|null>(null);
  const pendingGroundSyncRef=useRef(true);
  const bridgeFallRef=useRef(createBridgeFallState());
  const characterMotion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0,airborne:false,jumpBend:0,jumpVelocity:0});
@@ -597,10 +600,54 @@ export const Player = memo(function Player({
     jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;s.keys.clear();
     clearGhostEncounterInteraction();clearGhostThreat();stopSpecialAction(true);resetChairSitting();ghostFallOwned.current=null;
     resetBotFighting();resetPlayerKnockback();stepBotGlbMotionPlayer(null,0,0,1,false);lastBotFightAttackSeq.current=0;lastBotPlayerHitSeq.current=0;
+    if(knockbackBaseFovRef.current!==null&&camera instanceof PerspectiveCamera){camera.fov=knockbackBaseFovRef.current;camera.updateProjectionMatrix();knockbackBaseFovRef.current=null;}
     if(mobileInput?.current)resetMobileInput(mobileInput.current);onMode(false);onTopDown(false);onZoom(6);completePlayerRespawn();
    }
   }
-  if(life.phase==='dead'){playerCombat.context(getActiveMissionWeapon()==='ghost-sword',false,false,true);s.keys.clear();s.jumpRequested=false;if(mobileInput?.current)resetMobileInput(mobileInput.current);return;}
+  if(life.phase==='dead'){
+   playerCombat.context(getActiveMissionWeapon()==='ghost-sword',false,false,true);
+   s.keys.clear();s.jumpRequested=false;
+   if(mobileInput?.current)resetMobileInput(mobileInput.current);
+   let deadLiftY=0;
+   if(isPlayerKnockbackActive()){
+    const kbStep=stepPlayerKnockback(dt,s,clear);
+    deadLiftY=kbStep.liftY;
+    if(kbStep.faceYaw!==null)s.bodyYaw=kbStep.faceYaw;
+    s.camX=s.x;s.camZ=s.z;
+   }
+   const deadGroundY=height(s.x,s.z)+0.012;
+   if(avatar.current){
+    avatar.current.position.set(s.x,deadGroundY+deadLiftY,s.z);
+    avatar.current.rotation.set(0,s.bodyYaw,0,'YXZ');
+    avatar.current.visible=true;
+   }
+   if(!isPlayerKnockbackCameraActive()){
+    ensureDeathDroneCamera({playerX:s.x,playerZ:s.z,cameraX:camera.position.x,cameraZ:camera.position.z});
+   }
+   const deadDrone=stepPlayerKnockbackCamera(dt,s.x,deadGroundY,s.z,{fatalHold:true});
+   if(deadDrone&&deadDrone.blend>0.001){
+    const droneFloor=ground.height(deadDrone.camX,deadDrone.camZ)+1.4;
+    const dronePos=tmpVecA.current.set(deadDrone.camX,Math.max(droneFloor,deadDrone.camY),deadDrone.camZ);
+    const droneLook=tmpVecB.current.set(deadDrone.lookX,deadDrone.lookY,deadDrone.lookZ);
+    const droneOffset=dronePos.clone().sub(droneLook);
+    const droneDist=droneOffset.length();
+    if(droneDist>1e-5){
+     ray.current.set(droneLook,droneOffset.multiplyScalar(1/droneDist));ray.current.far=droneDist;
+     const hit=cameraObstruction(ray.current,scene,avatar.current,false,null);
+     if(hit)dronePos.copy(droneLook).addScaledVector(droneOffset,Math.max(2.2,hit.distance-0.35));
+    }
+    camera.position.lerp(dronePos,Math.min(1,dt*8+deadDrone.blend*0.35));
+    camera.lookAt(droneLook);
+    viewFocusScratch.current.x=s.x;viewFocusScratch.current.z=s.z;
+    camera.userData.viewFocus=viewFocusScratch.current;
+    if(camera instanceof PerspectiveCamera){
+     if(knockbackBaseFovRef.current===null)knockbackBaseFovRef.current=camera.fov;
+     const targetFov=knockbackBaseFovRef.current+deadDrone.fovBoostDeg;
+     if(Math.abs(camera.fov-targetFov)>0.02){camera.fov=targetFov;camera.updateProjectionMatrix();}
+    }
+   }
+   return;
+  }
   if(tickRideLife(mapOpen||controlsBlocked?0:dt)){
    interruptVehicleWaiting();resetChairSitting();
    if(balloonRide.riding)resetBalloon();
@@ -704,7 +751,9 @@ export const Player = memo(function Player({
   }
   const botFightKoLocked=getBotFightingState().active&&getBotFightingState().playerKnockedOut;
   const ghostKnockbackLocked=isPlayerKnockbackActive();
-  if(playerCombat.movementLocked||controlsBlocked||introOwnsCamera||mapOpen||rideLife.crashTime>0||enteringVehicle||ghostGrabbedOnFoot||botFightKoLocked||ghostKnockbackLocked){forward=0;right=0;if(botFightKoLocked||ghostKnockbackLocked)wantsJump=false;}
+  const victoryDroneLocked=isVictoryDroneLockingMovement();
+  const rabbitCarrotLocked=isRabbitCarrotLockingMovement();
+  if(playerCombat.movementLocked||controlsBlocked||introOwnsCamera||mapOpen||rideLife.crashTime>0||enteringVehicle||ghostGrabbedOnFoot||botFightKoLocked||ghostKnockbackLocked||victoryDroneLocked||rabbitCarrotLocked){forward=0;right=0;if(botFightKoLocked||ghostKnockbackLocked||victoryDroneLocked||rabbitCarrotLocked)wantsJump=false;}
   const aerial=!balloonRide.riding&&!currentCar()&&!touch?.active&&!s.first&&(s.distance>20||s.topDown||s.panning);
   if(pickupLocked&&!aerial){forward=0;right=0;}
   if(ghostGrabbedOnFoot){
@@ -1048,10 +1097,13 @@ export const Player = memo(function Player({
    s.camX=s.x;s.camZ=s.z;
   }
   const onFootFightingAllowed=!balloon.riding&&!currentCar()&&!ride.riding&&!chairControlled&&!mapOpen&&!controlsBlocked&&!loading;
+  const knockbackAllowed=!balloon.riding&&!currentCar()&&!ride.riding&&!chairControlled&&!mapOpen&&!loading;
   let knockbackStepActive=false;
-  if(onFootFightingAllowed&&isPlayerKnockbackActive()){
+  let knockbackLiftY=0;
+  if(knockbackAllowed&&isPlayerKnockbackActive()){
    const kbStep=stepPlayerKnockback(dt,s,clear);
    knockbackStepActive=kbStep.active;
+   knockbackLiftY=kbStep.liftY;
    if(kbStep.faceYaw!==null)s.bodyYaw=kbStep.faceYaw;
    s.camX=s.x;s.camZ=s.z;
   }
@@ -1119,13 +1171,14 @@ export const Player = memo(function Player({
    const isFightClip=(isBotFightMotionId(activeSpecialId)||isPlayerHitReactionMotionId(activeSpecialId))&&getBotFightingState().active;
    const isGhostFall=activeSpecialId==='fall'&&ghostGrabbedOnFoot&&ghostInteraction.phase==='player-fall';
    const isGhostKnockback=activeSpecialId==='flying-back-away';
+   const isVictoryCelebration=activeSpecialId==='victory'&&isVictoryDroneCameraActive();
    const baseConflict=
     !glbCapable||
     balloon.riding||
     !!currentCar()||
     ride.riding||
-    (!isFightClip&&!isGhostKnockback&&isWalkingRecoil())||
-    (!isFightClip&&!isGhostKnockback&&rideLife.crashTime>0)||
+    (!isFightClip&&!isGhostKnockback&&!isVictoryCelebration&&isWalkingRecoil())||
+    (!isFightClip&&!isGhostKnockback&&!isVictoryCelebration&&rideLife.crashTime>0)||
     jump.current.airborne||
     jumpPose.current.prepare>0;
    const cantDance=isWaitingClip
@@ -1136,7 +1189,7 @@ export const Player = memo(function Player({
     ? baseConflict||pickupLocked||enteringVehicle||wantsJump||chairSittingSnapshot.status!=='IDLE'
     : isFightClip
     ? baseConflict||pickupLocked||enteringVehicle||wantsJump||(!aerial&&len>0.18&&travelled>0.03)
-    : isGhostFall||isGhostKnockback
+    : isGhostFall||isGhostKnockback||isVictoryCelebration
     ? baseConflict
     : baseConflict||pickupLocked||enteringVehicle||(!aerial&&(len>0.01||wantsJump))||travelled>0.015;
    if(cantDance)stopSpecialAction();
@@ -1215,14 +1268,36 @@ export const Player = memo(function Player({
   if(bf.active||jump.current.airborne||balloon.riding){characterMotion.current.leftFoot=0;characterMotion.current.rightFoot=0;characterMotion.current.stepLift=0;}
   const ghostProceduralFall=ghostGrabbedOnFoot&&ghostInteraction.phase==='player-fall'&&(!glbCapable||character!=='cartoon')?ghostInteraction.fallProgress:0;
   const fall=!car?Math.max(actorFallProgress(),ghostProceduralFall,bf.active?bf.tumbleProgress:0):0;
-  const isBlinking=!car&&rideLife.damage>0&&rideLife.invulnerable>0&&Math.floor(clock.elapsedTime*12)%2===0;
+  const rabbitCarrotCam=!introOwnsCamera&&!footballViewOwnsCamera&&!mapOpen&&!loading&&isRabbitCarrotCinematicActive()
+   ? stepRabbitCarrotCamera(dt,(x,z)=>ground.height(x,z))
+   : null;
+  const rabbitCarrotActive=!!rabbitCarrotCam&&rabbitCarrotCam.blend>0.001;
+  const victoryDroneCam=!rabbitCarrotActive&&!introOwnsCamera&&!footballViewOwnsCamera&&!mapOpen&&!loading&&!balloon.riding&&!car&&isVictoryDroneCameraActive()
+   ? stepVictoryDroneCamera(dt,{
+      playerX:isRidingOrMountingHorse()?horseRide.x:s.x,
+      playerGroundY:isRidingOrMountingHorse()?horseRide.groundY:camGroundY,
+      playerZ:isRidingOrMountingHorse()?horseRide.z:s.z,
+      bodyYaw:isRidingOrMountingHorse()?horseRide.yaw:s.bodyYaw,
+      bodyScale,
+      currentCamX:camera.position.x,
+      currentCamY:camera.position.y,
+      currentCamZ:camera.position.z,
+     })
+   : null;
+  const victoryDroneActive=!!victoryDroneCam&&victoryDroneCam.blend>0.001;
+  const kbDroneCam=!rabbitCarrotActive&&!victoryDroneActive&&knockbackAllowed&&!introOwnsCamera&&!footballViewOwnsCamera&&isPlayerKnockbackCameraActive()
+   ? stepPlayerKnockbackCamera(dt,s.x,camGroundY,s.z)
+   : null;
+  const kbDroneActive=!!kbDroneCam&&kbDroneCam.blend>0.001;
+  const anyDroneActive=rabbitCarrotActive||victoryDroneActive||kbDroneActive;
+  const isBlinking=!car&&!anyDroneActive&&rideLife.damage>0&&rideLife.invulnerable>0&&Math.floor(clock.elapsedTime*12)%2===0;
   const seatedAvatarY=chairControlled&&chairSittingSnapshot.activeChair
    ? computeSeatedAvatarY(chairSittingSnapshot.activeChair,groundY,bodyScale,appearance.human.preset)
    : groundY;
-  const avatarY=chairControlled&&chairSittingSnapshot.activeChair
+  const avatarY=(chairControlled&&chairSittingSnapshot.activeChair
    ? seatedAvatarY+(groundY-seatedAvatarY)*chairSittingSnapshot.standBlend
-   : groundY;
-  if(avatar.current){avatar.current.position.set(bf.active?bf.x:isRidingOrMountingHorse()?horseRide.x:s.x,avatarY+fall*(ride.riding?.18:.28*bodyScale),bf.active?bf.z:isRidingOrMountingHorse()?horseRide.z:s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:fall*Math.PI/2,isRidingOrMountingHorse()?horseRide.yaw:fall&&!ride.riding?fallYaw.current:s.bodyYaw,ride.riding?fall*1.42:bf.active?bf.tumbleProgress*0.85:0,'YXZ');avatar.current.visible=!car&&!s.first&&!isBlinking&&!introHighAlt;}
+   : groundY)+knockbackLiftY;
+  if(avatar.current){avatar.current.position.set(bf.active?bf.x:isRidingOrMountingHorse()?horseRide.x:s.x,avatarY+fall*(ride.riding?.18:.28*bodyScale),bf.active?bf.z:isRidingOrMountingHorse()?horseRide.z:s.z);avatar.current.rotation.set(ride.riding?bikePose.pitch:fall*Math.PI/2,isRidingOrMountingHorse()?horseRide.yaw:fall&&!ride.riding?fallYaw.current:s.bodyYaw,ride.riding?fall*1.42:bf.active?bf.tumbleProgress*0.85:0,'YXZ');avatar.current.visible=!car&&(!s.first||anyDroneActive)&&!isBlinking&&!introHighAlt;}
   camera.userData.playerOccupied=!!(car||balloon.riding||ride.riding||isRidingOrMountingHorse());
   const focusHeight=isRidingOrMountingHorse()?horsePoseRef.current.hip.y+.76*bodyScale:1.65*(car||ride.riding?1:bodyScale);
   target.current.set(aerial?s.camX:s.x,(aerial?ground.height(s.camX,s.camZ):camGroundY)+focusHeight,aerial?s.camZ:s.z);
@@ -1235,19 +1310,53 @@ export const Player = memo(function Player({
    camera.userData.viewFocus=viewFocusScratch.current;
    const viewPitch=s.pitch+(car&&s.first?car.pitch:0);
    const direction=tmpVecA.current.set(-Math.sin(s.yaw)*Math.cos(viewPitch),Math.sin(viewPitch),-Math.cos(s.yaw)*Math.cos(viewPitch));
-   if(s.first){camera.position.copy(target.current);camera.lookAt(tmpVecB.current.copy(target.current).add(direction));}
+   if(s.first&&!anyDroneActive){camera.position.copy(target.current);camera.lookAt(tmpVecB.current.copy(target.current).add(direction));}
    else{
-    desired.current.copy(direction).multiplyScalar(-s.distance).add(target.current);desired.current.y=Math.max(0.6,desired.current.y+1.5);
-    if(s.distance<=10&&!s.topDown&&s.pitch>-0.85){
-     const offset=tmpVecB.current.copy(desired.current).sub(target.current);const distance=offset.length();
-     if(distance>1e-5){
-      ray.current.set(target.current,offset.multiplyScalar(1/distance));ray.current.far=distance;
-      const hit=cameraObstruction(ray.current,scene,avatar.current,!!balloon.riding,car?.id??null);
-      if(hit)desired.current.copy(target.current).addScaledVector(offset,Math.max(0.15,hit.distance-0.3));
+    if(s.first){
+     desired.current.copy(target.current);
+    }else{
+     desired.current.copy(direction).multiplyScalar(-s.distance).add(target.current);desired.current.y=Math.max(0.6,desired.current.y+1.5);
+     if(s.distance<=10&&!s.topDown&&s.pitch>-0.85){
+      const offset=tmpVecB.current.copy(desired.current).sub(target.current);const distance=offset.length();
+      if(distance>1e-5){
+       ray.current.set(target.current,offset.multiplyScalar(1/distance));ray.current.far=distance;
+       const hit=cameraObstruction(ray.current,scene,avatar.current,!!balloon.riding,car?.id??null);
+       if(hit)desired.current.copy(target.current).addScaledVector(offset,Math.max(0.15,hit.distance-0.3));
+      }
      }
+    }
+    const activeDrone=rabbitCarrotActive&&rabbitCarrotCam
+     ? {camX:rabbitCarrotCam.camX,camY:rabbitCarrotCam.camY,camZ:rabbitCarrotCam.camZ,lookX:rabbitCarrotCam.lookX,lookY:rabbitCarrotCam.lookY,lookZ:rabbitCarrotCam.lookZ,blend:rabbitCarrotCam.blend,fovOffset:rabbitCarrotCam.fovOffsetDeg,minFloor:0.9,minDist:1.8}
+     : victoryDroneActive&&victoryDroneCam
+      ? {camX:victoryDroneCam.camX,camY:victoryDroneCam.camY,camZ:victoryDroneCam.camZ,lookX:victoryDroneCam.lookX,lookY:victoryDroneCam.lookY,lookZ:victoryDroneCam.lookZ,blend:victoryDroneCam.blend,fovOffset:victoryDroneCam.fovOffsetDeg,minFloor:0.85,minDist:1.45}
+      : kbDroneActive&&kbDroneCam
+       ? {camX:kbDroneCam.camX,camY:kbDroneCam.camY,camZ:kbDroneCam.camZ,lookX:kbDroneCam.lookX,lookY:kbDroneCam.lookY,lookZ:kbDroneCam.lookZ,blend:kbDroneCam.blend,fovOffset:kbDroneCam.fovBoostDeg,minFloor:1.5,minDist:2.2}
+       : null;
+    if(activeDrone){
+     const droneFloor=ground.height(activeDrone.camX,activeDrone.camZ)+activeDrone.minFloor;
+     const dronePos=tmpVecA.current.set(activeDrone.camX,Math.max(droneFloor,activeDrone.camY),activeDrone.camZ);
+     const droneLook=tmpVecB.current.set(activeDrone.lookX,activeDrone.lookY,activeDrone.lookZ);
+     const droneOffset=dronePos.clone().sub(droneLook);
+     const droneDist=droneOffset.length();
+     if(droneDist>1e-5){
+      ray.current.set(droneLook,droneOffset.multiplyScalar(1/droneDist));ray.current.far=droneDist;
+      const hit=cameraObstruction(ray.current,scene,avatar.current,false,null);
+      if(hit)dronePos.copy(droneLook).addScaledVector(droneOffset,Math.max(activeDrone.minDist,hit.distance-0.35));
+     }
+     desired.current.lerp(dronePos,activeDrone.blend);
+     target.current.lerp(droneLook,activeDrone.blend);
+     if(camera instanceof PerspectiveCamera){
+      if(knockbackBaseFovRef.current===null)knockbackBaseFovRef.current=camera.fov;
+      const targetFov=knockbackBaseFovRef.current+activeDrone.fovOffset;
+      if(Math.abs(camera.fov-targetFov)>0.02){camera.fov=targetFov;camera.updateProjectionMatrix();}
+     }
+    }else if(knockbackBaseFovRef.current!==null&&camera instanceof PerspectiveCamera){
+     camera.fov=knockbackBaseFovRef.current;camera.updateProjectionMatrix();knockbackBaseFovRef.current=null;
     }
     camera.position.copy(desired.current);camera.lookAt(target.current);
    }
+  }else if(knockbackBaseFovRef.current!==null&&camera instanceof PerspectiveCamera){
+   camera.fov=knockbackBaseFovRef.current;camera.updateProjectionMatrix();knockbackBaseFovRef.current=null;
   }
   s.time+=dt;saveTimerRef.current+=dt;if(s.time>0.08){s.time=0;onBalloonStatus?.({riding:balloon.riding,near:nearBalloon,altitude:Math.max(0,Math.round(balloon.y-height(balloon.x,balloon.z))),kmh:Math.round(Math.hypot(balloon.vx,balloon.vz)*3.6),grounded:balloon.grounded,blocked:balloon.blocked,autoCruise:balloon.autoCruise,autoReturn:balloon.autoReturn,returnDist:balloon.returnDist});onCarStatus?.({transmission:car?.transmission,automaticRange:carRide.automaticRange,driving:!!car,near:!!nearCar,kmh:Math.round(Math.abs(car?.speed??0)*3.6),gear:carRide.gear,rpm:Math.round(carRide.rpm/100)*100,clutch:car?.transmission!=='automatic'&&(carInput.clutch||s.keys.has('KeyC')),notice:carRide.notice,steering:Math.round((car?.steering??0)*100)/100,first:s.first,canSummon:canSummonCar(s.x,s.z,!!car||balloon.riding,ride.riding),summonStatus:carSummonState.status,lives:rideLife.lives});onRideStatus?.({riding:ride.riding,near:!balloon.riding&&!car&&near&&!ride.mustLeave,kmh:Math.round(ride.speed*3.6),notice:rideNotice.current,lives:rideLife.lives,crashed:rideLife.crashTime>0,impactMode:rideLife.mode,damage:rideLife.damage});onPosition(s.x,s.z,s.bodyYaw);if(saveTimerRef.current>=1){saveTimerRef.current=0;onSaveSnapshot?.({x:s.x,z:s.z,yaw:s.bodyYaw,pitch:s.pitch,zoom:s.targetDistance,topDown:s.topDown,first:s.first});}onViewPosition?.(target.current.x,target.current.z);}
  },-1);
