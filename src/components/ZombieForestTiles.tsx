@@ -17,6 +17,7 @@ import {
   type StreamedTreeRecord,
 } from '../game/streamedChunkRegistry';
 import type { MapLabel } from '../game/mapLabels';
+import type { DestinationStatus, WorldDestination } from '../game/regionLoading';
 import datasetConfig from '../data/tharsiZombieForestDataset.json';
 
 const BASE_Y_SCALE = 17.6 / 18.2;
@@ -165,8 +166,13 @@ function ZombieForestTile({ tile, data, projection }: MapTileViewProps) {
 const mapConfig: MapDatasetConfig = {
   manifest: datasetConfig.manifest,
   projection: datasetConfig.projection as MapDatasetConfig['projection'],
+  travel: { part: 'zombieForest', bounds: datasetConfig.zoneBounds },
 };
 
-export function ZombieForestTiles() {
-  return <MapDataset config={mapConfig} view={ZombieForestTile} />;
+export function ZombieForestTiles({ destination, onDestinationStatus }: {
+  destination?: WorldDestination | null;
+  onDestinationStatus?: DestinationStatus;
+}) {
+  return <MapDataset config={mapConfig} view={ZombieForestTile}
+    destination={destination} onDestinationStatus={onDestinationStatus} />;
 }

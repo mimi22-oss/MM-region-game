@@ -47,7 +47,7 @@ test('failed downloads remain visible without automatic retry loops and do not s
   const first = deferred<string>();
   let attempts = 0;
   const queue = new RegionDownloadQueue([
-    { id: 'a', name: 'မြို့သာ', load: () => { attempts++; return first.promise; } },
+    { id: 'a', name: 'မြို့သာ', load: () => ++attempts === 1 ? first.promise : Promise.resolve('a repaired') },
     { id: 'b', name: 'သာစည်', load: async () => 'b scene' },
   ]);
   queue.request(['a', 'b']);
@@ -58,6 +58,10 @@ test('failed downloads remain visible without automatic retry loops and do not s
   assert.equal(queue.getSnapshot()[1].phase, 'downloaded');
   queue.request(['a'], true);
   assert.equal(attempts, 1, 'streaming does not create an automatic retry loop');
+  queue.request(['a'], true, true);
+  await Promise.resolve();
+  assert.equal(attempts, 2, 'a new teleport can retry an earlier failed import');
+  assert.equal(queue.getSnapshot()[0].value, 'a repaired');
 });
 
 test('snapshots stay stable for repeated requests and subscribers can unsubscribe', async () => {

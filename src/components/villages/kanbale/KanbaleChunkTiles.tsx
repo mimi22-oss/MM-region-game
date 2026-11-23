@@ -20,6 +20,7 @@ import {
 import { registerGroundRegion, releaseGroundRegion } from '../../../game/groundSurface';
 import { subscribeWorldEdits, worldEditVersion, sourceIsEdited } from '../../../game/worldEdits';
 import { diagnosticConfig } from '../../../game/diagnosticMode';
+import type { DestinationStatus, WorldDestination } from '../../../game/regionLoading';
 import type { KanbaleBuildingData } from '../../../data/villages/kanbale/kanbaleBuildings';
 import { KanbaleFarmhouse } from './KanbaleFarmhouse';
 import { KanbaleSchool } from './KanbaleSchool';
@@ -27,6 +28,7 @@ import { KanbaleSchool } from './KanbaleSchool';
 const datasetConfig: MapDatasetConfig = {
   manifest: kanbaleDatasetJson.manifest,
   projection: kanbaleDatasetJson.projection as MapDatasetConfig['projection'],
+  travel: { part: 'kanbale', bounds: kanbaleDatasetJson.bounds },
 };
 
 const KANBALE_TILE_RADIUS_M = 480;
@@ -434,9 +436,11 @@ const KanbaleTileView = memo(function KanbaleTileView({ tile, data, projection }
 export function KanbaleChunkTiles({
   active = true,
   destination,
+  onDestinationStatus,
 }: {
   active?: boolean;
-  destination?: { x: number; z: number } | null;
+  destination?: WorldDestination | null;
+  onDestinationStatus?: DestinationStatus;
 }) {
   return (
     <MapDataset
@@ -444,6 +448,7 @@ export function KanbaleChunkTiles({
       view={KanbaleTileView}
       active={active}
       destination={destination}
+      onDestinationStatus={onDestinationStatus}
       radiusMeters={KANBALE_TILE_RADIUS_M}
     />
   );

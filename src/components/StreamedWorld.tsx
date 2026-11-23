@@ -11,7 +11,7 @@ import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import { BoxGeometry, MeshLambertMaterial, InstancedMesh, Matrix4, Quaternion, Vector3, Color, Group, type Object3D } from 'three';
 import { ward } from '../data/ward';
 import { mobileQuality, selectRegions, selectOverviewRegions } from '../game/sceneBudget';
-import type { WorldDestination, WorldLoadingState } from '../game/regionLoading';
+import type { DestinationStatus, WorldDestination, WorldLoadingState } from '../game/regionLoading';
 import { StaticBatch } from './StaticBatch';
 import { RobotBots, prepareRobotPatrols } from './RobotBots';
 import { HouseResidentBots } from './HouseResidentBots';
@@ -121,6 +121,7 @@ const RegionBuilder = memo(function RegionBuilder({ id, Scene, live = false, act
 
 export type StreamedWorldProps = {
   destination?: WorldDestination | null;
+  onDestinationStatus?: DestinationStatus;
   paused?: boolean;
   minute?: number;
   timeMode?: TimeMode;
@@ -136,6 +137,7 @@ const MAX_CACHED_REGIONS = mobileQuality ? 2 : 5;
 
 export function StreamedWorld({
   destination,
+  onDestinationStatus,
   paused = false,
   minute = 780,
   timeMode = 'auto',
@@ -149,8 +151,11 @@ export function StreamedWorld({
   const intro = useIntroState();
   const downloads = useSyncExternalStore(regionAssets.subscribe, regionAssets.getSnapshot);
   const cache = useRef(new Map<string, CachedRegion>());
+  const requestedDestinationSeq = useRef<number | null>(null);
+  const failedPreparations = useRef(new Set<string>());
   const [prepared, setPrepared] = useState<string[]>([]);
   const [warming, setWarming] = useState<{ id: string; root: Group } | null>(null);
+  const [buildSlot, setBuildSlot] = useState<string>();
   const [started, setStarted] = useState(false);
   const [active, setActive] = useState(spawnRegions);
   const [overviewIds,setOverviewIds]=useState(()=>selectOverviewRegions(bounds,ward.spawn.x,ward.spawn.z,mobileQuality));
@@ -166,23 +171,29 @@ export function StreamedWorld({
         : [],
     [intro.active, intro.target?.x, intro.target?.z],
   );
+  const destinationRegions = useMemo(
+    () => destination ? selectRegions(bounds, destination.x, destination.z, 5, [], mobileQuality) : [],
+    [destination],
+  );
 
   // Progressive loading: Prioritize active region, intro destination, then spawn, then idle background
   const building = useMemo(() => {
     if(warming)return undefined; // Finish GPU/ground preparation before building another region.
-    const activeUnprepared = active.find(id => !prepared.includes(id) && !cache.current.has(id));
+    if (destination) return destinationRegions.find(id => !prepared.includes(id) && !cache.current.has(id) && !failedPreparations.current.has(id));
+    const activeUnprepared = active.find(id => !prepared.includes(id) && !cache.current.has(id) && !failedPreparations.current.has(id));
     if (activeUnprepared) return activeUnprepared;
-    const introUnprepared = introTargetRegions.find(id => !prepared.includes(id) && !cache.current.has(id));
+    const introUnprepared = introTargetRegions.find(id => !prepared.includes(id) && !cache.current.has(id) && !failedPreparations.current.has(id));
     if (introUnprepared) return introUnprepared;
     const spawnUnprepared = !started ? spawnRegions.find(id => !prepared.includes(id) && !cache.current.has(id)) : undefined;
     if (spawnUnprepared) return spawnUnprepared;
     // Stop background construction when full: evicted downloads must not cycle forever.
     if (!mobileQuality && !diagnosticConfig.disableDistantChunks && started && cache.current.size < MAX_CACHED_REGIONS) {
-      const nextDownloaded = downloads.find(d => d.phase === 'downloaded' && !prepared.includes(d.id) && !cache.current.has(d.id));
+      const nextDownloaded = downloads.find(d => d.phase === 'downloaded' && !prepared.includes(d.id) && !cache.current.has(d.id) && !failedPreparations.current.has(d.id));
       return nextDownloaded?.id;
     }
     return undefined;
-  }, [active, introTargetRegions, prepared, started, downloads, warming]);
+  }, [active, destination, destinationRegions, introTargetRegions, prepared, started, downloads, warming]);
+  const Scene = building ? downloads.find(item => item.id === building)?.value : undefined;
 
   const evictOverflowRegions = useCallback(
     (maxRemaining: number) => {
@@ -208,11 +219,16 @@ export function StreamedWorld({
   // Evict inactive non-pinned regions BEFORE mounting a new RegionBuilder so mobile GPUs
   // never hold old + unbatched new + snapshot + pinned Myothar simultaneously during travel.
   useLayoutEffect(() => {
-    if (!started || !building || building === 'myothar') return;
-    if (cache.current.size >= MAX_CACHED_REGIONS) {
+    if (!building || building === 'myothar' || !Scene) {
+      setBuildSlot(undefined);
+      return;
+    }
+    if (started && cache.current.size >= MAX_CACHED_REGIONS) {
       evictOverflowRegions(MAX_CACHED_REGIONS - 1);
     }
-  }, [started, building, evictOverflowRegions]);
+    // Approve the render on the next commit, after eviction has released the old geometry.
+    setBuildSlot(cache.current.size < MAX_CACHED_REGIONS ? building : undefined);
+  }, [started, building, Scene, evictOverflowRegions]);
 
   const onBuilt = useCallback((id: string, root: Group) => {
     if (cache.current.has(id)) return;
@@ -238,12 +254,14 @@ export function StreamedWorld({
 
   useEffect(() => {
     if (!started) return;
-    const wanted = introTargetRegions.length
+    const wanted = destination ? destinationRegions : introTargetRegions.length
       ? [...new Set([...active, ...introTargetRegions])]
       : active;
     regionAssets.retainPending(wanted);
-    regionAssets.request(wanted, true);
-    if (!mobileQuality && !diagnosticConfig.disableDistantChunks) {
+    const retry = destination !== null && destination !== undefined && requestedDestinationSeq.current !== destination.seq;
+    if (retry) requestedDestinationSeq.current = destination.seq;
+    regionAssets.request(wanted, true, retry);
+    if (!destination && !mobileQuality && !diagnosticConfig.disableDistantChunks) {
       const timer = window.setTimeout(() => {
         // Only one neighbouring region, not every region in the world catalogue.
         const focus=wanted.map(id=>bounds.find(b=>b.id===id)!).filter(Boolean);
@@ -254,38 +272,66 @@ export function StreamedWorld({
       }, 1500);
       return () => window.clearTimeout(timer);
     }
-  }, [started, active, introTargetRegions]);
+  }, [started, active, destination, destinationRegions, introTargetRegions]);
 
   useEffect(() => {
     if (!warming) return;
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       try {
-        prepareRobotPatrols(warming.id);
-        await warmRegion(gl, scene, warming.root, bounds.find(item => item.id === warming.id)!);
+        if (!started) {
+          prepareRobotPatrols(warming.id);
+          await warmRegion(gl, scene, warming.root, bounds.find(item => item.id === warming.id)!);
+        }
         if (!cancelled) {
           registerGroundRegion(scene, warming.id, warming.root);
           setPrepared(previous => (previous.includes(warming.id) ? previous : [...previous, warming.id]));
           setWarming(null);
           invalidate();
         }
-      } catch {
-        if (!cancelled) onSceneError();
+      } catch (error) {
+        if (cancelled) return;
+        if (!started) {
+          onSceneError();
+          return;
+        }
+        const failed = cache.current.get(warming.id);
+        failedPreparations.current.add(warming.id);
+        cache.current.delete(warming.id);
+        if (failed) {
+          releaseGroundRegion(scene, warming.id);
+          disposePreparedRegion(failed.root);
+          disposePreparedRegion(failed.festivalOverview);
+        }
+        setWarming(null);
+        console.warn('Could not prepare map region:', warming.id, error);
       }
     }, 0);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [warming, gl, scene, invalidate, onSceneError]);
+  }, [warming, gl, scene, invalidate, onSceneError, started]);
 
   useLayoutEffect(() => {
+    lastRegionCheck.current.initialized = false;
+    elapsed.current = .25;
+    if (destination && started) {
+      for (const id of destinationRegions) failedPreparations.current.delete(id);
+      setActive(destinationRegions);
+    }
+  }, [destination, destinationRegions, started]);
+
+  useEffect(() => {
     if (!destination || !started) return;
-    const introNow = getIntroState();
-    if (introNow.active && !introNow.reducedMotion) return;
-    const height = 3.15 + (destination.distance ?? 10) * Math.sin(-(destination.pitch ?? -.16));
-    setActive(selectRegions(bounds, destination.x, destination.z, height, [], mobileQuality));
-  }, [destination, started]);
+    const currentDownloads = regionAssets.getSnapshot();
+    if (destinationRegions.some(id => failedPreparations.current.has(id) ||
+      currentDownloads.some(entry => entry.id === id && entry.phase === 'error'))) {
+      onDestinationStatus?.(destination.seq, 'region', false);
+    } else if (destinationRegions.every(id => prepared.includes(id))) {
+      onDestinationStatus?.(destination.seq, 'region', true);
+    }
+  }, [destination, destinationRegions, downloads, onDestinationStatus, prepared, started, warming]);
 
   useLayoutEffect(() => {
     for (const id of prepared) {
@@ -359,7 +405,7 @@ function sameStringList(a: readonly string[], b: readonly string[]) {
 const fallbackFocus = { x: 0, z: 0 };
 
   useFrame(({ camera, clock }, dt) => {
-    if (!started) return;
+    if (!started || destination) return;
     const introNow = getIntroState();
     const introHighAlt = introNow.active && !introNow.reducedMotion && camera.position.y > (mobileQuality ? 220 : 280);
     if (!introHighAlt) {
@@ -413,15 +459,15 @@ const fallbackFocus = { x: 0, z: 0 };
   });
 
   const myothar = downloads.find(item => item.id === 'myothar')?.value;
-  const Scene = building ? downloads.find(item => item.id === building)?.value : undefined;
   const hideNpcsDuringHighIntro = intro.active && isIntroHighAltitude(intro);
 
   return <>
     {started && active.includes('myothar') && <ThreeGhostsMissionScene />}
     {myothar && <RegionBuilder id="myothar" Scene={myothar} live active={started && active.includes('myothar')} onBuilt={onBuilt} />}
-    {building && building !== 'myothar' && Scene && !cache.current.has(building) &&
+    {building && buildSlot === building && Scene && !cache.current.has(building) &&
       <RegionBuilder key={building} id={building} Scene={Scene} onBuilt={onBuilt} />}
-    <KanbaleChunkTiles active={started && active.includes('kanbale')} destination={destination} />
+    <KanbaleChunkTiles active={started && active.includes('kanbale')} destination={destination}
+      onDestinationStatus={onDestinationStatus} />
     {regions.filter(region=>overviewIds.includes(region.id)).map(region => <group key={region.id} visible={!active.includes(region.id) || !prepared.includes(region.id)}><Overview region={region} /></group>)}
     {!paused && started && !diagnosticConfig.disableNPCs && !hideNpcsDuringHighIntro && <>
       <RobotBots activeRegions={active} />

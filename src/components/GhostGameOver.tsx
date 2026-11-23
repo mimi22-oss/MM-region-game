@@ -5,7 +5,7 @@ import { getBotFightingState } from '../game/botFighting';
 /** Let the player watch the airborne knockback & cinematic drone view for 5 seconds before showing Game Over. */
 export const GAME_OVER_DRONE_DELAY_MS = 5000;
 
-export function GhostGameOver() {
+export function GhostGameOver({ onReveal }: { onReveal?: (generation: number) => void }) {
   const state = usePlayerDeathState();
   const [revealedGeneration, setRevealedGeneration] = useState(0);
 
@@ -22,11 +22,12 @@ export function GhostGameOver() {
     const gen = state.generation;
     const timer = window.setTimeout(() => {
       setRevealedGeneration(gen);
+      onReveal?.(gen);
     }, GAME_OVER_DRONE_DELAY_MS);
     return () => {
       window.clearTimeout(timer);
     };
-  }, [state.phase, state.generation]);
+  }, [state.phase, state.generation, onReveal]);
 
   const dialogVisible =
     state.phase === 'respawning' ||
@@ -97,9 +98,7 @@ export function GhostGameOver() {
 
   const btnLabel = isRespawning
     ? 'ပြန်လည်စတင်နေသည်…'
-    : isBotFight || isBridgeFall || isTiger
-      ? 'အစမှ ပြန်စမည် · Restart'
-      : 'အိမ်တွင် ပြန်စမည် · Respawn';
+    : 'အိမ်တွင် ပြန်စမည် · Respawn';
 
   return (
     <div

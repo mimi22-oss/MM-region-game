@@ -51,7 +51,7 @@ If a push modifies native files or increments `minNativeVersion` / `minAndroidVe
    - Downloads the complete checksum-verified OTA ZIP through `CapacitorUpdater.download({ url, version, checksum })` with `httpsOnly: true`. The ZIP already includes the offline assets, so the Android updater does not duplicate this download in IndexedDB.
    - An installed APK can download an OTA ZIP with the same version. After activation, the Android bundle checksum identifies whether that release is already installed. Content packs remain available when no code update is needed.
    - **Never interrupts** an active ghost chase (`isAnyGhostThreatActive()`), ghost neck-grab/fall (`getGhostEncounterInteraction()`), motorcycle ride, car drive, balloon ride, cinematic intro, or loading state (`src/game/updateSafety.ts`).
-   - Flushes player position & settings (`flushGameSave`) immediately before `CapacitorUpdater.set()` reloads the WebView.
+   - A restart requested during a busy state returns to ready when gameplay clears. The player selects Restart & Apply again to restart. The app flushes player position and settings (`flushGameSave`) immediately before `CapacitorUpdater.set()` reloads the WebView.
    - If the newly applied bundle fails startup health check (`appReadyTimeout: 10000`) or reports `status: 'error'` / `updateFailed`, Capacitor rolls back natively to the prior healthy/builtin bundle, `assetCacheManager.rollbackToPrevious()` restores paired assets, and `UpdateStatusPanel` surfaces the rollback notice.
 
 ---

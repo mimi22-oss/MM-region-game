@@ -24,7 +24,7 @@ export const Town = memo(function Town({ minute = 780, ...streaming }: { minute?
 
 			<StreamedWorld minute={minute} {...streaming} />
             <SeparationFieldTiles/>
-            <ZombieForestTiles/>
+            <ZombieForestTiles destination={streaming.destination} onDestinationStatus={streaming.onDestinationStatus}/>
             <ZombieForestScene paused={streaming.paused}/>
             <Mountains />
             <DynamicWorldObjects minute={minute} />

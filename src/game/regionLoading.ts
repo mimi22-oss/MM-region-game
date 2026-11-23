@@ -36,19 +36,19 @@ export class RegionDownloadQueue<T> {
     this.emit();
   }
 
-  request(ids: string[], foreground = false) {
+  request(ids: string[], foreground = false, retryErrors = false) {
     const requested: string[] = [];
     for (const id of new Set(ids)) {
       const entry = this.snapshot.find(item => item.id === id);
-      if (!entry || !['idle', 'queued'].includes(entry.phase)) continue;
+      if (!entry || !(entry.phase === 'idle' || entry.phase === 'queued' || (retryErrors && entry.phase === 'error'))) continue;
       requested.push(id);
     }
     this.pending = foreground
       ? [...requested, ...this.pending.filter(id => !requested.includes(id))]
       : [...this.pending, ...requested.filter(id => !this.pending.includes(id))];
     if (requested.length) {
-      if (this.snapshot.some(entry => entry.phase === 'idle' && requested.includes(entry.id))) {
-        this.snapshot = this.snapshot.map(entry => entry.phase === 'idle' && requested.includes(entry.id)
+      if (this.snapshot.some(entry => entry.phase !== 'queued' && requested.includes(entry.id))) {
+        this.snapshot = this.snapshot.map(entry => entry.phase !== 'queued' && requested.includes(entry.id)
           ? { ...entry, phase: 'queued' } : entry);
         this.emit();
       }
@@ -96,3 +96,13 @@ export type WorldDestination = {
   distance?: number;
   pitch?: number;
 };
+
+export type DestinationPart = 'region' | 'kanbale' | 'zombieForest';
+export type DestinationStatus = (seq: number, part: DestinationPart, ready: boolean) => void;
+export type DestinationBounds = { minX: number; maxX: number; minZ: number; maxZ: number };
+
+export function destinationNearBounds(destination: WorldDestination, bounds: DestinationBounds, margin: number): boolean {
+  const { x, z } = destination;
+  return x >= bounds.minX - margin && x <= bounds.maxX + margin &&
+    z >= bounds.minZ - margin && z <= bounds.maxZ + margin;
+}

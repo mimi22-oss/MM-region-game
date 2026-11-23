@@ -412,6 +412,17 @@ test('Phase 6.1 & 6.2 & 6.3: Fresh offline APK boots immediately, delta-updates 
   assert.equal(coordinator.getState().phase, 'update_available');
   await coordinator.downloadAvailableUpdate();
   assert.equal(coordinator.getState().phase, 'ready_to_restart');
+  const callsBeforeRestart = native.calls.length;
+  const safetyContext = {
+    ghostThreatActive: false, ghostGrabActive: false, ridingMotorcycle: false,
+    drivingCar: false, ridingBalloon: false, introActive: false, sceneLoading: false,
+  };
+  coordinator.setSafetyContext({ ...safetyContext, sceneLoading: true });
+  assert.equal((await coordinator.applyUpdateNow()).deferred, true);
+  coordinator.setSafetyContext({ ...safetyContext, activeModalBlocking: true });
+  coordinator.setSafetyContext(safetyContext);
+  assert.equal(coordinator.getState().phase, 'ready_to_restart');
+  assert.equal(native.calls.length, callsBeforeRestart, 'Leaving teleport or Game Over cannot apply an update');
   const apply1 = await coordinator.applyUpdateNow();
   assert.equal(apply1.applied, true);
   assert.equal(await cacheManager.verifyActiveIntegrity().then((r) => r.ok), true);

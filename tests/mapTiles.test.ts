@@ -37,7 +37,9 @@ test('cache stays bounded across travel, cancels stale requests, and revisiting 
 test('failure backoff prevents request storms and disposal ignores late completions',async()=>{
  const built=buildMapTiles(collection([point(1)]),{dataset:'failure'});let calls=0;
  const bad=new MapTileStore(built.manifest,async()=>{calls++;throw new Error('offline');},{maxActive:1,maxTiles:1,maxBytes:262144});
- for(let i=0;i<10;i++){bad.select(['000000']);await tick();}assert.equal(calls,1);assert.equal(bad.getStats().failed,1);bad.dispose();
+ for(let i=0;i<10;i++){bad.select(['000000']);await tick();}assert.equal(calls,1);assert.equal(bad.getStats().failed,1);
+ assert.equal(bad.hasLoadFailure('000000'),true);assert.equal(bad.hasLoadFailure('other'),false);
+ bad.select([]);assert.equal(bad.hasLoadFailure('000000'),false);bad.dispose();
  let finish!:(v:MapTilePayload)=>void;const slow=new MapTileStore(built.manifest,()=>new Promise(resolve=>{finish=resolve;}),{maxActive:1,maxTiles:1,maxBytes:262144});
  slow.select(['000000']);slow.dispose();finish(JSON.parse([...built.files.values()][0] as string));await tick();assert.equal(slow.getStats().resident,0);
 });

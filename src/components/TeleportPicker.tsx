@@ -12,6 +12,8 @@ import {
 	Camera,
 	Scene,
 	WebGLRenderer,
+	type Intersection,
+	type Object3D,
 } from 'three';
 import { sceneGround } from '../game/groundSurface';
 import { canStand } from '../game/collision';
@@ -45,8 +47,27 @@ const _raycaster = new Raycaster();
 const _groundPlane = new Plane(new Vector3(0, 1, 0), 0);
 const _planeHit = new Vector3();
 const _projVec = new Vector3();
+const _pickHits: Intersection[] = [];
 const UI_IGNORE_SELECTOR =
 	'.teleport-confirm-card, .location-actions, .action-menu-popover, .settings-wrap, .guide-dialog-modal, .mobile-actions';
+
+function pickVisibleSurface(object: Object3D, current: Vector3 | null): Vector3 | null {
+	if (!object.visible || object.userData.cameraIgnore) return current;
+	const name = object.name;
+	if (/(player|teleport|marker|arrow|sky|wheel)/.test(name)) return current;
+	if (object instanceof Mesh && object.layers.test(_raycaster.layers)) {
+		_pickHits.length = 0;
+		object.raycast(_raycaster, _pickHits);
+		for (const hit of _pickHits) {
+			if (hit.distance < _raycaster.far) {
+				_raycaster.far = hit.distance;
+				current = hit.point;
+			}
+		}
+	}
+	for (const child of object.children) current = pickVisibleSurface(child, current);
+	return current;
+}
 
 /** Helper: Raycast from screen pixels (clientX, clientY) to ground surface */
 function raycastGround(
@@ -66,24 +87,12 @@ function raycastGround(
 
 	_raycaster.setFromCamera(_rayMouse, camera);
 
-	let hitPoint: Vector3 | null = null;
-	const intersects = _raycaster.intersectObjects(scene.children, true);
-	for (const hit of intersects) {
-		const name = hit.object.name ?? '';
-		if (
-			name.includes('player') ||
-			name.includes('teleport') ||
-			name.includes('marker') ||
-			name.includes('arrow') ||
-			name.includes('sky') ||
-			name.includes('wheel') ||
-			hit.object.type === 'Line' ||
-			hit.object.type === 'Points'
-		) {
-			continue;
-		}
-		hitPoint = hit.point;
-		break;
+	let hitPoint: Vector3 | null;
+	try {
+		hitPoint = pickVisibleSurface(scene, null);
+	} finally {
+		_pickHits.length = 0;
+		_raycaster.far = Infinity;
 	}
 
 	if (!hitPoint) {

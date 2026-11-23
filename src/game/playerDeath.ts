@@ -31,6 +31,9 @@ export function requestPlayerRespawn(){
   state={...state,phase:'respawning'};emit();
  }
 }
+export function cancelPlayerRespawn(){
+ if(state.phase==='respawning'){state={...state,phase:'dead'};emit();}
+}
 export function completePlayerRespawn(){
  if(state.phase==='respawning'){
   rideLife.lives=3;rideLife.crashTime=0;rideLife.invulnerable=0;rideLife.contact=false;rideLife.damage=0;

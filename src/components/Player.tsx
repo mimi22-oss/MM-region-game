@@ -6,7 +6,7 @@ import {getActiveMissionWeapon,getThreeGhostsProgress} from '../game/missions/th
 import {HeldGhostSword} from './HeldGhostSword';
 import {HeldGun,isGunMotionId} from './HeldGun';
 import { hasCompletedThreeGhostsMission } from '../game/missions/threeGhostsMission';
-import {getPlayerDeathState,findProtectedRespawn,completePlayerRespawn,stepPlayerRespawnGrace,killPlayerFromBotFight,killPlayerFromBridgeFall} from '../game/playerDeath';
+import {getPlayerDeathState,completePlayerRespawn,stepPlayerRespawnGrace,killPlayerFromBotFight,killPlayerFromBridgeFall} from '../game/playerDeath';
 import {checkBridgeFallTrigger,createBridgeFallState,isMountainBridgeZone,resetBridgeFall,stepBridgeFall,syncBridgeFallAnchor} from '../game/bridgeFall';
 import {PLAYER_ON_FOOT_SPEED} from '../game/ghostPersonalities';
 import {PassengerBalloon} from './PassengerBalloon';
@@ -95,13 +95,13 @@ import { DRIVER_EYE } from '../game/carCabin';
 import { motorcycleRide,tryMount,parkMotorcycle,dismountSpot,stepMotorcycle,type RideStatus } from '../game/motorcycleRide';
 import { MotorcycleModel,ParkedMotorcycle } from './Motorcycle';
 import { updateHomeAccess } from '../game/homeAccess';
-import { cameraDragGain, cameraPanMetresPerPixel, panCamera, findTeleportSpot } from '../game/cameraNavigation';
+import { cameraDragGain, cameraPanMetresPerPixel, panCamera } from '../game/cameraNavigation';
 import { createCameraObstructionQuery } from '../game/cameraObstruction';
 import { avatarHeading } from '../game/avatarHeading';
 import { RobotCharacter } from './RobotCharacter';
 import { CartoonCharacter } from './CartoonCharacter';
 import type { CharacterKind } from './CharacterPicker';
-import { useEffect, useMemo, useRef, useState, memo, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, memo, type RefObject } from 'react';
 const balloonFloorCache = new Map<string, number>();
 import type { MobileInput } from '../game/mobileInput';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -119,6 +119,7 @@ export type TeleportTarget = {
  yaw?:number;
  pitch?:number;
  distance?:number;
+ respawn?:boolean;
  seq:number;
 };
 
@@ -130,6 +131,7 @@ export const Player = memo(function Player({
  onBalloonStatus,
  navigationRequest,
  onNavigationResult,
+ onRequestTeleport,
  mobileInput,
  mapOpen,
  topDown,
@@ -157,6 +159,7 @@ export const Player = memo(function Player({
  onBalloonStatus?:(status:BalloonStatus)=>void;
  navigationRequest?:{action:"locate"|"teleport";seq:number}|null;
  onNavigationResult?:(success:boolean)=>void;
+ onRequestTeleport?:(x:number,z:number)=>void;
  mobileInput?:RefObject<MobileInput>;
  mapOpen:boolean;
  topDown:boolean;
@@ -171,7 +174,7 @@ export const Player = memo(function Player({
  onViewPosition?:(x:number,z:number)=>void;
  onPosition:(x:number,z:number,yaw?:number)=>void;
  initialSave?:import('../game/gameSave').GameSaveData|null;
- onSaveSnapshot?:(snap:{x:number;z:number;yaw:number;pitch:number;zoom:number;topDown:boolean;first:boolean})=>void;
+ onSaveSnapshot?:(snap:{x:number;z:number;yaw:number;pitch:number;zoom:number;topDown:boolean;first:boolean},immediate?:boolean)=>void;
  onMoveIntent?:(dx:number,dz:number,yaw:number,sprinting:boolean,dtMs:number)=>void;
  reconcilePlayer?:(x:number,z:number)=>{x:number;z:number}|null;
 }){
@@ -303,14 +306,33 @@ export const Player = memo(function Player({
    s.camZ=s.z;
   }
  },[topDown]);
- useEffect(()=>{
-  if(!teleportTarget||rideLife.crashTime>0)return;
+ const handledTeleport=useRef<number|null>(null);
+ const handledDeathMotion=useRef<number|null>(null);
+ useLayoutEffect(()=>{
+  if(!teleportTarget||handledTeleport.current===teleportTarget.seq||rideLife.crashTime>0)return;
+  handledTeleport.current=teleportTarget.seq;
   interruptVehicleWaiting();
   resetChairSitting();
   if(balloonRide.riding)resetBalloon();
   if(currentCar())parkCar();
   if(mobileInput?.current)resetMobileInput(mobileInput.current);
   const s=state.current;
+  s.keys.clear();s.dragging=false;
+  walkingRecoil.current=createWalkingRecoil(s.bodyYaw);
+  resetPlayerKnockback();
+  clearGhostEncounterInteraction();clearGhostThreat();
+  if(knockbackBaseFovRef.current!==null&&camera instanceof PerspectiveCamera){
+   camera.fov=knockbackBaseFovRef.current;camera.updateProjectionMatrix();knockbackBaseFovRef.current=null;
+  }
+  if(teleportTarget.respawn){
+   const fellOffBridge=Boolean(getPlayerDeathState().ghostId?.startsWith('bridge-fall:'));
+   parkMotorcycle();setRiding(false);
+   if(isRidingOrMountingHorse()||fellOffBridge){resetHorseRide(fellOffBridge);setOnHorse(false);}
+   if(fellOffBridge){Object.assign(motorcycleRide,{x:motorcycleData.x,z:motorcycleData.z,yaw:motorcycleData.rotation,mustLeave:false,distance:0});}
+   stopSpecialAction(true);ghostFallOwned.current=null;
+   resetBotFighting();stepBotGlbMotionPlayer(null,0,0,1,false);
+   lastBotFightAttackSeq.current=0;lastBotPlayerHitSeq.current=0;
+  }
   jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;
   pendingGroundSyncRef.current=true;resetBridgeFall(bridgeFallRef.current);
   s.x=teleportTarget.x;
@@ -341,36 +363,33 @@ export const Player = memo(function Player({
    motorcycleRide.yaw=s.yaw;
    motorcycleRide.speed=0;
   }
+  if(!isIntroOwningCamera()){
+   viewFocusScratch.current.x=s.x;viewFocusScratch.current.z=s.z;
+   camera.userData.viewFocus=viewFocusScratch.current;
+  }
   onMode(false);onTopDown(false);onZoom(dist);
   onPosition(s.x,s.z,s.bodyYaw);
- },[teleportTarget,onPosition,onMode,onTopDown,onZoom,mobileInput]);
+  onSaveSnapshot?.({x:s.x,z:s.z,yaw:s.bodyYaw,pitch:s.pitch,zoom:dist,topDown:false,first:false},true);
+  if(teleportTarget.respawn)completePlayerRespawn();
+ },[teleportTarget,camera,onPosition,onMode,onTopDown,onZoom,onSaveSnapshot,mobileInput]);
+ const handledNavigation=useRef<number|null>(null);
  useEffect(()=>{
-  if(!navigationRequest||rideLife.crashTime>0)return;
+  if(!navigationRequest||handledNavigation.current===navigationRequest.seq||rideLife.crashTime>0)return;
+  handledNavigation.current=navigationRequest.seq;
   const s=state.current;
   if(navigationRequest.action==='teleport'){
-   const spot=findTeleportSpot(s.camX,s.camZ,canStand);
-   if(!spot){onNavigationResult?.(false);return}
-   interruptVehicleWaiting();resetChairSitting();
-   if(balloonRide.riding)resetBalloon();
-   if(currentCar())parkCar();
-   jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;
-   pendingGroundSyncRef.current=true;resetBridgeFall(bridgeFallRef.current);
-   s.x=spot.x;s.z=spot.z;
-   if(isRidingOrMountingHorse()){
-    horseRide.x=spot.x;horseRide.z=spot.z;horseRide.speed=0;horseRide.jumpY=0;horseRide.vy=0;horseRide.airborne=false;
-   }
-   if(motorcycleRide.riding){
-    motorcycleRide.x=spot.x;motorcycleRide.z=spot.z;motorcycleRide.speed=0;
-   }
+   onRequestTeleport?.(s.camX,s.camZ);
+   return;
   }
   s.camX=s.x;s.camZ=s.z;s.panning=false;s.first=false;s.topDown=false;
   s.pitch=-.16;s.distance=10;s.targetDistance=10;s.keys.clear();
   onMode(false);onTopDown(false);onZoom(10);onPosition(s.x,s.z,s.bodyYaw);onNavigationResult?.(true);
- },[navigationRequest,onNavigationResult,onMode,onTopDown,onZoom,onPosition]);
+ },[navigationRequest,onNavigationResult,onRequestTeleport,onMode,onTopDown,onZoom,onPosition]);
  const target=useRef(new Vector3()); const desired=useRef(new Vector3()); const ray=useRef(new Raycaster());
  const tmpEuler=useRef(new Euler(0,0,0,'YXZ'));
  const tmpVecA=useRef(new Vector3());
  const tmpVecB=useRef(new Vector3());
+ const tmpVecC=useRef(new Vector3());
  const carPoseScratch=useRef({y:0,pitch:0,roll:0});
  const saveTimerRef=useRef(0);
  const viewFocusScratch=useRef({x:ward.spawn.x,z:ward.spawn.z});
@@ -589,21 +608,7 @@ export const Player = memo(function Player({
   };
   const life=getPlayerDeathState();
   stepPlayerRespawnGrace(mapOpen||controlsBlocked?0:dt);
-  if(life.phase==='respawning'){
-   const spot=findProtectedRespawn(canStand)??(canStand(ward.spawn.x,ward.spawn.z)?ward.spawn:null);
-   if(spot){
-    const fellOffBridge=Boolean(life.ghostId?.startsWith('bridge-fall:'));
-    interruptVehicleWaiting();resetChairSitting();parkCar();parkMotorcycle();if(balloonRide.riding)resetBalloon();setRiding(false);if(isRidingOrMountingHorse()||fellOffBridge){resetHorseRide(fellOffBridge);setOnHorse(false);}
-    if(fellOffBridge){Object.assign(motorcycleRide,{x:motorcycleData.x,z:motorcycleData.z,yaw:motorcycleData.rotation,mustLeave:false,distance:0});}
-    playerGroundYRef.current=worldHeight(spot.x,spot.z);pendingGroundSyncRef.current=true;resetBridgeFall(bf);
-    Object.assign(s,{x:spot.x,z:spot.z,camX:spot.x,camZ:spot.z,bodyYaw:ward.spawnYaw,yaw:ward.spawnYaw,panning:false,first:false,topDown:false,pitch:-.12,distance:6,targetDistance:6});
-    jump.current=createHumanJump();jumpPose.current=createJumpPose();s.jumpRequested=false;s.keys.clear();
-    clearGhostEncounterInteraction();clearGhostThreat();stopSpecialAction(true);resetChairSitting();ghostFallOwned.current=null;
-    resetBotFighting();resetPlayerKnockback();stepBotGlbMotionPlayer(null,0,0,1,false);lastBotFightAttackSeq.current=0;lastBotPlayerHitSeq.current=0;
-    if(knockbackBaseFovRef.current!==null&&camera instanceof PerspectiveCamera){camera.fov=knockbackBaseFovRef.current;camera.updateProjectionMatrix();knockbackBaseFovRef.current=null;}
-    if(mobileInput?.current)resetMobileInput(mobileInput.current);onMode(false);onTopDown(false);onZoom(6);completePlayerRespawn();
-   }
-  }
+  if(life.phase==='respawning')return;
   if(life.phase==='dead'){
    playerCombat.context(getActiveMissionWeapon()==='ghost-sword',false,false,true);
    s.keys.clear();s.jumpRequested=false;
@@ -621,8 +626,11 @@ export const Player = memo(function Player({
     activeDeathAction==='fall'||
     activeDeathAction==='defeat_02'||
     activeDeathAction==='defeat_03';
-   if(!hasDeathClip&&character==='cartoon'&&shouldUseGlbCharacter(appearance.human.preset)){
-    playSpecialAction('fall',{loop:false,force:true});
+   if(handledDeathMotion.current!==life.generation){
+    handledDeathMotion.current=life.generation;
+    if(!hasDeathClip&&character==='cartoon'&&shouldUseGlbCharacter(appearance.human.preset)){
+     playSpecialAction('fall',{loop:false,force:true});
+    }
    }
    let deadLiftY=0;
    if(isPlayerKnockbackActive()){
@@ -646,7 +654,7 @@ export const Player = memo(function Player({
     const droneFloor=ground.height(deadDrone.camX,deadDrone.camZ)+1.4;
     const dronePos=tmpVecA.current.set(deadDrone.camX,Math.max(droneFloor,deadDrone.camY),deadDrone.camZ);
     const droneLook=tmpVecB.current.set(deadDrone.lookX,deadDrone.lookY,deadDrone.lookZ);
-    const droneOffset=dronePos.clone().sub(droneLook);
+    const droneOffset=tmpVecC.current.copy(dronePos).sub(droneLook);
     const droneDist=droneOffset.length();
     if(droneDist>1e-5){
      ray.current.set(droneLook,droneOffset.multiplyScalar(1/droneDist));ray.current.far=droneDist;

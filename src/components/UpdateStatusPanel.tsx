@@ -245,7 +245,7 @@ export function UpdateStatusPanel() {
 
           {ota.phase === 'deferred_busy' && !ota.safety.safeToApplyNow && (
             <div className="ota-notice ota-notice-warn" role="status">
-              <strong>Paused Safely:</strong> {ota.safety.summaryMy} ({ota.safety.summaryEn}). Restart will proceed when safe.
+              <strong>Paused Safely:</strong> {ota.safety.summaryMy} ({ota.safety.summaryEn}). Choose Restart &amp; Apply when ready.
             </div>
           )}
 

@@ -153,6 +153,25 @@ test('Teleport to Kanbale, corridor lock, unloading, LRU cache reuse, and pooled
     { maxActive: 2, maxTiles: 4, maxBytes: 1024 * 1024, concurrency: 2 },
   );
 
+  const selectAndWait = async (tiles: readonly { id: string }[]) => {
+    const ids = tiles.map(tile => tile.id);
+    const ready = () => ids.every(id => store.getSnapshot().some(item => item.tile.id === id));
+    store.select(ids);
+    if (ready()) return;
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        unsubscribe();
+        reject(new Error(`Timed out loading Kanbale tiles: ${ids.join(', ')}`));
+      }, 5000);
+      const unsubscribe = store.subscribe(() => {
+        if (!ready()) return;
+        clearTimeout(timer);
+        unsubscribe();
+        resolve();
+      });
+    });
+  };
+
   const pool = new StreamedAssetPool();
   const scene = new Group();
   const mountedHandles = new Map<string, Array<{ release: () => void }>>();
@@ -225,8 +244,7 @@ test('Teleport to Kanbale, corridor lock, unloading, LRU cache reuse, and pooled
     assert.equal(canStand(458.67, -464.24), false, 'actor corridor waits until downloading tile registers');
     setStreamedPendingTileBounds('kanbale', []);
 
-    store.select(teleportTiles.map((t) => t.id));
-    await new Promise((r) => setTimeout(r, 20));
+    await selectAndWait(teleportTiles);
     mountLoadedSnapshot();
 
     assert.equal(getStreamedChunkStats().residentChunks, teleportTiles.length);
@@ -239,8 +257,7 @@ test('Teleport to Kanbale, corridor lock, unloading, LRU cache reuse, and pooled
     // 3. Travel east within Kanbale to load additional tiles -> shared pool assets are reused (never duplicated!)
     const eastGeo = unprojectMapPoint(projection, 1385, -804);
     const eastTiles = index.nearest(eastGeo.lon, eastGeo.lat, radius, 2);
-    store.select(eastTiles.map((t) => t.id));
-    await new Promise((r) => setTimeout(r, 20));
+    await selectAndWait(eastTiles);
     mountLoadedSnapshot();
 
     const poolAfterTravel = pool.getStats();
@@ -250,8 +267,7 @@ test('Teleport to Kanbale, corridor lock, unloading, LRU cache reuse, and pooled
 
     // 4. Return immediately to Kanbale Farmhouse (still inside 4-tile LRU): ZERO additional disk reads!
     const readsBeforeReturn = diskReads;
-    store.select(teleportTiles.map((t) => t.id));
-    await new Promise((r) => setTimeout(r, 20));
+    await selectAndWait(teleportTiles);
     mountLoadedSnapshot();
     assert.equal(diskReads, readsBeforeReturn, 'revisiting recently cached chunks reuses LRU store data');
 

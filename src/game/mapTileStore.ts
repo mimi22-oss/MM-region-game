@@ -121,6 +121,7 @@ export class MapTileStore {
  getSnapshot=()=>this.snapshot;
  subscribe=(fn:()=>void)=>{this.listeners.add(fn);return ()=>{this.listeners.delete(fn);};};
  getStats=()=>({resident:this.resident.size,bytes:[...this.resident.keys()].reduce((n,id)=>n+this.definitions.get(id)!.bytes,0),inFlight:this.running.size,failed:this.failures.size});
+ hasLoadFailure(id:string){return this.failures.has(id);}
  select(ids:readonly string[]){
   if(this.closed)return;
   this.wanted=[...new Set(ids)].filter(id=>this.definitions.has(id)).slice(0,this.options.maxActive);

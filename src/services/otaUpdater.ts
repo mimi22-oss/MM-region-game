@@ -413,15 +413,14 @@ export class OtaCoordinator {
     if (flushSaveFn) this.flushSaveFn = flushSaveFn;
     const safety = evaluateUpdateApplySafety(this.busyContext);
     const prevSafe = this.state.safety.safeToApplyNow;
-    if (prevSafe !== safety.safeToApplyNow) {
+    if (safety.safeToApplyNow && this.state.phase === 'deferred_busy' && this.state.pendingApplyOnSafeBoundary) {
+      this.patchState({
+        phase: 'ready_to_restart',
+        pendingApplyOnSafeBoundary: false,
+        statusMessage: 'Update downloaded. Choose Restart & Apply when ready.',
+      });
+    } else if (prevSafe !== safety.safeToApplyNow) {
       this.patchState({});
-    }
-    if (
-      safety.safeToApplyNow &&
-      this.state.pendingApplyOnSafeBoundary &&
-      (this.state.phase === 'ready_to_restart' || this.state.phase === 'deferred_busy')
-    ) {
-      void this.applyUpdateNow();
     }
   }
 
@@ -925,7 +924,7 @@ export class OtaCoordinator {
       this.patchState({
         phase: 'deferred_busy',
         pendingApplyOnSafeBoundary: true,
-        statusMessage: `Waiting for safe moment (${result.safety.summaryEn})`,
+        statusMessage: `Restart is paused (${result.safety.summaryEn}). Choose Restart & Apply when ready.`,
       });
       return { applied: false, deferred: true, reason: result.safety.summaryEn };
     }

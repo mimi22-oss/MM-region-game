@@ -20,10 +20,12 @@ export function cameraPanMetresPerPixel(distance: number, verticalFov: number, v
 }
 
 /** Search only a small neighborhood; blocked destinations never move the avatar. */
+export const TELEPORT_SEARCH_RADIUS = 30;
+
 export function findTeleportSpot(x:number,z:number,canStand:(x:number,z:number)=>boolean){
  if(!Number.isFinite(x)||!Number.isFinite(z))return null;
  if(canStand(x,z))return {x,z};
- for(const radius of [2,4,8,12,20,30])for(let i=0;i<24;i++){
+ for(const radius of [2,4,8,12,20,TELEPORT_SEARCH_RADIUS])for(let i=0;i<24;i++){
   const a=i*Math.PI/12,nx=x+Math.cos(a)*radius,nz=z+Math.sin(a)*radius;
   if(canStand(nx,nz))return {x:nx,z:nz};
  }

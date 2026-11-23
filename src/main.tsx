@@ -130,7 +130,7 @@ import { Canvas } from "@react-three/fiber";
 import { MapLabelsOverlay, MapLabelsProjection } from './components/MapLabels';
 import { Town } from "./components/Town";
 import { WorldLoading } from "./components/WorldLoading";
-import type { WorldLoadingState } from "./game/regionLoading";
+import type { DestinationPart, DestinationStatus, WorldLoadingState } from "./game/regionLoading";
 
 import {
   Player,
@@ -151,7 +151,10 @@ import {
   MAP_DESTINATIONS,
   detectLocation,
   type DetectedLocation,
+  type MapDestination,
 } from "./game/locationDetect";
+import { cancelPlayerRespawn, findProtectedRespawn, getPlayerDeathState, usePlayerDeathState } from "./game/playerDeath";
+import { rideLife } from "./game/rideLife";
 import { syncAllWorldEdits } from "./game/worldEditsSync";
 import {
   getGhostEncounterInteraction,
@@ -236,6 +239,11 @@ function App() {
   const [sceneFailed, setSceneFailed] = useState(false);
   const sceneError = useCallback(() => setSceneFailed(true), []);
   const loading = sceneLoading.blocking || sceneFailed;
+  const [teleportRequest, setTeleportRequest] = useState<TeleportTarget | null>(null);
+  const teleportBusy = teleportRequest !== null;
+  const playerDeath = usePlayerDeathState();
+  const [revealedDeathGeneration, setRevealedDeathGeneration] = useState<number | null>(null);
+  const gameOverVisible = playerDeath.phase === "dead" && revealedDeathGeneration === playerDeath.generation;
   const [rideStatus,setRideStatus]=useState<RideStatus>({riding:false,near:false,kmh:0,notice:'',lives:3,crashed:false});
   const [balloonStatus,setBalloonStatus]=useState<BalloonStatus>(emptyBalloonStatus);
   const balloonUpdate=useCallback((next:BalloonStatus)=>setBalloonStatus(old=>old.riding===next.riding&&old.near===next.near&&old.altitude===next.altitude&&old.kmh===next.kmh&&old.grounded===next.grounded&&old.blocked===next.blocked&&old.autoCruise===next.autoCruise&&old.autoReturn===next.autoReturn&&old.returnDist===next.returnDist?old:next),[]);
@@ -254,12 +262,12 @@ function App() {
   };
   const mobileInput = useRef(createMobileInput());
   useEffect(() => {
-    if (!loading) return;
+    if (!loading && !teleportBusy) return;
     if (document.pointerLockElement) document.exitPointerLock();
     resetMobileInput(mobileInput.current);clearBalloonInput();
     setBraking(false);
     setAccelerating(false);
-  }, [loading]);
+  }, [loading, teleportBusy]);
   const activateMobile = useCallback(() => setSceneActive(true), []);
   const saveBounds = useMemo(
     () => ({ halfWorldSize: ward.size / 2, minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM }),
@@ -284,12 +292,13 @@ function App() {
   });
 
   const handleSaveSnapshot = useCallback(
-    (snap: { x: number; z: number; yaw: number; pitch: number; zoom: number; topDown: boolean; first: boolean }) => {
+    (snap: { x: number; z: number; yaw: number; pitch: number; zoom: number; topDown: boolean; first: boolean }, immediate = false) => {
       latestSaveRef.current = {
         ...snap,
-        areaId: currentLocIdRef.current,
+        areaId: immediate ? detectLocation(snap.x, snap.z).id : currentLocIdRef.current,
       };
-      scheduleGameSave(latestSaveRef.current, saveBounds);
+      if (immediate) flushGameSave(latestSaveRef.current, saveBounds);
+      else scheduleGameSave(latestSaveRef.current, saveBounds);
     },
     [saveBounds],
   );
@@ -493,8 +502,8 @@ function App() {
         drivingCar: carStatus.driving,
         ridingBalloon: balloonStatus.riding,
         introActive: intro.active,
-        sceneLoading: loading,
-        activeModalBlocking: subscriptionShop.isOpen,
+        sceneLoading: loading || teleportBusy,
+        activeModalBlocking: subscriptionShop.isOpen || playerDeath.phase !== "alive",
       },
       flushSaveNow,
     );
@@ -505,6 +514,8 @@ function App() {
     balloonStatus.riding,
     intro.active,
     loading,
+    teleportBusy,
+    playerDeath.phase,
     subscriptionShop.isOpen,
     flushSaveNow,
   ]);
@@ -688,6 +699,87 @@ function App() {
   const [teleportTarget, setTeleportTarget] = useState<TeleportTarget | null>(
     null,
   );
+  const teleportSequence = useRef(0);
+  const pendingTeleport = useRef<{
+    target: TeleportTarget;
+    remaining: Set<DestinationPart>;
+    landmark?: MapDestination;
+  } | null>(null);
+  const [teleportError, setTeleportError] = useState("");
+  const requestTeleport = useCallback((point: Omit<TeleportTarget, "seq">, landmark?: MapDestination) => {
+    if (loading || pendingTeleport.current || getIntroState().active ||
+      getPlayerDeathState().phase !== (point.respawn ? "respawning" : "alive") || rideLife.crashTime > 0) return;
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.z) ||
+      Math.max(Math.abs(point.x), Math.abs(point.z)) > ward.size / 2) {
+      setTeleportError("ဤနေရာသို့ Teleport လုပ်၍မရပါ။");
+      return;
+    }
+    const target = { ...point, seq: ++teleportSequence.current };
+    pendingTeleport.current = { target, remaining: new Set(["region", "kanbale", "zombieForest"]), landmark };
+    setTeleportError("");
+    setTeleportRequest(target);
+  }, [loading]);
+  const handleCameraTeleport = useCallback((x: number, z: number) => requestTeleport({ x, z }), [requestTeleport]);
+  const onDestinationStatus = useCallback<DestinationStatus>((seq, part, ready) => {
+    const pending = pendingTeleport.current;
+    if (!pending || pending.target.seq !== seq) return;
+    if (ready) {
+      pending.remaining.delete(part);
+      if (pending.remaining.size) return;
+    }
+    pendingTeleport.current = null;
+    setTeleportRequest(null);
+    if (!ready) {
+      if (pending.target.respawn) cancelPlayerRespawn();
+      setTeleportError("သွားမယ့်နေရာကို ပြင်ဆင်လို့မရပါ။ ခဏနေ ပြန်စမ်းပါ။");
+      return;
+    }
+    if (getPlayerDeathState().phase !== (pending.target.respawn ? "respawning" : "alive") || rideLife.crashTime > 0) return;
+    const spot = findTeleportSpot(pending.target.x, pending.target.z, canStand);
+    if (!spot) {
+      if (pending.target.respawn) cancelPlayerRespawn();
+      setTeleportError("ဤနေရာအနီးမှာ ဆင်းလို့ရတဲ့ မြေပြင် မတွေ့ပါ။");
+      return;
+    }
+    const loc = detectLocation(spot.x, spot.z);
+    currentLocIdRef.current = loc.id;
+    setArrivalToast(loc);
+    setTeleportTarget({ ...pending.target, ...spot });
+    const landmark = pending.landmark;
+    if (landmark) {
+      const settings = getIntroSettings();
+      const behavior = resolveIntroBehavior("travel", settings, { diagnosticDisabled: diagnosticConfig.enabled });
+      if (behavior !== "skip") {
+        setWelcomeDismissed(true);
+        startIntro({ ...landmark, ...spot }, "travel", {
+          durationSec: settings.durationSec,
+          reducedMotion: behavior === "reduced-settle",
+          originX: posRef.current.x,
+          originZ: posRef.current.z,
+        });
+      }
+    }
+  }, []);
+  useEffect(() => {
+    if (playerDeath.phase === "dead" && pendingTeleport.current && !pendingTeleport.current.target.respawn) {
+      pendingTeleport.current = null;
+      setTeleportRequest(null);
+    }
+    if (playerDeath.phase !== "respawning" || loading) return;
+    if (getIntroState().active) skipIntro();
+    const home = findProtectedRespawn(canStand) ?? ward.spawn;
+    requestTeleport({ ...home, respawn: true, yaw: ward.spawnYaw, pitch: -0.12, distance: 6 });
+  }, [loading, playerDeath.phase, requestTeleport]);
+  useEffect(() => {
+    if (!teleportRequest) return;
+    const timer = window.setTimeout(() => onDestinationStatus(teleportRequest.seq, "region", false), 30_000);
+    return () => window.clearTimeout(timer);
+  }, [onDestinationStatus, teleportRequest]);
+  useEffect(() => {
+    if (!teleportError) return;
+    const timer = window.setTimeout(() => setTeleportError(""), 4000);
+    return () => window.clearTimeout(timer);
+  }, [teleportError]);
   const [teleportMode, setTeleportMode] = useState(false);
   teleportModeRef.current = teleportMode;
   const [horseLockedNotice, setHorseLockedNotice] = useState(false);
@@ -750,29 +842,10 @@ function App() {
 
   const handleConfirmTeleport = (pin: TeleportPin) => {
     if (document.pointerLockElement) document.exitPointerLock();
-    const targetX = pin.safeX;
-    const targetZ = pin.safeZ;
-    setPos({ x: targetX, z: targetZ });
-    setTeleportTarget({
-      x: targetX,
-      z: targetZ,
-      seq: Date.now(),
-    });
+    requestTeleport({ x: pin.safeX, z: pin.safeZ });
     setTeleportMode(false);
     setTeleportPin(null);
     setTeleportScreenPos(null);
-    const loc = detectLocation(targetX, targetZ);
-    setArrivalToast(loc);
-    currentLocIdRef.current = loc.id;
-    latestSaveRef.current = {
-      ...latestSaveRef.current,
-      x: targetX,
-      z: targetZ,
-      areaId: loc.id,
-      topDown: false,
-      first: false,
-    };
-    flushSaveNow();
   };
 
   const handleCancelTeleport = () => {
@@ -831,50 +904,16 @@ function App() {
     const dest = MAP_DESTINATIONS.find((d) => d.id === id);
     if (!dest) return;
     if (document.pointerLockElement) document.exitPointerLock();
-    const originX = posRef.current.x;
-    const originZ = posRef.current.z;
-    setPos({ x: dest.x, z: dest.z });
     setMapOpen(false);
     setSettingsOpen(false);
-    setFirst(false);
-    setTopDown(false);
-    setZoom(dest.distance);
-    setTeleportTarget({
+    requestTeleport({
       x: dest.x,
       z: dest.z,
       yaw: dest.yaw,
       pitch: dest.pitch,
       distance: dest.distance,
-      seq: Date.now(),
-    });
-    const settings = getIntroSettings();
-    const behavior = resolveIntroBehavior("travel", settings, {
-      diagnosticDisabled: diagnosticConfig.enabled,
-    });
-    if (behavior !== "skip") {
-      setWelcomeDismissed(true);
-      startIntro(
-        {
-          id: dest.id,
-          label: dest.label,
-          title: dest.title,
-          subtitle: dest.subtitle,
-          x: dest.x,
-          z: dest.z,
-          yaw: dest.yaw,
-          pitch: dest.pitch,
-          distance: dest.distance,
-        },
-        "travel",
-        {
-          durationSec: settings.durationSec,
-          reducedMotion: behavior === "reduced-settle",
-          originX,
-          originZ,
-        },
-      );
-    }
-  }, []);
+    }, dest);
+  }, [requestTeleport]);
   useEffect(() => {
     const close = (e: KeyboardEvent) => {
       if (loading) return;
@@ -1047,7 +1086,7 @@ function App() {
 
   return (
     <main className={night ? "night-mode" : ""} data-time-period={environment.period}>
-      <GhostGameOver/>
+      <GhostGameOver onReveal={setRevealedDeathGeneration}/>
       <MissionVictoryDialog />
       {!loading && !intro.active && !mapOpen && !settingsOpen && (
         <RabbitCarrotCelebrationHud
@@ -1161,7 +1200,7 @@ function App() {
       <EnvironmentAudio period={environment.period} volume={environment.preferences.volume} enabled={environment.preferences.sound} active={visible&&!loading}/>
       <AudioDiagnosticsPanel />
       <GhostAiDebugOverlay />
-      <div className="game-content" inert={loading}>
+      <div className="game-content" inert={loading || teleportBusy}>
       <div
         className="scene-wrap"
         onClick={() => {
@@ -1173,7 +1212,7 @@ function App() {
       >
         <SceneError onError={sceneError}>
           <Canvas
-            frameloop={visible ? "always" : "never"}
+            frameloop={visible ? gameOverVisible ? "demand" : "always" : "never"}
             shadows={!mobileQuality && !diagnosticConfig.disableShadows}
             gl={{
               logarithmicDepthBuffer: true,
@@ -1214,7 +1253,7 @@ function App() {
           >
             <FrameBudget paused={loading || !visible} onDprChange={setRenderDpr}/>
             <RemotePlayers session={multiplayer} />
-            <Town isAuthoritativeOnline={isAuthoritativeOnline} minute={environment.minute} timeMode={environment.preferences.mode} soundEnabled={environment.preferences.sound} soundVolume={environment.preferences.volume} destination={teleportTarget} paused={loading || !visible} onLoadingChange={setSceneLoading} onSceneError={sceneError} />
+            <Town isAuthoritativeOnline={isAuthoritativeOnline} minute={environment.minute} timeMode={environment.preferences.mode} soundEnabled={environment.preferences.sound} soundVolume={environment.preferences.volume} destination={teleportRequest} onDestinationStatus={onDestinationStatus} paused={loading || teleportBusy || !visible} onLoadingChange={setSceneLoading} onSceneError={sceneError} />
             <TeleportPicker
               active={teleportMode}
               pin={teleportPin}
@@ -1226,13 +1265,14 @@ function App() {
             <CinematicIntroController />
             <Player
               minute={environment.minute}
-              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || guideOpen || intro.active || subscriptionShop.isOpen || footballView.active || !visible} loading={loading}
+              speedLimit={rideLimit} braking={braking} accelerating={accelerating} dismountRequest={dismountRequest} onRideStatus={rideUpdate} controlsBlocked={settingsOpen || loading || teleportBusy || guideOpen || intro.active || subscriptionShop.isOpen || footballView.active || !visible} loading={loading || teleportBusy}
               deferGlb={(loading && shouldPlayIntro("entry", introSettings, { diagnosticDisabled: diagnosticConfig.enabled }) && !(introSettings.respectReducedMotion && isReducedMotionPreferred())) || (intro.active && isIntroHighAltitude(intro))}
               onCarStatus={carUpdate}
               onBalloonStatus={balloonUpdate}
               character={character}
               navigationRequest={navigationRequest}
               onNavigationResult={navigationResult}
+              onRequestTeleport={handleCameraTeleport}
               mobileInput={mobileInput}
               mapOpen={mapOpen}
               topDown={topDown}
@@ -1537,7 +1577,14 @@ function App() {
           </div>
         </div>
       )}
-      {!intro.active && arrivalToast && !(classroomNotice && classroomNoticeNearPlayer) && !mapOpen && (
+      {(teleportBusy || teleportError) && (
+        <div className="location-toast" role="status" aria-live="polite">
+          <div className="location-toast-body">
+            <strong>{teleportBusy ? "သွားမယ့်နေရာကို ပြင်ဆင်နေပါတယ်။" : teleportError}</strong>
+          </div>
+        </div>
+      )}
+      {!teleportBusy && !teleportError && !intro.active && arrivalToast && !(classroomNotice && classroomNoticeNearPlayer) && !mapOpen && (
         <div
           className={
             showFootballScoreHud
