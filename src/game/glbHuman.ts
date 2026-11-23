@@ -13,6 +13,7 @@ import {
 } from 'three';
 import {clone} from 'three/examples/jsm/utils/SkeletonUtils.js';
 import {AnimationController,type MotionPlayOptions} from '../animation/core/AnimationController.ts';
+import {getPlayerDeathState} from './playerDeath.ts';
 import {createLimbFitter} from './characterRig.ts';
 import type {HorseRiderPose} from './horseAnimation.ts';
 import {driverGrip} from './carCabin.ts';
@@ -524,8 +525,9 @@ export function createGlbHuman(source:Group,options?:GlbHumanOptions){
   const rawBend=seated?0:clamp(motion.jumpBend??0,0,1);
   const rawAirborne=!seated&&motion.airborne?1:0;
   const rawJump=Math.max(rawAirborne,rawBend>.01?1:0);
+  const isPlayerDead=getPlayerDeathState().phase!=='alive';
   const specialStepDt=delta!==undefined&&delta>0?Math.min(delta,.06):0;
-  if(animController.stepBlend(seated,(absSpeed>.35&&!animController.allowsMovement)||rawJump>.5,specialStepDt)){
+  if(animController.stepBlend(seated,!isPlayerDead&&((absSpeed>.35&&!animController.allowsMovement)||rawJump>.5),specialStepDt)){
    onSpecialStoppedCb?.();
   }
   const targetMove=seated||rawAirborne>.5?0:clamp((absSpeed-.05)/.75,0,1);

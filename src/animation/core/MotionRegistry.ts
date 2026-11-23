@@ -418,6 +418,8 @@ const DEFAULT_MOTIONS: MotionDefinition[] = [
     durationSec: 8.5,
     crossFadeSec: 0.28,
     fadeOutSec: 0.45,
+    endHoldSec: 0.65,
+    endPose: 'prone',
   }),
   makeActionDef({
     id: 'defeat_03',
@@ -509,9 +511,10 @@ const DEFAULT_MOTIONS: MotionDefinition[] = [
     allowRetrigger: true,
     crossFadeSec: 0.12,
     fadeOutSec: 0.35,
-    endHoldSec: 0,
+    endHoldSec: 0.45,
     endPose: 'prone',
     autoTriggeredOnly: true,
+    allowWhileMoving: true,
   }),
 
   // Interactions: Vehicle Waiting (auto-controlled)

@@ -6,12 +6,12 @@ type TreeProps = { t: TreeData; i?: number; variant?: 'large' | 'canopy' | 'farm
 
 const CANOPY_BRANCH_ROT = Math.atan2(9, 4);
 
-/**
- * Zero-Duplication Tree component:
- * Binds strictly to the Singleton Memory Reference Cache (`getTreeAssetCache()`) so
- * every village, ward, and preview tree shares ONE single GPU geometry & material
- * reference per part instead of duplicating geometries/materials per tree instance.
- */
+const LARGE_SIDE_CROWNS = [
+  { id: 'left', position: [-4.3, 8.8, 0.45], scale: [0.71, 0.72, 0.73] },
+  { id: 'right', position: [4.15, 10.3, 0.5], scale: [0.76, 0.74, 0.74] },
+  { id: 'front', position: [-0.85, 8.55, 2.15], scale: [0.49, 0.53, 0.52] },
+] as const;
+
 export function Tree({ t, i = 0, variant = 'large' }: TreeProps) {
   const cache = getTreeAssetCache();
   const rScale = Math.max(0.25, t.radius);
@@ -20,14 +20,14 @@ export function Tree({ t, i = 0, variant = 'large' }: TreeProps) {
     return (
       <group key={t.id} position={[t.x, 0, t.z]}>
         <mesh
-          position={[0, 5.75, 0]}
+          position={[0, 6.9, 0]}
           scale={[rScale, 1, rScale]}
           geometry={cache.farmTrunkGeo}
           material={cache.barkFarmMat}
           castShadow
         />
         <mesh
-          position={[0, 14, 0]}
+          position={[0, 13.35, 0]}
           geometry={cache.farmCanopyGeo}
           material={cache.foliageFarmMat}
           castShadow
@@ -64,8 +64,8 @@ export function Tree({ t, i = 0, variant = 'large' }: TreeProps) {
           castShadow
         />
         <mesh
-          position={[dir * 4 * Math.cos(angle), 9.3, -dir * 4 * Math.sin(angle)]}
-          scale={[1, 0.7, 1]}
+          position={[dir * 2.45 * Math.cos(angle), 9.6, -dir * 2.45 * Math.sin(angle)]}
+          scale={[0.8, 0.68, 0.8]}
           geometry={cache.canopyCrownSecondaryGeo}
           material={cache.foliageCanopySecondaryMat}
           castShadow
@@ -86,24 +86,25 @@ export function Tree({ t, i = 0, variant = 'large' }: TreeProps) {
       {[-1, 1].map((side) => (
         <mesh
           key={side}
-          position={[side * 1.8, 10, 0]}
-          rotation={[0, 0, -side * 0.8]}
+          position={[side * 2.0, side < 0 ? 7.6 : 9.1, 0.25]}
+          rotation={[0, 0, -side * 0.85]}
           geometry={cache.largeBranchGeo}
           material={cache.barkLargeMat}
           castShadow
         />
       ))}
       <mesh
-        position={[0, 13, 0]}
-        scale={[1, 0.8, 1]}
+        position={[0.25, 13.65, -0.2]}
+        scale={[0.89, 0.99, 0.88]}
         geometry={cache.largeCrownMainGeo}
         material={i % 2 ? cache.foliageLargeOddMat : cache.foliageLargeEvenMat}
         castShadow
       />
-      {[-1, 1].map((side) => (
+      {LARGE_SIDE_CROWNS.map(({ id, position, scale }) => (
         <mesh
-          key={side}
-          position={[side * 3.5, 11.6, 1]}
+          key={id}
+          position={position}
+          scale={scale}
           geometry={cache.largeCrownSideGeo}
           material={cache.foliageLargeSideMat}
           castShadow

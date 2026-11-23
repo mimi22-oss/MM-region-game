@@ -608,6 +608,22 @@ export const Player = memo(function Player({
    playerCombat.context(getActiveMissionWeapon()==='ghost-sword',false,false,true);
    s.keys.clear();s.jumpRequested=false;
    if(mobileInput?.current)resetMobileInput(mobileInput.current);
+   // Zero locomotion inputs so residual run speed never interrupts the death/knockback clip
+   characterMotion.current.speed=0;
+   characterMotion.current.airborne=false;
+   characterMotion.current.jumpBend=0;
+   characterMotion.current.jumpVelocity=0;
+   characterMotion.current.stepLift=0;
+   // Ensure a fallen death animation is active if no death/knockback clip is currently playing
+   const activeDeathAction=getSpecialActionState().activeActionId;
+   const hasDeathClip=
+    activeDeathAction==='flying-back-away'||
+    activeDeathAction==='fall'||
+    activeDeathAction==='defeat_02'||
+    activeDeathAction==='defeat_03';
+   if(!hasDeathClip&&character==='cartoon'&&shouldUseGlbCharacter(appearance.human.preset)){
+    playSpecialAction('fall',{loop:false,force:true});
+   }
    let deadLiftY=0;
    if(isPlayerKnockbackActive()){
     const kbStep=stepPlayerKnockback(dt,s,clear);
@@ -616,9 +632,10 @@ export const Player = memo(function Player({
     s.camX=s.x;s.camZ=s.z;
    }
    const deadGroundY=height(s.x,s.z)+0.012;
+   const useProceduralProneFall=!(character==='cartoon'&&shouldUseGlbCharacter(appearance.human.preset));
    if(avatar.current){
-    avatar.current.position.set(s.x,deadGroundY+deadLiftY,s.z);
-    avatar.current.rotation.set(0,s.bodyYaw,0,'YXZ');
+    avatar.current.position.set(s.x,deadGroundY+deadLiftY+(useProceduralProneFall?0.24:0),s.z);
+    avatar.current.rotation.set(useProceduralProneFall?Math.PI/2:0,s.bodyYaw,0,'YXZ');
     avatar.current.visible=true;
    }
    if(!isPlayerKnockbackCameraActive()){

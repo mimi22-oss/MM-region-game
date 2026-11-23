@@ -58,6 +58,7 @@ export class AnimationController {
   // Bounded scratch tracking of previous crossfade source clips so finished sources are uncached cleanly
   private readonly retiredClips = new Set<AnimationClip>();
   private crossFadeRemainingSec = 0;
+  private activeAnimatedBoneNames = new Set<string>();
 
   // Pre-allocated scratch vectors (zero per-frame heap allocations)
   private readonly hipsActionPos = new Vector3();
@@ -225,6 +226,12 @@ export class AnimationController {
     this.activeAllowWhileMoving = opts?.allowWhileMoving ?? false;
     this.activeSpeed = nextSpeed;
     this.targetActive = true;
+    this.activeAnimatedBoneNames.clear();
+    for (let i = 0; i < clip.tracks.length; i++) {
+      const trackName = clip.tracks[i].name;
+      const dot = trackName.indexOf('.');
+      if (dot > 0) this.activeAnimatedBoneNames.add(trackName.slice(0, dot));
+    }
   }
 
   fadeIn(clip: AnimationClip, durationSec = 0.28, opts?: Omit<MotionPlayOptions, 'crossFadeSec'>): void {
@@ -336,16 +343,20 @@ export class AnimationController {
     const isBlending = this.blendWeight < 0.999;
     const preserveWalkingLegs =
       this.activeAllowWhileMoving && locomotionMoveWeight > 0.01;
+    const hasAnimatedSubset = this.activeAnimatedBoneNames.size > 0;
 
-    if (isBlending || preserveWalkingLegs) {
-      for (let i = 0; i < restList.length; i++) {
-        procQuats[i].copy(restList[i].bone.quaternion);
-      }
-      procPlacementPos.copy(placementObj.position);
+    // Always capture the relaxed procedural pose first so bones NOT targeted by a partial clip
+    // (e.g. defeat_02/defeat_03/fall) keep natural lowered arms instead of reverting to bind T-pose!
+    for (let i = 0; i < restList.length; i++) {
+      procQuats[i].copy(restList[i].bone.quaternion);
     }
+    procPlacementPos.copy(placementObj.position);
 
     for (let i = 0; i < restList.length; i++) {
-      restList[i].bone.quaternion.copy(restList[i].q);
+      const entry = restList[i];
+      if (!hasAnimatedSubset || this.activeAnimatedBoneNames.has(entry.bone.name)) {
+        entry.bone.quaternion.copy(entry.q);
+      }
     }
     hipsBone.position.copy(hipsRestPos);
 

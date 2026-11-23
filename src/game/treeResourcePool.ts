@@ -1,10 +1,8 @@
 import {
+  BufferGeometry,
   Color,
-  ConeGeometry,
-  CylinderGeometry,
-  DodecahedronGeometry,
+  DoubleSide,
   Euler,
-  IcosahedronGeometry,
   InstancedMesh,
   Matrix4,
   MeshLambertMaterial,
@@ -13,6 +11,14 @@ import {
   Vector3,
 } from 'three';
 import { mobileQuality } from './sceneBudget.ts';
+import {
+  buildLeafBladeClusterGeometry,
+  buildStylizedBranchGeometry,
+  buildStylizedLeafClusterGeometry,
+  buildStylizedTieredCanopyGeometry,
+  buildStylizedTrunkGeometry,
+  createStylizedBarkTexture,
+} from './stylizedTreeGeometry.ts';
 import type { MountainGrassTuftPlot, MountainTreePlot } from './weipulaClimb.ts';
 
 /**
@@ -26,23 +32,23 @@ import type { MountainGrassTuftPlot, MountainTreePlot } from './weipulaClimb.ts'
 export interface TreeAssetCache {
   readonly id: string;
   readonly createdAt: number;
-  // Village / Ward / Zombie Forest shared geometries
-  readonly largeTrunkGeo: CylinderGeometry;
-  readonly largeBranchGeo: CylinderGeometry;
-  readonly largeCrownMainGeo: IcosahedronGeometry;
-  readonly largeCrownSideGeo: IcosahedronGeometry;
-  readonly canopyTrunkGeo: CylinderGeometry;
-  readonly canopyBranchGeo: CylinderGeometry;
-  readonly canopyCrownPrimaryGeo: IcosahedronGeometry;
-  readonly canopyCrownSecondaryGeo: IcosahedronGeometry;
-  readonly farmTrunkGeo: CylinderGeometry;
-  readonly farmCanopyGeo: IcosahedronGeometry;
-  // Mountain Forest shared geometries
-  readonly mountainTrunkGeo: CylinderGeometry;
-  readonly mountainPineLowGeo: ConeGeometry;
-  readonly mountainPineTopGeo: ConeGeometry;
-  readonly mountainBroadCanopyGeo: DodecahedronGeometry;
-  readonly mountainGrassTuftGeo: DodecahedronGeometry;
+  // Village / Ward / Zombie Forest shared stylized sculpted geometries
+  readonly largeTrunkGeo: BufferGeometry;
+  readonly largeBranchGeo: BufferGeometry;
+  readonly largeCrownMainGeo: BufferGeometry;
+  readonly largeCrownSideGeo: BufferGeometry;
+  readonly canopyTrunkGeo: BufferGeometry;
+  readonly canopyBranchGeo: BufferGeometry;
+  readonly canopyCrownPrimaryGeo: BufferGeometry;
+  readonly canopyCrownSecondaryGeo: BufferGeometry;
+  readonly farmTrunkGeo: BufferGeometry;
+  readonly farmCanopyGeo: BufferGeometry;
+  // Mountain Forest shared stylized sculpted geometries
+  readonly mountainTrunkGeo: BufferGeometry;
+  readonly mountainPineLowGeo: BufferGeometry;
+  readonly mountainPineTopGeo: BufferGeometry;
+  readonly mountainBroadCanopyGeo: BufferGeometry;
+  readonly mountainGrassTuftGeo: BufferGeometry;
   // Shared materials (by reference — never recreated per tree)
   readonly barkLargeMat: MeshStandardMaterial;
   readonly barkCanopyMat: MeshStandardMaterial;
@@ -60,54 +66,154 @@ export interface TreeAssetCache {
 }
 
 let singletonTreeCache: TreeAssetCache | null = null;
+let singletonBarkTexture: ReturnType<typeof createStylizedBarkTexture> | null = null;
 let cacheCreationCount = 0;
+
+function foliageMaterial(color: string): MeshStandardMaterial {
+  return new MeshStandardMaterial({ color, vertexColors: true, roughness: 0.9, side: DoubleSide });
+}
 
 export function getTreeAssetCache(): TreeAssetCache {
   if (singletonTreeCache) return singletonTreeCache;
 
-  const icosaDetail = mobileQuality ? 0 : 1;
-  const coneSegs = mobileQuality ? 5 : 6;
+  const lowPoly = mobileQuality;
   cacheCreationCount += 1;
+  singletonBarkTexture = createStylizedBarkTexture();
 
   singletonTreeCache = Object.freeze({
     id: `tree-singleton-cache-${cacheCreationCount}`,
     createdAt: Date.now(),
 
-    // Village / Ward / Zombie Forest unit-radius trunk & foliage geometries
-    largeTrunkGeo: new CylinderGeometry(0.55, 1.0, 11, 10),
-    largeBranchGeo: new CylinderGeometry(0.2, 0.45, 5, 7),
-    largeCrownMainGeo: new IcosahedronGeometry(6.5, icosaDetail),
-    largeCrownSideGeo: new IcosahedronGeometry(3.8, icosaDetail),
+    // Village / Ward / Zombie Forest sculpted trunks (with 5 flared buttress roots + curved limbs) & layered leafy tufts
+    largeTrunkGeo: buildStylizedTrunkGeometry({
+      height: 11,
+      bottomRadius: 1.0,
+      topRadius: 0.56,
+      rootSpread: 2.35,
+      radialSegs: lowPoly ? 7 : 9,
+      heightSegs: lowPoly ? 4 : 6,
+      branches: [
+        { startYFrac: 0.65, angleRad: Math.PI * 0.66, reach: 2.4, rise: 1.7, radius: 0.38 },
+        { startYFrac: 0.78, angleRad: Math.PI * 1.18, reach: 2.1, rise: 3.1, radius: 0.39 },
+      ],
+    }),
+    largeBranchGeo: buildStylizedBranchGeometry(0.22, 0.46, 5, lowPoly ? 6 : 7),
+    largeCrownMainGeo: buildLeafBladeClusterGeometry({
+      radius: 6.2,
+      heightScale: 0.88,
+      lobes: lowPoly ? 26 : 47,
+      seed: 101,
+      lowPoly,
+    }),
+    largeCrownSideGeo: buildLeafBladeClusterGeometry({
+      radius: 3.8,
+      heightScale: 0.82,
+      lobes: lowPoly ? 19 : 34,
+      seed: 202,
+      lowPoly,
+    }),
 
-    canopyTrunkGeo: new CylinderGeometry(0.32, 1.0, 8, 8),
-    canopyBranchGeo: new CylinderGeometry(0.18, 0.35, Math.hypot(9, 4), 7),
-    canopyCrownPrimaryGeo: new IcosahedronGeometry(6.3, icosaDetail),
-    canopyCrownSecondaryGeo: new IcosahedronGeometry(5.8, icosaDetail),
+    canopyTrunkGeo: buildStylizedTrunkGeometry({
+      height: 8,
+      bottomRadius: 0.92,
+      topRadius: 0.42,
+      rootSpread: 2.1,
+      radialSegs: lowPoly ? 7 : 9,
+      heightSegs: lowPoly ? 4 : 5,
+    }),
+    canopyBranchGeo: buildStylizedBranchGeometry(0.2, 0.38, Math.hypot(9, 4), lowPoly ? 6 : 7),
+    canopyCrownPrimaryGeo: buildLeafBladeClusterGeometry({
+      radius: 6.0,
+      heightScale: 0.82,
+      lobes: lowPoly ? 24 : 43,
+      seed: 303,
+      lowPoly,
+    }),
+    canopyCrownSecondaryGeo: buildLeafBladeClusterGeometry({
+      radius: 5.3,
+      heightScale: 0.84,
+      lobes: lowPoly ? 19 : 34,
+      seed: 404,
+      lowPoly,
+    }),
 
-    farmTrunkGeo: new CylinderGeometry(0.3, 1.0, 11.5, 8),
-    farmCanopyGeo: new IcosahedronGeometry(3.6, icosaDetail),
+    farmTrunkGeo: buildStylizedTrunkGeometry({
+      height: 13.8,
+      bottomRadius: 0.85,
+      topRadius: 0.38,
+      rootSpread: 1.95,
+      radialSegs: lowPoly ? 7 : 8,
+      heightSegs: lowPoly ? 4 : 5,
+      branches: [
+        { startYFrac: 0.56, angleRad: Math.PI * 0.95, reach: 4.8, rise: 2.7, radius: 0.34 },
+        { startYFrac: 0.62, angleRad: 0.12, reach: 4.6, rise: 2.9, radius: 0.31 },
+        { startYFrac: 0.61, angleRad: Math.PI * 0.58, reach: 2.9, rise: 2.1, radius: 0.26 },
+      ],
+    }),
+    farmCanopyGeo: buildStylizedTieredCanopyGeometry({
+      scale: 1.42,
+      lowPoly,
+      seed: 505,
+      leafBlades: true,
+    }),
 
-    // Mountain Forest geometries
-    mountainTrunkGeo: new CylinderGeometry(0.28, 0.56, 8.2, 6),
-    mountainPineLowGeo: new ConeGeometry(3.9, 6.4, coneSegs),
-    mountainPineTopGeo: new ConeGeometry(2.7, 5.4, coneSegs),
-    mountainBroadCanopyGeo: new DodecahedronGeometry(4.4, 0),
-    mountainGrassTuftGeo: new DodecahedronGeometry(1, 0),
+    // Mountain Forest sculpted flared-root trunks & lush layered stylized leaf canopies
+    mountainTrunkGeo: buildStylizedTrunkGeometry({
+      height: 8.2,
+      bottomRadius: 0.72,
+      topRadius: 0.36,
+      rootSpread: 1.72,
+      radialSegs: lowPoly ? 6 : 8,
+      heightSegs: lowPoly ? 4 : 5,
+      branches: [
+        { startYFrac: 0.45, angleRad: Math.PI * 0.92, reach: 2.35, rise: 0.85, radius: 0.26 },
+        { startYFrac: 0.58, angleRad: -0.15, reach: 2.2, rise: 1.2, radius: 0.24 },
+        { startYFrac: 0.72, angleRad: Math.PI * 0.72, reach: 1.45, rise: 1.15, radius: 0.22 },
+      ],
+    }),
+    mountainPineLowGeo: buildStylizedTieredCanopyGeometry({
+      scale: 1.05,
+      lowPoly,
+      seed: 606,
+      includeTopCrown: false,
+      includeLowerTufts: true,
+    }),
+    mountainPineTopGeo: buildStylizedTieredCanopyGeometry({
+      scale: 1.05,
+      lowPoly,
+      seed: 707,
+      includeTopCrown: true,
+      includeLowerTufts: false,
+    }),
+    mountainBroadCanopyGeo: buildStylizedTieredCanopyGeometry({
+      scale: 1.22,
+      lowPoly,
+      seed: 808,
+      includeTopCrown: true,
+      includeLowerTufts: true,
+    }),
+    mountainGrassTuftGeo: buildStylizedLeafClusterGeometry({
+      radius: 1.0,
+      heightScale: 0.78,
+      lobes: lowPoly ? 6 : 9,
+      seed: 909,
+      lowPoly: true,
+    }),
 
-    // Shared materials (strictly singletons)
-    barkLargeMat: new MeshStandardMaterial({ color: '#71543b', roughness: 1 }),
-    barkCanopyMat: new MeshStandardMaterial({ color: '#796043' }),
-    barkFarmMat: new MeshStandardMaterial({ color: '#795d3b' }),
-    foliageLargeEvenMat: new MeshStandardMaterial({ color: '#567e47', roughness: 1 }),
-    foliageLargeOddMat: new MeshStandardMaterial({ color: '#486e40', roughness: 1 }),
-    foliageLargeSideMat: new MeshStandardMaterial({ color: '#62874b', roughness: 1 }),
-    foliageCanopyEvenMat: new MeshStandardMaterial({ color: '#628850' }),
-    foliageCanopyOddMat: new MeshStandardMaterial({ color: '#497954' }),
-    foliageCanopySecondaryMat: new MeshStandardMaterial({ color: '#759555' }),
-    foliageFarmMat: new MeshStandardMaterial({ color: '#547b48' }),
-    instancedCanopyStandardMat: new MeshStandardMaterial({ color: '#ffffff', roughness: 1 }),
-    mountainBarkMat: new MeshLambertMaterial({ color: '#5e432c' }),
-    mountainFoliageInstancedMat: new MeshLambertMaterial({ color: '#ffffff' }),
+    // Shared painterly materials (vertexColors: true drives the golden-brown bark & lime->emerald->forest foliage!)
+    barkLargeMat: new MeshStandardMaterial({ color: '#ffffff', map: singletonBarkTexture, vertexColors: true, roughness: 0.94 }),
+    barkCanopyMat: new MeshStandardMaterial({ color: '#fbf4ea', map: singletonBarkTexture, vertexColors: true, roughness: 0.94 }),
+    barkFarmMat: new MeshStandardMaterial({ color: '#f7efe3', map: singletonBarkTexture, vertexColors: true, roughness: 0.94 }),
+    foliageLargeEvenMat: foliageMaterial('#ffffff'),
+    foliageLargeOddMat: foliageMaterial('#ebf8e4'),
+    foliageLargeSideMat: foliageMaterial('#f7ffec'),
+    foliageCanopyEvenMat: foliageMaterial('#ffffff'),
+    foliageCanopyOddMat: foliageMaterial('#e6f5e1'),
+    foliageCanopySecondaryMat: foliageMaterial('#f8ffeb'),
+    foliageFarmMat: foliageMaterial('#ffffff'),
+    instancedCanopyStandardMat: foliageMaterial('#ffffff'),
+    mountainBarkMat: new MeshLambertMaterial({ color: '#ffffff', map: singletonBarkTexture, vertexColors: true }),
+    mountainFoliageInstancedMat: new MeshLambertMaterial({ color: '#ffffff', vertexColors: true }),
   });
 
   return singletonTreeCache;
@@ -155,6 +261,10 @@ export function disposeTreeAssetCache(): void {
   c.instancedCanopyStandardMat.dispose();
   c.mountainBarkMat.dispose();
   c.mountainFoliageInstancedMat.dispose();
+  if (singletonBarkTexture) {
+    singletonBarkTexture.dispose();
+    singletonBarkTexture = null;
+  }
 }
 
 /**
@@ -321,10 +431,11 @@ export const DEFAULT_MOUNTAIN_FOREST_POOL_CONFIG: MountainForestPoolConfig = mob
   ? { pineCapacity: 240, broadCapacity: 160, grassCapacity: 180, syncMoveThreshold: 32 }
   : { pineCapacity: 520, broadCapacity: 320, grassCapacity: 360, syncMoveThreshold: 28 };
 
-const PINE_GREENS = ['#2a7d3b', '#348f44', '#236e34', '#3fa04d', '#2e843f'] as const;
-const TOP_GREENS = ['#43a84e', '#4fb557', '#389643', '#59be5d', '#47ad52'] as const;
-const BROAD_GREENS = ['#3a9142', '#47a34b', '#2e7e38', '#52b053', '#3e9946'] as const;
-const GRASS_GREENS = ['#54a842', '#64ba4c', '#48993b', '#72c456', '#4ea340'] as const;
+// Gentle bright tint multipliers so baked lime->emerald->deep-forest vertex colors shine vividly!
+const PINE_GREENS = ['#ffffff', '#f3ffe9', '#e8f9df', '#fcffe8', '#edf8e3'] as const;
+const TOP_GREENS = ['#ffffff', '#f7ffec', '#eefbe4', '#fdffea', '#f2fde8'] as const;
+const BROAD_GREENS = ['#ffffff', '#f4ffea', '#e8f7df', '#fbffe8', '#effae5'] as const;
+const GRASS_GREENS = ['#ffffff', '#f4ffea', '#e8f9df', '#fbffe9', '#eefbe4'] as const;
 
 // Pre-allocated zero-GC scratch math objects shared across all pool sync passes
 const scratchMat = new Matrix4();
@@ -486,14 +597,14 @@ export class MountainForestFixedPool {
         scratchQuat.setFromAxisAngle(scratchYAxis, (srcIdx * 2.13) % (Math.PI * 2));
         scratchScale.set(t.scale, t.scale, t.scale);
 
-        scratchMat.compose(scratchPos.set(t.x, t.y + 4.0 * t.scale, t.z), scratchQuat, scratchScale);
+        scratchMat.compose(scratchPos.set(t.x, t.y + 4.1 * t.scale, t.z), scratchQuat, scratchScale);
         this.pineTrunkMesh.setMatrixAt(slot.index, scratchMat);
 
-        scratchMat.compose(scratchPos.set(t.x, t.y + 7.2 * t.scale, t.z), scratchQuat, scratchScale);
+        scratchMat.compose(scratchPos.set(t.x, t.y + 6.9 * t.scale, t.z), scratchQuat, scratchScale);
         this.pineLowMesh.setMatrixAt(slot.index, scratchMat);
         this.pineLowMesh.setColorAt(slot.index, scratchColor.set(PINE_GREENS[t.tintIndex % PINE_GREENS.length]));
 
-        scratchMat.compose(scratchPos.set(t.x, t.y + 11.4 * t.scale, t.z), scratchQuat, scratchScale);
+        scratchMat.compose(scratchPos.set(t.x, t.y + 8.1 * t.scale, t.z), scratchQuat, scratchScale);
         this.pineTopMesh.setMatrixAt(slot.index, scratchMat);
         this.pineTopMesh.setColorAt(slot.index, scratchColor.set(TOP_GREENS[t.tintIndex % TOP_GREENS.length]));
       },
@@ -532,16 +643,16 @@ export class MountainForestFixedPool {
         scratchQuat.setFromAxisAngle(scratchYAxis, (srcIdx * 1.91) % (Math.PI * 2));
 
         scratchMat.compose(
-          scratchPos.set(t.x, t.y + 4.0 * t.scale, t.z),
+          scratchPos.set(t.x, t.y + 4.1 * t.scale, t.z),
           scratchQuat,
           scratchScale.set(t.scale, t.scale, t.scale),
         );
         this.broadTrunkMesh.setMatrixAt(slot.index, scratchMat);
 
         scratchMat.compose(
-          scratchPos.set(t.x, t.y + 8.4 * t.scale, t.z),
+          scratchPos.set(t.x, t.y + 7.4 * t.scale, t.z),
           scratchQuat,
-          scratchScale.set(t.scale * 1.15, t.scale * 0.92, t.scale * 1.15),
+          scratchScale.set(t.scale * 1.08, t.scale * 1.02, t.scale * 1.08),
         );
         this.broadCanopyMesh.setMatrixAt(slot.index, scratchMat);
         this.broadCanopyMesh.setColorAt(slot.index, scratchColor.set(BROAD_GREENS[t.tintIndex % BROAD_GREENS.length]));

@@ -55,7 +55,7 @@ export const DEFAULT_HIGHLAND_PLATEAU_POOL_CONFIG: HighlandPlateauPoolConfig = m
 const WALL_TINTS = ['#7a5635', '#66462c', '#8f6944', '#5c3c24', '#9e7c58'] as const;
 const ROOF_TINTS = ['#823c2d', '#3e5e46', '#5c493b', '#9a4332'] as const;
 const ROCK_TINTS = ['#a79b86', '#918776', '#b8ab93', '#7f786b'] as const;
-const BUSH_TINTS = ['#4d9c3d', '#62b346', '#3d8635', '#76bf4e', '#56a640'] as const;
+const BUSH_TINTS = ['#ffffff', '#f5ffea', '#e8f7df', '#fcffea', '#effae4'] as const;
 
 const scratchMat = new Matrix4();
 const scratchZeroMat = new Matrix4().makeScale(0, 0, 0);

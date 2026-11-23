@@ -57,8 +57,8 @@ function ZombieForestTile({ tile, data, projection }: MapTileViewProps) {
       const radius = Number(p.radius ?? 0.95);
       const yaw = Number(p.yaw ?? 0);
       const yScale = BASE_Y_SCALE * Number(p.scaleY ?? 1);
-      const mainColor = String(p.color ?? (i % 2 ? '#486e40' : '#567e47'));
-      const sideColor = String(p.sideColor ?? '#62874b');
+      const mainColor = i % 2 ? '#eefae4' : '#ffffff';
+      const sideColor = '#f7ffec';
 
       trees.push({
         id: String(f.id ?? `tharsi-zombie-forest-${tile.id}-${i}`),
@@ -77,24 +77,24 @@ function ZombieForestTile({ tile, data, projection }: MapTileViewProps) {
       finalM.multiplyMatrices(parentM, localM);
       trunkMesh.setMatrixAt(i, finalM);
 
-      // 2. Two angled upper branches at local (±1.8, 10, 0), rotZ = ∓0.8
+      // 2. Two staggered angled branches framing the sculpted trunk
       for (const side of [-1, 1]) {
-        quat.setFromEuler(euler.set(0, 0, -side * 0.8));
-        localM.compose(pos.set(side * 1.8, 10, 0), quat, scale.set(1, 1, 1));
+        quat.setFromEuler(euler.set(0, 0, -side * 0.85));
+        localM.compose(pos.set(side * 2.0, side < 0 ? 7.6 : 9.1, 0.25), quat, scale.set(1, 1, 1));
         finalM.multiplyMatrices(parentM, localM);
         branchMesh.setMatrixAt(branchIdx++, finalM);
       }
 
-      // 3. Main canopy at local (0, 13, 0), scale (1, 0.8, 1)
+      // 3. Billowing stylized main canopy crown at local (0.35, 13.4, -0.15)
       quat.identity();
-      localM.compose(pos.set(0, 13, 0), quat, scale.set(1, 0.8, 1));
+      localM.compose(pos.set(0.35, 13.4, -0.15), quat, scale.set(1.02, 0.92, 1.0));
       finalM.multiplyMatrices(parentM, localM);
       crownMesh.setMatrixAt(i, finalM);
       crownMesh.setColorAt(i, color.set(mainColor));
 
-      // 4. Two side canopies at local (±3.5, 11.6, 1)
+      // 4. Staggered side branch foliage tufts (lower-left & mid-right)
       for (const side of [-1, 1]) {
-        localM.makeTranslation(side * 3.5, 11.6, 1);
+        localM.makeTranslation(side < 0 ? -4.2 : 3.8, side < 0 ? 8.8 : 10.2, 0.75);
         finalM.multiplyMatrices(parentM, localM);
         sideMesh.setMatrixAt(sideIdx, finalM);
         sideMesh.setColorAt(sideIdx++, color.set(sideColor));

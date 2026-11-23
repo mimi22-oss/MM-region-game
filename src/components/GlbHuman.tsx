@@ -6,6 +6,7 @@ import {effectiveHumanHeightScale,type HumanAppearance} from '../data/appearance
 import {createGlbHuman} from '../game/glbHuman';
 import {COMBAT_MODEL_URLS} from '../game/combat/AttackDefinitions';
 import {getQualityPreset,useQualityPreset} from '../game/qualityPreset';
+import {getPlayerDeathState} from '../game/playerDeath';
 import type {HorseRiderPose} from '../game/horseAnimation';
 import {
  getSpecialAction,
@@ -104,7 +105,17 @@ function LoadedHuman({model,preset,appearance,motion,riding=false,driving,horseP
  useEffect(()=>{instance?.setCastShadow(quality.characterCastShadow);},[instance,quality.characterCastShadow]);
  useEffect(()=>{
   if(!instance)return;
-  instance.onSpecialFinished(()=>stopSpecialAction());
+  // Preload death/knockback clips once on mount so dying never shows a loading-delay frame
+  void loadSpecialActionClipForRig('flying-back-away',preset,model.scene).catch(()=>{});
+  void loadSpecialActionClipForRig('fall',preset,model.scene).catch(()=>{});
+ },[instance,preset,model]);
+ useEffect(()=>{
+  if(!instance)return;
+  instance.onSpecialFinished(()=>{
+   // Never clear or fade out the fallen death pose while the player is dead (prevents popping up / T-pose)
+   if(getPlayerDeathState().phase!=='alive')return;
+   stopSpecialAction();
+  });
   instance.onSpecialStopped(()=>notifySpecialActionFadeOutComplete());
   return ()=>{
    instance.onSpecialFinished(null);
@@ -131,14 +142,16 @@ function LoadedHuman({model,preset,appearance,motion,riding=false,driving,horseP
     const syncTimeSec=def?.supportsGroupSync
      ? getSpecialActionSyncPhase(special.startedAtMs,clip.duration,loop)
      : 0;
+    const isPlayerDead=getPlayerDeathState().phase!=='alive';
     instance.setSpecialClip(clip,{
      loop,
      syncTimeSec,
      speed,
      crossFadeSec:def?.crossFadeSec,
      fadeOutSec:def?.fadeOutSec,
-     endHoldSec:def?.endHoldSec,
-     allowWhileMoving:def?.allowWhileMoving,
+     // While dead, clamp indefinitely on the final fallen frame so the character stays on the ground until respawn
+     endHoldSec:isPlayerDead?999:def?.endHoldSec,
+     allowWhileMoving:isPlayerDead?true:def?.allowWhileMoving,
      restart:true,
     });
     markSpecialActionPlaying(activeSpecialId,loadGen);
