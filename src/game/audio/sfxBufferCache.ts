@@ -21,7 +21,7 @@ export const WILDLIFE_TIGER_AUDIO_FILES = [
 ] as const;
 
 export const WILDLIFE_DEER_BABY_AUDIO_FILES = [
-  'assets/audio/wildlife/deer/l3hrja-deer-baby-calling-for-mama-233035.mta',
+  'assets/audio/wildlife/deer/l3hrja-deer-baby-calling-for-mama-233035-call.mta',
 ] as const;
 
 export const WILDLIFE_DEER_STAG_AUDIO_FILES = [
@@ -108,7 +108,7 @@ const rawBytesCache = new Map<string, ArrayBuffer>();
 const rawInFlight = new Map<string, Promise<ArrayBuffer | null>>();
 const failedRetryUntil = new Map<string, number>();
 
-const RETRY_COOLDOWN_MS = 15_000;
+export const SFX_RETRY_COOLDOWN_MS = 15_000;
 
 export function resolvePublicAudioUrl(relativePath: string): string {
   const clean = relativePath.replace(/^\/+/, '');
@@ -163,7 +163,7 @@ async function fetchAudioBytes(relativePath: string): Promise<ArrayBuffer | null
       failedRetryUntil.delete(relativePath);
       return bytes;
     } catch {
-      failedRetryUntil.set(relativePath, Date.now() + RETRY_COOLDOWN_MS);
+      failedRetryUntil.set(relativePath, Date.now() + SFX_RETRY_COOLDOWN_MS);
       return null;
     } finally {
       rawInFlight.delete(relativePath);
@@ -189,6 +189,7 @@ export async function loadSfxBuffer(
   const inFlight = getContextInFlight(ctx);
   const pending = inFlight.get(relativePath);
   if (pending) return pending;
+  if (Date.now() < (failedRetryUntil.get(relativePath) ?? 0)) return null;
 
   const promise = (async () => {
     try {
@@ -197,11 +198,11 @@ export async function loadSfxBuffer(
       // Unwrap MTGA container into a fresh ArrayBuffer for decodeAudioData()
       const unwrapped = unwrapGameAudioContainer(bytes);
       const decoded = await ctx.decodeAudioData(unwrapped);
-      if (!decoded || decoded.length === 0) return null;
+      if (!decoded || decoded.length === 0) throw new Error('Empty decoded audio');
       map.set(relativePath, decoded);
       return decoded;
     } catch {
-      failedRetryUntil.set(relativePath, Date.now() + RETRY_COOLDOWN_MS);
+      failedRetryUntil.set(relativePath, Date.now() + SFX_RETRY_COOLDOWN_MS);
       return null;
     } finally {
       inFlight.delete(relativePath);

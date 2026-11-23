@@ -1,7 +1,6 @@
 import { memo, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { MeshStandardMaterial } from 'three';
-import { toWorld } from '../data/ward';
 import {
   RABBIT_COAT_COLORS,
   getMountainRabbitAssetCache,
@@ -67,13 +66,7 @@ export const MountainRabbits = memo(function MountainRabbits({
     return new MountainRabbitFixedPool(list);
   }, [peaks, spawns]);
 
-  useEffect(() => {
-    const initial = toWorld(-580, 260);
-    pool.syncToFocus(initial.x, initial.z, true);
-    return () => {
-      pool.disposePool();
-    };
-  }, [pool]);
+  useEffect(() => () => pool.disposePool(), [pool]);
 
   useFrame(({ camera }, delta) => {
     const focus = (camera.userData.viewFocus as { x: number; z: number } | undefined) ?? camera.position;

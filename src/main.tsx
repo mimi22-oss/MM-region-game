@@ -203,7 +203,7 @@ class SceneError extends Component<
     return { failed: true };
   }
   componentDidCatch(error: any, errorInfo: any) {
-    startupDiagnostics.record('startup-error', {
+    startupDiagnostics.recordSceneError({
       error: String(error),
       stack: errorInfo?.componentStack,
     });

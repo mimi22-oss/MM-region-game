@@ -124,14 +124,7 @@ function MountainLushForest({
 }) {
 	const pool = useMemo(() => new MountainForestFixedPool(trees, grassTufts), [trees, grassTufts]);
 
-	useEffect(() => {
-		// Seed initial visible slots from the northern valley approach facing the mountain
-		const initialFocus = toWorld(MAHA_WEIPULA_BASE_GATE_UV.u, MAHA_WEIPULA_BASE_GATE_UV.v);
-		pool.syncToFocus(initialFocus.x, initialFocus.z, true);
-		return () => {
-			pool.disposePool();
-		};
-	}, [pool]);
+	useEffect(() => () => pool.disposePool(), [pool]);
 
 	useFrame(({ camera }) => {
 		const focus = (camera.userData.viewFocus as { x: number; z: number } | undefined) ?? camera.position;

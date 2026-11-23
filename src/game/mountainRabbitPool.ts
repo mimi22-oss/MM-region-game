@@ -17,7 +17,7 @@ import {
 import { mountainHeight, type TerrainPeak } from './mountainTerrain.ts';
 import { mobileQuality } from './sceneBudget.ts';
 import { canStandTaungphilaFeatures, isOnTaungphilaRoad } from './taungphilaWorld.ts';
-import { FixedObjectPool } from './treeResourcePool.ts';
+import { countNearestInRange, FixedObjectPool, updatePooledInstances } from './treeResourcePool.ts';
 import { isOnWeipulaRoad } from './weipulaClimb.ts';
 
 /**
@@ -69,11 +69,12 @@ interface ActiveRabbitRuntime {
 export interface MountainRabbitPoolConfig {
   readonly capacity: number;
   readonly syncMoveThreshold?: number;
+  readonly activeRadius?: number;
 }
 
 export const DEFAULT_MOUNTAIN_RABBIT_POOL_CONFIG: MountainRabbitPoolConfig = mobileQuality
-  ? { capacity: 18, syncMoveThreshold: 18 }
-  : { capacity: 36, syncMoveThreshold: 16 };
+  ? { capacity: 18, syncMoveThreshold: 18, activeRadius: 115 }
+  : { capacity: 36, syncMoveThreshold: 16, activeRadius: 160 };
 
 const cosA = Math.cos(angle);
 const sinA = Math.sin(angle);
@@ -259,7 +260,8 @@ export class MountainRabbitFixedPool {
 
     for (const m of this.meshes()) {
       m.frustumCulled = false;
-      m.count = cap;
+      m.count = 0;
+      m.visible = false;
       for (let i = 0; i < cap; i++) m.setMatrixAt(i, scratchZeroMat);
       m.instanceMatrix.needsUpdate = true;
     }
@@ -324,7 +326,7 @@ export class MountainRabbitFixedPool {
     }
     this.scored.sort((a, b) => a.distSq - b.distSq);
 
-    const take = Math.min(this.pool.capacity, n);
+    const take = countNearestInRange(this.scored, this.pool.capacity, this.config.activeRadius);
     this.desiredIds.length = take;
     this.desiredById.clear();
     for (let i = 0; i < take; i++) {
@@ -366,10 +368,7 @@ export class MountainRabbitFixedPool {
     );
 
     if (assigned > 0 || released > 0) {
-      for (const m of this.meshes()) {
-        m.instanceMatrix.needsUpdate = true;
-        if (m.instanceColor) m.instanceColor.needsUpdate = true;
-      }
+      updatePooledInstances(this.meshes(), this.pool.renderCount);
     }
     return true;
   }

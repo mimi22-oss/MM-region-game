@@ -1,6 +1,5 @@
 import { memo, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { toWorld } from '../data/ward';
 import { HighlandPlateauFixedPool } from '../game/highlandPlateauPool';
 import type { HighlandPlateauCatalog } from '../game/highlandPlateauWorld';
 
@@ -20,14 +19,7 @@ export const HighlandPlateauWorld = memo(function HighlandPlateauWorld({
 }) {
   const pool = useMemo(() => new HighlandPlateauFixedPool(catalog), [catalog]);
 
-  useEffect(() => {
-    // Seed initial slots near the Taungphila Highland Plateau Base Camp
-    const initial = toWorld(-845, 220);
-    pool.syncToFocus(initial.x, initial.z, true);
-    return () => {
-      pool.disposePool();
-    };
-  }, [pool]);
+  useEffect(() => () => pool.disposePool(), [pool]);
 
   useFrame(({ camera }) => {
     const focus = (camera.userData.viewFocus as { x: number; z: number } | undefined) ?? camera.position;

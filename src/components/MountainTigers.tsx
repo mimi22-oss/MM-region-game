@@ -1,7 +1,6 @@
 import { memo, useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3 } from 'three';
-import { toWorld } from '../data/ward';
 import { balloonRide } from '../game/balloonRide';
 import { currentCar } from '../game/carRide';
 import { motorcycleRide } from '../game/motorcycleRide';
@@ -83,8 +82,6 @@ export const MountainTigers = memo(function MountainTigers({
   }, []);
 
   useEffect(() => {
-    const initial = toWorld(-2680, 6200);
-    pool.syncToFocus(initial.x, initial.z, true);
     return () => {
       pool.disposePool();
       hpAssets.bgGeo.dispose();

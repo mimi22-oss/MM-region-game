@@ -157,7 +157,7 @@ export function getTreeAssetCache(): TreeAssetCache {
       leafBlades: true,
     }),
 
-    // Mountain Forest sculpted flared-root trunks & lush layered stylized leaf canopies
+    // Mountain stands repeat hundreds of crowns, so use the lighter sculpted foliage meshes.
     mountainTrunkGeo: buildStylizedTrunkGeometry({
       height: 8.2,
       bottomRadius: 0.72,
@@ -173,21 +173,21 @@ export function getTreeAssetCache(): TreeAssetCache {
     }),
     mountainPineLowGeo: buildStylizedTieredCanopyGeometry({
       scale: 1.05,
-      lowPoly,
+      lowPoly: true,
       seed: 606,
       includeTopCrown: false,
       includeLowerTufts: true,
     }),
     mountainPineTopGeo: buildStylizedTieredCanopyGeometry({
       scale: 1.05,
-      lowPoly,
+      lowPoly: true,
       seed: 707,
       includeTopCrown: true,
       includeLowerTufts: false,
     }),
     mountainBroadCanopyGeo: buildStylizedTieredCanopyGeometry({
       scale: 1.22,
-      lowPoly,
+      lowPoly: true,
       seed: 808,
       includeTopCrown: true,
       includeLowerTufts: true,
@@ -316,6 +316,13 @@ export class FixedObjectPool<T> {
     return this.freeIndices.length;
   }
 
+  get renderCount(): number {
+    // Active indices can be sparse after releases. Keep the last live slot in the draw range.
+    let count = 0;
+    for (const index of this.activeById.values()) count = Math.max(count, index + 1);
+    return count;
+  }
+
   getSlot(ownerId: string): FixedPoolSlot<T> | undefined {
     const idx = this.activeById.get(ownerId);
     return idx === undefined ? undefined : this.slots[idx];
@@ -425,11 +432,12 @@ export type MountainForestPoolConfig = {
   broadCapacity: number;
   grassCapacity: number;
   syncMoveThreshold?: number;
+  activeRadius?: number;
 };
 
 export const DEFAULT_MOUNTAIN_FOREST_POOL_CONFIG: MountainForestPoolConfig = mobileQuality
-  ? { pineCapacity: 240, broadCapacity: 160, grassCapacity: 180, syncMoveThreshold: 32 }
-  : { pineCapacity: 520, broadCapacity: 320, grassCapacity: 360, syncMoveThreshold: 28 };
+  ? { pineCapacity: 128, broadCapacity: 80, grassCapacity: 120, syncMoveThreshold: 32, activeRadius: 550 }
+  : { pineCapacity: 240, broadCapacity: 144, grassCapacity: 240, syncMoveThreshold: 28, activeRadius: 850 };
 
 // Gentle bright tint multipliers so baked lime->emerald->deep-forest vertex colors shine vividly!
 const PINE_GREENS = ['#ffffff', '#f3ffe9', '#e8f9df', '#fcffe8', '#edf8e3'] as const;
@@ -449,12 +457,34 @@ const scratchYAxis = new Vector3(0, 1, 0);
 
 type ScoredIndex = { idx: number; distSq: number };
 
+export function countNearestInRange(
+  scored: readonly { distSq: number }[],
+  limit: number,
+  radius = Infinity,
+): number {
+  const maxDistanceSq = radius * radius;
+  const maxCount = Math.min(limit, scored.length);
+  let count = 0;
+  while (count < maxCount && scored[count].distSq <= maxDistanceSq) count++;
+  return count;
+}
+
+export function updatePooledInstances(meshes: readonly InstancedMesh[], count: number): void {
+  for (const mesh of meshes) {
+    mesh.count = count;
+    mesh.visible = count > 0;
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }
+}
+
 function selectNearestIndices<T extends { x: number; z: number }>(
   items: readonly T[],
   focusX: number,
   focusZ: number,
   limit: number,
   scratchScored: ScoredIndex[],
+  radius: number | undefined,
 ): number {
   const n = items.length;
   if (n === 0 || limit <= 0) return 0;
@@ -469,14 +499,9 @@ function selectNearestIndices<T extends { x: number; z: number }>(
     scratchScored[i].idx = i;
     scratchScored[i].distSq = dx * dx + dz * dz;
   }
-  // Truncate sort view to active items count without reallocating array
-  const activeSlice = scratchScored.slice(0, n);
-  activeSlice.sort((a, b) => a.distSq - b.distSq);
-  const take = Math.min(limit, n);
-  for (let i = 0; i < take; i++) {
-    scratchScored[i] = activeSlice[i];
-  }
-  return take;
+  scratchScored.length = n;
+  scratchScored.sort((a, b) => a.distSq - b.distSq);
+  return countNearestInRange(scratchScored, limit, radius);
 }
 
 export class MountainForestFixedPool {
@@ -536,7 +561,8 @@ export class MountainForestFixedPool {
 
     for (const m of this.meshes()) {
       m.frustumCulled = false;
-      m.count = m.instanceMatrix.count;
+      m.count = 0;
+      m.visible = false;
       // Hide all pre-allocated pool slots until acquired
       for (let i = 0; i < m.instanceMatrix.count; i++) {
         m.setMatrixAt(i, scratchZeroMat);
@@ -579,7 +605,7 @@ export class MountainForestFixedPool {
   }
 
   private syncPines(focusX: number, focusZ: number): void {
-    const take = selectNearestIndices(this.pines, focusX, focusZ, this.pinePool.capacity, this.pineScored);
+    const take = selectNearestIndices(this.pines, focusX, focusZ, this.pinePool.capacity, this.pineScored, this.config.activeRadius);
     this.desiredIdsScratch.length = take;
     this.desiredIndexById.clear();
     for (let i = 0; i < take; i++) {
@@ -616,16 +642,12 @@ export class MountainForestFixedPool {
     );
 
     if (assigned > 0 || released > 0) {
-      this.pineTrunkMesh.instanceMatrix.needsUpdate = true;
-      this.pineLowMesh.instanceMatrix.needsUpdate = true;
-      this.pineTopMesh.instanceMatrix.needsUpdate = true;
-      if (this.pineLowMesh.instanceColor) this.pineLowMesh.instanceColor.needsUpdate = true;
-      if (this.pineTopMesh.instanceColor) this.pineTopMesh.instanceColor.needsUpdate = true;
+      updatePooledInstances([this.pineTrunkMesh, this.pineLowMesh, this.pineTopMesh], this.pinePool.renderCount);
     }
   }
 
   private syncBroads(focusX: number, focusZ: number): void {
-    const take = selectNearestIndices(this.broads, focusX, focusZ, this.broadPool.capacity, this.broadScored);
+    const take = selectNearestIndices(this.broads, focusX, focusZ, this.broadPool.capacity, this.broadScored, this.config.activeRadius);
     this.desiredIdsScratch.length = take;
     this.desiredIndexById.clear();
     for (let i = 0; i < take; i++) {
@@ -664,14 +686,12 @@ export class MountainForestFixedPool {
     );
 
     if (assigned > 0 || released > 0) {
-      this.broadTrunkMesh.instanceMatrix.needsUpdate = true;
-      this.broadCanopyMesh.instanceMatrix.needsUpdate = true;
-      if (this.broadCanopyMesh.instanceColor) this.broadCanopyMesh.instanceColor.needsUpdate = true;
+      updatePooledInstances([this.broadTrunkMesh, this.broadCanopyMesh], this.broadPool.renderCount);
     }
   }
 
   private syncGrass(focusX: number, focusZ: number): void {
-    const take = selectNearestIndices(this.grassTufts, focusX, focusZ, this.grassPool.capacity, this.grassScored);
+    const take = selectNearestIndices(this.grassTufts, focusX, focusZ, this.grassPool.capacity, this.grassScored, this.config.activeRadius);
     this.desiredIdsScratch.length = take;
     this.desiredIndexById.clear();
     for (let i = 0; i < take; i++) {
@@ -697,8 +717,7 @@ export class MountainForestFixedPool {
     );
 
     if (assigned > 0 || released > 0) {
-      this.grassMesh.instanceMatrix.needsUpdate = true;
-      if (this.grassMesh.instanceColor) this.grassMesh.instanceColor.needsUpdate = true;
+      updatePooledInstances([this.grassMesh], this.grassPool.renderCount);
     }
   }
 

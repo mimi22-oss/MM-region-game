@@ -42,6 +42,7 @@ test('FixedObjectPool enforces strict capacity ceiling and recycles slots withou
   const s3 = pool.acquire('tree-3');
   assert.ok(s0 && s1 && s2 && s3);
   assert.equal(pool.activeCount, 4);
+  assert.equal(pool.renderCount, 4);
   assert.equal(pool.freeCount, 0);
 
   // Beyond capacity returns null (never allocates or duplicates beyond fixed pool size)
@@ -59,6 +60,12 @@ test('FixedObjectPool enforces strict capacity ceiling and recycles slots withou
   assert.equal(pool.activeCount, 4, 'Active count stays strictly bounded at capacity');
   assert.equal(factoryCalls, 4, 'Still zero additional allocations during recycling');
   assert.ok(pool.metrics().totalRecycles >= 2, 'Slot recycling tracked accurately');
+  const lastSlot = pool.getSlotByIndex(3);
+  pool.syncActive([lastSlot.ownerId!], () => {});
+  assert.equal(pool.activeCount, 1);
+  assert.equal(pool.renderCount, 4, 'The GPU draw range still includes the highest occupied slot');
+  pool.clear();
+  assert.equal(pool.renderCount, 0);
 });
 
 test('MountainForestFixedPool shares singleton cache references and recycles fixed slots as camera moves', () => {
@@ -106,4 +113,28 @@ test('MountainForestFixedPool shares singleton cache references and recycles fix
   assert.strictEqual(getTreeAssetCache(), cache, 'Singleton cache remains alive & shared after pool unmount');
   disposeTreeAssetCache();
   assert.equal(getTreeAssetCacheStats().initialized, false, 'Explicit cache teardown disposes cleanly');
+});
+
+test('Mountain forest only submits instances near the camera and recycles them on return', () => {
+  const { trees, grassTufts } = buildWeipulaSlopeFlora([...ward.mountains, ...ward.weipula.peaks], false);
+  const pool = new MountainForestFixedPool(trees, grassTufts, {
+    pineCapacity: 12, broadCapacity: 8, grassCapacity: 10, activeRadius: 150,
+  });
+  try {
+    const near = trees[0];
+    const sync = (x: number, z: number) => pool.syncToFocus(x, z, true);
+    const snapshot = () => pool.meshes().map((mesh) => [mesh.count, mesh.visible]);
+    assert.ok(snapshot().every(([count, visible]) => count === 0 && !visible));
+    sync(near.x, near.z);
+    const populated = snapshot();
+    assert.ok(populated.some(([count, visible]) => Number(count) > 0 && visible));
+    sync(near.x + 10_000, near.z);
+    assert.ok(snapshot().every(([count, visible]) => count === 0 && !visible));
+    assert.equal(pool.metrics().totalActiveSlots, 0);
+    sync(near.x, near.z);
+    assert.deepEqual(snapshot().map(([_, visible]) => visible), populated.map(([_, visible]) => visible));
+    assert.equal(pool.metrics().totalFixedSlots, 30);
+  } finally {
+    pool.disposePool();
+  }
 });

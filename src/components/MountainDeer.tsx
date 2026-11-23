@@ -1,7 +1,6 @@
 import { memo, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { MeshStandardMaterial } from 'three';
-import { toWorld } from '../data/ward';
 import { DEER_COAT_COLORS, getMountainDeerAssetCache } from '../game/mountainDeerAssets';
 import {
   MountainDeerFixedPool,
@@ -73,13 +72,7 @@ export const MountainDeer = memo(function MountainDeer({
     return new MountainDeerFixedPool(list);
   }, [peaks, spawns]);
 
-  useEffect(() => {
-    const initial = toWorld(-845, 220);
-    pool.syncToFocus(initial.x, initial.z, true);
-    return () => {
-      pool.disposePool();
-    };
-  }, [pool]);
+  useEffect(() => () => pool.disposePool(), [pool]);
 
   useFrame(({ camera }, delta) => {
     const focus = (camera.userData.viewFocus as { x: number; z: number } | undefined) ?? camera.position;

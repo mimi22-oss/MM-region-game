@@ -1,6 +1,7 @@
 import { gameAudio } from '../gameAudio.ts';
 import {
   WAREHOUSE_HORROR_LOOP_AUDIO_FILE,
+  SFX_RETRY_COOLDOWN_MS,
   getCachedSfxBuffer,
   loadSfxBuffer,
   preloadSfxBuffers,
@@ -19,6 +20,7 @@ export class WarehouseHorrorLoopPlayer {
   private gain: GainNode | null = null;
   private preloaded = false;
   private loading = false;
+  private nextLoadAttemptAt = 0;
   private active = false;
   private targetLevel = 0;
   private silentSec = 0;
@@ -60,11 +62,15 @@ export class WarehouseHorrorLoopPlayer {
 
     const buffer = getCachedSfxBuffer(ctx, WAREHOUSE_HORROR_LOOP_AUDIO_FILE);
     if (!buffer) {
-      if (!this.loading) {
+      if (!this.loading && Date.now() >= this.nextLoadAttemptAt) {
         this.loading = true;
         this.preloaded = true;
-        void loadSfxBuffer(ctx, WAREHOUSE_HORROR_LOOP_AUDIO_FILE).finally(() => {
+        void loadSfxBuffer(ctx, WAREHOUSE_HORROR_LOOP_AUDIO_FILE).then((loaded) => {
           this.loading = false;
+          if (!loaded) {
+            this.nextLoadAttemptAt = Date.now() + SFX_RETRY_COOLDOWN_MS;
+            return;
+          }
           if (!this.disposed && this.active && this.targetLevel > 0.001) {
             this.ensureLoopRunning();
             this.applyGain();

@@ -11,6 +11,7 @@ export type StartupStage =
   | 'game-ready'
   | 'webgl-context-lost'
   | 'webgl-context-restored'
+  | 'runtime-scene-error'
   | 'startup-error';
 
 export interface StartupCheckpoint {
@@ -173,8 +174,11 @@ export class StartupDiagnosticsManager {
 
       if (!raw) return;
       const prev = JSON.parse(raw) as { sessionId: string; checkpoints: StartupCheckpoint[]; ready: boolean };
-      if (!prev.ready && prev.checkpoints && prev.checkpoints.length > 0) {
-        const lastCheckpoint = prev.checkpoints[prev.checkpoints.length - 1];
+      const lastCheckpoint = prev.checkpoints?.at(-1);
+      const runtimeFault = prev.ready && (
+        lastCheckpoint?.stage === 'webgl-context-lost' || lastCheckpoint?.stage === 'runtime-scene-error'
+      );
+      if (lastCheckpoint && (!prev.ready || runtimeFault)) {
         const isConfirmedCrash = exitType !== 'normal_exit';
 
         this.lastCrash = {
@@ -185,9 +189,13 @@ export class StartupDiagnosticsManager {
           totalTimeMs: Math.round(lastCheckpoint.timestampMs),
           lastHeapUsedMb: lastCheckpoint.heapUsedMb,
           checkpoints: prev.checkpoints,
-          reason: isConfirmedCrash
-            ? 'App or WebView killed abruptly (OOM or WebGL context abort) without unload event'
-            : 'Page unloaded or refreshed by user before startup completed',
+          reason: runtimeFault
+            ? lastCheckpoint.stage === 'webgl-context-lost'
+              ? 'WebGL context was lost during gameplay and did not restore before this reload'
+              : 'The 3D scene reported an error during gameplay before this reload'
+            : isConfirmedCrash
+              ? 'App or WebView ended abruptly before startup completed'
+              : 'Page unloaded or refreshed by user before startup completed',
         };
 
         writeStorageItem(
@@ -199,13 +207,13 @@ export class StartupDiagnosticsManager {
 
         if (isConfirmedCrash) {
           console.warn(
-            `%c[MOBILE RELOAD CRASH DETECTED]%c Previous launch crashed at stage "${lastCheckpoint.stage}" after ${Math.round(lastCheckpoint.timestampMs)}ms (Heap: ${lastCheckpoint.heapUsedMb ?? 'N/A'}MB).`,
+            `%c[MOBILE RELOAD CRASH DETECTED]%c Previous session stopped at "${lastCheckpoint.stage}" after ${Math.round(lastCheckpoint.timestampMs)}ms (Heap: ${lastCheckpoint.heapUsedMb ?? 'N/A'}MB).`,
             'background: #d32f2f; color: #fff; font-weight: bold; padding: 2px 6px; border-radius: 3px;',
             'color: #d32f2f; font-weight: bold;',
           );
         } else {
           console.info(
-            `[StartupDiagnostics] Previous session was interrupted at stage "${lastCheckpoint.stage}" by normal page reload/navigation.`,
+            `[StartupDiagnostics] Previous session ended at "${lastCheckpoint.stage}" before reload/navigation.`,
           );
         }
       }
@@ -279,7 +287,8 @@ export class StartupDiagnosticsManager {
     if (
       this.isGameReady &&
       stage !== 'webgl-context-lost' &&
-      stage !== 'webgl-context-restored'
+      stage !== 'webgl-context-restored' &&
+      stage !== 'runtime-scene-error'
     ) {
       return;
     }
@@ -317,6 +326,10 @@ export class StartupDiagnosticsManager {
       const mem = checkpoint.heapUsedMb !== undefined ? ` [${checkpoint.heapUsedMb}MB]` : '';
       console.log(`%c[Checkpoint]%c ${stage} +${checkpoint.timestampMs}ms${mem}`, 'color: #0288d1; font-weight: bold;', 'color: inherit;', details ?? '');
     }
+  }
+
+  recordSceneError(details: Record<string, unknown>): void {
+    this.record(this.isGameReady ? 'runtime-scene-error' : 'startup-error', details);
   }
 
   getLastCrash(): CrashReport | null {

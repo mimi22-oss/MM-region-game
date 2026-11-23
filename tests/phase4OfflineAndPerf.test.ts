@@ -192,6 +192,21 @@ test('Phase 4 instrumentation computes FPS & frame-ms percentiles and builds bas
   assert.equal(report.offlineStorage.cachedPacks[0].id, 'region-kanbale');
 });
 
+test('Post-startup rendering failures are available after reload', () => {
+  for (const stage of ['runtime-scene-error', 'webgl-context-lost', 'webgl-context-restored'] as const) {
+    const persistentStore = createMemoryStorage();
+    const first = new StartupDiagnosticsManager({ persistentStore, sessionStore: createMemoryStorage() });
+    first.record('game-ready');
+    if (stage === 'runtime-scene-error') first.recordSceneError({ message: 'scene initialization failed' });
+    else {
+      first.record('webgl-context-lost');
+      if (stage === 'webgl-context-restored') first.record(stage);
+    }
+    const reloaded = new StartupDiagnosticsManager({ persistentStore, sessionStore: createMemoryStorage() });
+    assert.equal(reloaded.getLastCrash()?.lastCompletedStage, stage === 'webgl-context-restored' ? undefined : stage);
+  }
+});
+
 test('Phase 4 startup diagnostics survives Android WebView cold kill across wiped sessionStorage', () => {
   const sessionA = createMemoryStorage();
   const persistent = createMemoryStorage();

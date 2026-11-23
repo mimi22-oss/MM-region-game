@@ -40,7 +40,7 @@ import {
 } from './mountainTigerAssets.ts';
 import { mobileQuality } from './sceneBudget.ts';
 import { canStandTaungphilaFeatures, isOnTaungphilaRoad } from './taungphilaWorld.ts';
-import { FixedObjectPool } from './treeResourcePool.ts';
+import { countNearestInRange, FixedObjectPool, updatePooledInstances } from './treeResourcePool.ts';
 import { isOnWeipulaRoad } from './weipulaClimb.ts';
 
 /**
@@ -121,11 +121,12 @@ interface ActiveTigerRuntime {
 export interface MountainTigerPoolConfig {
   readonly capacity: number;
   readonly syncMoveThreshold?: number;
+  readonly activeRadius?: number;
 }
 
 export const DEFAULT_MOUNTAIN_TIGER_POOL_CONFIG: MountainTigerPoolConfig = mobileQuality
-  ? { capacity: 8, syncMoveThreshold: 24 }
-  : { capacity: 16, syncMoveThreshold: 20 };
+  ? { capacity: 8, syncMoveThreshold: 24, activeRadius: 195 }
+  : { capacity: 16, syncMoveThreshold: 20, activeRadius: 260 };
 
 const TIGER_COAT_TINTS = ['#ffffff', '#f5e4d2', '#ffe9d6'] as const;
 const cosA = Math.cos(angle);
@@ -401,7 +402,8 @@ export class MountainTigerFixedPool {
 
     for (const m of this.meshes()) {
       m.frustumCulled = false;
-      m.count = cap;
+      m.count = 0;
+      m.visible = false;
       for (let i = 0; i < cap; i++) m.setMatrixAt(i, scratchZeroMat);
       m.instanceMatrix.needsUpdate = true;
     }
@@ -447,7 +449,7 @@ export class MountainTigerFixedPool {
     }
     this.scored.sort((a, b) => a.distSq - b.distSq);
 
-    const take = Math.min(this.pool.capacity, n);
+    const take = countNearestInRange(this.scored, this.pool.capacity, this.config.activeRadius);
     this.desiredIds.length = take;
     this.desiredById.clear();
     for (let i = 0; i < take; i++) {
@@ -507,10 +509,7 @@ export class MountainTigerFixedPool {
     );
 
     if (assigned > 0 || released > 0) {
-      for (const m of this.meshes()) {
-        m.instanceMatrix.needsUpdate = true;
-        if (m.instanceColor) m.instanceColor.needsUpdate = true;
-      }
+      updatePooledInstances(this.meshes(), this.pool.renderCount);
     }
     return true;
   }

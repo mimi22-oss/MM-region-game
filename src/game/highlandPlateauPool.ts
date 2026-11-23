@@ -1,6 +1,6 @@
 import { Color, InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
 import { mobileQuality } from './sceneBudget.ts';
-import { FixedObjectPool } from './treeResourcePool.ts';
+import { countNearestInRange, FixedObjectPool, updatePooledInstances } from './treeResourcePool.ts';
 import {
   getHighlandPlateauAssetCache,
   type HighlandPlateauAssetCache,
@@ -30,6 +30,7 @@ export interface HighlandPlateauPoolConfig {
   readonly boulderCapacity: number;
   readonly bushCapacity: number;
   readonly syncMoveThreshold?: number;
+  readonly activeRadius?: number;
 }
 
 export const DEFAULT_HIGHLAND_PLATEAU_POOL_CONFIG: HighlandPlateauPoolConfig = mobileQuality
@@ -41,6 +42,7 @@ export const DEFAULT_HIGHLAND_PLATEAU_POOL_CONFIG: HighlandPlateauPoolConfig = m
       boulderCapacity: 140,
       bushCapacity: 180,
       syncMoveThreshold: 30,
+      activeRadius: 475,
     }
   : {
       houseCapacity: 160,
@@ -50,6 +52,7 @@ export const DEFAULT_HIGHLAND_PLATEAU_POOL_CONFIG: HighlandPlateauPoolConfig = m
       boulderCapacity: 320,
       bushCapacity: 420,
       syncMoveThreshold: 26,
+      activeRadius: 750,
     };
 
 const WALL_TINTS = ['#7a5635', '#66462c', '#8f6944', '#5c3c24', '#9e7c58'] as const;
@@ -75,6 +78,7 @@ function selectNearest<T extends { x: number; z: number }>(
   focusZ: number,
   limit: number,
   scratch: ScoredIndex[],
+  radius: number | undefined,
 ): number {
   const n = items.length;
   if (n === 0 || limit <= 0) return 0;
@@ -90,7 +94,7 @@ function selectNearest<T extends { x: number; z: number }>(
     scratch[i].distSq = dx * dx + dz * dz;
   }
   scratch.sort((a, b) => a.distSq - b.distSq);
-  return Math.min(limit, n);
+  return countNearestInRange(scratch, limit, radius);
 }
 
 export class HighlandPlateauFixedPool {
@@ -194,7 +198,8 @@ export class HighlandPlateauFixedPool {
 
     for (const m of this.meshes()) {
       m.frustumCulled = false;
-      m.count = m.instanceMatrix.count;
+      m.count = 0;
+      m.visible = false;
       for (let i = 0; i < m.instanceMatrix.count; i++) {
         m.setMatrixAt(i, scratchZeroMat);
       }
@@ -255,7 +260,7 @@ export class HighlandPlateauFixedPool {
     focusZ: number,
     cap: number,
   ): void {
-    const take = selectNearest(items, focusX, focusZ, cap, this.scoredScratch);
+    const take = selectNearest(items, focusX, focusZ, cap, this.scoredScratch, this.config.activeRadius);
     this.desiredIdsScratch.length = take;
     this.desiredIndexById.clear();
     for (let i = 0; i < take; i++) {
@@ -364,23 +369,18 @@ export class HighlandPlateauFixedPool {
       },
     );
     if (assigned > 0 || released > 0) {
-      const wallMeshes = [
+      updatePooledInstances([
         this.houseBackWallMesh,
         this.houseLeftWallMesh,
         this.houseRightWallMesh,
         this.houseFrontLeftWallMesh,
         this.houseFrontRightWallMesh,
         this.houseDoorLintelMesh,
-      ];
-      for (const wm of wallMeshes) {
-        wm.instanceMatrix.needsUpdate = true;
-        if (wm.instanceColor) wm.instanceColor.needsUpdate = true;
-      }
-      this.houseDeckMesh.instanceMatrix.needsUpdate = true;
-      this.houseDoorFrameLeftMesh.instanceMatrix.needsUpdate = true;
-      this.houseDoorFrameRightMesh.instanceMatrix.needsUpdate = true;
-      this.houseRoofMesh.instanceMatrix.needsUpdate = true;
-      if (this.houseRoofMesh.instanceColor) this.houseRoofMesh.instanceColor.needsUpdate = true;
+        this.houseDeckMesh,
+        this.houseDoorFrameLeftMesh,
+        this.houseDoorFrameRightMesh,
+        this.houseRoofMesh,
+      ], this.housePool.renderCount);
     }
   }
 
@@ -446,11 +446,9 @@ export class HighlandPlateauFixedPool {
       },
     );
     if (assigned > 0 || released > 0) {
-      this.campTentMesh.instanceMatrix.needsUpdate = true;
-      this.campFireRingMesh.instanceMatrix.needsUpdate = true;
-      this.campFlameMesh.instanceMatrix.needsUpdate = true;
-      this.campLogMesh.instanceMatrix.needsUpdate = true;
-      this.campJarMesh.instanceMatrix.needsUpdate = true;
+      updatePooledInstances([
+        this.campTentMesh, this.campFireRingMesh, this.campFlameMesh, this.campLogMesh, this.campJarMesh,
+      ], this.campPool.renderCount);
     }
   }
 
@@ -481,8 +479,7 @@ export class HighlandPlateauFixedPool {
       },
     );
     if (assigned > 0 || released > 0) {
-      this.pondRimMesh.instanceMatrix.needsUpdate = true;
-      this.pondWaterMesh.instanceMatrix.needsUpdate = true;
+      updatePooledInstances([this.pondRimMesh, this.pondWaterMesh], this.pondPool.renderCount);
     }
   }
 
@@ -518,8 +515,7 @@ export class HighlandPlateauFixedPool {
       },
     );
     if (assigned > 0 || released > 0) {
-      this.trailHubMesh.instanceMatrix.needsUpdate = true;
-      this.trailStripMesh.instanceMatrix.needsUpdate = true;
+      updatePooledInstances([this.trailHubMesh, this.trailStripMesh], this.trailPool.renderCount);
     }
   }
 
@@ -544,8 +540,7 @@ export class HighlandPlateauFixedPool {
       },
     );
     if (assigned > 0 || released > 0) {
-      this.boulderMesh.instanceMatrix.needsUpdate = true;
-      if (this.boulderMesh.instanceColor) this.boulderMesh.instanceColor.needsUpdate = true;
+      updatePooledInstances([this.boulderMesh], this.boulderPool.renderCount);
     }
   }
 
@@ -570,8 +565,7 @@ export class HighlandPlateauFixedPool {
       },
     );
     if (assigned > 0 || released > 0) {
-      this.bushMesh.instanceMatrix.needsUpdate = true;
-      if (this.bushMesh.instanceColor) this.bushMesh.instanceColor.needsUpdate = true;
+      updatePooledInstances([this.bushMesh], this.bushPool.renderCount);
     }
   }
 

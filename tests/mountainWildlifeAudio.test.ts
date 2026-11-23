@@ -6,6 +6,7 @@ import { toWorld, ward } from '../src/data/ward.ts';
 import {
   ALL_MP3_SFX_FILES,
   GAME_AUDIO_MAGIC,
+  SFX_RETRY_COOLDOWN_MS,
   WAREHOUSE_HORROR_LOOP_AUDIO_FILE,
   WEAPON_ENEMY_HIT_PLAYER_AUDIO_FILES,
   WEAPON_GHOST_HIT_PLAYER_AUDIO_FILES,
@@ -17,9 +18,12 @@ import {
   WILDLIFE_DEER_BABY_AUDIO_FILES,
   WILDLIFE_DEER_STAG_AUDIO_FILES,
   WILDLIFE_TIGER_AUDIO_FILES,
+  loadSfxBuffer,
   resolvePublicAudioUrl,
   unwrapGameAudioContainer,
 } from '../src/game/audio/sfxBufferCache.ts';
+import { WarehouseHorrorLoopPlayer } from '../src/game/audio/WarehouseHorrorLoopPlayer.ts';
+import { gameAudio } from '../src/game/gameAudio.ts';
 import { buildMountainDeerSpawns } from '../src/game/mountainDeerPool.ts';
 import { buildMountainRabbitSpawns } from '../src/game/mountainRabbitPool.ts';
 import { buildMountainTigerSpawns } from '../src/game/mountainTigerPool.ts';
@@ -203,5 +207,50 @@ test('All 14 wildlife, weapon and warehouse audio assets are packed as anti-IDM 
     const isMpegSync = unwrapped[0] === 0xff && (unwrapped[1] & 0xe0) === 0xe0;
     assert.ok(isId3 || isMpegSync, `Unwrapped payload must be valid MP3 audio: ${rel}`);
     assert.equal(resolvePublicAudioUrl(rel), `/${rel}`);
+  }
+});
+
+test('A warehouse decode failure backs off and leaves playback recoverable', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'] });
+  const fetchSound = t.mock.method(globalThis, 'fetch', async () => new Response(new Uint8Array([1, 2, 3])));
+  let decodeAttempts = 0;
+  let starts = 0;
+  const context = {
+    state: 'running',
+    currentTime: 1,
+    async decodeAudioData() {
+      if (++decodeAttempts === 1) throw new Error('Audio decoder unavailable');
+      return { length: 1 };
+    },
+    createGain: () => ({ gain: { value: 0, setTargetAtTime() {} }, connect() {}, disconnect() {} }),
+    createBufferSource: () => ({ connect() {}, disconnect() {}, start() { starts++; }, stop() {} }),
+  } as unknown as AudioContext;
+  const previousContext = gameAudio.context;
+  const previousAmbience = gameAudio.ambience;
+  gameAudio.context = context;
+  gameAudio.ambience = context.createGain();
+  const player = new WarehouseHorrorLoopPlayer();
+  const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
+
+  try {
+    assert.equal(player.update(true, 0.5, 0.1).sources, 0);
+    await settle();
+    assert.equal(decodeAttempts, 1, 'Failed playback does not immediately start another decode');
+    assert.equal(await loadSfxBuffer(context, WAREHOUSE_HORROR_LOOP_AUDIO_FILE), null);
+    for (let i = 0; i < 30; i++) player.update(true, 0.5, 0.1);
+    await settle();
+    assert.equal(decodeAttempts, 1);
+
+    t.mock.timers.tick(SFX_RETRY_COOLDOWN_MS);
+    player.update(true, 0.5, 0.1);
+    await settle();
+    assert.equal(decodeAttempts, 2);
+    assert.equal(fetchSound.mock.callCount(), 1, 'The retry can reuse the downloaded bytes');
+    assert.equal(player.update(true, 0.5, 0.1).sources, 1);
+    assert.equal(starts, 1);
+  } finally {
+    player.dispose();
+    gameAudio.context = previousContext;
+    gameAudio.ambience = previousAmbience;
   }
 });
