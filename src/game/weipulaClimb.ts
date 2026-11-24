@@ -1,5 +1,11 @@
 import { angle, toWorld, ward } from '../data/ward.ts';
-import { mountainHeight, terrainNoise, type TerrainPeak } from './mountainTerrain.ts';
+import {
+  mountainHeight,
+  mountainMeshSurface,
+  terrainNoise,
+  type MountainMeshSurface,
+  type TerrainPeak,
+} from './mountainTerrain.ts';
 import { isInsideWeipulaChinVillageUV } from './weipulaChinVillageLayout.ts';
 
 /**
@@ -516,6 +522,8 @@ export function buildWeipulaSlopeFlora(
   const cu = MAHA_WEIPULA_SUMMIT_UV.u;
   const cv = MAHA_WEIPULA_SUMMIT_UV.v;
 
+  const surfScratch: MountainMeshSurface = { y: 0, du: 0, dv: 0, slope: 0 };
+
   const addRow = (id: string, peak: TerrainPeak, radius: number, count: number, row: number) => {
     for (let i = 0; i < count; i++) {
       // Keep the same row and tree positions on desktop and phone.
@@ -530,21 +538,20 @@ export function buildWeipulaSlopeFlora(
       if (Math.abs(u - cu) < 19 && v >= 4590 && v <= 6110) continue;
       if (u >= -375 && u <= -297 && v >= 4760 && v <= 4920) continue;
       if (isInsideWeipulaChinVillageUV(u, v, 13) || distToRoadUV(u, v) < 20) continue;
-      const h = mountainHeight(u, v, peaks);
+      const surf = mountainMeshSurface(u, v, peaks, undefined, surfScratch);
+      const h = surf.y;
       if (h < 1.4 || h > peak.height * .99) continue;
-      const slope = Math.max(
-        Math.abs(mountainHeight(u + 5, v, peaks) - mountainHeight(u - 5, v, peaks)),
-        Math.abs(mountainHeight(u, v + 5, peaks) - mountainHeight(u, v - 5, peaks)),
-      ) / 10;
-      if (slope > 1.95) continue;
+      if (surf.slope > 1.35) continue;
 
       const variation = terrainNoise(u / 37, v / 47);
+      const scale = .86 + variation * .83 + Math.min(.38, peak.radius / 3400);
+      const rootEmbed = Math.max(0.45 * scale, surf.slope * 1.75 * scale);
       const pos = toWorld(u, v);
       trees.push({
         id: `weipula-${id}-row-${row}-${i}`,
         u, v, ...pos,
-        y: h - .84,
-        scale: .86 + variation * .83 + Math.min(.38, peak.radius / 3400),
+        y: h - rootEmbed,
+        scale,
         kind: h > 620 ? (i % 5 < 4 ? 'pine' : 'broad') : (i % 5 === 0 ? 'pine' : 'broad'),
         tintIndex: (i + row * 3) % 5,
       });
@@ -585,17 +592,22 @@ export function buildWeipulaSlopeFlora(
     if (isInsideWeipulaChinVillageUV(u, v, 8)) continue; // Keep terraced Chin village yards clear
     if (u > -48) continue;
 
-    const h = mountainHeight(u, v, peaks);
-    if (h < 0.8) continue;
+    const surf = mountainMeshSurface(u, v, peaks, undefined, surfScratch);
+    const h = surf.y;
+    if (h < 0.8 || surf.slope > 1.25) continue;
     const pos = toWorld(u, v);
+    const sx = 6.0 + f1 * 9.5;
+    const sy = 2.2 + f2 * 3.4;
+    const sz = 6.0 + ((f1 + f2) * 0.5) * 9.5;
+    const tuftEmbed = Math.max(0.6, Math.max(sx, sz) * surf.slope * 0.42);
     grassTufts.push({
       id: `weipula-grass-${i}`,
       x: pos.x,
-      y: h - 0.6,
+      y: h - tuftEmbed,
       z: pos.z,
-      sx: 6.0 + f1 * 9.5,
-      sy: 2.2 + f2 * 3.4,
-      sz: 6.0 + ((f1 + f2) * 0.5) * 9.5,
+      sx,
+      sy,
+      sz,
       rotY: f1 * Math.PI * 2,
       tintIndex: i % 5,
     });

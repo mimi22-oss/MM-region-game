@@ -35,6 +35,7 @@ import { isHorseRidingUnlocked, useZombieForestMission } from './game/missions/z
 import { isVehicleWaitingPickupLocked, useVehicleWaiting } from './game/vehicleWaiting';
 import {LifeMeter} from './components/LifeMeter';
 import { GhostRadar } from './components/GhostRadar';
+import { MountainTigerRadar } from './components/MountainTigerRadar';
 import { RideControls } from './components/RideControls';
 import { CarControls } from './components/CarControls';
 import { GuideDialog } from './components/GuideDialog';
@@ -163,6 +164,11 @@ import {
 } from "./game/ghostConfig";
 import { isGhostDefeated } from "./game/missions/threeGhostsMission";
 import type { GhostRuntimeEntry } from "./game/missions/ghostRuntimeRegistry";
+import {
+  getMountainTigerMapSnapshot,
+  subscribeMountainTigerCombat,
+  type MountainTigerMapSnapshot,
+} from "./game/mountainTigerCombat";
 import { installOfflineAssetInterceptor } from "./services/offlineAssetResolver";
 import { otaCoordinator } from "./services/otaUpdater";
 import {
@@ -405,6 +411,37 @@ function App() {
     window.addEventListener("mm-ghost-debug-positions", handleGhostPositions);
     return () => window.removeEventListener("mm-ghost-debug-positions", handleGhostPositions);
   }, []);
+  const [tigerMap, setTigerMap] = useState<MountainTigerMapSnapshot>(() =>
+    getMountainTigerMapSnapshot(posRef.current.x, posRef.current.z),
+  );
+  useEffect(() => {
+    const refresh = () => {
+      const next = getMountainTigerMapSnapshot(posRef.current.x, posRef.current.z);
+      setTigerMap((prev) => {
+        if (
+          prev.remainingCount === next.remainingCount &&
+          prev.totalCount === next.totalCount &&
+          prev.territories.length === next.territories.length &&
+          prev.nearest?.id === next.nearest?.id &&
+          (!prev.nearest ||
+            !next.nearest ||
+            (Math.abs(prev.nearest.x - next.nearest.x) < 1.2 &&
+              Math.abs(prev.nearest.z - next.nearest.z) < 1.2 &&
+              Math.abs(prev.nearest.distanceM - next.nearest.distanceM) < 1.5))
+        ) {
+          return prev;
+        }
+        return next;
+      });
+    };
+    refresh();
+    const unsub = subscribeMountainTigerCombat(refresh);
+    const interval = window.setInterval(refresh, mapOpen ? 300 : 750);
+    return () => {
+      unsub();
+      window.clearInterval(interval);
+    };
+  }, [mapOpen]);
   const viewPosition = useCallback(
     (x: number, z: number) => {
       viewPosRef.current.x = x;
@@ -1084,6 +1121,17 @@ function App() {
     );
   }, [zoom]);
 
+  const isOnMountain =
+    currentLoc.id === "taungphila" ||
+    currentLoc.id === "western-highlands" ||
+    currentLoc.id === "eastern-mountains" ||
+    currentLoc.id === "weipula" ||
+    currentLoc.id === "weipula-base" ||
+    currentLoc.id === "weipula-village" ||
+    currentLoc.id === "weipula-chin-village";
+  const showTigerRadar =
+    isOnMountain || (tigerMap.nearest !== null && tigerMap.nearest.distanceM <= 350);
+
   return (
     <main className={night ? "night-mode" : ""} data-time-period={environment.period}>
       <GhostGameOver onReveal={setRevealedDeathGeneration}/>
@@ -1092,15 +1140,7 @@ function App() {
         <RabbitCarrotCelebrationHud
           playerPosRef={posRef}
           playerYawRef={robotYawRef}
-          onMountain={
-            currentLoc.id === "taungphila" ||
-            currentLoc.id === "western-highlands" ||
-            currentLoc.id === "eastern-mountains" ||
-            currentLoc.id === "weipula" ||
-            currentLoc.id === "weipula-base" ||
-            currentLoc.id === "weipula-village" ||
-            currentLoc.id === "weipula-chin-village"
-          }
+          onMountain={isOnMountain}
         />
       )}
       {!loading && !intro.active && !nearSchoolHall && !showFootballScoreHud && <ThreeGhostsMissionHud />}
@@ -1299,8 +1339,11 @@ function App() {
       {!intro.active && !loading && !rideStatus.riding && !carStatus.driving && !balloonStatus.riding && (
         <>
           <div className="player-life"><LifeMeter lives={rideStatus.lives}/></div>
-          {night && <GhostRadar />}
+          {night && !showTigerRadar && <GhostRadar />}
         </>
+      )}
+      {!intro.active && !loading && !balloonStatus.riding && !mapOpen && showTigerRadar && (
+        <MountainTigerRadar playerPosRef={posRef} playerYawRef={robotYawRef} />
       )}
       {rideStatus.crashed && (rideStatus.damage??1)>0 && (
         <div className="ride-crash-banner" role="alert">
@@ -1932,6 +1975,10 @@ function App() {
               {activeGhostZones.length > 0
                 ? `🌙 ညအချိန် သရဲခြောက်ဇုန် — ${activeGhostZones.map((z) => z.zoneName.split("·")[0].trim()).join(" · ")}`
                 : "🌙 သရဲမြင်လိုပါက ဆက်တင်မှ 🌙 ညအချိန်သို့ ပြောင်း၍ သိုလှောင်ရုံတန်း (AH1) သို့ သွားပါ"}
+              {tigerMap.totalCount > 0 &&
+                (tigerMap.nearest
+                  ? ` · 🐯 တောင်ပေါ်ကျား ${tigerMap.remainingCount}/${tigerMap.totalCount} (အနီးဆုံး ${Math.round(tigerMap.nearest.distanceM)}m)`
+                  : " · 🥕 တောင်ပေါ်ကျားအားလုံး နှိမ်နင်းပြီး!")}
             </span>
           </div>
         )}
@@ -1994,6 +2041,115 @@ function App() {
               pointerEvents="none"
             />
           ))}
+
+          {/* Realtime Mountain Tiger Territories & Nearest Tiger (scaled clearly for 16,000m viewBox) */}
+          {tigerMap.territories.map((t) =>
+            t.isNearest ? null : (
+              <g key={`tiger-zone:${t.territoryId}`} pointerEvents="none">
+                <circle
+                  cx={t.x}
+                  cy={t.z}
+                  r={mapOpen ? 230 : 260}
+                  fill="rgba(249, 115, 22, 0.28)"
+                  stroke="#f97316"
+                  strokeWidth={mapOpen ? 24 : 30}
+                />
+                <circle
+                  cx={t.x}
+                  cy={t.z}
+                  r={mapOpen ? 125 : 140}
+                  fill="#ea580c"
+                  stroke="#fff7ed"
+                  strokeWidth={mapOpen ? 18 : 22}
+                />
+                {mapOpen && (
+                  <>
+                    <text
+                      x={t.x}
+                      y={t.z + 62}
+                      fontSize={180}
+                      textAnchor="middle"
+                      style={{ userSelect: "none" }}
+                    >
+                      🐯
+                    </text>
+                    {t.aliveCount >= 2 && (
+                      <text
+                        x={t.x + 175}
+                        y={t.z - 125}
+                        fontSize={145}
+                        fontWeight="bold"
+                        fill="#fef08a"
+                        textAnchor="middle"
+                        stroke="#091622"
+                        strokeWidth={28}
+                        paintOrder="stroke"
+                        style={{ userSelect: "none" }}
+                      >
+                        {`×${t.aliveCount}`}
+                      </text>
+                    )}
+                  </>
+                )}
+              </g>
+            ),
+          )}
+          {tigerMap.nearest && (
+            <g key={`nearest-tiger:${tigerMap.nearest.id}`} pointerEvents="none">
+              <line
+                x1={pos.x}
+                y1={pos.z}
+                x2={tigerMap.nearest.x}
+                y2={tigerMap.nearest.z}
+                stroke="#fb923c"
+                strokeWidth={mapOpen ? 68 : 90}
+                strokeDasharray={mapOpen ? "180 120" : "240 150"}
+                strokeLinecap="round"
+                opacity={0.95}
+              />
+              <circle
+                cx={tigerMap.nearest.x}
+                cy={tigerMap.nearest.z}
+                r={mapOpen ? 440 : 480}
+                fill="rgba(239, 68, 68, 0.30)"
+                stroke="#ef4444"
+                strokeWidth={mapOpen ? 42 : 52}
+              />
+              <circle
+                cx={tigerMap.nearest.x}
+                cy={tigerMap.nearest.z}
+                r={mapOpen ? 240 : 270}
+                fill="#dc2626"
+                stroke="#fef08a"
+                strokeWidth={mapOpen ? 30 : 38}
+              />
+              <text
+                x={tigerMap.nearest.x}
+                y={tigerMap.nearest.z + 95}
+                fontSize={mapOpen ? 270 : 300}
+                textAnchor="middle"
+                style={{ userSelect: "none" }}
+              >
+                🐯
+              </text>
+              {mapOpen && (
+                <text
+                  x={tigerMap.nearest.x}
+                  y={tigerMap.nearest.z - 490}
+                  fontSize={245}
+                  fontWeight="bold"
+                  fill="#fef08a"
+                  textAnchor="middle"
+                  stroke="#091622"
+                  strokeWidth={52}
+                  paintOrder="stroke"
+                  style={{ userSelect: "none" }}
+                >
+                  {`အနီးဆုံးကျား · ${Math.round(tigerMap.nearest.distanceM)}m`}
+                </text>
+              )}
+            </g>
+          )}
 
           {/* Realtime Live Ghost Markers */}
           {liveGhosts.map((g, idx) => {

@@ -4,7 +4,8 @@ import { useFrame } from '@react-three/fiber';
 import { Quaternion, Vector3, type Object3D } from 'three';
 import { area5 } from '../data/wards/myothar/area5.ts';
 import { sourceIsEdited } from '../game/worldEdits.ts';
-import { GHOST_WAREHOUSE_ANCHOR } from '../game/ghostConfig.ts';
+import { GHOST_WAREHOUSE_ANCHOR, useGhostDevSettings } from '../game/ghostConfig.ts';
+import { GHOST_IDS, useThreeGhostsMission } from '../game/missions/threeGhostsMission.ts';
 import { periodAtMinute, type TimeMode } from '../game/environmentTime.ts';
 import { gameAudio } from '../game/gameAudio.ts';
 import {
@@ -16,7 +17,10 @@ import {
   warehouseZoneDistance,
   type WarehouseGeometry,
 } from '../game/audio/warehouseSoundOrigins.ts';
-import { WarehouseHorrorLoopPlayer } from '../game/audio/WarehouseHorrorLoopPlayer.ts';
+import {
+  WarehouseHorrorLoopPlayer,
+  isWarehouseHorrorAudioActive,
+} from '../game/audio/WarehouseHorrorLoopPlayer.ts';
 import { setWarehouseZoneDiagnostics } from '../game/audio/horrorAudioDiagnostics.ts';
 
 export interface HauntedWarehouseAudioZoneProps {
@@ -58,8 +62,20 @@ export function HauntedWarehouseAudioZone({
   config = DEFAULT_HAUNTED_ZONE_CONFIG,
   onDiagnostics,
 }: HauntedWarehouseAudioZoneProps) {
+  const devSettings = useGhostDevSettings();
+  const missionProgress = useThreeGhostsMission();
+  const hasLivingGhosts = GHOST_IDS.some((id) => missionProgress.hp[id] > 0);
   const period = timeMode === 'auto' ? periodAtMinute(minute) : timeMode;
-  const ambienceAllowed = enabled && soundEnabled && soundVolume > 0 && !paused;
+  const ambienceAllowed = isWarehouseHorrorAudioActive({
+    enabled,
+    minute,
+    timeMode,
+    soundEnabled,
+    soundVolume,
+    paused,
+    forceActive: devSettings.forceActive,
+    hasLivingGhosts,
+  });
   const loopPlayerRef = useRef<WarehouseHorrorLoopPlayer | null>(null);
   const buildingsRef = useRef<WarehouseGeometry[]>([]);
   const scratch = useMemo(

@@ -29,7 +29,13 @@ import {
   playTigerCombatRoar,
   registerMountainTigerSpawns,
 } from './mountainTigerCombat.ts';
-import { mountainHeight, type TerrainPeak } from './mountainTerrain.ts';
+import {
+  FOREGROUND_MOUNTAIN_STEP,
+  mountainMeshSurface,
+  mountainSlopePitchRoll,
+  type MountainMeshSurface,
+  type TerrainPeak,
+} from './mountainTerrain.ts';
 import {
   getMountainTigerAssetCache,
   TIGER_ANKLE,
@@ -71,6 +77,8 @@ export interface MountainTigerSpawn {
   readonly homeX: number;
   readonly homeZ: number;
   readonly homeY: number;
+  readonly homeDu: number;
+  readonly homeDv: number;
   readonly wanderRadius: number;
   readonly coatTintIndex: number;
   readonly scale: number;
@@ -100,6 +108,8 @@ interface ActiveTigerRuntime {
   x: number;
   y: number;
   z: number;
+  groundDu: number;
+  groundDv: number;
   yaw: number;
   targetX: number;
   targetZ: number;
@@ -174,33 +184,36 @@ export function buildMountainTigerSpawns(
     return true;
   };
 
+  const MAX_TIGER_SPAWN_SLOPE = 0.55;
+
   const isValidTigerSpot = (
     u: number,
     v: number,
-  ): { ok: boolean; x: number; z: number; y: number } => {
-    const y = mountainHeight(u, v, peaks);
-    if (y < 14) return { ok: false, x: 0, z: 0, y: 0 };
+  ): { ok: boolean; x: number; z: number; y: number; du: number; dv: number } => {
+    const surf = mountainMeshSurface(u, v, peaks);
+    const y = surf.y;
+    if (y < 14 || surf.slope > MAX_TIGER_SPAWN_SLOPE) return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
     for (let i = 0; i < peaks.length; i++) {
       const p = peaks[i];
       const obsR = (p.obstacleRadius ?? p.radius) + 2.0;
       const du = u - p.u;
       const dv = v - p.v;
-      if (du * du + dv * dv < obsR * obsR) return { ok: false, x: 0, z: 0, y: 0 };
+      if (du * du + dv * dv < obsR * obsR) return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
     }
     const w = toWorld(u, v);
     if (isOnTaungphilaRoad(w.x, w.z, -8) || isOnWeipulaRoad(w.x, w.z, -8)) {
-      return { ok: false, x: 0, z: 0, y: 0 };
+      return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
     }
     if (!canStandTaungphilaFeatures(w.x, w.z, 1.2, false)) {
-      return { ok: false, x: 0, z: 0, y: 0 };
+      return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
     }
-    if (!canStandHighlandPlateau(w.x, w.z, 1.2, false)) {
-      return { ok: false, x: 0, z: 0, y: 0 };
+    if (!canStandHighlandPlateau(w.x, w.z, 1.2, false) || highlandTreeBlocks(w.x, w.z, 0.9)) {
+      return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
     }
     if (!isFarFromAllPrey(w.x, w.z)) {
-      return { ok: false, x: 0, z: 0, y: 0 };
+      return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
     }
-    return { ok: true, x: w.x, z: w.z, y };
+    return { ok: true, x: w.x, z: w.z, y, du: surf.du, dv: surf.dv };
   };
 
   // Mountain tiger territories kept strictly >= 20m from every rabbit & deer:
@@ -230,7 +243,7 @@ export function buildMountainTigerSpawns(
   for (const zone of territoryZones) {
     let addedTerritories = 0;
     let attempts = 0;
-    while (addedTerritories < zone.targetTerritories && attempts < zone.targetTerritories * 28) {
+    while (addedTerritories < zone.targetTerritories && attempts < zone.targetTerritories * 56) {
       attempts++;
       const u = zone.uMin + rng() * (zone.uMax - zone.uMin);
       const v = zone.vMin + rng() * (zone.vMax - zone.vMin);
@@ -255,10 +268,17 @@ export function buildMountainTigerSpawns(
 
       if (isPair) {
         // Place mate strictly 3.5–5.0m away in the exact same territory (also verified >= 20m from prey!)
-        let mateSpot: { ok: boolean; x: number; z: number; y: number } = { ok: false, x: 0, z: 0, y: 0 };
+        let mateSpot: { ok: boolean; x: number; z: number; y: number; du: number; dv: number } = {
+          ok: false,
+          x: 0,
+          z: 0,
+          y: 0,
+          du: 0,
+          dv: 0,
+        };
         let mateU = u;
         let mateV = v;
-        for (let mTry = 0; mTry < 12; mTry++) {
+        for (let mTry = 0; mTry < 16; mTry++) {
           const ang = rng() * Math.PI * 2;
           const dist =
             TIGER_PAIR_MIN_DIST_M + rng() * (TIGER_PAIR_MAX_DIST_M - TIGER_PAIR_MIN_DIST_M);
@@ -280,6 +300,8 @@ export function buildMountainTigerSpawns(
             homeX: center.x,
             homeZ: center.z,
             homeY: center.y,
+            homeDu: center.du,
+            homeDv: center.dv,
             wanderRadius: 6 + rng() * 4,
             coatTintIndex: 0,
             scale: 1.06 + rng() * 0.14,
@@ -294,6 +316,8 @@ export function buildMountainTigerSpawns(
             homeX: mateSpot.x,
             homeZ: mateSpot.z,
             homeY: mateSpot.y,
+            homeDu: mateSpot.du,
+            homeDv: mateSpot.dv,
             wanderRadius: 6 + rng() * 4,
             coatTintIndex: 1,
             scale: 0.96 + rng() * 0.12,
@@ -311,6 +335,8 @@ export function buildMountainTigerSpawns(
           homeX: center.x,
           homeZ: center.z,
           homeY: center.y,
+          homeDu: center.du,
+          homeDv: center.dv,
           wanderRadius: 7 + rng() * 4,
           coatTintIndex: territoryNum % TIGER_COAT_TINTS.length,
           scale: 1.1 + rng() * 0.14,
@@ -334,6 +360,9 @@ const scratchLocalQuat = new Quaternion();
 const scratchScale = new Vector3();
 const scratchEuler = new Euler();
 const scratchColor = new Color();
+const scratchSurface: MountainMeshSurface = { y: 0, du: 0, dv: 0, slope: 0 };
+const scratchTilt = { pitch: 0, roll: 0 };
+const MAX_TIGER_STEP_SLOPE_RUNTIME = 0.62;
 
 type ScoredIdx = { idx: number; distSq: number };
 
@@ -372,6 +401,8 @@ export class MountainTigerFixedPool {
       x: 0,
       y: 0,
       z: 0,
+      groundDu: 0,
+      groundDv: 0,
       yaw: 0,
       targetX: 0,
       targetZ: 0,
@@ -470,6 +501,8 @@ export class MountainTigerFixedPool {
         r.x = sp.homeX;
         r.y = sp.homeY;
         r.z = sp.homeZ;
+        r.groundDu = sp.homeDu;
+        r.groundDv = sp.homeDv;
         r.yaw = sp.phaseOffset;
         r.targetX = sp.homeX + Math.sin(sp.phaseOffset) * 5;
         r.targetZ = sp.homeZ + Math.cos(sp.phaseOffset) * 5;
@@ -544,6 +577,10 @@ export class MountainTigerFixedPool {
       const r = slot.value;
       if (r.spawnIdx < 0) return;
       const sp = this.spawns[r.spawnIdx];
+      // Skip per-frame animation & GPU matrix uploads when tiger is far outside visible range (> 260m)
+      const dxFocus = r.x - focusX;
+      const dzFocus = r.z - focusZ;
+      if (dxFocus * dxFocus + dzFocus * dzFocus > 260 * 260) return;
       const selfRadius = 1.2 * sp.scale;
       const combat = getCombatTiger(sp.id);
 
@@ -618,7 +655,12 @@ export class MountainTigerFixedPool {
           const lungeStep = 7.6 * dt;
           const nx = r.x + r.pounceDirX * lungeStep;
           const nz = r.z + r.pounceDirZ * lungeStep;
+          const nu = nx * cosA - nz * sinA;
+          const nv = nx * sinA + nz * cosA;
+          const surf = mountainMeshSurface(nu, nv, peaks, FOREGROUND_MOUNTAIN_STEP, scratchSurface);
           if (
+            surf.y >= 12 &&
+            surf.slope <= MAX_TIGER_STEP_SLOPE_RUNTIME &&
             canStandHighlandPlateau(nx, nz, 0.75, false) &&
             !highlandTreeBlocks(nx, nz, 0.55) &&
             !isOnTaungphilaRoad(nx, nz, -4) &&
@@ -626,9 +668,9 @@ export class MountainTigerFixedPool {
           ) {
             r.x = nx;
             r.z = nz;
-            const nu = nx * cosA - nz * sinA;
-            const nv = nx * sinA + nz * cosA;
-            r.y = mountainHeight(nu, nv, peaks);
+            r.y = surf.y;
+            r.groundDu = surf.du;
+            r.groundDv = surf.dv;
           }
 
           if (!r.pounceHitChecked && pt >= 0.45) {
@@ -737,7 +779,12 @@ export class MountainTigerFixedPool {
               const yawTry = r.yaw + tryAngles[a];
               const nx = r.x + Math.sin(yawTry) * stepDist;
               const nz = r.z + Math.cos(yawTry) * stepDist;
+              const nu = nx * cosA - nz * sinA;
+              const nv = nx * sinA + nz * cosA;
+              const surf = mountainMeshSurface(nu, nv, peaks, FOREGROUND_MOUNTAIN_STEP, scratchSurface);
               if (
+                surf.y >= 12 &&
+                surf.slope <= MAX_TIGER_STEP_SLOPE_RUNTIME &&
                 Math.hypot(nx - sp.homeX, nz - sp.homeZ) <= TIGER_GIVEUP_RADIUS_M &&
                 canStandHighlandPlateau(nx, nz, 0.8, false) &&
                 !highlandTreeBlocks(nx, nz, 0.6) &&
@@ -747,9 +794,9 @@ export class MountainTigerFixedPool {
                 r.x = nx;
                 r.z = nz;
                 if (a > 0) r.yaw = yawTry;
-                const nu = nx * cosA - nz * sinA;
-                const nv = nx * sinA + nz * cosA;
-                r.y = mountainHeight(nu, nv, peaks);
+                r.y = surf.y;
+                r.groundDu = surf.du;
+                r.groundDv = surf.dv;
                 r.gaitPhase = (r.gaitPhase + stepDist * 0.85) % 1;
                 break;
               }
@@ -802,8 +849,13 @@ export class MountainTigerFixedPool {
             const yawTry = r.yaw + tryAngles[a];
             const nx = r.x + Math.sin(yawTry) * stepDist;
             const nz = r.z + Math.cos(yawTry) * stepDist;
-            // Strictly remain inside territory patrol radius & never clip through mate/other wildlife!
+            const nu = nx * cosA - nz * sinA;
+            const nv = nx * sinA + nz * cosA;
+            const surf = mountainMeshSurface(nu, nv, peaks, FOREGROUND_MOUNTAIN_STEP, scratchSurface);
+            // Strictly remain inside territory patrol radius & never walk onto sheer cliffs or clip wildlife!
             if (
+              surf.y >= 12 &&
+              surf.slope <= MAX_TIGER_STEP_SLOPE_RUNTIME &&
               Math.hypot(nx - sp.homeX, nz - sp.homeZ) <= Math.max(sp.wanderRadius, distFromHome + 0.5) &&
               !isOnTaungphilaRoad(nx, nz, -4) &&
               !isOnWeipulaRoad(nx, nz, -4) &&
@@ -814,9 +866,9 @@ export class MountainTigerFixedPool {
               r.x = nx;
               r.z = nz;
               if (a > 0) r.yaw = yawTry;
-              const nu = nx * cosA - nz * sinA;
-              const nv = nx * sinA + nz * cosA;
-              r.y = mountainHeight(nu, nv, peaks);
+              r.y = surf.y;
+              r.groundDu = surf.du;
+              r.groundDv = surf.dv;
               r.gaitPhase = (r.gaitPhase + stepDist * 0.72) % 1;
               moved = true;
               break;
@@ -896,7 +948,8 @@ export class MountainTigerFixedPool {
     const bodyPitch = pouncing ? -0.28 : r.state === 'telegraph' ? 0.14 : r.state === 'stagger' ? -0.18 : 0;
     const bodyRoll = defeated ? r.collapseBlend * (Math.PI * 0.48) : 0;
 
-    scratchEuler.set(bodyPitch, r.yaw, bodyRoll, 'YXZ');
+    const tilt = mountainSlopePitchRoll(r.groundDu, r.groundDv, cosA, sinA, r.yaw, scratchTilt, 0.44);
+    scratchEuler.set(tilt.pitch + bodyPitch, r.yaw, tilt.roll + bodyRoll, 'YXZ');
     scratchQuat.setFromEuler(scratchEuler);
 
     const placePart = (

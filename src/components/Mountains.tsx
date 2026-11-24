@@ -5,7 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Group } from 'three';
 import { registerGroundRegion, releaseGroundRegion } from '../game/groundSurface.ts';
 import { ward, toWorld, angle } from '../data/ward';
-import { buildMountainTiles, mountainHeight, type TerrainPeak } from '../game/mountainTerrain';
+import { buildMountainTiles, FOREGROUND_MOUNTAIN_STEP, mountainHeight, type TerrainPeak } from '../game/mountainTerrain';
 import {
 	MAHA_WEIPULA_BASE_GATE_UV,
 	MAHA_WEIPULA_PLAZA_UV,
@@ -855,7 +855,7 @@ export function Mountains() {
 	return (
 		<group ref={mountainRoot} name="forested-ridge-terrain">
 			{/* ၁။ သဘာဝ တောင်တန်း မျက်နှာပြင် (Sculpted 1,320m Climbable Mountain Massif & Distant Chin Hills) */}
-			<RidgeSurface peaks={foreground} step={mobileQuality ? 30 : 20} />
+			<RidgeSurface peaks={foreground} step={FOREGROUND_MOUNTAIN_STEP} />
 			<RidgeSurface peaks={distantMountainTiers} step={mobileQuality ? 80 : 60} haze={0.55} />
 
 			{/* ၂။ တောင်ခြေ မုခ်ဦး (Base Foothill Welcome Archway — Climb Trailhead at y ≈ 0m) */}

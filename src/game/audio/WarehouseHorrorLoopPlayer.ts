@@ -1,4 +1,6 @@
 import { gameAudio } from '../gameAudio.ts';
+import type { TimeMode } from '../environmentTime.ts';
+import { isGhostNightActive } from '../ghostConfig.ts';
 import {
   WAREHOUSE_HORROR_LOOP_AUDIO_FILE,
   SFX_RETRY_COOLDOWN_MS,
@@ -6,6 +8,32 @@ import {
   loadSfxBuffer,
   preloadSfxBuffers,
 } from './sfxBufferCache.ts';
+
+/**
+ * Warehouse horror loop plays ONLY during active ghost hours (night `[18:00, 05:00)`
+ * or manual night / dev forceActive) AND while at least one ghost is still undefeated.
+ */
+export function isWarehouseHorrorAudioActive(params: {
+  enabled: boolean;
+  minute: number;
+  timeMode: TimeMode;
+  soundEnabled: boolean;
+  soundVolume: number;
+  paused: boolean;
+  forceActive?: boolean;
+  hasLivingGhosts: boolean;
+}): boolean {
+  if (!params.enabled || !params.soundEnabled || params.soundVolume <= 0 || params.paused) {
+    return false;
+  }
+  if (!params.hasLivingGhosts) {
+    return false;
+  }
+  return isGhostNightActive(params.minute, {
+    timeMode: params.timeMode,
+    forceActive: params.forceActive,
+  });
+}
 
 /**
  * Dedicated Sampled Warehouse Horror Loop Player

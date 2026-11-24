@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { toWorld, ward } from '../src/data/ward.ts';
+import { angle, toWorld, ward } from '../src/data/ward.ts';
 import { getChinHouseAssetCache } from '../src/game/chinHouseAssets.ts';
 import { canStand, treeBlocks } from '../src/game/collision.ts';
 import {
@@ -25,7 +25,9 @@ import {
 import { horseFootprintClear } from '../src/game/horseRide.ts';
 import { getMonasteryBuildingAssetCache } from '../src/game/monasteryAssets.ts';
 import { rideFootprintClear } from '../src/game/motorcycleRide.ts';
-import { mountainHeight } from '../src/game/mountainTerrain.ts';
+import { mountainHeight, mountainMeshSurface } from '../src/game/mountainTerrain.ts';
+import { buildTaungphilaSlopeFlora } from '../src/game/taungphilaWorld.ts';
+import { buildWeipulaSlopeFlora } from '../src/game/weipulaClimb.ts';
 import { getTreeAssetCache } from '../src/game/treeResourcePool.ts';
 
 const allPeaks = [...ward.mountains, ...ward.weipula.peaks];
@@ -193,4 +195,33 @@ test('HighlandPlateauFixedPool strictly bounds GPU memory and recycles slots acr
   assert.equal(pool.metrics().totalActiveSlots, 0);
   assert.strictEqual(getHighlandPlateauAssetCache().treeCache, getTreeAssetCache());
   disposeHighlandPlateauAssetCache();
+});
+
+test('Mountain slope trees and boulders anchor strictly into rendered mountain mesh with zero floating gap', () => {
+  const catalog = getHighlandPlateauCatalog();
+  const weipula = buildWeipulaSlopeFlora(allPeaks, false);
+  const taungphila = buildTaungphilaSlopeFlora(allPeaks, false);
+  const cosA = Math.cos(angle);
+  const sinA = Math.sin(angle);
+
+  for (const t of [...catalog.trees, ...weipula.trees, ...taungphila.trees]) {
+    const surf = mountainMeshSurface(t.u, t.v, allPeaks);
+    const downhillRootY = surf.y - surf.slope * 1.72 * t.scale;
+    assert.ok(
+      t.y <= downhillRootY + 0.05,
+      `Tree ${t.id} base (${t.y.toFixed(2)}m) anchors into downhill slope (${downhillRootY.toFixed(2)}m, slope=${surf.slope.toFixed(2)})`,
+    );
+  }
+
+  for (const b of catalog.boulders) {
+    const bu = b.x * cosA - b.z * sinA;
+    const bv = b.x * sinA + b.z * cosA;
+    const surf = mountainMeshSurface(bu, bv, allPeaks);
+    const boulderBottomY = b.y - b.sy;
+    const downhillEdgeY = surf.y - Math.max(b.sx, b.sz) * surf.slope;
+    assert.ok(
+      boulderBottomY <= downhillEdgeY + 0.05,
+      `Boulder ${b.id} bottom (${boulderBottomY.toFixed(2)}m) anchors below downhill slope (${downhillEdgeY.toFixed(2)}m, slope=${surf.slope.toFixed(2)})`,
+    );
+  }
 });

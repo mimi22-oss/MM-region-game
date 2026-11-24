@@ -198,6 +198,7 @@ export const Player = memo(function Player({
  const smoothedAvatarYRef=useRef<number|null>(null);
  const smoothedCamYRef=useRef<number|null>(null);
  const knockbackBaseFovRef=useRef<number|null>(null);
+ const tmpDroneOffset=useRef(new Vector3());
  const pendingGroundSyncRef=useRef(true);
  const bridgeFallRef=useRef(createBridgeFallState());
  const characterMotion=useRef({speed:0,distance:0,stepLift:0,leftFoot:0,rightFoot:0,airborne:false,jumpBend:0,jumpVelocity:0});
@@ -1361,7 +1362,7 @@ export const Player = memo(function Player({
      const droneFloor=ground.height(activeDrone.camX,activeDrone.camZ)+activeDrone.minFloor;
      const dronePos=tmpVecA.current.set(activeDrone.camX,Math.max(droneFloor,activeDrone.camY),activeDrone.camZ);
      const droneLook=tmpVecB.current.set(activeDrone.lookX,activeDrone.lookY,activeDrone.lookZ);
-     const droneOffset=dronePos.clone().sub(droneLook);
+     const droneOffset=tmpDroneOffset.current.copy(dronePos).sub(droneLook);
      const droneDist=droneOffset.length();
      if(droneDist>1e-5){
       ray.current.set(droneLook,droneOffset.multiplyScalar(1/droneDist));ray.current.far=droneDist;

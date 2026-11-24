@@ -1,5 +1,12 @@
 import { angle, toWorld, ward } from '../data/ward.ts';
-import { mountainHeight, terrainNoise, type TerrainPeak } from './mountainTerrain.ts';
+import {
+  mountainHeight,
+  mountainMeshHeight,
+  mountainMeshSurface,
+  terrainNoise,
+  type MountainMeshSurface,
+  type TerrainPeak,
+} from './mountainTerrain.ts';
 import {
   buildWeipulaRoadSegments,
   WEIPULA_JUNCTION_UV,
@@ -376,7 +383,7 @@ export function buildTaungphilaMountainWorld(
     const u = s.u + jitter(6);
     const v = s.v + jitter(6);
     const w = toWorld(u, v);
-    const y = mountainHeight(u, v, peaks);
+    const y = mountainMeshHeight(u, v, peaks);
     return {
       id: s.id,
       name: s.name,
@@ -420,7 +427,7 @@ export function buildTaungphilaMountainWorld(
     const u = s.u + jitter(3.5);
     const v = s.v + jitter(3.5);
     const w = toWorld(u, v);
-    const y = mountainHeight(u, v, peaks);
+    const y = mountainMeshHeight(u, v, peaks);
     return {
       id: s.id,
       name: s.name,
@@ -456,7 +463,7 @@ export function buildTaungphilaMountainWorld(
     const u = s.u + jitter(3.5);
     const v = s.v + jitter(3.5);
     const w = toWorld(u, v);
-    const y = mountainHeight(u, v, peaks);
+    const y = mountainMeshHeight(u, v, peaks);
     return {
       id: s.id,
       name: s.name,
@@ -494,7 +501,7 @@ export function buildTaungphilaMountainWorld(
   ];
   const pagodas: MountainPagodaSpec[] = pagodaSeeds.map((s) => {
     const w = toWorld(s.u, s.v);
-    const y = mountainHeight(s.u, s.v, peaks);
+    const y = mountainMeshHeight(s.u, s.v, peaks);
     return {
       id: s.id,
       name: s.name,
@@ -549,26 +556,31 @@ export function buildTaungphilaSlopeFlora(
     return true;
   };
 
+  const surfScratch: MountainMeshSurface = { y: 0, du: 0, dv: 0, slope: 0 };
+
   // A. Dense forest belts over Taungphila Mountain (`u ∈ [-710, -430], v ∈ [-25, 495]`)
   const tpTreeTarget = mobile ? 380 : 680;
   let attempts = 0;
-  while (trees.length < tpTreeTarget && attempts < tpTreeTarget * 6) {
+  while (trees.length < tpTreeTarget && attempts < tpTreeTarget * 12) {
     attempts++;
     const u = -710 + rng() * 280;
     const v = -25 + rng() * 520;
-    const h = mountainHeight(u, v, peaks);
-    if (h < 1.2) continue;
+    const surf = mountainMeshSurface(u, v, peaks, undefined, surfScratch);
+    const h = surf.y;
+    if (h < 1.2 || surf.slope > 1.35) continue;
     if (terrainNoise(u / 48, v / 48) < 0.24 && rng() > 0.35) continue;
     if (!isClearForTree(u, v)) continue;
     const w = toWorld(u, v);
+    const scale = 0.85 + rng() * 1.05;
+    const rootEmbed = Math.max(0.38 * scale, surf.slope * 1.75 * scale);
     trees.push({
       id: `tp-tree-${trees.length}`,
       u,
       v,
       x: w.x,
-      y: h - 0.15,
+      y: h - rootEmbed,
       z: w.z,
-      scale: 0.85 + rng() * 1.05,
+      scale,
       kind: (h > 70 ? rng() > 0.28 : rng() > 0.55) ? 'pine' : 'broad',
       tintIndex: Math.floor(rng() * 5),
     });
@@ -577,22 +589,25 @@ export function buildTaungphilaSlopeFlora(
   // B. Continuous lush forest belts along the ENTIRE Western Chin Ridge Spine (`v = 495 .. 4820`) right into Weipula!
   const ridgeTreeTarget = trees.length + (mobile ? 560 : 1220);
   attempts = 0;
-  while (trees.length < ridgeTreeTarget && attempts < 7500) {
+  while (trees.length < ridgeTreeTarget && attempts < 16000) {
     attempts++;
     const u = -770 + rng() * 260;
     const v = 495 + rng() * 4325;
-    const h = mountainHeight(u, v, peaks);
-    if (h < 4.0) continue;
+    const surf = mountainMeshSurface(u, v, peaks, undefined, surfScratch);
+    const h = surf.y;
+    if (h < 4.0 || surf.slope > 1.35) continue;
     if (!isClearForTree(u, v)) continue;
     const w = toWorld(u, v);
+    const scale = 0.95 + rng() * 1.15;
+    const rootEmbed = Math.max(0.38 * scale, surf.slope * 1.75 * scale);
     trees.push({
       id: `wr-tree-${trees.length}`,
       u,
       v,
       x: w.x,
-      y: h - 0.15,
+      y: h - rootEmbed,
       z: w.z,
-      scale: 0.95 + rng() * 1.15,
+      scale,
       kind: rng() > 0.32 ? 'pine' : 'broad',
       tintIndex: Math.floor(rng() * 5),
     });
@@ -601,23 +616,28 @@ export function buildTaungphilaSlopeFlora(
   // C. Meadow grass & mountain shrubs from Taungphila Mountain down the Western Spine to Weipula
   const grassTarget = mobile ? 420 : 920;
   attempts = 0;
-  while (grassTufts.length < grassTarget && attempts < grassTarget * 4) {
+  while (grassTufts.length < grassTarget && attempts < grassTarget * 8) {
     attempts++;
     const u = -760 + rng() * 320;
     const v = -25 + rng() * 4720;
-    const h = mountainHeight(u, v, peaks);
-    if (h < 0.6) continue;
+    const surf = mountainMeshSurface(u, v, peaks, undefined, surfScratch);
+    const h = surf.y;
+    if (h < 0.6 || surf.slope > 1.15) continue;
     if (distToTaungphilaRoadUV(u, v) < 6.5) continue;
     const w = toWorld(u, v);
     const gs = 0.7 + rng() * 0.95;
+    const sx = gs * (0.9 + rng() * 0.35);
+    const sy = gs * (0.55 + rng() * 0.35);
+    const sz = gs * (0.9 + rng() * 0.35);
+    const tuftEmbed = Math.max(0.22 * gs, Math.max(sx, sz) * surf.slope * 0.55);
     grassTufts.push({
       id: `tp-grass-${grassTufts.length}`,
       x: w.x,
-      y: h,
+      y: h - tuftEmbed,
       z: w.z,
-      sx: gs * (0.9 + rng() * 0.35),
-      sy: gs * (0.55 + rng() * 0.35),
-      sz: gs * (0.9 + rng() * 0.35),
+      sx,
+      sy,
+      sz,
       rotY: rng() * Math.PI * 2,
       tintIndex: Math.floor(rng() * 5),
     });

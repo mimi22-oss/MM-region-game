@@ -1,4 +1,17 @@
 import { BufferGeometry, Float32BufferAttribute, Color } from "three";
+import { mobileQuality } from "./sceneBudget.ts";
+
+export const MOUNTAIN_TILE_SIZE = 240;
+/** Shared foreground tessellation step used by RidgeSurface AND mountain wildlife grounding. */
+export const FOREGROUND_MOUNTAIN_STEP = mobileQuality ? 30 : 20;
+
+export interface MountainMeshSurface {
+  y: number;
+  du: number;
+  dv: number;
+  slope: number;
+}
+
 export type TerrainPeak = {
   u: number;
   v: number;
@@ -94,13 +107,102 @@ export function mountainHeight(
   }
   return totalH;
 }
+/**
+ * Samples the EXACT rendered triangle plane height and slope gradient `(du, dv)` of the
+ * tiled `buildMountainTiles(peaks, step)` mesh at `(u, v)`.
+ * Using this instead of raw analytical `mountainHeight` eliminates multi-meter floating or
+ * sinking gaps between wildlife/props and the tessellated 20m/30m mountain surface.
+ */
+export function mountainMeshSurface(
+  u: number,
+  v: number,
+  peaks: readonly TerrainPeak[],
+  step = FOREGROUND_MOUNTAIN_STEP,
+  out: MountainMeshSurface = { y: 0, du: 0, dv: 0, slope: 0 },
+): MountainMeshSurface {
+  const size = MOUNTAIN_TILE_SIZE;
+  const n = Math.round(size / step);
+  const spacing = size / n;
+  const tx = Math.floor(u / size);
+  const tz = Math.floor(v / size);
+  const u0 = tx * size;
+  const v0 = tz * size;
+  const lx = (u - u0) / spacing;
+  const lz = (v - v0) / spacing;
+  const ix = Math.min(n - 1, Math.max(0, Math.floor(lx)));
+  const iz = Math.min(n - 1, Math.max(0, Math.floor(lz)));
+  const fx = Math.min(1, Math.max(0, lx - ix));
+  const fz = Math.min(1, Math.max(0, lz - iz));
+
+  const ua = u0 + ix * spacing;
+  const va = v0 + iz * spacing;
+  const ha = mountainHeight(ua, va, peaks);
+  const hb = mountainHeight(ua + spacing, va, peaks);
+  const hc = mountainHeight(ua, va + spacing, peaks);
+  const hd = mountainHeight(ua + spacing, va + spacing, peaks);
+
+  if (Math.max(ha, hb, hc, hd) < 0.01) {
+    out.y = 0;
+    out.du = 0;
+    out.dv = 0;
+    out.slope = 0;
+    return out;
+  }
+
+  // Matches buildMountainTiles indices: (a, c, b) for fx + fz <= 1, (b, c, d) for fx + fz > 1
+  if (fx + fz <= 1) {
+    out.y = ha + fx * (hb - ha) + fz * (hc - ha);
+    out.du = (hb - ha) / spacing;
+    out.dv = (hc - ha) / spacing;
+  } else {
+    out.y = hd + (1 - fx) * (hc - hd) + (1 - fz) * (hb - hd);
+    out.du = (hd - hc) / spacing;
+    out.dv = (hd - hb) / spacing;
+  }
+  out.slope = Math.hypot(out.du, out.dv);
+  return out;
+}
+
+export function mountainMeshHeight(
+  u: number,
+  v: number,
+  peaks: readonly TerrainPeak[],
+  step = FOREGROUND_MOUNTAIN_STEP,
+): number {
+  return mountainMeshSurface(u, v, peaks, step).y;
+}
+
+/**
+ * Converts local mountain triangle gradient `(du, dv)` into animal-local Euler pitch & roll
+ * for `'YXZ'` rotation so all four feet/paws stay planted on sloped ground.
+ */
+export function mountainSlopePitchRoll(
+  du: number,
+  dv: number,
+  cosA: number,
+  sinA: number,
+  yaw: number,
+  out: { pitch: number; roll: number },
+  maxRad = 0.44,
+): { pitch: number; roll: number } {
+  const gx = du * cosA + dv * sinA;
+  const gz = -du * sinA + dv * cosA;
+  const sinY = Math.sin(yaw);
+  const cosY = Math.cos(yaw);
+  const sFwd = gx * sinY + gz * cosY;
+  const sRight = gx * cosY - gz * sinY;
+  out.pitch = Math.max(-maxRad, Math.min(maxRad, -Math.atan(sFwd)));
+  out.roll = Math.max(-maxRad, Math.min(maxRad, Math.atan(sRight)));
+  return out;
+}
+
 /** Connected tiled heightfield, vertex colors and shared-edge normals; no tree meshes. */
 export function buildMountainTiles(
   peaks: readonly TerrainPeak[],
   step = 10,
   haze = 0,
 ) {
-  const size = 240,
+  const size = MOUNTAIN_TILE_SIZE,
     n = Math.round(size / step),
     spacing = size / n,
     tiles = new Set<string>();

@@ -1,5 +1,10 @@
 import { angle, toWorld, ward } from '../data/ward.ts';
-import { mountainHeight, type TerrainPeak } from './mountainTerrain.ts';
+import {
+  mountainMeshHeight,
+  mountainMeshSurface,
+  type MountainMeshSurface,
+  type TerrainPeak,
+} from './mountainTerrain.ts';
 import { isOnTaungphilaRoad } from './taungphilaWorld.ts';
 import { isOnWeipulaRoad, type MountainTreePlot } from './weipulaClimb.ts';
 
@@ -176,13 +181,15 @@ export function buildHighlandPlateauCatalog(
   let campIdx = 0;
   let villageIdx = 0;
 
+  const surfScratch: MountainMeshSurface = { y: 0, du: 0, dv: 0, slope: 0 };
+
   for (let row = 0; row < rows; row++) {
     const baseV = 165 + row * 120;
     for (let col = 0; col < cols; col++) {
       const baseU = -845 - col * 145 + (row % 2 ? -24 : 24);
       const u = baseU + (rng() - 0.5) * 26;
       const v = baseV + (rng() - 0.5) * 26;
-      const y = mountainHeight(u, v, peaks);
+      const y = mountainMeshHeight(u, v, peaks);
       if (y < 25) continue;
 
       const world = toWorld(u, v);
@@ -234,7 +241,7 @@ export function buildHighlandPlateauCatalog(
           trails.push({
             id: `${settlementId}-trail-${b}`,
             x: bx,
-            y: mountainHeight(bu, bv, peaks) + 0.07,
+            y: mountainMeshHeight(bu, bv, peaks) + 0.07,
             z: bz,
             width: 3.4,
             length: len,
@@ -248,24 +255,24 @@ export function buildHighlandPlateauCatalog(
         const tentU = u + Math.sin(branchAngles[0]) * 16;
         const tentV = v + Math.cos(branchAngles[0]) * 16;
         const tentW = toWorld(tentU, tentV);
-        const tentY = mountainHeight(tentU, tentV, peaks);
+        const tentY = mountainMeshHeight(tentU, tentV, peaks);
 
         // Branch 1 (West): Woodcutter Firewood Log Stack & Stump
         const logU = u + Math.sin(branchAngles[1]) * 20;
         const logV = v + Math.cos(branchAngles[1]) * 20;
         const logW = toWorld(logU, logV);
-        const logY = mountainHeight(logU, logV, peaks);
+        const logY = mountainMeshHeight(logU, logV, peaks);
 
         // Branch 2 (North-East): Clear Water Pond with Ceramic Water Jar & Shoreline Rocks
         const pondU = u + Math.sin(branchAngles[2]) * 24;
         const pondV = v + Math.cos(branchAngles[2]) * 24;
         const pondW = toWorld(pondU, pondV);
-        const pondY = mountainHeight(pondU, pondV, peaks);
+        const pondY = mountainMeshHeight(pondU, pondV, peaks);
 
         const jarU = u + Math.sin(branchAngles[2]) * 16.5;
         const jarV = v + Math.cos(branchAngles[2]) * 16.5;
         const jarW = toWorld(jarU, jarV);
-        const jarY = mountainHeight(jarU, jarV, peaks);
+        const jarY = mountainMeshHeight(jarU, jarV, peaks);
 
         camps.push({
           id: `${settlementId}-base`,
@@ -299,16 +306,20 @@ export function buildHighlandPlateauCatalog(
           const ru = qU + (rng() - 0.5) * 11;
           const rv = qV + (rng() - 0.5) * 11;
           const rw = toWorld(ru, rv);
-          const ry = mountainHeight(ru, rv, peaks);
+          const rSurf = mountainMeshSurface(ru, rv, peaks, undefined, surfScratch);
           const s = 1.6 + rng() * 2.2;
+          const sx = s * (1.1 + rng() * 0.4);
+          const sy = s * (0.75 + rng() * 0.35);
+          const sz = s * (1.0 + rng() * 0.4);
+          const rockEmbed = Math.max(0, Math.max(sx, sz) * rSurf.slope - sy * 0.55);
           boulders.push({
             id: `${settlementId}-quarry-${r}`,
             x: rw.x,
-            y: ry + s * 0.35,
+            y: rSurf.y + sy * 0.3 - rockEmbed,
             z: rw.z,
-            sx: s * (1.1 + rng() * 0.4),
-            sy: s * (0.75 + rng() * 0.35),
-            sz: s * (1.0 + rng() * 0.4),
+            sx,
+            sy,
+            sz,
             rotation: rng() * Math.PI * 2,
             tintIndex: r % 4,
             solidRadius: s * 0.72,
@@ -324,7 +335,7 @@ export function buildHighlandPlateauCatalog(
           const hv = v + Math.sin(a) * dist;
           const hw = toWorld(hu, hv);
           if (!isClearOfHighways(hw.x, hw.z)) continue;
-          const hy = mountainHeight(hu, hv, peaks);
+          const hy = mountainMeshHeight(hu, hv, peaks);
           houses.push({
             id: `${settlementId}-h-${h}`,
             settlementId,
@@ -364,7 +375,7 @@ export function buildHighlandPlateauCatalog(
             ponds.push({
               id: `${settlementId}-pond`,
               x: pw.x,
-              y: mountainHeight(pu, pv, peaks),
+              y: mountainMeshHeight(pu, pv, peaks),
               z: pw.z,
               radiusX: 7.0 + rng() * 2.5,
               radiusZ: 5.5 + rng() * 2.0,
@@ -391,23 +402,26 @@ export function buildHighlandPlateauCatalog(
   //    (Consumed by the EXISTING `MountainForestFixedPool` & `TreeAssetCache` — ZERO duplication!)
   const targetTrees = 4200;
   let attempts = 0;
-  while (trees.length < targetTrees && attempts < targetTrees * 4) {
+  while (trees.length < targetTrees && attempts < targetTrees * 8) {
     attempts++;
     const u = -1320 + rng() * 760; // u ∈ [-1320, -560] across Taungphila + Western Highland Tableland
     const v = 50 + rng() * 4480;
-    const h = mountainHeight(u, v, peaks);
-    if (h < 12) continue;
+    const surf = mountainMeshSurface(u, v, peaks, undefined, surfScratch);
+    const h = surf.y;
+    if (h < 12 || surf.slope > 1.3) continue;
     if (!settlementClear(u, v, 24)) continue;
     const w = toWorld(u, v);
     if (!isClearOfHighways(w.x, w.z)) continue;
+    const scale = 0.78 + rng() * 1.05;
+    const rootEmbed = Math.max(0.35 * scale, surf.slope * 1.75 * scale);
     trees.push({
       id: `hp-tree-${trees.length}`,
       u,
       v,
       x: w.x,
-      y: h - 0.14,
+      y: h - rootEmbed,
       z: w.z,
-      scale: 0.78 + rng() * 1.05,
+      scale,
       kind: rng() > 0.42 ? 'broad' : 'pine',
       tintIndex: Math.floor(rng() * 5),
     });
@@ -416,24 +430,29 @@ export function buildHighlandPlateauCatalog(
   // 3. 3,200+ Lush Sunlit Bushes & Meadow Shrubs (`ခြုံပုတ်များ`)
   const targetBushes = 3200;
   attempts = 0;
-  while (bushes.length < targetBushes && attempts < targetBushes * 3) {
+  while (bushes.length < targetBushes && attempts < targetBushes * 6) {
     attempts++;
     const u = -1310 + rng() * 750;
     const v = 50 + rng() * 4480;
-    const h = mountainHeight(u, v, peaks);
-    if (h < 8) continue;
+    const surf = mountainMeshSurface(u, v, peaks, undefined, surfScratch);
+    const h = surf.y;
+    if (h < 8 || surf.slope > 1.1) continue;
     if (!settlementClear(u, v, 11)) continue;
     const w = toWorld(u, v);
     if (!isClearOfHighways(w.x, w.z)) continue;
     const bs = 0.85 + rng() * 1.35;
+    const sx = bs * (1.05 + rng() * 0.45);
+    const sy = bs * (0.62 + rng() * 0.32);
+    const sz = bs * (1.05 + rng() * 0.45);
+    const bushEmbed = Math.max(0, Math.max(sx, sz) * surf.slope * 0.72);
     bushes.push({
       id: `hp-bush-${bushes.length}`,
       x: w.x,
-      y: h + bs * 0.25,
+      y: h + sy * 0.22 - bushEmbed,
       z: w.z,
-      sx: bs * (1.05 + rng() * 0.45),
-      sy: bs * (0.62 + rng() * 0.32),
-      sz: bs * (1.05 + rng() * 0.45),
+      sx,
+      sy,
+      sz,
       rotation: rng() * Math.PI * 2,
       tintIndex: Math.floor(rng() * 5),
     });
@@ -442,24 +461,29 @@ export function buildHighlandPlateauCatalog(
   // 4. 2,200+ Natural Boulders & Stones (`ကျောက်တုံးများ`) across trailsides, ponds, and ridges
   const targetBoulders = 2200;
   attempts = 0;
-  while (boulders.length < targetBoulders && attempts < targetBoulders * 3) {
+  while (boulders.length < targetBoulders && attempts < targetBoulders * 6) {
     attempts++;
     const u = -1310 + rng() * 750;
     const v = 50 + rng() * 4480;
-    const h = mountainHeight(u, v, peaks);
-    if (h < 8) continue;
+    const surf = mountainMeshSurface(u, v, peaks, undefined, surfScratch);
+    const h = surf.y;
+    if (h < 8 || surf.slope > 0.95) continue;
     if (!settlementClear(u, v, 13)) continue;
     const w = toWorld(u, v);
     if (!isClearOfHighways(w.x, w.z)) continue;
     const rs = 0.65 + rng() * 1.95;
+    const sx = rs * (1.1 + rng() * 0.5);
+    const sy = rs * (0.58 + rng() * 0.42);
+    const sz = rs * (0.95 + rng() * 0.48);
+    const rockEmbed = Math.max(0, Math.max(sx, sz) * surf.slope - sy * 0.55);
     boulders.push({
       id: `hp-rock-${boulders.length}`,
       x: w.x,
-      y: h + rs * 0.28,
+      y: h + sy * 0.28 - rockEmbed,
       z: w.z,
-      sx: rs * (1.1 + rng() * 0.5),
-      sy: rs * (0.58 + rng() * 0.42),
-      sz: rs * (0.95 + rng() * 0.48),
+      sx,
+      sy,
+      sz,
       rotation: rng() * Math.PI * 2,
       tintIndex: Math.floor(rng() * 4),
       // Only large boulders (>= 1.6m) block walking; smaller pebbles/stones can be stepped over smoothly

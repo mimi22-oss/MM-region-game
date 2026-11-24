@@ -44,6 +44,7 @@ const STORAGE_CARROTS_KEY = 'mm-mountain-tiger-carrots-v1';
 
 export interface ActiveCombatTigerInfo {
   readonly id: string;
+  readonly territoryId: string;
   readonly groupKind: 'pair' | 'solo';
   x: number;
   y: number;
@@ -57,6 +58,31 @@ export interface ActiveCombatTigerInfo {
   staggerTimer: number;
   hitFlashTimer: number;
   defeatedTimer: number;
+}
+
+export interface TigerMapTerritoryMarker {
+  readonly territoryId: string;
+  readonly x: number;
+  readonly z: number;
+  readonly aliveCount: number;
+  readonly isNearest: boolean;
+  readonly distanceM: number;
+}
+
+export interface NearestLiveTigerMarker {
+  readonly id: string;
+  readonly territoryId: string;
+  readonly x: number;
+  readonly z: number;
+  readonly distanceM: number;
+}
+
+export interface MountainTigerMapSnapshot {
+  readonly territories: readonly TigerMapTerritoryMarker[];
+  readonly nearest: NearestLiveTigerMarker | null;
+  readonly nearestTigers: readonly NearestLiveTigerMarker[];
+  readonly remainingCount: number;
+  readonly totalCount: number;
 }
 
 export interface MountainTigerCombatSnapshot {
@@ -167,6 +193,7 @@ export function useMountainTigerCombat(): MountainTigerCombatSnapshot {
 export function registerMountainTigerSpawns(
   spawns: readonly {
     readonly id: string;
+    readonly territoryId?: string;
     readonly groupKind: 'pair' | 'solo';
     readonly homeX: number;
     readonly homeY: number;
@@ -181,6 +208,7 @@ export function registerMountainTigerSpawns(
       const maxHp = sp.groupKind === 'solo' ? TIGER_SOLO_MAX_HP : TIGER_PAIR_MAX_HP;
       tigersById.set(sp.id, {
         id: sp.id,
+        territoryId: sp.territoryId ?? sp.id,
         groupKind: sp.groupKind,
         x: sp.homeX,
         y: sp.homeY,
@@ -256,6 +284,73 @@ export function markCombatTigerSlotActive(
 
 export function markCombatTigerSlotInactive(id: string): void {
   activeSlotIds.delete(id);
+}
+
+/**
+ * Computes realtime mountain tiger territory markers + the single nearest living tiger
+ * relative to `(playerX, playerZ)` for rendering on the 2D Map SVG.
+ */
+export function getMountainTigerMapSnapshot(
+  playerX: number,
+  playerZ: number,
+): MountainTigerMapSnapshot {
+  let totalCount = 0;
+  let remainingCount = 0;
+  let nearest: NearestLiveTigerMarker | null = null;
+  let nearestDistSq = Infinity;
+  const allLiving: NearestLiveTigerMarker[] = [];
+
+  const grouped = new Map<string, { sumX: number; sumZ: number; count: number; minDistSq: number }>();
+
+  for (const t of tigersById.values()) {
+    totalCount++;
+    if (!t.alive) continue;
+    remainingCount++;
+
+    const dx = t.x - playerX;
+    const dz = t.z - playerZ;
+    const dSq = dx * dx + dz * dz;
+    const entry: NearestLiveTigerMarker = {
+      id: t.id,
+      territoryId: t.territoryId,
+      x: t.x,
+      z: t.z,
+      distanceM: Math.sqrt(dSq),
+    };
+    allLiving.push(entry);
+    if (dSq < nearestDistSq) {
+      nearestDistSq = dSq;
+      nearest = entry;
+    }
+
+    const g = grouped.get(t.territoryId);
+    if (g) {
+      g.sumX += t.x;
+      g.sumZ += t.z;
+      g.count += 1;
+      if (dSq < g.minDistSq) g.minDistSq = dSq;
+    } else {
+      grouped.set(t.territoryId, { sumX: t.x, sumZ: t.z, count: 1, minDistSq: dSq });
+    }
+  }
+
+  allLiving.sort((a, b) => a.distanceM - b.distanceM);
+  const nearestTigers = allLiving.slice(0, 5);
+
+  const nearestTerritoryId = nearest?.territoryId ?? null;
+  const territories: TigerMapTerritoryMarker[] = [];
+  for (const [territoryId, g] of grouped.entries()) {
+    territories.push({
+      territoryId,
+      x: g.sumX / g.count,
+      z: g.sumZ / g.count,
+      aliveCount: g.count,
+      isNearest: territoryId === nearestTerritoryId,
+      distanceM: Math.sqrt(g.minDistSq),
+    });
+  }
+
+  return { territories, nearest, nearestTigers, remainingCount, totalCount };
 }
 
 /** Iterates currently pooled live tigers for O(16) sword & gun combat hit detection. */

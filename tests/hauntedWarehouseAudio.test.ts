@@ -6,6 +6,7 @@ import {GhostAudioEventScheduler,hauntedBand,hauntedGain} from '../src/game/audi
 import {warehouseSoundOrigins,warehouseOccluded,warehouseZoneDistance} from '../src/game/audio/warehouseSoundOrigins.ts';
 import {area5} from '../src/data/wards/myothar/area5.ts';
 import {GHOST_WAREHOUSE_ANCHOR,isGhostNightActive} from '../src/game/ghostConfig.ts';
+import {isWarehouseHorrorAudioActive} from '../src/game/audio/WarehouseHorrorLoopPlayer.ts';
 import {PLAYER_HOME_REFERENCE} from '../src/game/playerHomeProtection.ts';
 
 test('distance bands are hysteretic, gains smooth, and night respects world-time overrides',()=>{
@@ -81,4 +82,20 @@ test('scheduler produces all 7 horror sound categories with variation and proced
   assert.equal(/\.(mp3|wav|ogg|aac|flac|m4a)\b/i.test(code),false,`${rel} uses no external audio files`);
   assert.equal(/\bfetch\s*\(/i.test(code),false,`${rel} makes no network fetches`);
  }
+});
+
+test('warehouse horror audio plays only during night ghost hours while ghosts are still present',()=>{
+ const base={enabled:true,soundEnabled:true,soundVolume:0.8,paused:false,hasLivingGhosts:true};
+ assert.equal(isWarehouseHorrorAudioActive({...base,minute:780,timeMode:'auto'}),false,'silent during auto daytime (13:00)');
+ assert.equal(isWarehouseHorrorAudioActive({...base,minute:540,timeMode:'morning'}),false,'silent during manual morning');
+ assert.equal(isWarehouseHorrorAudioActive({...base,minute:780,timeMode:'day'}),false,'silent during manual day');
+ assert.equal(isWarehouseHorrorAudioActive({...base,minute:1050,timeMode:'evening'}),false,'silent during manual evening');
+ assert.equal(isWarehouseHorrorAudioActive({...base,minute:1260,timeMode:'day'}),false,'manual day silences even night minute');
+ assert.equal(isWarehouseHorrorAudioActive({...base,minute:1260,timeMode:'auto'}),true,'active during auto night (21:00) with living ghosts');
+ assert.equal(isWarehouseHorrorAudioActive({...base,minute:120,timeMode:'auto'}),true,'active during late auto night (02:00) with living ghosts');
+ assert.equal(isWarehouseHorrorAudioActive({...base,minute:780,timeMode:'night'}),true,'active during manual night with living ghosts');
+ assert.equal(isWarehouseHorrorAudioActive({...base,minute:1260,timeMode:'night',hasLivingGhosts:false}),false,'silent at night once all ghosts are defeated');
+ assert.equal(isWarehouseHorrorAudioActive({...base,minute:780,timeMode:'day',forceActive:true}),true,'respects dev forceActive override while ghosts are alive');
+ assert.equal(isWarehouseHorrorAudioActive({...base,minute:1260,timeMode:'night',paused:true}),false,'silent while paused');
+ assert.equal(isWarehouseHorrorAudioActive({...base,minute:1260,timeMode:'night',soundEnabled:false}),false,'silent when sound is disabled');
 });

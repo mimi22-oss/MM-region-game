@@ -7,9 +7,8 @@ type TreeProps = { t: TreeData; i?: number; variant?: 'large' | 'canopy' | 'farm
 const CANOPY_BRANCH_ROT = Math.atan2(9, 4);
 
 const LARGE_SIDE_CROWNS = [
-  { id: 'left', position: [-4.3, 8.8, 0.45], scale: [0.71, 0.72, 0.73] },
-  { id: 'right', position: [4.15, 10.3, 0.5], scale: [0.76, 0.74, 0.74] },
-  { id: 'front', position: [-0.85, 8.55, 2.15], scale: [0.49, 0.53, 0.52] },
+  { id: 'left', position: [-4.25, 8.75, 0.55], scale: [0.74, 0.74, 0.75] },
+  { id: 'right', position: [4.1, 10.25, 0.55], scale: [0.78, 0.76, 0.76] },
 ] as const;
 
 export function Tree({ t, i = 0, variant = 'large' }: TreeProps) {
@@ -53,7 +52,6 @@ export function Tree({ t, i = 0, variant = 'large' }: TreeProps) {
             rotation={[0, 0, -dir * CANOPY_BRANCH_ROT]}
             geometry={cache.canopyBranchGeo}
             material={cache.barkCanopyMat}
-            castShadow
           />
         </group>
         <mesh
@@ -68,7 +66,6 @@ export function Tree({ t, i = 0, variant = 'large' }: TreeProps) {
           scale={[0.8, 0.68, 0.8]}
           geometry={cache.canopyCrownSecondaryGeo}
           material={cache.foliageCanopySecondaryMat}
-          castShadow
         />
       </group>
     );
@@ -90,7 +87,6 @@ export function Tree({ t, i = 0, variant = 'large' }: TreeProps) {
           rotation={[0, 0, -side * 0.85]}
           geometry={cache.largeBranchGeo}
           material={cache.barkLargeMat}
-          castShadow
         />
       ))}
       <mesh
@@ -107,7 +103,6 @@ export function Tree({ t, i = 0, variant = 'large' }: TreeProps) {
           scale={scale}
           geometry={cache.largeCrownSideGeo}
           material={cache.foliageLargeSideMat}
-          castShadow
         />
       ))}
     </group>

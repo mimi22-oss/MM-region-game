@@ -15,7 +15,13 @@ import {
   type MountainDeerAssetCache,
 } from './mountainDeerAssets.ts';
 import type { MountainRabbitZone } from './mountainRabbitPool.ts';
-import { mountainHeight, type TerrainPeak } from './mountainTerrain.ts';
+import {
+  FOREGROUND_MOUNTAIN_STEP,
+  mountainMeshSurface,
+  mountainSlopePitchRoll,
+  type MountainMeshSurface,
+  type TerrainPeak,
+} from './mountainTerrain.ts';
 import { mobileQuality } from './sceneBudget.ts';
 import { canStandTaungphilaFeatures, isOnTaungphilaRoad } from './taungphilaWorld.ts';
 import { countNearestInRange, FixedObjectPool, updatePooledInstances } from './treeResourcePool.ts';
@@ -42,6 +48,8 @@ export interface MountainDeerSpawn {
   readonly homeX: number;
   readonly homeZ: number;
   readonly homeY: number;
+  readonly homeDu: number;
+  readonly homeDv: number;
   readonly wanderRadius: number;
   readonly coatIndex: number;
   readonly hasAntlers: boolean;
@@ -54,6 +62,8 @@ interface ActiveDeerRuntime {
   x: number;
   y: number;
   z: number;
+  groundDu: number;
+  groundDv: number;
   yaw: number;
   targetX: number;
   targetZ: number;
@@ -87,31 +97,35 @@ function createRng(seed: number): () => number {
   };
 }
 
+const MAX_DEER_SPAWN_SLOPE = 0.48;
+const MAX_DEER_STEP_SLOPE = 0.55;
+
 function isValidDeerMeadow(
   u: number,
   v: number,
   peaks: readonly TerrainPeak[],
-): { ok: boolean; x: number; z: number; y: number } {
-  const y = mountainHeight(u, v, peaks);
-  if (y < 8) return { ok: false, x: 0, z: 0, y: 0 };
+): { ok: boolean; x: number; z: number; y: number; du: number; dv: number } {
+  const surf = mountainMeshSurface(u, v, peaks);
+  const y = surf.y;
+  if (y < 8 || surf.slope > MAX_DEER_SPAWN_SLOPE) return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
   for (let i = 0; i < peaks.length; i++) {
     const p = peaks[i];
     const obsR = (p.obstacleRadius ?? p.radius) + 1.5;
     const du = u - p.u;
     const dv = v - p.v;
-    if (du * du + dv * dv < obsR * obsR) return { ok: false, x: 0, z: 0, y: 0 };
+    if (du * du + dv * dv < obsR * obsR) return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
   }
   const w = toWorld(u, v);
   if (isOnTaungphilaRoad(w.x, w.z, -5) || isOnWeipulaRoad(w.x, w.z, -5)) {
-    return { ok: false, x: 0, z: 0, y: 0 };
+    return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
   }
   if (!canStandTaungphilaFeatures(w.x, w.z, 0.9, false)) {
-    return { ok: false, x: 0, z: 0, y: 0 };
+    return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
   }
-  if (!canStandHighlandPlateau(w.x, w.z, 0.9, false)) {
-    return { ok: false, x: 0, z: 0, y: 0 };
+  if (!canStandHighlandPlateau(w.x, w.z, 0.9, false) || highlandTreeBlocks(w.x, w.z, 0.8)) {
+    return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
   }
-  return { ok: true, x: w.x, z: w.z, y };
+  return { ok: true, x: w.x, z: w.z, y, du: surf.du, dv: surf.dv };
 }
 
 /**
@@ -141,7 +155,7 @@ export function buildMountainDeerSpawns(
   for (const cfg of zones) {
     let added = 0;
     let attempts = 0;
-    while (added < cfg.targetCount && attempts < cfg.targetCount * 14) {
+    while (added < cfg.targetCount && attempts < cfg.targetCount * 36) {
       attempts++;
       const centerU = cfg.uMin + rng() * (cfg.uMax - cfg.uMin);
       const centerV = cfg.vMin + rng() * (cfg.vMax - cfg.vMin);
@@ -167,6 +181,8 @@ export function buildMountainDeerSpawns(
           homeX: spot.x,
           homeZ: spot.z,
           homeY: spot.y,
+          homeDu: spot.du,
+          homeDv: spot.dv,
           wanderRadius: 10 + rng() * 10,
           coatIndex: isFawn ? 3 : Math.floor(rng() * 3),
           hasAntlers: isStag,
@@ -192,6 +208,8 @@ const scratchLocalQuat = new Quaternion();
 const scratchScale = new Vector3();
 const scratchEuler = new Euler();
 const scratchColor = new Color();
+const scratchSurface: MountainMeshSurface = { y: 0, du: 0, dv: 0, slope: 0 };
+const scratchTilt = { pitch: 0, roll: 0 };
 
 type ScoredIdx = { idx: number; distSq: number };
 
@@ -238,6 +256,8 @@ export class MountainDeerFixedPool {
       x: 0,
       y: 0,
       z: 0,
+      groundDu: 0,
+      groundDv: 0,
       yaw: 0,
       targetX: 0,
       targetZ: 0,
@@ -358,6 +378,8 @@ export class MountainDeerFixedPool {
         r.x = sp.homeX;
         r.y = sp.homeY;
         r.z = sp.homeZ;
+        r.groundDu = sp.homeDu;
+        r.groundDv = sp.homeDv;
         r.yaw = sp.phaseOffset;
         r.targetX = sp.homeX + Math.sin(sp.phaseOffset) * 5;
         r.targetZ = sp.homeZ + Math.cos(sp.phaseOffset) * 5;
@@ -445,7 +467,12 @@ export class MountainDeerFixedPool {
             const yawTry = r.yaw + tryAngles[a];
             const nx = r.x + Math.sin(yawTry) * stepDist;
             const nz = r.z + Math.cos(yawTry) * stepDist;
+            const nu = nx * cosA - nz * sinA;
+            const nv = nx * sinA + nz * cosA;
+            const surf = mountainMeshSurface(nu, nv, peaks, FOREGROUND_MOUNTAIN_STEP, scratchSurface);
             if (
+              surf.y >= 8 &&
+              surf.slope <= MAX_DEER_STEP_SLOPE &&
               !isOnTaungphilaRoad(nx, nz, -2.5) &&
               !isOnWeipulaRoad(nx, nz, -2.5) &&
               canStandHighlandPlateau(nx, nz, 0.5, false) &&
@@ -455,9 +482,9 @@ export class MountainDeerFixedPool {
               r.x = nx;
               r.z = nz;
               if (a > 0) r.yaw = yawTry;
-              const nu = nx * cosA - nz * sinA;
-              const nv = nx * sinA + nz * cosA;
-              r.y = mountainHeight(nu, nv, peaks);
+              r.y = surf.y;
+              r.groundDu = surf.du;
+              r.groundDv = surf.dv;
               r.gaitPhase = (r.gaitPhase + stepDist * 0.95) % 1;
               moved = true;
               break;
@@ -507,7 +534,8 @@ export class MountainDeerFixedPool {
     const grazePitch = r.grazeBlend * 0.95; // Smoothly bows neck down to graze!
     const headLook = r.state === 'alert' ? Math.sin(this.elapsed * 1.8 + sp.phaseOffset) * 0.25 : 0;
 
-    scratchEuler.set(0, r.yaw, 0, 'YXZ');
+    const tilt = mountainSlopePitchRoll(r.groundDu, r.groundDv, cosA, sinA, r.yaw, scratchTilt, 0.42);
+    scratchEuler.set(tilt.pitch, r.yaw, tilt.roll, 'YXZ');
     scratchQuat.setFromEuler(scratchEuler);
 
     const placePart = (

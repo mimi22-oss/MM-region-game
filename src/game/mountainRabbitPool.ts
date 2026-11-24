@@ -14,7 +14,13 @@ import {
   getMountainRabbitAssetCache,
   type MountainRabbitAssetCache,
 } from './mountainRabbitAssets.ts';
-import { mountainHeight, type TerrainPeak } from './mountainTerrain.ts';
+import {
+  FOREGROUND_MOUNTAIN_STEP,
+  mountainMeshSurface,
+  mountainSlopePitchRoll,
+  type MountainMeshSurface,
+  type TerrainPeak,
+} from './mountainTerrain.ts';
 import { mobileQuality } from './sceneBudget.ts';
 import { canStandTaungphilaFeatures, isOnTaungphilaRoad } from './taungphilaWorld.ts';
 import { countNearestInRange, FixedObjectPool, updatePooledInstances } from './treeResourcePool.ts';
@@ -45,6 +51,8 @@ export interface MountainRabbitSpawn {
   readonly homeX: number;
   readonly homeZ: number;
   readonly homeY: number;
+  readonly homeDu: number;
+  readonly homeDv: number;
   readonly wanderRadius: number;
   readonly coatIndex: number;
   readonly scale: number;
@@ -56,6 +64,8 @@ interface ActiveRabbitRuntime {
   x: number;
   y: number;
   z: number;
+  groundDu: number;
+  groundDv: number;
   yaw: number;
   targetX: number;
   targetZ: number;
@@ -89,27 +99,35 @@ function createRng(seed: number): () => number {
   };
 }
 
-function isValidRabbitMeadow(u: number, v: number, peaks: readonly TerrainPeak[]): { ok: boolean; x: number; z: number; y: number } {
-  const y = mountainHeight(u, v, peaks);
-  if (y < 6) return { ok: false, x: 0, z: 0, y: 0 };
+const MAX_RABBIT_SPAWN_SLOPE = 0.48;
+const MAX_RABBIT_STEP_SLOPE = 0.55;
+
+function isValidRabbitMeadow(
+  u: number,
+  v: number,
+  peaks: readonly TerrainPeak[],
+): { ok: boolean; x: number; z: number; y: number; du: number; dv: number } {
+  const surf = mountainMeshSurface(u, v, peaks);
+  const y = surf.y;
+  if (y < 6 || surf.slope > MAX_RABBIT_SPAWN_SLOPE) return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
   for (let i = 0; i < peaks.length; i++) {
     const p = peaks[i];
     const obsR = (p.obstacleRadius ?? p.radius) + 1.0;
     const du = u - p.u;
     const dv = v - p.v;
-    if (du * du + dv * dv < obsR * obsR) return { ok: false, x: 0, z: 0, y: 0 };
+    if (du * du + dv * dv < obsR * obsR) return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
   }
   const w = toWorld(u, v);
   if (isOnTaungphilaRoad(w.x, w.z, -4) || isOnWeipulaRoad(w.x, w.z, -4)) {
-    return { ok: false, x: 0, z: 0, y: 0 };
+    return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
   }
   if (!canStandTaungphilaFeatures(w.x, w.z, 0.6, false)) {
-    return { ok: false, x: 0, z: 0, y: 0 };
+    return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
   }
-  if (!canStandHighlandPlateau(w.x, w.z, 0.6, false)) {
-    return { ok: false, x: 0, z: 0, y: 0 };
+  if (!canStandHighlandPlateau(w.x, w.z, 0.6, false) || highlandTreeBlocks(w.x, w.z, 0.65)) {
+    return { ok: false, x: 0, z: 0, y: 0, du: 0, dv: 0 };
   }
-  return { ok: true, x: w.x, z: w.z, y };
+  return { ok: true, x: w.x, z: w.z, y, du: surf.du, dv: surf.dv };
 }
 
 /**
@@ -143,7 +161,7 @@ export function buildMountainRabbitSpawns(
   for (const cfg of zones) {
     let added = 0;
     let attempts = 0;
-    while (added < cfg.targetCount && attempts < cfg.targetCount * 12) {
+    while (added < cfg.targetCount && attempts < cfg.targetCount * 36) {
       attempts++;
       const centerU = cfg.uMin + rng() * (cfg.uMax - cfg.uMin);
       const centerV = cfg.vMin + rng() * (cfg.vMax - cfg.vMin);
@@ -167,6 +185,8 @@ export function buildMountainRabbitSpawns(
           homeX: spot.x,
           homeZ: spot.z,
           homeY: spot.y,
+          homeDu: spot.du,
+          homeDv: spot.dv,
           wanderRadius: 6 + rng() * 7,
           coatIndex: Math.floor(rng() * RABBIT_COAT_COLORS.length),
           scale: 0.85 + rng() * 0.38,
@@ -190,6 +210,8 @@ const scratchLocalQuat = new Quaternion();
 const scratchScale = new Vector3();
 const scratchEuler = new Euler();
 const scratchColor = new Color();
+const scratchSurface: MountainMeshSurface = { y: 0, du: 0, dv: 0, slope: 0 };
+const scratchTilt = { pitch: 0, roll: 0 };
 
 type ScoredIdx = { idx: number; distSq: number };
 
@@ -234,6 +256,8 @@ export class MountainRabbitFixedPool {
       x: 0,
       y: 0,
       z: 0,
+      groundDu: 0,
+      groundDv: 0,
       yaw: 0,
       targetX: 0,
       targetZ: 0,
@@ -346,6 +370,8 @@ export class MountainRabbitFixedPool {
         r.x = sp.homeX;
         r.y = sp.homeY;
         r.z = sp.homeZ;
+        r.groundDu = sp.homeDu;
+        r.groundDv = sp.homeDv;
         r.yaw = sp.phaseOffset;
         r.targetX = sp.homeX + Math.sin(sp.phaseOffset) * 3.5;
         r.targetZ = sp.homeZ + Math.cos(sp.phaseOffset) * 3.5;
@@ -444,7 +470,12 @@ export class MountainRabbitFixedPool {
             const yawTry = r.yaw + tryAngles[a];
             const nx = r.x + Math.sin(yawTry) * stepDist;
             const nz = r.z + Math.cos(yawTry) * stepDist;
+            const nu = nx * cosA - nz * sinA;
+            const nv = nx * sinA + nz * cosA;
+            const surf = mountainMeshSurface(nu, nv, peaks, FOREGROUND_MOUNTAIN_STEP, scratchSurface);
             if (
+              surf.y >= 6 &&
+              surf.slope <= MAX_RABBIT_STEP_SLOPE &&
               !isOnTaungphilaRoad(nx, nz, -2) &&
               !isOnWeipulaRoad(nx, nz, -2) &&
               canStandHighlandPlateau(nx, nz, 0.35, false) &&
@@ -454,9 +485,9 @@ export class MountainRabbitFixedPool {
               r.x = nx;
               r.z = nz;
               if (a > 0) r.yaw = yawTry;
-              const nu = nx * cosA - nz * sinA;
-              const nv = nx * sinA + nz * cosA;
-              r.y = mountainHeight(nu, nv, peaks);
+              r.y = surf.y;
+              r.groundDu = surf.du;
+              r.groundDv = surf.dv;
               moved = true;
               break;
             }
@@ -506,8 +537,9 @@ export class MountainRabbitFixedPool {
     const earTwitch = Math.sin(this.elapsed * 4.2 + sp.phaseOffset) * 0.08;
     const nibbleBob = r.state === 'idle' ? Math.sin(this.elapsed * 5.0 + sp.phaseOffset) * 0.018 : 0;
 
-    // Base rabbit transform (+Z is forward)
-    scratchEuler.set(-pitch, r.yaw, 0, 'YXZ');
+    // Base rabbit transform (+Z is forward), aligned cleanly to terrain slope
+    const tilt = mountainSlopePitchRoll(r.groundDu, r.groundDv, cosA, sinA, r.yaw, scratchTilt, 0.42);
+    scratchEuler.set(tilt.pitch - pitch, r.yaw, tilt.roll, 'YXZ');
     scratchQuat.setFromEuler(scratchEuler);
 
     const placePart = (

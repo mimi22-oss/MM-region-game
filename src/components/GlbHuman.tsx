@@ -105,12 +105,6 @@ function LoadedHuman({model,preset,appearance,motion,riding=false,driving,horseP
  useEffect(()=>{instance?.setCastShadow(quality.characterCastShadow);},[instance,quality.characterCastShadow]);
  useEffect(()=>{
   if(!instance)return;
-  // Preload death/knockback clips once on mount so dying never shows a loading-delay frame
-  void loadSpecialActionClipForRig('flying-back-away',preset,model.scene).catch(()=>{});
-  void loadSpecialActionClipForRig('fall',preset,model.scene).catch(()=>{});
- },[instance,preset,model]);
- useEffect(()=>{
-  if(!instance)return;
   instance.onSpecialFinished(()=>{
    // Never clear or fade out the fallen death pose while the player is dead (prevents popping up / T-pose)
    if(getPlayerDeathState().phase!=='alive')return;

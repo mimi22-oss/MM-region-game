@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { Group, MeshStandardMaterial } from 'three';
 import { angle } from '../data/ward';
 import { RABBIT_COAT_COLORS, getMountainRabbitAssetCache } from '../game/mountainRabbitAssets';
-import { mountainHeight, type TerrainPeak } from '../game/mountainTerrain';
+import { mountainMeshHeight, type TerrainPeak } from '../game/mountainTerrain';
 import {
   RABBIT_CARROT_CINEMATIC_DURATION_SEC,
   triggerRabbitCarrotCinematic,
@@ -17,7 +17,7 @@ const sinA = Math.sin(angle);
 function sampleGroundY(x: number, z: number, fallbackY: number, peaks: readonly TerrainPeak[]): number {
   const u = x * cosA - z * sinA;
   const v = x * sinA + z * cosA;
-  const h = mountainHeight(u, v, peaks);
+  const h = mountainMeshHeight(u, v, peaks);
   return Number.isFinite(h) && h > 0.5 ? h : fallbackY;
 }
 

@@ -17,11 +17,13 @@ import {
   TIGER_PREY_MIN_SEPARATION_M,
   buildMountainTigerSpawns,
 } from '../src/game/mountainTigerPool.ts';
+import { mountainMeshSurface } from '../src/game/mountainTerrain.ts';
 import {
   applyTigerAttackToPlayer,
   clearMountainTigerCombatRegistry,
   damageMountainTiger,
   getMountainTigerCombatSnapshot,
+  getMountainTigerMapSnapshot,
   registerMountainTigerSpawns,
   resetMountainTigerCombat,
 } from '../src/game/mountainTigerCombat.ts';
@@ -77,10 +79,17 @@ test('Mountain tigers spawn as both 2-tiger pairs and 1-tiger solitary territori
     );
   }
 
-  // CRITICAL: Every single tiger MUST be strictly >= 20m away from EVERY rabbit AND EVERY deer!
+  // CRITICAL: Every single tiger MUST be strictly >= 20m away from EVERY rabbit AND EVERY deer,
+  // AND sit strictly flush on the rendered mountain mesh triangle (zero mid-air floating or sheer cliffs)!
   for (const t of tigers) {
     assert.ok(t.homeY >= 14, `${t.id} stands on elevated secluded mountain terrain`);
     assert.equal(canStand(t.homeX, t.homeZ), true, `${t.id} stands on clear walkable terrain`);
+    const surf = mountainMeshSurface(t.homeU, t.homeV, allPeaks);
+    assert.ok(
+      Math.abs(t.homeY - surf.y) < 1e-4,
+      `${t.id} sits flush on rendered mountain mesh (diff=${(t.homeY - surf.y).toFixed(4)}m)`,
+    );
+    assert.ok(surf.slope <= 0.56, `${t.id} avoids sheer cliffs (slope=${surf.slope.toFixed(2)})`);
 
     for (const r of rabbits) {
       const d = Math.hypot(t.homeX - r.homeX, t.homeZ - r.homeZ);
@@ -96,6 +105,16 @@ test('Mountain tigers spawn as both 2-tiger pairs and 1-tiger solitary territori
         `${t.id} must stay >= ${TIGER_PREY_MIN_SEPARATION_M}m away from deer ${dr.id} (got ${d.toFixed(1)}m)`,
       );
     }
+  }
+  for (const dr of deer) {
+    const surf = mountainMeshSurface(dr.homeU, dr.homeV, allPeaks);
+    assert.ok(Math.abs(dr.homeY - surf.y) < 1e-4, `${dr.id} sits flush on rendered mountain mesh`);
+    assert.ok(surf.slope <= 0.49, `${dr.id} stands on walkable slope (slope=${surf.slope.toFixed(2)})`);
+  }
+  for (const rb of rabbits) {
+    const surf = mountainMeshSurface(rb.homeU, rb.homeV, allPeaks);
+    assert.ok(Math.abs(rb.homeY - surf.y) < 1e-4, `${rb.id} sits flush on rendered mountain mesh`);
+    assert.ok(surf.slope <= 0.49, `${rb.id} stands on walkable slope (slope=${surf.slope.toFixed(2)})`);
   }
 
   const def = getAssetDefinition('nature:mountain-tiger');
@@ -199,15 +218,26 @@ test('Open-world tiger combat kills unarmed players, allows armed combat + 4m kn
   const aim = resolveGunAimTarget(t0.homeX, t0.homeZ + 8, 0, -1, 32, null);
   assert.ok(aim && aim.kind === 'tiger' && aim.id === t0.id, 'Gun raycast targets active mountain tigers');
 
-  // 4. Defeating ALL mountain tigers unlocks Carrots & triggers 5-second Auto-Bot Rabbit Feeding Cinematic
+  // 4. Realtime map snapshot tracks tiger territories & nearest live tiger, updating as tigers move/fall
+  const mapSnapBefore = getMountainTigerMapSnapshot(t0.homeX, t0.homeZ + 5);
+  assert.equal(mapSnapBefore.remainingCount, 2);
+  assert.equal(mapSnapBefore.nearest?.id, t0.id, 'Nearest live tiger matches closest living tiger');
+  assert.ok(mapSnapBefore.territories.some((z) => z.isNearest && z.aliveCount >= 1));
+
+  // Defeating ALL mountain tigers unlocks Carrots & triggers 5-second Auto-Bot Rabbit Feeding Cinematic
   const kill1 = damageMountainTiger(t0.id, 100, 'sword', t0.homeX, t0.homeZ + 2, t0.homeY, 0);
   assert.equal(kill1?.defeated, true);
   assert.equal(kill1?.allDefeated, false);
   assert.equal(isRabbitCarrotCinematicActive(), false);
 
+  const mapSnapAfterOne = getMountainTigerMapSnapshot(t0.homeX, t0.homeZ + 5);
+  assert.equal(mapSnapAfterOne.remainingCount, 1);
+  assert.equal(mapSnapAfterOne.nearest?.id, t1.id, 'Defeated tiger disappears and nearest switches to next live tiger');
+
   const kill2 = damageMountainTiger(t1.id, 100, 'gun', t1.homeX, t1.homeZ + 2, t1.homeY, 0);
   assert.equal(kill2?.defeated, true);
   assert.equal(kill2?.allDefeated, true);
+  assert.equal(getMountainTigerMapSnapshot(t0.homeX, t0.homeZ + 5).nearest, null, 'No tiger markers once all are defeated');
   assert.equal(getMountainTigerCombatSnapshot().carrotsUnlocked, true, 'All tigers defeated unlocks carrots reward');
   assert.equal(isRabbitCarrotCinematicActive(), true, '5s Auto-Bot rabbit carrot-feeding cinematic triggers automatically');
 
